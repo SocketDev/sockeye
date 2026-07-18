@@ -1,8 +1,8 @@
 # Sockeye
 
-<p align="center">
+<div align="center">
   <img src="assets/repo/brand/sockeye-logomark.svg" width="136" height="160" alt="A leaping sockeye salmon inside a shield">
-</p>
+</div>
 
 [![Follow @SocketSecurity](assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
 [![Follow @socket.dev on Bluesky](assets/fleet/badge-follow-bluesky.svg)](https://bsky.app/profile/socket.dev)
