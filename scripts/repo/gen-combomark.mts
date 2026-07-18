@@ -48,8 +48,10 @@ const MARGIN = 40
 // composition knobs
 const SHIELD_H = 1060 // XL — wide across the word
 const DITHER_CELL = 10
-const DITHER_DENSITY = 0.48
 const DITHER_OPACITY = 0.9
+const DITHER_LEVELS = 16
+const DITHER_BANDS = 32
+const DITHER_MAX_DENSITY = 0.88
 const SINK = 150 // how far the shield point drops below the baseline before the crop
 
 // --- colours (wheelhouse docs/design/color.md signature gradient) ---
@@ -76,15 +78,16 @@ const round = (value: number, digits: number): string =>
   String(Number(value.toFixed(digits)))
 
 /**
- * A single-colour ordered-dither tile. Thresholded cells are intentionally
- * absent, rather than dimmed: transparent gaps make the shield actually
- * dissolve and preserve the graphic across light and dark backgrounds.
+ * A single-colour ordered-dither tile at one density level. Thresholded cells
+ * are intentionally absent, rather than dimmed: transparent gaps make the
+ * shield actually dissolve and preserve the graphic across light and dark
+ * backgrounds.
  */
-function ditherPattern(id: string): string {
+function ditherPattern(id: string, density: number): string {
   let rects = ''
   for (let row = 0; row < BAYER.length; row += 1) {
     for (let col = 0; col < BAYER[row]!.length; col += 1) {
-      const lit = DITHER_DENSITY > BAYER[row]![col]!
+      const lit = density > BAYER[row]![col]!
       if (lit) {
         rects +=
           `<rect x="${col * DITHER_CELL}" y="${row * DITHER_CELL}" ` +
@@ -98,6 +101,45 @@ function ditherPattern(id: string): string {
     `<pattern id="${id}" width="${size}" height="${size}" ` +
     `patternUnits="userSpaceOnUse" shape-rendering="crispEdges">${rects}</pattern>`
   )
+}
+
+/**
+ * The reference dither is a wash: sparse pixels at its top, resolving toward
+ * a mostly solid field below. Build a small family of ordered tiles, then use
+ * them in narrow horizontal bands. This avoids an SVG filter/raster while
+ * giving the density a visibly continuous vertical progression.
+ */
+function ditherPatterns(): string {
+  let patterns = ''
+  for (let level = 0; level < DITHER_LEVELS; level += 1) {
+    patterns += ditherPattern(
+      `dither-${level}`,
+      (level / (DITHER_LEVELS - 1)) * DITHER_MAX_DENSITY,
+    )
+  }
+  return patterns
+}
+
+function ditherWash(
+  left: number,
+  width: number,
+  top: number,
+  bottom: number,
+): string {
+  let bands = ''
+  const bandHeight = (bottom - top) / DITHER_BANDS
+  for (let band = 0; band < DITHER_BANDS; band += 1) {
+    const progress = (band + 0.5) / DITHER_BANDS
+    const level = Math.min(
+      DITHER_LEVELS - 1,
+      Math.floor(progress * DITHER_LEVELS),
+    )
+    bands +=
+      `<rect x="${round(left, 2)}" y="${round(top + band * bandHeight, 2)}" ` +
+      `width="${round(width, 2)}" height="${round(bandHeight + 0.1, 2)}" ` +
+      `fill="url(#dither-${level})"/>`
+  }
+  return bands
 }
 
 /**
@@ -200,7 +242,7 @@ export function composeCombomark(
     `word, a solid crest dissolving into dither where it goes behind the text.` +
     `</desc>` +
     `<defs>` +
-    ditherPattern('dither') +
+    ditherPatterns() +
     defs +
     `<linearGradient id="crest" x1="${left}" y1="${MARGIN}" x2="${crestX2}" ` +
     `y2="${t0}" gradientUnits="userSpaceOnUse">` +
@@ -211,10 +253,6 @@ export function composeCombomark(
     `gradientUnits="userSpaceOnUse">` +
     `<stop offset="0" stop-color="#000" stop-opacity="0"/>` +
     `<stop offset="1" stop-color="#000" stop-opacity="1"/></linearGradient>` +
-    `<linearGradient id="hideAbove" x1="0" y1="${t0}" x2="0" y2="${t1}" ` +
-    `gradientUnits="userSpaceOnUse">` +
-    `<stop offset="0" stop-color="#000" stop-opacity="1"/>` +
-    `<stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
     `<mask id="crestmask" maskUnits="userSpaceOnUse" x="0" y="0" ` +
     `width="${vbW}" height="${vbH}">` +
     `<g transform="${shieldMatrix}" fill="#fff" stroke="none">${paths}</g>` +
@@ -223,13 +261,16 @@ export function composeCombomark(
     `<mask id="dithmask" maskUnits="userSpaceOnUse" x="0" y="0" ` +
     `width="${vbW}" height="${vbH}">` +
     `<g transform="${shieldMatrix}" fill="#fff" stroke="none">${paths}</g>` +
-    `<rect x="${left}" y="${MARGIN}" width="${width}" height="${rectH}" ` +
-    `fill="url(#hideAbove)"/></mask>` +
+    `</mask>` +
     `</defs>` +
     `<rect x="${left}" y="${MARGIN}" width="${width}" height="${rectH}" ` +
     `fill="url(#crest)" mask="url(#crestmask)"/>` +
-    `<rect x="${left}" y="${MARGIN}" width="${width}" height="${rectH}" ` +
-    `fill="url(#dither)" mask="url(#dithmask)"/>` +
+    `<g mask="url(#dithmask)">${ditherWash(
+      left,
+      width,
+      Number(t0),
+      baseline,
+    )}</g>` +
     `<g transform="translate(0,${dY})">${body}</g>` +
     `</svg>`
   )
