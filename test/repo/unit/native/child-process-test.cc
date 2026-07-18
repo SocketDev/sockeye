@@ -21,14 +21,15 @@ void ReplaceApprovedExecutable() {
   const int descriptor = open(g_replacement_path.c_str(), O_WRONLY | O_TRUNC);
   assert(descriptor >= 0);
   constexpr char kReplacement[] = "#!/bin/sh\nexit 1\n";
-  const ssize_t written = write(descriptor, kReplacement, sizeof(kReplacement) - 1);
+  [[maybe_unused]] const ssize_t written =
+      write(descriptor, kReplacement, sizeof(kReplacement) - 1);
   assert(written == static_cast<ssize_t>(sizeof(kReplacement) - 1));
   assert(fsync(descriptor) == 0);
   assert(close(descriptor) == 0);
 }
 
 pid_t ReapThenFailWait(pid_t child, int *status, int options) {
-  const pid_t result = waitpid(child, status, options);
+  [[maybe_unused]] const pid_t result = waitpid(child, status, options);
   assert(result == child);
   errno = EIO;
   return -1;
@@ -39,7 +40,8 @@ std::string MakeExecutable() {
   const int descriptor = mkstemp(path);
   assert(descriptor >= 0);
   constexpr char kInitial[] = "#!/bin/sh\nexit 0\n";
-  const ssize_t written = write(descriptor, kInitial, sizeof(kInitial) - 1);
+  [[maybe_unused]] const ssize_t written =
+      write(descriptor, kInitial, sizeof(kInitial) - 1);
   assert(written == static_cast<ssize_t>(sizeof(kInitial) - 1));
   assert(fsync(descriptor) == 0);
   assert(close(descriptor) == 0);
@@ -93,14 +95,14 @@ int main(int argc, char **argv) {
   std::string error;
   assert(sockeye::InspectExecutable(executable_path, executable, error));
 
-  char current_directory[PATH_MAX] = {};
+  [[maybe_unused]] char current_directory[PATH_MAX] = {};
   assert(getcwd(current_directory, sizeof(current_directory)) != nullptr);
   DirectoryIdentity working_directory;
   assert(sockeye::InspectDirectory(current_directory, working_directory, error));
 
   g_replacement_path = executable_path;
   sockeye::SetBeforeLaunchCheckForTesting(ReplaceApprovedExecutable);
-  const int replacement_status = sockeye::LaunchChild(
+  [[maybe_unused]] const int replacement_status = sockeye::LaunchChild(
       executable, {}, {}, {}, {}, working_directory, error);
   sockeye::SetBeforeLaunchCheckForTesting(nullptr);
   assert(replacement_status == 6);
@@ -110,23 +112,23 @@ int main(int argc, char **argv) {
   FileIdentity true_executable;
   assert(sockeye::InspectExecutable("/usr/bin/true", true_executable, error));
   sockeye::SetWaitForChildForTesting(ReapThenFailWait);
-  const int wait_status = sockeye::LaunchChild(
+  [[maybe_unused]] const int wait_status = sockeye::LaunchChild(
       true_executable, {}, {}, {}, {}, working_directory, error);
   sockeye::SetWaitForChildForTesting(nullptr);
   assert(wait_status == 6);
   assert(error.find("status could not be collected") != std::string::npos);
 
-  char self_path[PATH_MAX] = {};
+  [[maybe_unused]] char self_path[PATH_MAX] = {};
   assert(realpath(argv[0], self_path) != nullptr);
   FileIdentity self;
   assert(sockeye::InspectExecutable(self_path, self, error));
   sockeye::SecretBuffer secret;
-  constexpr char kPrivateKey[] =
+  [[maybe_unused]] constexpr char kPrivateKey[] =
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   assert(secret.Assign(kPrivateKey, sizeof(kPrivateKey) - 1));
   const sockeye::CredentialValue credential{"ENVRYPT_PRIVATE_KEY", &secret};
   error.clear();
-  const int credential_status = sockeye::LaunchChild(
+  [[maybe_unused]] const int credential_status = sockeye::LaunchChild(
       self, {}, {"--read-envrypt-v1"}, {}, {credential}, working_directory, error);
   assert(credential_status == 0);
   assert(error.empty());
