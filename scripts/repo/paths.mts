@@ -22,16 +22,17 @@ export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 export const BRAND_SOURCE_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'sockeye-mark.png',
+  'sockeye-logomark.png',
 )
 
 /**
- * Absolute path to the generated brand SVG (`assets/repo/brand/logomark.svg`).
+ * Absolute path to the generated brand SVG
+ * (`assets/repo/brand/sockeye-logomark.svg`).
  */
 export const LOGOMARK_SVG_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'logomark.svg',
+  'sockeye-logomark.svg',
 )
 
 /**
@@ -47,23 +48,24 @@ export const WORDMARK_SOURCE_PATH = path.join(
 
 /**
  * Absolute path to the generated wordmark SVG
- * (`assets/repo/brand/wordmark.svg`).
+ * (`assets/repo/brand/sockeye-wordmark.svg`).
  */
 export const WORDMARK_SVG_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'wordmark.svg',
+  'sockeye-wordmark.svg',
 )
 
 /**
  * Absolute path to the generated combination mark
- * (`assets/repo/brand/combomark.svg`), composed from the logomark + wordmark by
+ * (`assets/repo/brand/sockeye-combomark.svg`), composed from the logomark +
+ * wordmark by
  * `gen:combomark`.
  */
 export const COMBOMARK_SVG_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'combomark.svg',
+  'sockeye-combomark.svg',
 )
 
 export function getBuildRoot(mode: string, platformArch: string): string {

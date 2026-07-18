@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
  * @file Reproducible generator for the sockeye combination mark — CODE IS LAW.
- *   Composes the committed logomark + wordmark into `assets/repo/brand/combomark.svg`:
+ *   Composes the committed logomark + wordmark into
+ *   `assets/repo/brand/sockeye-combomark.svg`:
  *   the shield-and-salmon rises behind the word like a rising sun — a SOLID
  *   signature-gradient crest above the letters that breaks into a fine 8x8
  *   ordered (Bayer) dither where it drops behind the text, the shield planted
@@ -10,7 +11,8 @@
  *   committed source SVGs (same bytes in, same SVG out).
  *
  *   Library: import { traceCombomark } from './gen-combomark.mts'
- *   CLI: node scripts/repo/gen-combomark.mts (writes assets/repo/brand/combomark.svg)
+ *   CLI: node scripts/repo/gen-combomark.mts (writes
+ *   assets/repo/brand/sockeye-combomark.svg)
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -286,8 +288,8 @@ export function traceCombomark(): string {
 }
 
 /**
- * Regenerate `assets/repo/brand/combomark.svg` from the committed logomark +
- * wordmark.
+ * Regenerate `assets/repo/brand/sockeye-combomark.svg` from the committed
+ * logomark + wordmark.
  */
 export function generateCombomark(): { path: string; bytes: number } {
   const svg = traceCombomark()

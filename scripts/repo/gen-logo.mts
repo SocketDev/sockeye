@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
  * @file Reproducible generator for the Sockeye brand mark — CODE IS LAW.
- *   Re-derives `assets/repo/brand/logomark.svg` from the committed source raster
- *   `assets/repo/brand/source/sockeye-mark.png` so the vector is a deterministic
+ *   Re-derives `assets/repo/brand/sockeye-logomark.svg` from the committed source raster
+ *   `assets/repo/brand/sockeye-logomark.png` so the vector is a deterministic
  *   function of a checked-in input (same source bytes in, same SVG bytes out).
  *   Pipeline:
  *
@@ -20,7 +20,7 @@
  *   4. svgo — optimize with the repo-pinned multipass pass so the written file is
  *      an SVGO fixpoint (see test/repo/unit/svg-assets.test.mts). Library:
  *      import { traceBrandMark } from './gen-logo.mts' CLI: node
- *      scripts/repo/gen-logo.mts (writes assets/repo/brand/logomark.svg)
+ *      scripts/repo/gen-logo.mts (writes assets/repo/brand/sockeye-logomark.svg)
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -215,7 +215,8 @@ export async function traceBrandMark(
 }
 
 /**
- * Regenerate `assets/repo/brand/logomark.svg` from the committed source raster.
+ * Regenerate `assets/repo/brand/sockeye-logomark.svg` from the committed source
+ * raster.
  * Returns the written path and its byte length.
  */
 export async function generateFishPrint(): Promise<{

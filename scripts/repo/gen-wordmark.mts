@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
  * @file Reproducible generator for the sockeye wordmark — CODE IS LAW.
- *   Re-derives `assets/repo/brand/wordmark.svg` from the committed source raster
- *   `assets/repo/brand/source/sockeye-wordmark.png` so the vector is a deterministic
+ *   Re-derives `assets/repo/brand/sockeye-wordmark.svg` from the committed source raster
+ *   `assets/repo/brand/sockeye-wordmark.png` so the vector is a deterministic
  *   function of a checked-in input. Pipeline:
  *
  *   1. sharp — crop the "sockeye" band out of the source (excluding the shield
@@ -19,7 +19,7 @@
  *      rules can't be inlined) so the file stays an SVGO fixpoint.
  *
  *   Library: import { traceWordmark } from './gen-wordmark.mts'
- *   CLI: node scripts/repo/gen-wordmark.mts (writes assets/repo/brand/wordmark.svg)
+ *   CLI: node scripts/repo/gen-wordmark.mts (writes assets/repo/brand/sockeye-wordmark.svg)
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -232,7 +232,8 @@ export async function traceWordmark(
 }
 
 /**
- * Regenerate `assets/repo/brand/wordmark.svg` from the committed source raster.
+ * Regenerate `assets/repo/brand/sockeye-wordmark.svg` from the committed source
+ * raster.
  */
 export async function generateWordmark(): Promise<{
   path: string
