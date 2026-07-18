@@ -1,0 +1,348 @@
+#import <Foundation/Foundation.h>
+#import <LocalAuthentication/LocalAuthentication.h>
+#import <Security/Security.h>
+
+#include "sockeye/keychain.h"
+
+#include <dispatch/dispatch.h>
+
+namespace sockeye {
+namespace {
+
+NSString *const kService = @"dev.socket.sockeye.credentials";
+NSString *const kPolicyMarker = @"sockeye:v1:biometry-current-set";
+
+void SetError(KeychainError &error, KeychainStatus status, int os_status,
+              std::string detail) {
+  error.status = status;
+  error.os_status = os_status;
+  error.detail = std::move(detail);
+}
+
+NSString *MakeString(std::string_view value) {
+  return [[NSString alloc] initWithBytes:value.data()
+                                  length:value.size()
+                                encoding:NSUTF8StringEncoding];
+}
+
+NSData *PolicyMarkerData() {
+  return [kPolicyMarker dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+NSMutableDictionary *BaseQuery(std::string_view identifier) {
+  NSString *account = MakeString(identifier);
+  if (account == nil) {
+    return nil;
+  }
+  NSMutableDictionary *query = [NSMutableDictionary dictionary];
+  query[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
+  query[(__bridge id)kSecAttrService] = kService;
+  query[(__bridge id)kSecAttrAccount] = account;
+  query[(__bridge id)kSecAttrSynchronizable] = @NO;
+  query[(__bridge id)kSecUseDataProtectionKeychain] = @YES;
+  return query;
+}
+
+SecAccessControlRef CreateRequiredAccessControl(KeychainError &error) {
+  CFErrorRef access_error = nullptr;
+  SecAccessControlRef access = SecAccessControlCreateWithFlags(
+      kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecAccessControlBiometryCurrentSet, &access_error);
+  if (access == nullptr) {
+    if (access_error != nullptr) {
+      CFRelease(access_error);
+    }
+    SetError(
+        error, KeychainStatus::kIo, 0,
+        "macOS could not create Sockeye's current-biometry access policy.");
+  }
+  return access;
+}
+
+KeychainStatus StatusForOsStatus(OSStatus status) {
+  switch (status) {
+  case errSecSuccess:
+    return KeychainStatus::kSuccess;
+  case errSecItemNotFound:
+    return KeychainStatus::kNotFound;
+  case errSecAuthFailed:
+  case errSecInteractionNotAllowed:
+  case errSecUserCanceled:
+    return KeychainStatus::kDenied;
+  case errSecNotAvailable:
+    return KeychainStatus::kUnavailable;
+  default:
+    return KeychainStatus::kIo;
+  }
+}
+
+void SetOsError(KeychainError &error, OSStatus status,
+                std::string_view operation) {
+  const KeychainStatus mapped = StatusForOsStatus(status);
+  SetError(error, mapped, static_cast<int>(status),
+           std::string(operation) + " failed in macOS Keychain.");
+}
+
+} // namespace
+
+struct AuthorizationContext::Impl {
+  LAContext *context = [[LAContext alloc] init];
+  bool authenticated = false;
+};
+
+AuthorizationContext::AuthorizationContext() : impl_(std::make_unique<Impl>()) {
+  impl_->context.touchIDAuthenticationAllowableReuseDuration = 0.0;
+  impl_->context.localizedCancelTitle = @"Cancel Sockeye request";
+  impl_->context.localizedFallbackTitle = @"";
+}
+
+AuthorizationContext::~AuthorizationContext() { Invalidate(); }
+
+bool AuthorizationContext::Authenticate(std::string_view reason,
+                                        KeychainError &error) {
+  if (impl_->authenticated) {
+    SetError(error, KeychainStatus::kDenied, 0,
+             "Authentication refused: this context has already been used.");
+    return false;
+  }
+  NSString *localized_reason = MakeString(reason);
+  if (localized_reason == nil || localized_reason.length == 0) {
+    SetError(error, KeychainStatus::kIo, 0,
+             "Authentication failed: approval reason is not valid UTF-8.");
+    return false;
+  }
+
+  NSError *capability_error = nil;
+  if (![impl_->context
+          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                      error:&capability_error]) {
+    const int code = static_cast<int>(capability_error.code);
+    SetError(error, KeychainStatus::kUnavailable, code,
+             "Authentication unavailable: Touch ID with enrolled biometry is "
+             "required.");
+    return false;
+  }
+
+  dispatch_semaphore_t completed = dispatch_semaphore_create(0);
+  __block BOOL approved = NO;
+  __block NSError *reply_error = nil;
+  [impl_->context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                 localizedReason:localized_reason
+                           reply:^(BOOL success, NSError *returned_error) {
+                             approved = success;
+                             reply_error = returned_error;
+                             dispatch_semaphore_signal(completed);
+                           }];
+  dispatch_semaphore_wait(completed, DISPATCH_TIME_FOREVER);
+  if (!approved) {
+    const int code = static_cast<int>(reply_error.code);
+    SetError(error, KeychainStatus::kDenied, code,
+             "Authentication denied: Touch ID did not approve this Sockeye "
+             "manifest.");
+    return false;
+  }
+  impl_->authenticated = true;
+  error = {};
+  return true;
+}
+
+void AuthorizationContext::Invalidate() {
+  if (impl_ != nullptr && impl_->context != nil) {
+    [impl_->context invalidate];
+    impl_->authenticated = false;
+  }
+}
+
+KeychainStatus ReadCredential(AuthorizationContext &context,
+                              std::string_view identifier, SecretBuffer &output,
+                              KeychainError &error) {
+  @autoreleasepool {
+    if (!context.impl_->authenticated || !output.IsLocked()) {
+      SetError(error, KeychainStatus::kDenied, 0,
+               "Credential read refused: an authenticated locked-memory "
+               "context is required.");
+      return error.status;
+    }
+    NSMutableDictionary *query = BaseQuery(identifier);
+    if (query == nil) {
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential read failed: identifier is not valid UTF-8.");
+      return error.status;
+    }
+    query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
+    query[(__bridge id)kSecReturnData] = @YES;
+    query[(__bridge id)kSecReturnAttributes] = @YES;
+    query[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
+
+    CFTypeRef result = nullptr;
+    const OSStatus status =
+        SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+    if (status == errSecItemNotFound) {
+      NSMutableDictionary *legacy_query = BaseQuery(identifier);
+      legacy_query[(__bridge id)kSecMatchLimit] =
+          (__bridge id)kSecMatchLimitOne;
+      legacy_query[(__bridge id)kSecReturnAttributes] = @YES;
+      CFTypeRef legacy_result = nullptr;
+      const OSStatus legacy_status = SecItemCopyMatching(
+          (__bridge CFDictionaryRef)legacy_query, &legacy_result);
+      if (legacy_result != nullptr) {
+        CFRelease(legacy_result);
+      }
+      if (legacy_status == errSecSuccess) {
+        SetError(error, KeychainStatus::kInvalidPolicy,
+                 static_cast<int>(legacy_status),
+                 "Credential read refused: item does not carry Sockeye's "
+                 "biometric policy marker; store it again with Sockeye.");
+        return error.status;
+      }
+    }
+    if (status != errSecSuccess || result == nullptr) {
+      if (result != nullptr) {
+        CFRelease(result);
+      }
+      SetOsError(error, status, "Credential read");
+      return error.status;
+    }
+
+    if (CFGetTypeID(result) != CFDictionaryGetTypeID()) {
+      CFRelease(result);
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential read failed: macOS returned an unexpected Keychain "
+               "result type.");
+      return error.status;
+    }
+    CFDictionaryRef item = static_cast<CFDictionaryRef>(result);
+    CFTypeRef returned_access =
+        CFDictionaryGetValue(item, kSecAttrAccessControl);
+    KeychainError policy_error;
+    SecAccessControlRef required_access =
+        CreateRequiredAccessControl(policy_error);
+    const bool policy_matches =
+        required_access != nullptr && returned_access != nullptr &&
+        CFGetTypeID(returned_access) == SecAccessControlGetTypeID() &&
+        CFEqual(returned_access, required_access);
+    if (required_access != nullptr) {
+      CFRelease(required_access);
+    }
+    if (!policy_matches) {
+      CFRelease(result);
+      SetError(error, KeychainStatus::kInvalidPolicy, 0,
+               "Credential read refused: item does not have Sockeye's exact "
+               "current-biometry, device-only access policy; store it again "
+               "with Sockeye.");
+      return error.status;
+    }
+
+    CFTypeRef returned_data = CFDictionaryGetValue(item, kSecValueData);
+    if (returned_data == nullptr ||
+        CFGetTypeID(returned_data) != CFDataGetTypeID()) {
+      CFRelease(result);
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential read failed: macOS returned no credential data.");
+      return error.status;
+    }
+    CFDataRef data = static_cast<CFDataRef>(returned_data);
+    const CFIndex length = CFDataGetLength(data);
+    const UInt8 *bytes = CFDataGetBytePtr(data);
+    const bool assigned =
+        length > 0 &&
+        static_cast<std::uint64_t>(length) <=
+            static_cast<std::uint64_t>(SecretBuffer::kCapacity) &&
+        output.Assign(bytes, static_cast<std::size_t>(length));
+    CFRelease(result);
+    if (!assigned) {
+      output.Clear();
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential read failed: value is empty, oversized, or locked "
+               "memory is unavailable.");
+      return error.status;
+    }
+    error = {};
+    return KeychainStatus::kSuccess;
+  }
+}
+
+KeychainStatus StoreCredential(AuthorizationContext &context,
+                               std::string_view identifier,
+                               const SecretBuffer &value,
+                               KeychainError &error) {
+  @autoreleasepool {
+    if (!context.impl_->authenticated || !value.IsLocked() ||
+        value.Size() == 0) {
+      SetError(error, KeychainStatus::kDenied, 0,
+               "Credential store refused: an authenticated non-empty "
+               "locked-memory value is required.");
+      return error.status;
+    }
+    NSMutableDictionary *query = BaseQuery(identifier);
+    if (query == nil) {
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential store failed: identifier is not valid UTF-8.");
+      return error.status;
+    }
+    query[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
+
+    SecAccessControlRef access = CreateRequiredAccessControl(error);
+    if (access == nullptr) {
+      return error.status;
+    }
+
+    NSData *secret =
+        [NSData dataWithBytesNoCopy:const_cast<unsigned char *>(value.Data())
+                             length:value.Size()
+                       freeWhenDone:NO];
+    NSMutableDictionary *updates = [NSMutableDictionary dictionary];
+    updates[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
+    updates[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    updates[(__bridge id)kSecValueData] = secret;
+
+    OSStatus status = SecItemUpdate((__bridge CFDictionaryRef)query,
+                                    (__bridge CFDictionaryRef)updates);
+    if (status == errSecItemNotFound) {
+      NSMutableDictionary *item = BaseQuery(identifier);
+      item[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
+      item[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+      item[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
+      item[(__bridge id)kSecValueData] = secret;
+      status = SecItemAdd((__bridge CFDictionaryRef)item, nullptr);
+    }
+    CFRelease(access);
+    if (status != errSecSuccess) {
+      SetOsError(error, status, "Credential store");
+      return error.status;
+    }
+    error = {};
+    return KeychainStatus::kSuccess;
+  }
+}
+
+KeychainStatus DeleteCredential(AuthorizationContext &context,
+                                std::string_view identifier,
+                                KeychainError &error) {
+  @autoreleasepool {
+    if (!context.impl_->authenticated) {
+      SetError(
+          error, KeychainStatus::kDenied, 0,
+          "Credential delete refused: an authenticated context is required.");
+      return error.status;
+    }
+    NSMutableDictionary *query = BaseQuery(identifier);
+    if (query == nil) {
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential delete failed: identifier is not valid UTF-8.");
+      return error.status;
+    }
+    query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    query[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
+    const OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+    if (status != errSecSuccess && status != errSecItemNotFound) {
+      SetOsError(error, status, "Credential delete");
+      return error.status;
+    }
+    error = {};
+    return KeychainStatus::kSuccess;
+  }
+}
+
+} // namespace sockeye
