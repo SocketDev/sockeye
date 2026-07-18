@@ -22,7 +22,6 @@ export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 export const BRAND_SOURCE_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'source',
   'sockeye-mark.png',
 )
 
@@ -43,7 +42,6 @@ export const LOGOMARK_SVG_PATH = path.join(
 export const WORDMARK_SOURCE_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
-  'source',
   'sockeye-wordmark.png',
 )
 
