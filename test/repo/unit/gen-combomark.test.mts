@@ -22,8 +22,10 @@ describe('gen-combomark generator', () => {
     expect(svg).toContain('</svg>')
     expect(svg).toMatch(/viewBox="0 0 \d+ \d+"/)
 
-    // The rising shield: dither pattern + the two shield masks (crest + dither).
+    // The rising shield: a fine ordered dither + the two shield masks (crest + dither).
     expect(svg).toContain('<pattern')
+    expect(svg).toContain('width="80" height="80"')
+    expect(svg).toContain('shape-rendering="crispEdges"')
     expect(svg).toMatch(/<mask\b/)
     expect(svg).toMatch(/mask="url\(#/)
 

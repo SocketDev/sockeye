@@ -3,8 +3,9 @@
  * @file Reproducible generator for the sockeye combination mark — CODE IS LAW.
  *   Composes the committed logomark + wordmark into `assets/repo/combomark.svg`:
  *   the shield-and-salmon rises behind the word like a rising sun — a SOLID
- *   signature-gradient crest above the letters that breaks into our 4x4 ordered
- *   (Bayer) dither where it drops behind the text, the shield planted lower and
+ *   signature-gradient crest above the letters that breaks into a fine 8x8
+ *   ordered (Bayer) dither where it drops behind the text, the shield planted
+ *   lower and
  *   cropped flat at the word's baseline. Deterministic function of the two
  *   committed source SVGs (same bytes in, same SVG out).
  *
@@ -46,10 +47,9 @@ const MARGIN = 40
 
 // composition knobs
 const SHIELD_H = 1060 // XL — wide across the word
-const DITHER_CELL = 26
-const DITHER_DENSITY = 0.62
-const DITHER_FULL = 0.95
-const DITHER_OFF = 0.42
+const DITHER_CELL = 10
+const DITHER_DENSITY = 0.48
+const DITHER_OPACITY = 0.9
 const SINK = 150 // how far the shield point drops below the baseline before the crop
 
 // --- colours (wheelhouse docs/design/color.md signature gradient) ---
@@ -58,37 +58,45 @@ const GRAD_PINK = '#f05abe'
 const GRAD_BLUE = '#358ff3'
 const DITHER_HUE = '#966eff' // the guide "purple" chart hue (holds up as dither)
 
-// 4x4 ordered Bayer matrix normalized to 0..1 thresholds (dither-kit).
+// 8x8 ordered Bayer matrix normalized to 0..1 thresholds. Its larger period
+// breaks up the obvious checkerboard while the small cells retain a deliberate,
+// screen-print-like pixel texture at logo scale.
 const BAYER = [
-  [0, 8, 2, 10],
-  [12, 4, 14, 6],
-  [3, 11, 1, 9],
-  [15, 7, 13, 5],
-].map(row => row.map(value => (value + 0.5) / 16))
+  [0, 48, 12, 60, 3, 51, 15, 63],
+  [32, 16, 44, 28, 35, 19, 47, 31],
+  [8, 56, 4, 52, 11, 59, 7, 55],
+  [40, 24, 36, 20, 43, 27, 39, 23],
+  [2, 50, 14, 62, 1, 49, 13, 61],
+  [34, 18, 46, 30, 33, 17, 45, 29],
+  [10, 58, 6, 54, 9, 57, 5, 53],
+  [42, 26, 38, 22, 41, 25, 37, 21],
+].map(row => row.map(value => (value + 0.5) / 64))
 
 const round = (value: number, digits: number): string =>
   String(Number(value.toFixed(digits)))
 
 /**
- * A single-colour ordered-dither tile: every cell painted the dither hue, its
- * alpha toggled between a full and an "off" tier by the Bayer threshold (per
- * dither-kit — vary opacity, not shade, so it reads on light and dark).
+ * A single-colour ordered-dither tile. Thresholded cells are intentionally
+ * absent, rather than dimmed: transparent gaps make the shield actually
+ * dissolve and preserve the graphic across light and dark backgrounds.
  */
 function ditherPattern(id: string): string {
   let rects = ''
-  for (let row = 0; row < 4; row += 1) {
-    for (let col = 0; col < 4; col += 1) {
+  for (let row = 0; row < BAYER.length; row += 1) {
+    for (let col = 0; col < BAYER[row]!.length; col += 1) {
       const lit = DITHER_DENSITY > BAYER[row]![col]!
-      rects +=
-        `<rect x="${col * DITHER_CELL}" y="${row * DITHER_CELL}" ` +
-        `width="${DITHER_CELL}" height="${DITHER_CELL}" fill="${DITHER_HUE}" ` +
-        `fill-opacity="${lit ? DITHER_FULL : DITHER_OFF}"/>`
+      if (lit) {
+        rects +=
+          `<rect x="${col * DITHER_CELL}" y="${row * DITHER_CELL}" ` +
+          `width="${DITHER_CELL}" height="${DITHER_CELL}" fill="${DITHER_HUE}" ` +
+          `fill-opacity="${DITHER_OPACITY}"/>`
+      }
     }
   }
-  const size = DITHER_CELL * 4
+  const size = DITHER_CELL * BAYER.length
   return (
     `<pattern id="${id}" width="${size}" height="${size}" ` +
-    `patternUnits="userSpaceOnUse">${rects}</pattern>`
+    `patternUnits="userSpaceOnUse" shape-rendering="crispEdges">${rects}</pattern>`
   )
 }
 
