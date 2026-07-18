@@ -61,7 +61,7 @@ credential value in a fixture, snapshot, command argument, or test log.
 GitHub renders repository SVG files more reliably than large inline SVG blocks.
 Keep repository-facing art under `assets/repo/`. The fleet preset owns
 `assets/repo/badges/coverage.svg`; Sockeye owns
-`assets/repo/logomark.svg`. Reference these files from Markdown or HTML, and
+`assets/repo/brand/logomark.svg`. Reference these files from Markdown or HTML, and
 run the pinned SVGO pass after editing Sockeye's mark:
 
 ```sh

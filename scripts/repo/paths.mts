@@ -21,14 +21,19 @@ export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
  */
 export const BRAND_SOURCE_PATH = path.join(
   ASSETS_REPO_DIR,
-  'src',
+  'brand',
+  'source',
   'sockeye-mark.png',
 )
 
 /**
- * Absolute path to the generated brand SVG (`assets/repo/logomark.svg`).
+ * Absolute path to the generated brand SVG (`assets/repo/brand/logomark.svg`).
  */
-export const LOGOMARK_SVG_PATH = path.join(ASSETS_REPO_DIR, 'logomark.svg')
+export const LOGOMARK_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'logomark.svg',
+)
 
 /**
  * Absolute path to the committed wordmark source raster. The `gen:wordmark`
@@ -37,21 +42,31 @@ export const LOGOMARK_SVG_PATH = path.join(ASSETS_REPO_DIR, 'logomark.svg')
  */
 export const WORDMARK_SOURCE_PATH = path.join(
   ASSETS_REPO_DIR,
-  'src',
+  'brand',
+  'source',
   'sockeye-wordmark.png',
 )
 
 /**
- * Absolute path to the generated wordmark SVG (`assets/repo/wordmark.svg`).
+ * Absolute path to the generated wordmark SVG
+ * (`assets/repo/brand/wordmark.svg`).
  */
-export const WORDMARK_SVG_PATH = path.join(ASSETS_REPO_DIR, 'wordmark.svg')
+export const WORDMARK_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'wordmark.svg',
+)
 
 /**
  * Absolute path to the generated combination mark
- * (`assets/repo/combomark.svg`), composed from the logomark + wordmark by
+ * (`assets/repo/brand/combomark.svg`), composed from the logomark + wordmark by
  * `gen:combomark`.
  */
-export const COMBOMARK_SVG_PATH = path.join(ASSETS_REPO_DIR, 'combomark.svg')
+export const COMBOMARK_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'combomark.svg',
+)
 
 export function getBuildRoot(mode: string, platformArch: string): string {
   return path.join(REPO_ROOT, 'build', mode, platformArch)

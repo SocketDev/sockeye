@@ -21,7 +21,7 @@
     "lint": "node scripts/fleet/lint.mts",
     "lockstep": "node scripts/fleet/lockstep.mts",
     "lockstep:emit-schema": "node scripts/fleet/lockstep-emit-schema.mts",
-    "optimize:svg": "svgo --multipass --input assets/repo/logomark.svg --output assets/repo/logomark.svg",
+    "optimize:svg": "svgo --multipass --input assets/repo/brand/logomark.svg --output assets/repo/brand/logomark.svg",
     "prepare": "node scripts/fleet/install-git-hooks.mts && node scripts/fleet/prepare.mts",
     "security": "node scripts/fleet/security.mts",
     "setup-security-tools": "node .claude/hooks/fleet/setup-security-tools/install.mts",

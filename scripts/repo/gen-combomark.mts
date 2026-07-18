@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
  * @file Reproducible generator for the sockeye combination mark — CODE IS LAW.
- *   Composes the committed logomark + wordmark into `assets/repo/combomark.svg`:
+ *   Composes the committed logomark + wordmark into `assets/repo/brand/combomark.svg`:
  *   the shield-and-salmon rises behind the word like a rising sun — a SOLID
  *   signature-gradient crest above the letters that breaks into a fine 8x8
  *   ordered (Bayer) dither where it drops behind the text, the shield planted
@@ -10,7 +10,7 @@
  *   committed source SVGs (same bytes in, same SVG out).
  *
  *   Library: import { traceCombomark } from './gen-combomark.mts'
- *   CLI: node scripts/repo/gen-combomark.mts (writes assets/repo/combomark.svg)
+ *   CLI: node scripts/repo/gen-combomark.mts (writes assets/repo/brand/combomark.svg)
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -58,7 +58,6 @@ const SINK = 150 // how far the shield point drops below the baseline before the
 const GRAD_VIOLET = '#a98bff'
 const GRAD_PINK = '#f05abe'
 const GRAD_BLUE = '#358ff3'
-const DITHER_HUE = '#966eff' // the guide "purple" chart hue (holds up as dither)
 
 // 8x8 ordered Bayer matrix normalized to 0..1 thresholds. Its larger period
 // breaks up the obvious checkerboard while the small cells retain a deliberate,
@@ -91,7 +90,7 @@ function ditherPattern(id: string, density: number): string {
       if (lit) {
         rects +=
           `<rect x="${col * DITHER_CELL}" y="${row * DITHER_CELL}" ` +
-          `width="${DITHER_CELL}" height="${DITHER_CELL}" fill="${DITHER_HUE}" ` +
+          `width="${DITHER_CELL}" height="${DITHER_CELL}" fill="url(#crest)" ` +
           `fill-opacity="${DITHER_OPACITY}"/>`
       }
     }
@@ -104,10 +103,10 @@ function ditherPattern(id: string, density: number): string {
 }
 
 /**
- * The reference dither is a wash: sparse pixels at its top, resolving toward
- * a mostly solid field below. Build a small family of ordered tiles, then use
- * them in narrow horizontal bands. This avoids an SVG filter/raster while
- * giving the density a visibly continuous vertical progression.
+ * The dither is a dissolving wash: dense pixels at its top that shed toward the
+ * base. Build a small family of ordered tiles, then use them in narrow
+ * horizontal bands. This avoids an SVG filter/raster while giving the density a
+ * visibly continuous vertical progression.
  */
 function ditherPatterns(): string {
   let patterns = ''
@@ -129,7 +128,7 @@ function ditherWash(
   let bands = ''
   const bandHeight = (bottom - top) / DITHER_BANDS
   for (let band = 0; band < DITHER_BANDS; band += 1) {
-    const progress = (band + 0.5) / DITHER_BANDS
+    const progress = 1 - (band + 0.5) / DITHER_BANDS
     const level = Math.min(
       DITHER_LEVELS - 1,
       Math.floor(progress * DITHER_LEVELS),
@@ -242,13 +241,13 @@ export function composeCombomark(
     `word, a solid crest dissolving into dither where it goes behind the text.` +
     `</desc>` +
     `<defs>` +
-    ditherPatterns() +
     defs +
     `<linearGradient id="crest" x1="${left}" y1="${MARGIN}" x2="${crestX2}" ` +
-    `y2="${t0}" gradientUnits="userSpaceOnUse">` +
+    `y2="${baseline}" gradientUnits="userSpaceOnUse">` +
     `<stop offset="0" stop-color="${GRAD_VIOLET}"/>` +
     `<stop offset="0.52" stop-color="${GRAD_PINK}"/>` +
     `<stop offset="1" stop-color="${GRAD_BLUE}"/></linearGradient>` +
+    ditherPatterns() +
     `<linearGradient id="hideBelow" x1="0" y1="${t0}" x2="0" y2="${t1}" ` +
     `gradientUnits="userSpaceOnUse">` +
     `<stop offset="0" stop-color="#000" stop-opacity="0"/>` +
@@ -287,7 +286,7 @@ export function traceCombomark(): string {
 }
 
 /**
- * Regenerate `assets/repo/combomark.svg` from the committed logomark +
+ * Regenerate `assets/repo/brand/combomark.svg` from the committed logomark +
  * wordmark.
  */
 export function generateCombomark(): { path: string; bytes: number } {
