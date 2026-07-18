@@ -34,7 +34,11 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import sharp from 'sharp'
 import { optimize } from 'svgo'
 
-import { BRAND_SOURCE_PATH, LOGOMARK_SVG_PATH } from './paths.mts'
+import {
+  BRAND_SOURCE_PATH,
+  FAVICON_SVG_PATH,
+  LOGOMARK_SVG_PATH,
+} from './paths.mts'
 import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 
 const logger = getDefaultLogger()
@@ -229,9 +233,27 @@ export async function generateFishPrint(): Promise<{
   return { path: LOGOMARK_SVG_PATH, bytes: Buffer.byteLength(svg) }
 }
 
+/**
+ * Regenerate the square favicon from the canonical logomark vector.
+ */
+export async function generateFavicon(): Promise<{
+  path: string
+  bytes: number
+}> {
+  const svg = await traceBrandMark()
+  mkdirSync(path.dirname(FAVICON_SVG_PATH), { recursive: true })
+  writeFileSync(FAVICON_SVG_PATH, svg)
+  return { path: FAVICON_SVG_PATH, bytes: Buffer.byteLength(svg) }
+}
+
 async function main(): Promise<void> {
-  const { path: outPath, bytes } = await generateFishPrint()
-  logger.success(`Generated ${outPath} (${bytes} bytes).`)
+  const [logomark, favicon] = await Promise.all([
+    generateFishPrint(),
+    generateFavicon(),
+  ])
+  logger.success(
+    `Generated ${logomark.path} (${logomark.bytes} bytes) and ${favicon.path} (${favicon.bytes} bytes).`,
+  )
 }
 
 if (isMainModule(import.meta.url)) {

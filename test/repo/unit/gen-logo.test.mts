@@ -5,9 +5,12 @@
  *   generator never drift.
  */
 
+import { readFile } from 'node:fs/promises'
+
 import { describe, expect, test } from 'vitest'
 
 import { traceBrandMark } from '../../../scripts/repo/gen-logo.mts'
+import { FAVICON_SVG_PATH } from '../../../scripts/repo/paths.mts'
 
 describe('gen-logo brand-mark generator', () => {
   test('produces a well-formed, correctly framed SVG', async () => {
@@ -50,5 +53,11 @@ describe('gen-logo brand-mark generator', () => {
     const first = await traceBrandMark()
     const second = await traceBrandMark()
     expect(second).toBe(first)
+  })
+
+  test('the favicon is the canonical square mark', async () => {
+    expect((await readFile(FAVICON_SVG_PATH, 'utf8')).trimEnd()).toBe(
+      (await traceBrandMark()).trimEnd(),
+    )
   })
 })

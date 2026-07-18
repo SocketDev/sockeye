@@ -36,6 +36,15 @@ export const LOGOMARK_SVG_PATH = path.join(
 )
 
 /**
+ * Square, embeddable favicon derived from the canonical Sockeye logomark.
+ */
+export const FAVICON_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'sockeye-favicon.svg',
+)
+
+/**
  * Absolute path to the committed wordmark source raster. The `gen:wordmark`
  * generator traces the "sockeye" letterforms out of this into
  * `WORDMARK_SVG_PATH` (code is law — same bytes in, same SVG out).
@@ -66,6 +75,18 @@ export const COMBOMARK_SVG_PATH = path.join(
   ASSETS_REPO_DIR,
   'brand',
   'sockeye-combomark.svg',
+)
+
+export const COMBOMARK_LIGHT_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'sockeye-combomark-light.svg',
+)
+
+export const COMBOMARK_DARK_SVG_PATH = path.join(
+  ASSETS_REPO_DIR,
+  'brand',
+  'sockeye-combomark-dark.svg',
 )
 
 export function getBuildRoot(mode: string, platformArch: string): string {

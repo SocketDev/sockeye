@@ -24,6 +24,8 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { optimize } from 'svgo'
 
 import {
+  COMBOMARK_DARK_SVG_PATH,
+  COMBOMARK_LIGHT_SVG_PATH,
   COMBOMARK_SVG_PATH,
   LOGOMARK_SVG_PATH,
   WORDMARK_SVG_PATH,
@@ -31,6 +33,7 @@ import {
 import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 
 const logger = getDefaultLogger()
+type CombomarkMode = 'adaptive' | 'dark' | 'light'
 
 // --- geometry (wordmark output space; see gen-wordmark.mts) ---
 // wordmark canvas W = 2227; sockeye content x 16..2211, baseline 343, descender 438.
@@ -202,6 +205,7 @@ function optimizeSvg(svg: string): string {
 export function composeCombomark(
   logomarkSvg: string,
   wordmarkSvg: string,
+  mode: CombomarkMode = 'adaptive',
 ): string {
   const paths = shieldPaths(logomarkSvg)
   const defs = wordmarkDefs(wordmarkSvg)
@@ -234,6 +238,12 @@ export function composeCombomark(
     Math.max(DESC_BOTTOM + Number(dY), TAG_BOTTOM + Number(dY)) + MARGIN,
   )
   const crestX2 = round(left + width, 2)
+  const inkStyle =
+    mode === 'adaptive'
+      ? '<style>.combomark-ink{color:#111827}@media (prefers-color-scheme:dark){.combomark-ink{color:#fff}}</style>'
+      : mode === 'dark'
+        ? '<style>.combomark-ink{color:#fff}.by{fill:#a3a3a3}.labs-end{stop-color:#fff}</style>'
+        : '<style>.combomark-ink{color:#111827}</style>'
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vbW} ${vbH}" ` +
@@ -244,6 +254,7 @@ export function composeCombomark(
     `</desc>` +
     `<defs>` +
     defs +
+    inkStyle +
     `<linearGradient id="crest" x1="${left}" y1="${MARGIN}" x2="${crestX2}" ` +
     `y2="${baseline}" gradientUnits="userSpaceOnUse">` +
     `<stop offset="0" stop-color="${GRAD_VIOLET}"/>` +
@@ -272,7 +283,7 @@ export function composeCombomark(
       Number(t0),
       baseline,
     )}</g>` +
-    `<g transform="translate(0,${dY})">${body}</g>` +
+    `<g class="combomark-ink" transform="translate(0,${dY})">${body}</g>` +
     `</svg>`
   )
 }
@@ -280,10 +291,10 @@ export function composeCombomark(
 /**
  * Read the committed logomark + wordmark and produce the optimized combomark.
  */
-export function traceCombomark(): string {
+export function traceCombomark(mode: CombomarkMode = 'adaptive'): string {
   const logomarkSvg = readFileSync(LOGOMARK_SVG_PATH, 'utf8')
   const wordmarkSvg = readFileSync(WORDMARK_SVG_PATH, 'utf8')
-  const composed = composeCombomark(logomarkSvg, wordmarkSvg)
+  const composed = composeCombomark(logomarkSvg, wordmarkSvg, mode)
   return `${optimizeSvg(composed).trimEnd()}\n`
 }
 
@@ -292,10 +303,21 @@ export function traceCombomark(): string {
  * logomark + wordmark.
  */
 export function generateCombomark(): { path: string; bytes: number } {
-  const svg = traceCombomark()
   mkdirSync(path.dirname(COMBOMARK_SVG_PATH), { recursive: true })
-  writeFileSync(COMBOMARK_SVG_PATH, svg)
-  return { path: COMBOMARK_SVG_PATH, bytes: Buffer.byteLength(svg) }
+  const variants: ReadonlyArray<readonly [string, CombomarkMode]> = [
+    [COMBOMARK_SVG_PATH, 'adaptive'],
+    [COMBOMARK_LIGHT_SVG_PATH, 'light'],
+    [COMBOMARK_DARK_SVG_PATH, 'dark'],
+  ]
+  let bytes = 0
+  for (const [outPath, mode] of variants) {
+    const svg = traceCombomark(mode)
+    writeFileSync(outPath, svg)
+    if (outPath === COMBOMARK_SVG_PATH) {
+      bytes = Buffer.byteLength(svg)
+    }
+  }
+  return { path: COMBOMARK_SVG_PATH, bytes }
 }
 
 function main(): void {

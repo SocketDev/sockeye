@@ -11,7 +11,11 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, test } from 'vitest'
 
 import { traceCombomark } from '../../../scripts/repo/gen-combomark.mts'
-import { COMBOMARK_SVG_PATH } from '../../../scripts/repo/paths.mts'
+import {
+  COMBOMARK_DARK_SVG_PATH,
+  COMBOMARK_LIGHT_SVG_PATH,
+  COMBOMARK_SVG_PATH,
+} from '../../../scripts/repo/paths.mts'
 
 describe('gen-combomark generator', () => {
   test('produces a well-formed, adaptive combination mark', async () => {
@@ -56,5 +60,16 @@ describe('gen-combomark generator', () => {
   test('the committed combomark asset matches the generator (code is law)', async () => {
     const committed = await readFile(COMBOMARK_SVG_PATH, 'utf8')
     expect(committed.trimEnd()).toBe(traceCombomark().trimEnd())
+  })
+
+  test('ships deterministic light and dark variants', async () => {
+    const [light, dark] = await Promise.all([
+      readFile(COMBOMARK_LIGHT_SVG_PATH, 'utf8'),
+      readFile(COMBOMARK_DARK_SVG_PATH, 'utf8'),
+    ])
+    expect(light.trimEnd()).toBe(traceCombomark('light').trimEnd())
+    expect(dark.trimEnd()).toBe(traceCombomark('dark').trimEnd())
+    expect(light).toContain('.combomark-ink{color:#111827}')
+    expect(dark).toContain('.combomark-ink{color:#fff}')
   })
 })
