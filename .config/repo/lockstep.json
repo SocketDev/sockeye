@@ -1,5 +1,5 @@
 {
-  "$schema": "./lockstep.schema.json",
+  "$schema": "../fleet/lockstep.schema.json",
   "area": "sockeye",
   "description": "Tracks deliberate upstream relationships if Sockeye imports or mirrors an external implementation.",
   "upstreams": {},
