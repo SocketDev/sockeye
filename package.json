@@ -64,6 +64,7 @@
     "c8": "catalog:",
     "chrome-devtools-mcp": "catalog:",
     "esm-potrace-wasm": "catalog:",
+    "fast-check": "catalog:",
     "magic-string": "catalog:",
     "markdownlint-cli2": "catalog:",
     "mdast-util-from-markdown": "catalog:",
