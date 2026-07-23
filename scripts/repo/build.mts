@@ -38,9 +38,9 @@ async function main(): Promise<void> {
   const platformArch = `${process.platform}-${process.arch}`
   const cmakeBuildDir = getCmakeBuildDir(mode, platformArch)
   const outputDir = getOutputDir(mode, platformArch)
-  const packageJson = JSON.parse(
+  const packageJson: { version: string } = JSON.parse(
     await readFile(new URL('../../package.json', import.meta.url), 'utf8'),
-  ) as { version: string }
+  )
   const version = process.env['RELEASE_VERSION'] ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
   const architecture = process.arch === 'arm64' ? 'arm64' : 'x86_64'

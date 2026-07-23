@@ -40,7 +40,9 @@ export async function hashDirectory(
   dir: string,
 ): Promise<Record<string, string>> {
   const entries = await fs.readdir(dir, { withFileTypes: true })
-  const out: Record<string, string> = { __proto__: null as never }
+  // Null-prototype record; Object.create(null) sidesteps the literal-form
+  // `__proto__: null as never` cast that type-aware lint rejects.
+  const out: Record<string, string> = Object.create(null)
   for (let i = 0, { length } = entries; i < length; i += 1) {
     const entry = entries[i]!
     if (!entry.isFile()) {
@@ -86,25 +88,29 @@ export interface UpdateAssetsOptions {
  *
  * The manifest's $schema field (if present) is preserved.
  */
-export function updateReleaseAssets(options: UpdateAssetsOptions): void {
+export function updateReleaseAssets(config: UpdateAssetsOptions): void {
   const { checksums, description, manifestPath, tag, tool } = {
     __proto__: null,
-    ...options,
-  } as typeof options
+    ...config,
+  } as typeof config
 
+  // Null-prototype record; Object.create(null) sidesteps the literal-form
+  // `__proto__: null as never` cast that type-aware lint rejects.
   let manifest: EmbeddedChecksums & {
     $schema?: string | undefined
     $comment?: string | undefined
-  } = { __proto__: null as never } as never
+  } = Object.create(null)
   try {
     manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   } catch {
     // New file — start fresh.
   }
 
-  const sriChecksums: Record<string, string> = { __proto__: null as never }
-  for (const assetName of Object.keys(checksums)) {
-    sriChecksums[assetName] = parseHash(checksums[assetName]!).sri
+  const sriChecksums: Record<string, string> = Object.create(null)
+  const assetNames = Object.keys(checksums)
+  for (let i = 0, { length } = assetNames; i < length; i += 1) {
+    const assetName = assetNames[i]
+    sriChecksums[assetName] = parseHash(checksums[assetName]).sri
   }
 
   manifest[tool] = {
@@ -143,14 +149,14 @@ export interface WriteChecksumsOptions {
  * default for stable diffs.
  */
 export async function writeChecksumsFile(
-  options: WriteChecksumsOptions,
+  config: WriteChecksumsOptions,
 ): Promise<Record<string, string>> {
   const {
     inputDir,
     order = 'alphabetical',
     outputPath,
     quiet = false,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   const checksums = await hashDirectory(inputDir)
   const names =

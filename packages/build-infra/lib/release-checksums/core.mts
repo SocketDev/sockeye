@@ -115,9 +115,7 @@ export function getEmbeddedChecksums(): EmbeddedChecksums | undefined {
         path.dirname(findUpPackageJson(import.meta)),
         'release-assets.json',
       )
-      embeddedChecksums = JSON.parse(
-        readFileSync(checksumPath, 'utf8'),
-      ) as EmbeddedChecksums
+      embeddedChecksums = JSON.parse(readFileSync(checksumPath, 'utf8'))
     } catch {
       embeddedChecksums = undefined
       return undefined
@@ -135,8 +133,12 @@ export function getEmbeddedChecksums(): EmbeddedChecksums | undefined {
  * prepend a header or comments.
  */
 export function parseChecksums(content: string): Record<string, string> {
-  const checksums: Record<string, string> = { __proto__: null as never }
-  for (const line of content.split('\n')) {
+  // Null-prototype record; Object.create(null) sidesteps the literal-form
+  // `__proto__: null as never` cast that type-aware lint rejects.
+  const checksums: Record<string, string> = Object.create(null)
+  const lines = content.split('\n')
+  for (let i = 0, { length } = lines; i < length; i += 1) {
+    const line = lines[i]
     const trimmed = line.trim()
     if (!trimmed) {
       continue
@@ -145,7 +147,7 @@ export function parseChecksums(content: string): Record<string, string> {
     // whitespace characters, then the filename extending to end of line.
     const match = trimmed.match(/^([a-f0-9]{64})\s+(.+)$/)
     if (match) {
-      checksums[match[2]!] = match[1]!
+      checksums[match[2]] = match[1]!
     }
   }
   return checksums
@@ -187,14 +189,14 @@ export interface VerifyOptions {
  *    deliberately-untracked tool back into `{ valid: true, skipped: true }`.
  */
 export async function verifyReleaseChecksum(
-  options: VerifyOptions,
+  config: VerifyOptions,
 ): Promise<VerifyResult> {
   const {
     assetName,
     filePath,
     quiet = false,
     tool,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   const embedded = getEmbeddedChecksum(tool, assetName)
   if (embedded) {
@@ -237,7 +239,7 @@ export async function verifyReleaseChecksum(
     return { source: 'embedded', valid: false }
   }
 
-  if (options.allowUnlisted) {
+  if (config.allowUnlisted) {
     if (!quiet) {
       logger.warn(
         `No checksums found for ${tool}; allowUnlisted set, skipping verification`,

@@ -109,12 +109,14 @@ async function loadPotrace(): Promise<PotraceModule['potrace']> {
   if (cachedPotrace) {
     return cachedPotrace
   }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- globalThis has no index signature; the shim needs a writable string-keyed view to publish require/__filename/__dirname.
   const globals = globalThis as unknown as Record<string, unknown>
   const here = fileURLToPath(import.meta.url)
   globals['require'] ??= createRequire(import.meta.url)
   globals['__filename'] ??= here
   globals['__dirname'] ??= path.dirname(here)
   // oxlint-disable-next-line socket/no-dynamic-import-outside-bundle -- globals must be published before esm-potrace-wasm evaluates; a hoisted static import would run first and throw.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- esm-potrace-wasm ships no type declarations; PotraceModule is the hand-written shape of its runtime exports.
   const mod = (await import('esm-potrace-wasm')) as unknown as PotraceModule
   await mod.init()
   cachedPotrace = mod.potrace
