@@ -31,7 +31,7 @@
     "weekly-update": "node scripts/fleet/weekly-update.mts",
     "weekly-update:ci": "node scripts/fleet/weekly-update-workflow.mts run",
     "doctor": "node scripts/fleet/doctor.mts",
-    "gen:llms-txt": "node scripts/fleet/make-llms-txt.mts --no-ai",
+    "gen:llms-txt": "node scripts/fleet/gen/llms-txt.mts --no-ai",
     "gen:combomark": "node scripts/repo/gen-combomark.mts",
     "gen:logo": "node scripts/repo/gen-logo.mts",
     "gen:wordmark": "node scripts/repo/gen-wordmark.mts",
