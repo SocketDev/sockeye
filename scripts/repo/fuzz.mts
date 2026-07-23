@@ -23,7 +23,7 @@ const mode = 'fuzz'
 async function run(
   command: string,
   args: string[],
-  env?: NodeJS.ProcessEnv,
+  env?: NodeJS.ProcessEnv | undefined,
 ): Promise<void> {
   const result = await spawn(command, args, {
     cwd: REPO_ROOT,
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   const brew = await spawn('brew', ['--prefix', 'llvm'], {
     cwd: REPO_ROOT,
   })
-  const llvmPrefix = String(brew.stdout ?? '').trim()
+  const llvmPrefix = (brew.stdout ?? '').trim()
   if (brew.code !== 0 || llvmPrefix.length === 0) {
     throw new Error(
       'Homebrew LLVM is required because Apple Clang does not ship libFuzzer',
