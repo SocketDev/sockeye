@@ -20,6 +20,7 @@
     "fuzz": "node scripts/repo/fuzz.mts",
     "lint": "node scripts/fleet/lint.mts",
     "lockstep": "node scripts/fleet/lockstep.mts",
+    "lockstep:emit-mirror-globs": "node scripts/fleet/lockstep-emit-mirror-globs.mts",
     "lockstep:emit-schema": "node scripts/fleet/lockstep-emit-schema.mts",
     "optimize:svg": "svgo --multipass --input assets/repo/brand/sockeye-logomark.svg --output assets/repo/brand/sockeye-logomark.svg",
     "prepare": "node scripts/fleet/install-git-hooks.mts && node scripts/fleet/prepare.mts",
