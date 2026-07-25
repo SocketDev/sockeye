@@ -12,7 +12,12 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { REPO_ROOT } from '../fleet/paths.mts'
-import { getBinaryPath, getCmakeBuildDir, getOutputDir } from './paths.mts'
+import {
+  getBinaryPath,
+  getBuildMode,
+  getCmakeBuildDir,
+  getOutputDir,
+} from './paths.mts'
 
 const logger = getDefaultLogger()
 
@@ -32,7 +37,7 @@ async function main(): Promise<void> {
       `Sockeye build refused on ${process.platform}; the current release contract requires macOS Touch ID`,
     )
   }
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+  const mode = getBuildMode()
   const sanitizer =
     mode === 'asan' ? 'address' : mode === 'ubsan' ? 'undefined' : 'none'
   const platformArch = `${process.platform}-${process.arch}`

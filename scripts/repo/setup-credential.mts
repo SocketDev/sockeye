@@ -15,7 +15,7 @@ import { confirm, input, select } from '@socketsecurity/lib/stdio/prompts'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
-import { getBinaryPath } from './paths.mts'
+import { getBinaryPath, getBuildMode } from './paths.mts'
 import {
   credentialSourceChoices,
   isCredentialSource,
@@ -48,8 +48,10 @@ function usage(): never {
 }
 
 async function runNative(args: string[]): Promise<void> {
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
-  const binary = getBinaryPath(mode, `${process.platform}-${process.arch}`)
+  const binary = getBinaryPath(
+    getBuildMode(),
+    `${process.platform}-${process.arch}`,
+  )
   if (!existsSync(binary)) {
     throw new Error(
       `Sockeye is not built. Run "pnpm run build" first (${binary}).`,

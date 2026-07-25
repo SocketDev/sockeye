@@ -89,6 +89,16 @@ export const COMBOMARK_DARK_SVG_PATH = path.join(
   'sockeye-combomark-dark.svg',
 )
 
+/**
+ * Resolve the active build mode. An explicit `BUILD_MODE` wins, CI defaults to
+ * the release-shaped `prod` build, and a developer machine defaults to `dev`.
+ * Every consumer that locates a built binary resolves the mode through here so
+ * tests and scripts always look in the directory the build actually wrote.
+ */
+export function getBuildMode(): string {
+  return process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+}
+
 export function getBuildRoot(mode: string, platformArch: string): string {
   return path.join(REPO_ROOT, 'build', mode, platformArch)
 }
@@ -106,9 +116,8 @@ export function getBinaryPath(mode: string, platformArch: string): string {
 }
 
 export function getNativeTestBinaryPath(name: string): string {
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
   return path.join(
-    getOutputDir(mode, `${process.platform}-${process.arch}`),
+    getOutputDir(getBuildMode(), `${process.platform}-${process.arch}`),
     name,
   )
 }

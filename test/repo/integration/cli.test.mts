@@ -11,10 +11,14 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import {
   getBinaryPath,
+  getBuildMode,
   getNativeTestBinaryPath,
 } from '../../../scripts/repo/paths.mts'
 
-const binaryPath = getBinaryPath('dev', `${process.platform}-${process.arch}`)
+const binaryPath = getBinaryPath(
+  getBuildMode(),
+  `${process.platform}-${process.arch}`,
+)
 
 describe('Sockeye CLI', () => {
   test('runs the native malformed and boundary byte policy checks', () => {
