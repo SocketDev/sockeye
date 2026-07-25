@@ -114,3 +114,9 @@ pnpm-debug.log
 # The v1.0.11 bundle still ships _dist/bundle.cjs, so it lands on disk from a
 # refresh; keep it out of tracking until the fleet gitignore block covers it. ───
 /.claude/hooks/fleet/_dist/
+
+# ─── repo-local: coverage output from the cover/test lanes — regenerable,
+# never committed. ───
+**/coverage-children/
+**/coverage-isolated/
+**/coverage/
