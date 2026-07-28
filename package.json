@@ -35,7 +35,6 @@
     "gen:llms-txt": "node scripts/fleet/gen/llms-txt.mts --no-ai",
     "gen:combomark": "node scripts/repo/gen-combomark.mts",
     "gen:logo": "node scripts/repo/gen-logo.mts",
-    "gen:wordmark": "node scripts/repo/gen-wordmark.mts",
     "setup:brew": "node scripts/fleet/setup/brew.mts",
     "setup:credential": "node scripts/repo/setup-credential.mts",
     "setup:go": "node scripts/fleet/setup/go.mts",

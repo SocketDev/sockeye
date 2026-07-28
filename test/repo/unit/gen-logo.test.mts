@@ -1,20 +1,23 @@
 /**
- * @file Contract for the reproducible brand-mark generator. Asserts the traced
- *   SVG is well-formed, correctly framed (gradient + accessible metadata, no
- *   baked raster), and byte-stable across runs so the committed asset and the
- *   generator never drift.
+ * @file Contract for the reproducible favicon generator. Asserts the derived
+ *   favicon is the canonical committed logomark vector (well-formed, correctly
+ *   framed, an SVGO fixpoint) and byte-stable across runs so the committed
+ *   assets and the generator never drift.
  */
 
 import { readFile } from 'node:fs/promises'
 
 import { describe, expect, test } from 'vitest'
 
-import { traceBrandMark } from '../../../scripts/repo/gen-logo.mts'
-import { FAVICON_SVG_PATH } from '../../../scripts/repo/paths.mts'
+import { deriveFavicon } from '../../../scripts/repo/gen-logo.mts'
+import {
+  FAVICON_SVG_PATH,
+  LOGOMARK_SVG_PATH,
+} from '../../../scripts/repo/paths.mts'
 
-describe('gen-logo brand-mark generator', () => {
-  test('produces a well-formed, correctly framed SVG', async () => {
-    const svg = await traceBrandMark()
+describe('gen-logo favicon generator', () => {
+  test('derives a well-formed, correctly framed SVG', () => {
+    const svg = deriveFavicon()
 
     // Vector root with a viewBox (svgo must not drop it).
     expect(svg).toMatch(/^<svg\b/)
@@ -29,8 +32,8 @@ describe('gen-logo brand-mark generator', () => {
       expect(svg.toLowerCase()).toContain(color)
     }
 
-    // At least one traced path, filled via the gradient (svgo may hoist the
-    // shared fill onto the enclosing <g>, so match the reference anywhere and
+    // At least one path, filled via the gradient (svgo may hoist the shared
+    // fill onto the enclosing <g>, so match the reference anywhere and
     // confirm it resolves to a defined linearGradient id).
     expect(svg).toMatch(/<path\b/)
     const fillRef = svg.match(/fill="url\(#([^)]+)\)"/)
@@ -49,15 +52,15 @@ describe('gen-logo brand-mark generator', () => {
     expect(svg).not.toMatch(/<rect\b/)
   })
 
-  test('is byte-stable across runs (deterministic)', async () => {
-    const first = await traceBrandMark()
-    const second = await traceBrandMark()
-    expect(second).toBe(first)
+  test('is byte-stable across runs (deterministic)', () => {
+    expect(deriveFavicon()).toBe(deriveFavicon())
   })
 
-  test('the favicon is the canonical square mark', async () => {
-    expect((await readFile(FAVICON_SVG_PATH, 'utf8')).trimEnd()).toBe(
-      (await traceBrandMark()).trimEnd(),
-    )
+  test('is exactly the canonical committed logomark vector', async () => {
+    expect(deriveFavicon()).toBe(await readFile(LOGOMARK_SVG_PATH, 'utf8'))
+  })
+
+  test('the committed favicon is the canonical square mark', async () => {
+    expect(await readFile(FAVICON_SVG_PATH, 'utf8')).toBe(deriveFavicon())
   })
 })

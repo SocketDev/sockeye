@@ -15,18 +15,7 @@ export const BINARY_NAME = 'sockeye'
 export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 
 /**
- * Absolute path to the canonical brand-mark source raster. The `gen:logo`
- * generator traces this into `LOGOMARK_SVG_PATH`; keeping the raster in-repo
- * makes the generator self-contained and reproducible (code is law).
- */
-export const BRAND_SOURCE_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-logomark.png',
-)
-
-/**
- * Absolute path to the generated brand SVG
+ * Absolute path to the canonical brand-mark vector
  * (`assets/repo/brand/sockeye-logomark.svg`).
  */
 export const LOGOMARK_SVG_PATH = path.join(
@@ -45,18 +34,7 @@ export const FAVICON_SVG_PATH = path.join(
 )
 
 /**
- * Absolute path to the committed wordmark source raster. The `gen:wordmark`
- * generator traces the "sockeye" letterforms out of this into
- * `WORDMARK_SVG_PATH` (code is law — same bytes in, same SVG out).
- */
-export const WORDMARK_SOURCE_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-wordmark.png',
-)
-
-/**
- * Absolute path to the generated wordmark SVG
+ * Absolute path to the canonical wordmark vector
  * (`assets/repo/brand/sockeye-wordmark.svg`).
  */
 export const WORDMARK_SVG_PATH = path.join(

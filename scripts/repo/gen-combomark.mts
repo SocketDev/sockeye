@@ -35,7 +35,7 @@ import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 const logger = getDefaultLogger()
 type CombomarkMode = 'adaptive' | 'dark' | 'light'
 
-// --- geometry (wordmark output space; see gen-wordmark.mts) ---
+// --- geometry (the wordmark vector's output space) ---
 // wordmark canvas W = 2227; sockeye content x 16..2211, baseline 343, descender 438.
 const WORD_W = 2227
 const SOCK_L = 16
@@ -179,7 +179,8 @@ function shieldPaths(logomarkSvg: string): string {
 
 /**
  * SVGO with the wordmark's <style> block preserved (prefers-color-scheme rules
- * can't be inlined), matching gen-wordmark's pass so the file is a fixpoint.
+ * can't be inlined), matching the wordmark vector's pass so the file is a
+ * fixpoint.
  */
 function optimizeSvg(svg: string): string {
   return optimize(svg, {
