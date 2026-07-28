@@ -18,7 +18,7 @@ import {
   DISPATCH_DIR,
   EXCLUDED_BUNDLE_PATH,
 } from '../../../scripts/fleet/paths.mts'
-import { createLibStubPlugin } from './lib-stub.mts'
+import { createLibStubPlugin } from '../../repo/rolldown/lib-stub.mts'
 
 const config: RolldownOptions = {
   external: [/^node:/],
@@ -29,7 +29,7 @@ const config: RolldownOptions = {
     codeSplitting: false,
     file: EXCLUDED_BUNDLE_PATH,
     format: 'cjs',
-    // Fleet hard rule: never minify, no source maps (auditable output).
+    // Fleet hard rule: never minify, no source maps, auditable output.
     minify: false,
     sourcemap: false,
   },

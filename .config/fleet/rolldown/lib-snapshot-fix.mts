@@ -48,7 +48,7 @@ const ASYNC_LOCAL_STORAGE_REL = ['env/rewire.js', 'themes/context.js'] as const
  * = new AsyncLocalStorage()` becomes a lazily-constructed accessor. Every read
  * site already goes through a function body, so swapping the eager binding for
  * a first-use getter is behavior-preserving. The transform is a targeted
- * textual edit (the store source is rolldown-emitted, stable shape): the `const
+ * textual edit, the store source is rolldown-emitted, stable shape: the `const
  * <name> = new AsyncLocalStorage()` line is replaced with a `__lazy_<name>`
  * holder + a getter, and every later `<name>.` member access is routed through
  * the getter.
@@ -56,40 +56,36 @@ const ASYNC_LOCAL_STORAGE_REL = ['env/rewire.js', 'themes/context.js'] as const
 function deferAsyncLocalStorage(src: string): string {
   // Match `const <ident> = new AsyncLocalStorage();` (the two known holders are
   // `isolatedOverridesStorage` and `themeStorage`; match generically).
-  const re = /const (?<name>\w+) = new AsyncLocalStorage\(\);/g
+  const re = /const (?<ident>\w+) = new AsyncLocalStorage\(\);/g
   const names: string[] = []
-  let out = src.replace(
-    re,
-    (_m, _p1, _offset, _s, groups: { name: string }) => {
-      const name = groups.name
-      names.push(name)
-      // Lazy holder + getter. `AsyncLocalStorage` is the destructured ctor already
-      // in module scope; the getter is the only thing that calls `new`, deferring
-      // the native-handle registration to first use (post-deserialize at runtime).
-      return (
-        `let __lazy_${name};\n` +
-        `function __get_${name}() {\n` +
-        `  return (__lazy_${name} ??= new AsyncLocalStorage());\n` +
-        `}`
-      )
-    },
-  )
+  let out = src.replace(re, (_m, name: string) => {
+    names.push(name)
+    // Lazy holder + getter. `AsyncLocalStorage` is the destructured ctor already
+    // in module scope; the getter is the only thing that calls `new`, deferring
+    // the native-handle registration to first use, post-deserialize at runtime.
+    return (
+      `let __lazy_${name};\n` +
+      `function __get_${name}() {\n` +
+      `  return (__lazy_${name} ??= new AsyncLocalStorage());\n` +
+      `}`
+    )
+  })
   // Route every later member access `<name>.foo` through the getter. The only
   // uses in these modules are `<name>.getStore()` and `<name>.run(...)`; a plain
   // `.`-access rewrite covers both. The binding line itself was already replaced
   // above (it no longer contains `<name>.`), so this only touches read sites.
-  for (const name of names) {
+  for (let i = 0, { length } = names; i < length; i += 1) {
+    const name = names[i]!
     out = out.replace(new RegExp(`\\b${name}\\.`, 'g'), `__get_${name}().`)
   }
   return out
 }
 
 /**
- * @param _fixedLibDistDir Retained for signature compatibility with the prior
- *   overlay-dir shape; unused now that the transform reads the store source for
- *   the matched module directly (no separate fixed-lib dir to populate).
+ * The lib snapshot-fix plugin: rewrites @socketsecurity/lib(-stable) imports
+ * whose module state cannot survive V8 snapshot serialization.
  */
-export function createLibSnapshotFixPlugin(_fixedLibDistDir?: string): Plugin {
+export function createLibSnapshotFixPlugin(): Plugin {
   // Match any resolved id under a @socketsecurity/lib(-stable) dist ending in one
   // of the AsyncLocalStorage-bearing relative paths — store, nested per-hook
   // node_modules, or overlay alike.
