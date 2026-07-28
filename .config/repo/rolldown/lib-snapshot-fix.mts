@@ -56,20 +56,24 @@ const ASYNC_LOCAL_STORAGE_REL = ['env/rewire.js', 'themes/context.js'] as const
 function deferAsyncLocalStorage(src: string): string {
   // Match `const <ident> = new AsyncLocalStorage();` (the two known holders are
   // `isolatedOverridesStorage` and `themeStorage`; match generically).
-  const re = /const (\w+) = new AsyncLocalStorage\(\);/g
+  const re = /const (?<name>\w+) = new AsyncLocalStorage\(\);/g
   const names: string[] = []
-  let out = src.replace(re, (_m, name: string) => {
-    names.push(name)
-    // Lazy holder + getter. `AsyncLocalStorage` is the destructured ctor already
-    // in module scope; the getter is the only thing that calls `new`, deferring
-    // the native-handle registration to first use (post-deserialize at runtime).
-    return (
-      `let __lazy_${name};\n` +
-      `function __get_${name}() {\n` +
-      `  return (__lazy_${name} ??= new AsyncLocalStorage());\n` +
-      `}`
-    )
-  })
+  let out = src.replace(
+    re,
+    (_m, _p1, _offset, _s, groups: { name: string }) => {
+      const name = groups.name
+      names.push(name)
+      // Lazy holder + getter. `AsyncLocalStorage` is the destructured ctor already
+      // in module scope; the getter is the only thing that calls `new`, deferring
+      // the native-handle registration to first use (post-deserialize at runtime).
+      return (
+        `let __lazy_${name};\n` +
+        `function __get_${name}() {\n` +
+        `  return (__lazy_${name} ??= new AsyncLocalStorage());\n` +
+        `}`
+      )
+    },
+  )
   // Route every later member access `<name>.foo` through the getter. The only
   // uses in these modules are `<name>.getStore()` and `<name>.run(...)`; a plain
   // `.`-access rewrite covers both. The binding line itself was already replaced
