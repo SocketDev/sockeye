@@ -35,7 +35,8 @@ import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 const logger = getDefaultLogger()
 type CombomarkMode = 'adaptive' | 'dark' | 'light'
 
-// --- geometry (the wordmark vector's output space) ---
+// --- geometry ---
+// These constants describe the wordmark vector's output space.
 // wordmark canvas W = 2227; sockeye content x 16..2211, baseline 343, descender 438.
 const WORD_W = 2227
 const SOCK_L = 16
@@ -221,7 +222,7 @@ export function composeCombomark(
     `${round(tx, 3)} ${round(fMat, 3)})`
 
   // Shield planted lower: its point drops SINK below the baseline, then the whole
-  // shield is cropped flat at the baseline (bottom of the word).
+  // shield is cropped flat at the baseline. The baseline is the bottom of the word.
   const shieldPoint = MARGIN + SHIELD_H
   const baseline = Number((shieldPoint - SINK).toFixed(2))
   const dY = round(baseline - BASELINE, 3)
