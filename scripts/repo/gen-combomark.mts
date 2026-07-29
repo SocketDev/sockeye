@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 /*
  * @file Reproducible generator for the sockeye combination mark — CODE IS LAW.
- *   Composes the committed logomark + wordmark into
- *   `assets/repo/brand/sockeye-combomark.svg`:
- *   the shield-and-salmon rises behind the word like a rising sun — a SOLID
- *   signature-gradient crest above the letters that breaks into a fine 8x8
- *   ordered (Bayer) dither where it drops behind the text, the shield planted
- *   lower and
- *   cropped flat at the word's baseline. Deterministic function of the two
- *   committed source SVGs (same bytes in, same SVG out).
+ *   The badge is all-in-one (the crest carries SOCKEYE and SOCKET LABS inside
+ *   the shield), so the combomark IS the committed logomark, re-emitted for
+ *   every variant slot. The badge is opaque (cream field + dark banner), so
+ *   light and dark are the same bytes. Deterministic function of the committed
+ *   source SVG (same bytes in, same SVG out).
  *
  *   Library: import { traceCombomark } from './gen-combomark.mts'
  *   CLI: node scripts/repo/gen-combomark.mts (writes
@@ -28,281 +25,38 @@ import {
   COMBOMARK_LIGHT_SVG_PATH,
   COMBOMARK_SVG_PATH,
   LOGOMARK_SVG_PATH,
-  WORDMARK_SVG_PATH,
 } from './paths.mts'
 import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 
 const logger = getDefaultLogger()
 type CombomarkMode = 'adaptive' | 'dark' | 'light'
 
-// --- geometry ---
-// These constants describe the wordmark vector's output space.
-// wordmark canvas W = 2227; sockeye content x 16..2211, baseline 343, descender 438.
-const WORD_W = 2227
-const SOCK_L = 16
-const SOCK_W = 2195
-const SOCK_CENTER = SOCK_L + SOCK_W / 2
-const BASELINE = 343
-const DESC_BOTTOM = 438
-const TAG_BOTTOM = 596
-// shield-art bbox within the logomark's 1254 box: centered x 627.5, top y 119, height 1001.
-const ART_CX = 627.5
-const ART_TOP = 119
-const ART_H_BOX = 1001
-const MARGIN = 40
-
-// composition knobs
-const SHIELD_H = 1060 // XL — wide across the word
-const DITHER_CELL = 10
-const DITHER_OPACITY = 0.9
-const DITHER_LEVELS = 16
-const DITHER_BANDS = 32
-const DITHER_MAX_DENSITY = 0.88
-const SINK = 150 // how far the shield point drops below the baseline before the crop
-
-// --- colours (wheelhouse docs/design/color.md signature gradient) ---
-const GRAD_VIOLET = '#a98bff'
-const GRAD_PINK = '#f05abe'
-const GRAD_BLUE = '#358ff3'
-
-// 8x8 ordered Bayer matrix normalized to 0..1 thresholds. Its larger period
-// breaks up the obvious checkerboard while the small cells retain a deliberate,
-// screen-print-like pixel texture at logo scale.
-const BAYER = [
-  [0, 48, 12, 60, 3, 51, 15, 63],
-  [32, 16, 44, 28, 35, 19, 47, 31],
-  [8, 56, 4, 52, 11, 59, 7, 55],
-  [40, 24, 36, 20, 43, 27, 39, 23],
-  [2, 50, 14, 62, 1, 49, 13, 61],
-  [34, 18, 46, 30, 33, 17, 45, 29],
-  [10, 58, 6, 54, 9, 57, 5, 53],
-  [42, 26, 38, 22, 41, 25, 37, 21],
-].map(row => row.map(value => (value + 0.5) / 64))
-
-const round = (value: number, digits: number): string =>
-  String(Number(value.toFixed(digits)))
-
 /**
- * A single-colour ordered-dither tile at one density level. Thresholded cells
- * are intentionally absent, rather than dimmed: transparent gaps make the
- * shield actually dissolve and preserve the graphic across light and dark
- * backgrounds.
- */
-function ditherPattern(id: string, density: number): string {
-  let rects = ''
-  for (let row = 0; row < BAYER.length; row += 1) {
-    for (let col = 0; col < BAYER[row]!.length; col += 1) {
-      const lit = density > BAYER[row]![col]!
-      if (lit) {
-        rects +=
-          `<rect x="${col * DITHER_CELL}" y="${row * DITHER_CELL}" ` +
-          `width="${DITHER_CELL}" height="${DITHER_CELL}" fill="url(#crest)" ` +
-          `fill-opacity="${DITHER_OPACITY}"/>`
-      }
-    }
-  }
-  const size = DITHER_CELL * BAYER.length
-  return (
-    `<pattern id="${id}" width="${size}" height="${size}" ` +
-    `patternUnits="userSpaceOnUse" shape-rendering="crispEdges">${rects}</pattern>`
-  )
-}
-
-/**
- * The dither is a dissolving wash: dense pixels at its top that shed toward the
- * base. Build a small family of ordered tiles, then use them in narrow
- * horizontal bands. This avoids an SVG filter/raster while giving the density a
- * visibly continuous vertical progression.
- */
-function ditherPatterns(): string {
-  let patterns = ''
-  for (let level = 0; level < DITHER_LEVELS; level += 1) {
-    patterns += ditherPattern(
-      `dither-${level}`,
-      (level / (DITHER_LEVELS - 1)) * DITHER_MAX_DENSITY,
-    )
-  }
-  return patterns
-}
-
-function ditherWash(
-  left: number,
-  width: number,
-  top: number,
-  bottom: number,
-): string {
-  let bands = ''
-  const bandHeight = (bottom - top) / DITHER_BANDS
-  for (let band = 0; band < DITHER_BANDS; band += 1) {
-    const progress = 1 - (band + 0.5) / DITHER_BANDS
-    const level = Math.min(
-      DITHER_LEVELS - 1,
-      Math.floor(progress * DITHER_LEVELS),
-    )
-    bands +=
-      `<rect x="${round(left, 2)}" y="${round(top + band * bandHeight, 2)}" ` +
-      `width="${round(width, 2)}" height="${round(bandHeight + 0.1, 2)}" ` +
-      `fill="url(#dither-${level})"/>`
-  }
-  return bands
-}
-
-/**
- * The wordmark's <defs> body (labs gradient + prefers-color-scheme style).
- */
-function wordmarkDefs(wordmarkSvg: string): string {
-  return wordmarkSvg.match(/<defs>([\s\S]*?)<\/defs>/)?.[1] ?? ''
-}
-
-/**
- * The wordmark's drawn body: the currentColor glyph group + the tagline text.
- */
-function wordmarkBody(wordmarkSvg: string): string {
-  return wordmarkSvg
-    .replace(/[\s\S]*<\/defs>/, '')
-    .replace(/<\/svg>\s*$/, '')
-    .replace(/<title>[\s\S]*?<\/title>/g, '')
-    .replace(/<desc>[\s\S]*?<\/desc>/g, '')
-    .trim()
-}
-
-/**
- * The logomark's traced shield paths (the <path> elements, sans the fill
- * group).
- */
-function shieldPaths(logomarkSvg: string): string {
-  const group = logomarkSvg.match(/<g[^>]*>([\s\S]*)<\/g>/)
-  if (!group) {
-    throw new Error('gen-combomark: no traced group in the logomark.')
-  }
-  return group[1]!.trim()
-}
-
-/**
- * SVGO with the wordmark's <style> block preserved (prefers-color-scheme rules
- * can't be inlined), matching the wordmark vector's pass so the file is a
- * fixpoint.
+ * SVGO multipass, matching the committed logomark's pass so the emitted
+ * combomark is a fixpoint too.
  */
 function optimizeSvg(svg: string): string {
-  return optimize(svg, {
-    multipass: true,
-    plugins: [
-      {
-        name: 'preset-default',
-        params: {
-          overrides: {
-            inlineStyles: false,
-            minifyStyles: false,
-            removeViewBox: false,
-          },
-        },
-      },
-    ],
-  }).data
+  return optimize(svg, { multipass: true }).data
 }
 
 /**
- * Compose the combomark from the two source SVG strings (pre-SVGO).
- */
-export function composeCombomark(
-  logomarkSvg: string,
-  wordmarkSvg: string,
-  mode: CombomarkMode = 'adaptive',
-): string {
-  const paths = shieldPaths(logomarkSvg)
-  const defs = wordmarkDefs(wordmarkSvg)
-  const body = wordmarkBody(wordmarkSvg)
-
-  const scale = SHIELD_H / ART_H_BOX
-  const a = 0.1 * scale
-  const tx = SOCK_CENTER - ART_CX * scale
-  const fMat = MARGIN + (1254 - ART_TOP) * scale
-  const shieldMatrix =
-    `matrix(${round(a, 6)} 0 0 ${round(-a, 6)} ` +
-    `${round(tx, 3)} ${round(fMat, 3)})`
-
-  // Shield planted lower: its point drops SINK below the baseline, then the whole
-  // shield is cropped flat at the baseline. The baseline is the bottom of the word.
-  const shieldPoint = MARGIN + SHIELD_H
-  const baseline = Number((shieldPoint - SINK).toFixed(2))
-  const dY = round(baseline - BASELINE, 3)
-  const left = Number((222 * scale + tx).toFixed(2))
-  const width = Number((811 * scale).toFixed(2))
-  const rectH = round(baseline - MARGIN, 2)
-
-  // Dither starts a little below the top of the K (ascender), transitions fast.
-  const kTop = baseline - BASELINE
-  const t0 = round(kTop + 18, 2)
-  const t1 = round(kTop + 66, 2)
-
-  const vbW = WORD_W
-  const vbH = Math.ceil(
-    Math.max(DESC_BOTTOM + Number(dY), TAG_BOTTOM + Number(dY)) + MARGIN,
-  )
-  const crestX2 = round(left + width, 2)
-  const inkStyle =
-    mode === 'adaptive'
-      ? '<style>.combomark-ink{color:#111827}@media (prefers-color-scheme:dark){.combomark-ink{color:#fff}}</style>'
-      : mode === 'dark'
-        ? '<style>.combomark-ink{color:#fff}.by{fill:#a3a3a3}.labs-end{stop-color:#fff}</style>'
-        : '<style>.combomark-ink{color:#111827}</style>'
-
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vbW} ${vbH}" ` +
-    `role="img" aria-label="sockeye by socket labs">` +
-    `<title>sockeye</title>` +
-    `<desc>sockeye combination mark: the shield-and-salmon rising behind the ` +
-    `word, a solid crest dissolving into dither where it goes behind the text.` +
-    `</desc>` +
-    `<defs>` +
-    defs +
-    inkStyle +
-    `<linearGradient id="crest" x1="${left}" y1="${MARGIN}" x2="${crestX2}" ` +
-    `y2="${baseline}" gradientUnits="userSpaceOnUse">` +
-    `<stop offset="0" stop-color="${GRAD_VIOLET}"/>` +
-    `<stop offset="0.52" stop-color="${GRAD_PINK}"/>` +
-    `<stop offset="1" stop-color="${GRAD_BLUE}"/></linearGradient>` +
-    ditherPatterns() +
-    `<linearGradient id="hideBelow" x1="0" y1="${t0}" x2="0" y2="${t1}" ` +
-    `gradientUnits="userSpaceOnUse">` +
-    `<stop offset="0" stop-color="#000" stop-opacity="0"/>` +
-    `<stop offset="1" stop-color="#000" stop-opacity="1"/></linearGradient>` +
-    `<mask id="crestmask" maskUnits="userSpaceOnUse" x="0" y="0" ` +
-    `width="${vbW}" height="${vbH}">` +
-    `<g transform="${shieldMatrix}" fill="#fff" stroke="none">${paths}</g>` +
-    `<rect x="${left}" y="${MARGIN}" width="${width}" height="${rectH}" ` +
-    `fill="url(#hideBelow)"/></mask>` +
-    `<mask id="dithmask" maskUnits="userSpaceOnUse" x="0" y="0" ` +
-    `width="${vbW}" height="${vbH}">` +
-    `<g transform="${shieldMatrix}" fill="#fff" stroke="none">${paths}</g>` +
-    `</mask>` +
-    `</defs>` +
-    `<rect x="${left}" y="${MARGIN}" width="${width}" height="${rectH}" ` +
-    `fill="url(#crest)" mask="url(#crestmask)"/>` +
-    `<g mask="url(#dithmask)">${ditherWash(
-      left,
-      width,
-      Number(t0),
-      baseline,
-    )}</g>` +
-    `<g class="combomark-ink" transform="translate(0,${dY})">${body}</g>` +
-    `</svg>`
-  )
-}
-
-/**
- * Read the committed logomark + wordmark and produce the optimized combomark.
+ * The combomark for any mode: the all-in-one badge logomark, verified to be a
+ * drawable SVG. The badge is opaque, so every mode shares the same bytes.
  */
 export function traceCombomark(mode: CombomarkMode = 'adaptive'): string {
+  void mode
   const logomarkSvg = readFileSync(LOGOMARK_SVG_PATH, 'utf8')
-  const wordmarkSvg = readFileSync(WORDMARK_SVG_PATH, 'utf8')
-  const composed = composeCombomark(logomarkSvg, wordmarkSvg, mode)
-  return `${optimizeSvg(composed).trimEnd()}\n`
+  if (!logomarkSvg.includes('<svg') || !logomarkSvg.includes('<path')) {
+    throw new Error(
+      'gen-combomark: the committed logomark is not a drawable SVG.',
+    )
+  }
+  return `${optimizeSvg(logomarkSvg).trimEnd()}\n`
 }
 
 /**
- * Regenerate `assets/repo/brand/sockeye-combomark.svg` from the committed
- * logomark + wordmark.
+ * Regenerate `assets/repo/brand/sockeye-combomark.svg` (and the light/dark
+ * slots) from the committed logomark.
  */
 export function generateCombomark(): { path: string; bytes: number } {
   mkdirSync(path.dirname(COMBOMARK_SVG_PATH), { recursive: true })
