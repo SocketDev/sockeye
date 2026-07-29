@@ -27,8 +27,15 @@ release commit.
 2. Run all automated, sanitizer, fuzz, architecture, and interactive gates.
 3. Review the final threat model and binary diff independently.
 4. Build in CI from the reviewed commit.
-5. Sign, notarize, staple, and verify the exact archives that will be uploaded.
-6. Produce SHA-256 checksums and provenance for every archive.
+5. Sign, notarize, staple, and verify the exact archives that will be
+   uploaded: `pnpm run sign -- --run` (hardened runtime + Developer ID; dry
+   run without `--run`, `--ad-hoc` for a certificate-free local pass), then
+   `pnpm run notarize -- --run <archive>` (notarytool submit + staple; dry run
+   without `--run`), then `pnpm run verify-release -- <archive>`.
+6. Produce SHA-256 checksums and provenance for every archive:
+   `pnpm run verify-release -- <archive>` runs the codesign, Gatekeeper,
+   archive-listing, and SHA-256 checks for real and emits the evidence rows in
+   this document's table format; provenance comes from CI attestations.
 7. Create the immutable GitHub release through the fleet release workflow.
 8. Install through the shared download helper on a clean macOS machine.
 9. Repeat the Touch ID, Keychain policy, and exact-child smoke tests against the
