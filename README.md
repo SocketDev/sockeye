@@ -9,8 +9,6 @@
 
 Touch-gated local credentials for developer tools and automation.
 
-## Why this repo exists
-
 Developer tools sometimes need credentials that should never appear in a
 command line, environment file, chat transcript, or agent context. Sockeye
 stores those credentials in macOS Keychain and gives them only to one exact
@@ -119,8 +117,8 @@ MIT
 <br/>
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/fleet/socket-lockup-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/fleet/socket-lockup-light.svg">
-    <img width="420" height="120" alt="Socket" src="assets/fleet/socket-lockup-light.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/fleet/socket-combomark-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/fleet/socket-combomark-light.svg">
+    <img width="420" height="120" alt="Socket" src="assets/fleet/socket-combomark-light.svg">
   </picture>
 </div>
