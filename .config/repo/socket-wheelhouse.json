@@ -1,0 +1,16 @@
+{
+  "$schema": "../socket-wheelhouse-schema.json",
+  "schemaVersion": 1,
+  "repoName": "sockeye",
+  "repo": {
+    "type": "solo"
+  },
+  "build": {
+    "from": "github-release",
+    "type": "binary"
+  },
+  "fuzz": {
+    "exempt": true,
+    "reason": "The untrusted-input boundary is the native C++ core (input-policy request parsing), fuzzed via the libFuzzer harness at test/repo/fuzz/native/input-policy-fuzz.cc (pnpm run fuzz). The JS/TS surface is fleet tooling and the vitest harness around the binary — no first-party JS parser boundary for a vitiate lane to exercise."
+  }
+}
