@@ -128,6 +128,8 @@ npm-debug.log
 pnpm-debug.log
 *.tgz
 # </fleet>
+# <repo>
+# </repo>
 
 # ─── repo-local: fleet hook bundle build output (generated-outputs-are-untracked).
 # The v1.0.11 bundle still ships _dist/bundle.cjs, so it lands on disk from a
