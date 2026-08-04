@@ -15,39 +15,11 @@ export const BINARY_NAME = 'sockeye'
 export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 
 /**
- * Absolute path to the canonical brand-mark vector
- * (`assets/repo/brand/sockeye-logomark.svg`).
- */
-export const LOGOMARK_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-logomark.svg',
-)
-
-/**
- * Square, embeddable favicon derived from the canonical Sockeye logomark.
- */
-export const FAVICON_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-favicon.svg',
-)
-
-/**
- * Absolute path to the canonical wordmark vector
- * (`assets/repo/brand/sockeye-wordmark.svg`).
- */
-export const WORDMARK_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-wordmark.svg',
-)
-
-/**
- * Absolute path to the generated combination mark
- * (`assets/repo/brand/sockeye-combomark.svg`), composed from the logomark +
- * wordmark by
- * `gen:combomark`.
+ * Absolute path to the repo brand mark
+ * (`assets/repo/brand/sockeye-combomark.svg`) — the all-in-one badge the
+ * README renders. Committed artwork, not a build output: the badge already
+ * carries the SOCKEYE and SOCKET LABS lettering, so there is nothing to
+ * compose and no theme variant to derive.
  */
 export const COMBOMARK_SVG_PATH = path.join(
   ASSETS_REPO_DIR,
