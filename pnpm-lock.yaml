@@ -248,14 +248,14 @@ catalogs:
       specifier: 4.1.10
       version: 4.1.10
     acorn:
-      specifier: 8.17.0
-      version: 8.17.0
+      specifier: 8.18.0
+      version: 8.18.0
     acorn-walk:
       specifier: 8.3.5
       version: 8.3.5
     adm-zip:
-      specifier: 0.5.18
-      version: 0.5.18
+      specifier: 0.6.0
+      version: 0.6.0
     c8:
       specifier: 12.0.0
       version: 12.0.0
@@ -2741,13 +2741,13 @@ importers:
         version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
       acorn:
         specifier: 'catalog:'
-        version: 8.17.0
+        version: 8.18.0
       acorn-walk:
         specifier: 'catalog:'
         version: 8.3.5
       adm-zip:
         specifier: 'catalog:'
-        version: 0.5.18
+        version: 0.6.0
       magic-string:
         specifier: 1.1.0
         version: 1.1.0
@@ -3785,14 +3785,14 @@ packages:
     resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
     engines: {node: '>=0.4.0'}
 
-  acorn@8.17.0:
-    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+  acorn@8.18.0:
+    resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  adm-zip@0.5.18:
-    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
-    engines: {node: '>=12.0'}
+  adm-zip@0.6.0:
+    resolution: {integrity: sha512-XleryMhbuksdKtofnWZ9Sk+4CUTbms4Mb/EU32SZwToAyZ5RgVos/ki8n+yr0LWHOGKuakbXTuuYNHLQjhddgg==}
+    engines: {node: '>=14.0'}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -5746,11 +5746,11 @@ snapshots:
 
   acorn-walk@8.3.5:
     dependencies:
-      acorn: 8.17.0
+      acorn: 8.18.0
 
-  acorn@8.17.0: {}
+  acorn@8.18.0: {}
 
-  adm-zip@0.5.18: {}
+  adm-zip@0.6.0: {}
 
   ansi-regex@5.0.1: {}
 

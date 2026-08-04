@@ -1,8 +1,9 @@
 /**
  * Tool Download + Cache Engine.
  *
- * Downloads pinned tool versions, verifies checksums, and caches them
- * in node_modules/.cache/external-tools/ (gitignored via node_modules/).
+ * Downloads pinned tool versions, verifies checksums, and caches them under
+ * the repo-root `.cache/repo/external-tools/` (via `EXTERNAL_TOOLS_CACHE_DIR`
+ * in ./paths.mts), gitignored via the fleet's `.cache/` rule.
  *
  * Override: $EXTERNAL_TOOLS_CACHE.
  */
