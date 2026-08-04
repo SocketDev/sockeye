@@ -209,20 +209,23 @@ catalogs:
       specifier: 0.17.1
       version: 0.17.1
     '@shadscan/cli':
-      specifier: 0.2.0
-      version: 0.2.0
+      specifier: 0.5.0
+      version: 0.5.0
     '@sinclair/typebox':
       specifier: 0.34.52
       version: 0.34.52
     '@socketregistry/packageurl-js-stable':
-      specifier: npm:@socketregistry/packageurl-js@1.4.8
-      version: 1.4.8
+      specifier: npm:@socketregistry/packageurl-js@1.5.0
+      version: 1.5.0
     '@socketsecurity/lib-stable':
       specifier: npm:@socketsecurity/lib@6.5.2
       version: 6.5.2
     '@socketsecurity/sdk-stable':
-      specifier: npm:@socketsecurity/sdk@4.1.2
-      version: 4.1.2
+      specifier: npm:@socketsecurity/sdk@4.1.3
+      version: 4.1.3
+    '@types/adm-zip':
+      specifier: 0.5.8
+      version: 0.5.8
     '@types/mdast':
       specifier: 4.0.4
       version: 4.0.4
@@ -244,6 +247,15 @@ catalogs:
     '@vitest/ui':
       specifier: 4.1.10
       version: 4.1.10
+    acorn:
+      specifier: 8.17.0
+      version: 8.17.0
+    acorn-walk:
+      specifier: 8.3.5
+      version: 8.3.5
+    adm-zip:
+      specifier: 0.5.18
+      version: 0.5.18
     c8:
       specifier: 12.0.0
       version: 12.0.0
@@ -363,7 +375,7 @@ importers:
         version: 0.17.1(supports-color@7.2.0)
       '@shadscan/cli':
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.5.0
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.34.52
@@ -372,7 +384,7 @@ importers:
         version: 1.5.0
       '@socketregistry/packageurl-js-stable':
         specifier: 'catalog:'
-        version: '@socketregistry/packageurl-js@1.4.8'
+        version: '@socketregistry/packageurl-js@1.5.0'
       '@socketsecurity/lib':
         specifier: 6.5.2
         version: 6.5.2(typescript@7.0.2)
@@ -384,7 +396,7 @@ importers:
         version: 4.1.3
       '@socketsecurity/sdk-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/sdk@4.1.2'
+        version: '@socketsecurity/sdk@4.1.3'
       '@types/mdast':
         specifier: 'catalog:'
         version: 4.0.4
@@ -686,13 +698,13 @@ importers:
     dependencies:
       '@socketregistry/packageurl-js-stable':
         specifier: 'catalog:'
-        version: '@socketregistry/packageurl-js@1.4.8'
+        version: '@socketregistry/packageurl-js@1.5.0'
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
       '@socketsecurity/sdk-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/sdk@4.1.2'
+        version: '@socketsecurity/sdk@4.1.3'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2201,7 +2213,7 @@ importers:
         version: 0.34.52
       '@socketregistry/packageurl-js-stable':
         specifier: 'catalog:'
-        version: '@socketregistry/packageurl-js@1.4.8'
+        version: '@socketregistry/packageurl-js@1.5.0'
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
@@ -2265,6 +2277,12 @@ importers:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.1.1
+
+  .claude/hooks/fleet/squash-freeze-boundary-guard:
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2502,6 +2520,8 @@ importers:
 
   .config/fleet/oxlint-plugin/fleet/inclusive-language: {}
 
+  .config/fleet/oxlint-plugin/fleet/max-comment-block-lines: {}
+
   .config/fleet/oxlint-plugin/fleet/max-file-lines: {}
 
   .config/fleet/oxlint-plugin/fleet/no-agent-brand-assumption: {}
@@ -2549,6 +2569,8 @@ importers:
   .config/fleet/oxlint-plugin/fleet/no-namespace-import: {}
 
   .config/fleet/oxlint-plugin/fleet/no-npx-dlx: {}
+
+  .config/fleet/oxlint-plugin/fleet/no-optional-positional-trap: {}
 
   .config/fleet/oxlint-plugin/fleet/no-options-param-mutation: {}
 
@@ -2705,6 +2727,103 @@ importers:
   .config/fleet/oxlint-plugin/fleet/sort-source-methods: {}
 
   .config/fleet/oxlint-plugin/fleet/use-fleet-canonical-api-token-getter: {}
+
+  packages/build-infra:
+    dependencies:
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.34.52
+      '@socketsecurity/lib':
+        specifier: 6.5.2
+        version: 6.5.2(typescript@7.0.2)
+      '@socketsecurity/lib-stable':
+        specifier: 'catalog:'
+        version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
+      acorn:
+        specifier: 'catalog:'
+        version: 8.17.0
+      acorn-walk:
+        specifier: 'catalog:'
+        version: 8.3.5
+      adm-zip:
+        specifier: 'catalog:'
+        version: 0.5.18
+      magic-string:
+        specifier: 1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@types/adm-zip':
+        specifier: 'catalog:'
+        version: 0.5.8
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@8.1.3(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/keychain-addon-builder:
+    dependencies:
+      '@socketsecurity/lib-stable':
+        specifier: 'catalog:'
+        version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
+      build-infra:
+        specifier: workspace:*
+        version: link:../build-infra
+      keystore-infra:
+        specifier: workspace:*
+        version: link:../keystore-infra
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@8.1.3(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/keychain-cli-builder:
+    dependencies:
+      '@socketsecurity/lib-stable':
+        specifier: 'catalog:'
+        version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
+      build-infra:
+        specifier: workspace:*
+        version: link:../build-infra
+      keystore-infra:
+        specifier: workspace:*
+        version: link:../keystore-infra
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@8.1.3(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/keystore-infra:
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@8.1.3(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/proteus-builder:
+    dependencies:
+      '@socketsecurity/lib-stable':
+        specifier: 'catalog:'
+        version: '@socketsecurity/lib@6.5.2(typescript@7.0.2)'
+      build-infra:
+        specifier: workspace:*
+        version: link:../build-infra
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(vite@8.1.3(@types/node@26.1.1)(jiti@2.7.0)(yaml@2.9.0))
 
 packages:
 
@@ -3401,8 +3520,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@shadscan/cli@0.2.0':
-    resolution: {integrity: sha512-yVctx2RgrKInob4H+5zrQiNDfmRAL2oFPMinkeNdJxdOgHUiDVke8waEFDzNm2tVAfqn4myTUY8fLBXj4niu4w==}
+  '@shadscan/cli@0.5.0':
+    resolution: {integrity: sha512-pCZS3uSXjIV2ORWFIClcKnjqIfmVG37LnwaWGja48JoYz3PTdJ8kp73oczY2XCSIZA8oz4SfYE5iGJEUStOzAg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -3416,10 +3535,6 @@ packages:
   '@socketregistry/es-define-property@1.0.7':
     resolution: {integrity: sha512-pCJr9kYvUKzIZQUbkSzHW/PlZ5cvm4DXmxFMBmGydScVKxri4/BBdh9ASW+38/82pdaE5lTK92AN+MYydJIQCw==}
     engines: {node: '>=18'}
-
-  '@socketregistry/packageurl-js@1.4.8':
-    resolution: {integrity: sha512-u9Mlg3zeiCr8FHdG6Sxd4T8dWS/zVzW270tS67JdDra2hrzPfgsmbWr7itlQc/0P9uWX6gslISs88YQvi3Z5SQ==}
-    engines: {node: '>=24', npm: '>=12.0.0', pnpm: '>=11.0.5'}
 
   '@socketregistry/packageurl-js@1.5.0':
     resolution: {integrity: sha512-Yqnq50McfKVqKCUKRIhW3XcnjxzFoysBDkUktOuLzOdy4cWi0smVqvLNSkS3f4sdDJYpRBjcxTlb2ajHr+cURQ==}
@@ -3447,10 +3562,6 @@ packages:
       typescript:
         optional: true
 
-  '@socketsecurity/sdk@4.1.2':
-    resolution: {integrity: sha512-CZ9EjVf6M5MDfkG8eIZ1WGmSnQDB4VdT76QbOHticVEQW4LnU4cJ9Uev6SSDsAVECw1KkNtU0ZkDngI4XQUWOg==}
-    engines: {node: '>=18.20.8', npm: '>=12.0.0', pnpm: '>=11.0.5'}
-
   '@socketsecurity/sdk@4.1.3':
     resolution: {integrity: sha512-iaUkTWdBvUt5SMkfdhIOdt66sxZ0TakW/Ni533YbuHJpe1qQN3gq7KHCjEqEQUeL4o6YRsJ2G/XoUrwrXx+jvQ==}
     engines: {node: '>=24', npm: '>=12.0.1', pnpm: '>=11.0.5'}
@@ -3460,6 +3571,9 @@ packages:
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
+
+  '@types/adm-zip@0.5.8':
+    resolution: {integrity: sha512-RVVH7QvZYbN+ihqZ4kX/dMiowf6o+Jk1fNwiSdx0NahBJLU787zkULhGhJM8mf/obmLGmgdMM0bXsQTmyfbR7Q==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -3666,6 +3780,19 @@ packages:
 
   '@vitest/utils@4.1.10':
     resolution: {integrity: sha512-fy9am/HWxbaGt/Sawrp90vt6Y6jQwf1RX77cz3uwoJwJVMli/e1IEwRPnMNJ7vKfPTwo0diXifkpPvwH9v7nGA==}
+
+  acorn-walk@8.3.5:
+    resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
+    engines: {node: '>=0.4.0'}
+
+  acorn@8.17.0:
+    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+
+  adm-zip@0.5.18:
+    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
+    engines: {node: '>=12.0'}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -5414,7 +5541,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@shadscan/cli@0.2.0':
+  '@shadscan/cli@0.5.0':
     dependencies:
       cross-spawn: 7.0.6
       jsonc-parser: 3.3.1
@@ -5429,8 +5556,6 @@ snapshots:
 
   '@socketregistry/es-define-property@1.0.7': {}
 
-  '@socketregistry/packageurl-js@1.4.8': {}
-
   '@socketregistry/packageurl-js@1.5.0': {}
 
   '@socketregistry/safe-buffer@1.0.9': {}
@@ -5443,8 +5568,6 @@ snapshots:
     optionalDependencies:
       typescript: 7.0.2
 
-  '@socketsecurity/sdk@4.1.2': {}
-
   '@socketsecurity/sdk@4.1.3': {}
 
   '@standard-schema/spec@1.1.0': {}
@@ -5453,6 +5576,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@types/adm-zip@0.5.8':
+    dependencies:
+      '@types/node': 26.1.1
 
   '@types/chai@5.2.3':
     dependencies:
@@ -5616,6 +5743,14 @@ snapshots:
       '@vitest/pretty-format': 4.1.10
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
+
+  acorn-walk@8.3.5:
+    dependencies:
+      acorn: 8.17.0
+
+  acorn@8.17.0: {}
+
+  adm-zip@0.5.18: {}
 
   ansi-regex@5.0.1: {}
 
