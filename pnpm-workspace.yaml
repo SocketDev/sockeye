@@ -124,6 +124,8 @@ minimumReleaseAgeExclude:
   # tracks the current release. Exact-pinned so a future version re-soaks.
   # verkit — new dev-only transitive of taze 19.16.0 (same owner directive);
   # exact-pinned so future versions re-soak.
+  # published: 2026-07-28 | removable: 2026-08-04
+  - 'acorn@8.18.0'
 
 allowBuilds:
   '@socketsecurity/sdk': false
