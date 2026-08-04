@@ -119,10 +119,14 @@ export async function fetchNodeChecksum(
  *   error?: string
  * }>}
  */
-export async function verifyNodeChecksum(options?: {
-  version?: string | undefined
-  timeout?: number | undefined
-} | undefined): Promise<{
+export async function verifyNodeChecksum(
+  options?:
+    | {
+        version?: string | undefined
+        timeout?: number | undefined
+      }
+    | undefined,
+): Promise<{
   valid: boolean
   expected?: string | undefined
   actual?: string | undefined

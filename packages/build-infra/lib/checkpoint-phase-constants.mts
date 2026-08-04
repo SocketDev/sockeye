@@ -158,9 +158,9 @@ export const CHECKPOINT_CHAINS = {
   simple: () => [CHECKPOINTS.FINALIZED],
 
   /**
-   * Yoga Layout WASM pipeline checkpoint chain.
-   * Dev skips wasm-optimized for faster builds.
-   * Includes SOURCE_CONFIGURED because yoga requires a configuration step before building.
+   * Yoga Layout WASM pipeline checkpoint chain. Dev skips wasm-optimized for
+   * faster builds. Includes SOURCE_CONFIGURED because yoga requires a
+   * configuration step before building.
    */
   yoga: (mode: string) => {
     if (mode === 'prod') {

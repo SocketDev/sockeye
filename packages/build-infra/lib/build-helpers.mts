@@ -1,9 +1,10 @@
 /**
  * Build Helper Utilities.
  *
- * General-purpose build helpers (execBuildCommand, sizing, durations, executable bits),
- * plus the aggregation point for the split helper domains: host environment
- * checks, build logs, smoke-test strategy/execution, and binary verification.
+ * General-purpose build helpers (execBuildCommand, sizing, durations,
+ * executable bits), plus the aggregation point for the split helper domains:
+ * host environment checks, build logs, smoke-test strategy/execution, and
+ * binary verification.
  */
 
 import { promises as fs } from 'node:fs'
@@ -36,8 +37,8 @@ export {
 } from './checkpoint-manager.mts'
 
 /**
- * Options for {@link execBuildCommand}. Extends spawn options with the legacy `encoding`
- * flag — when set, output is captured instead of inherited.
+ * Options for {@link execBuildCommand}. Extends spawn options with the legacy
+ * `encoding` flag — when set, output is captured instead of inherited.
  */
 export type ExecOptions = SpawnOptions & {
   encoding?: BufferEncoding | undefined

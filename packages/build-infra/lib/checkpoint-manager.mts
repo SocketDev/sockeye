@@ -1258,11 +1258,9 @@ export async function restoreCheckpoint(
             // creation time (line ~520) where relativeTo was the temp extract
             // dir — the tarball was the same in both cases, only the absolute
             // extract prefix differs.
-            const extractedHash = computeSourceHash(
-              [targetPath],
-              undefined,
-              { relativeTo: extractDir },
-            )
+            const extractedHash = computeSourceHash([targetPath], undefined, {
+              relativeTo: extractDir,
+            })
 
             // Require artifactHash for all checkpoints (corruption detection)
             if (!checkpointData.artifactHash) {

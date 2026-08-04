@@ -116,9 +116,13 @@ export interface PrebuiltApi {
    * (network error, checksum mismatch, missing release, onExtracted
    * rejection). Callers fall through to a from-source build.
    */
-  downloadPrebuilt(options?: {
-    platformArch?: string | undefined
-  } | undefined): Promise<string | undefined>
+  downloadPrebuilt(
+    options?:
+      | {
+          platformArch?: string | undefined
+        }
+      | undefined,
+  ): Promise<string | undefined>
   /**
    * Orchestrates the lookup chain:
    *
@@ -128,10 +132,14 @@ export interface PrebuiltApi {
    *    resolved install dir, or throws if none of the three branches produced a
    *    valid install.
    */
-  ensure(options?: {
-    force?: boolean | undefined
-    platformArch?: string | undefined
-  } | undefined): Promise<string>
+  ensure(
+    options?:
+      | {
+          force?: boolean | undefined
+          platformArch?: string | undefined
+        }
+      | undefined,
+  ): Promise<string>
 }
 
 /**
