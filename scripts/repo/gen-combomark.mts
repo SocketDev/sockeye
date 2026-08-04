@@ -20,17 +20,10 @@ import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { optimize } from 'svgo'
 
-import {
-  COMBOMARK_DARK_SVG_PATH,
-  COMBOMARK_LIGHT_SVG_PATH,
-  COMBOMARK_SVG_PATH,
-  LOGOMARK_SVG_PATH,
-} from './paths.mts'
+import { COMBOMARK_SVG_PATH, LOGOMARK_SVG_PATH } from './paths.mts'
 import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 
 const logger = getDefaultLogger()
-type CombomarkMode = 'adaptive' | 'dark' | 'light'
-
 /**
  * SVGO multipass, matching the committed logomark's pass so the emitted
  * combomark is a fixpoint too.
@@ -40,11 +33,15 @@ function optimizeSvg(svg: string): string {
 }
 
 /**
- * The combomark for any mode: the all-in-one badge logomark, verified to be a
- * drawable SVG. The badge is opaque, so every mode shares the same bytes.
+ * The combomark: the all-in-one badge logomark, verified to be a drawable SVG.
+ *
+ * There is deliberately no light/dark axis. The badge is an opaque full-colour
+ * illustration with no single-ink layer to invert, so a theme variant would be
+ * the same bytes under another name — which is exactly what this generator used
+ * to emit. A mark earns a theme split only when something in it disappears
+ * against the opposite background.
  */
-export function traceCombomark(mode: CombomarkMode = 'adaptive'): string {
-  void mode
+export function traceCombomark(): string {
   const logomarkSvg = readFileSync(LOGOMARK_SVG_PATH, 'utf8')
   if (!logomarkSvg.includes('<svg') || !logomarkSvg.includes('<path')) {
     throw new Error(
@@ -55,25 +52,14 @@ export function traceCombomark(mode: CombomarkMode = 'adaptive'): string {
 }
 
 /**
- * Regenerate `assets/repo/brand/sockeye-combomark.svg` (and the light/dark
- * slots) from the committed logomark.
+ * Regenerate `assets/repo/brand/sockeye-combomark.svg` from the committed
+ * logomark. One adaptive output, no theme slots.
  */
 export function generateCombomark(): { path: string; bytes: number } {
   mkdirSync(path.dirname(COMBOMARK_SVG_PATH), { recursive: true })
-  const variants: ReadonlyArray<readonly [string, CombomarkMode]> = [
-    [COMBOMARK_SVG_PATH, 'adaptive'],
-    [COMBOMARK_LIGHT_SVG_PATH, 'light'],
-    [COMBOMARK_DARK_SVG_PATH, 'dark'],
-  ]
-  let bytes = 0
-  for (const [outPath, mode] of variants) {
-    const svg = traceCombomark(mode)
-    writeFileSync(outPath, svg)
-    if (outPath === COMBOMARK_SVG_PATH) {
-      bytes = Buffer.byteLength(svg)
-    }
-  }
-  return { path: COMBOMARK_SVG_PATH, bytes }
+  const svg = traceCombomark()
+  writeFileSync(COMBOMARK_SVG_PATH, svg)
+  return { path: COMBOMARK_SVG_PATH, bytes: Buffer.byteLength(svg) }
 }
 
 function main(): void {

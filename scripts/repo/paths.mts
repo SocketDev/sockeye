@@ -55,18 +55,6 @@ export const COMBOMARK_SVG_PATH = path.join(
   'sockeye-combomark.svg',
 )
 
-export const COMBOMARK_LIGHT_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-combomark-light.svg',
-)
-
-export const COMBOMARK_DARK_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-combomark-dark.svg',
-)
-
 /**
  * Resolve the active build mode. An explicit `BUILD_MODE` wins, CI defaults to
  * the release-shaped `prod` build, and a developer machine defaults to `dev`.

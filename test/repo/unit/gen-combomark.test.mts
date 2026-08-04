@@ -6,16 +6,13 @@
  *   law).
  */
 
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
+import path from 'node:path'
 
 import { describe, expect, test } from 'vitest'
 
 import { traceCombomark } from '../../../scripts/repo/gen-combomark.mts'
-import {
-  COMBOMARK_DARK_SVG_PATH,
-  COMBOMARK_LIGHT_SVG_PATH,
-  COMBOMARK_SVG_PATH,
-} from '../../../scripts/repo/paths.mts'
+import { COMBOMARK_SVG_PATH } from '../../../scripts/repo/paths.mts'
 
 describe('gen-combomark generator', () => {
   test('produces a well-formed combination mark', async () => {
@@ -50,12 +47,13 @@ describe('gen-combomark generator', () => {
     expect(committed.trimEnd()).toBe(traceCombomark().trimEnd())
   })
 
-  test('ships deterministic light and dark variants (same opaque badge)', async () => {
-    const [light, dark] = await Promise.all([
-      readFile(COMBOMARK_LIGHT_SVG_PATH, 'utf8'),
-      readFile(COMBOMARK_DARK_SVG_PATH, 'utf8'),
-    ])
-    expect(light.trimEnd()).toBe(traceCombomark('light').trimEnd())
-    expect(dark.trimEnd()).toBe(traceCombomark('dark').trimEnd())
+  test('ships ONE adaptive mark — no light/dark duplicates on disk', async () => {
+    // The generator used to write the same bytes to three filenames, so
+    // -light and -dark were copies of the adaptive file. An opaque full-colour
+    // badge has no single-ink layer to invert, so a theme split would only
+    // duplicate a filename. Guard the duplicates staying gone.
+    const dir = path.dirname(COMBOMARK_SVG_PATH)
+    const marks = (await readdir(dir)).filter(n => n.includes('combomark'))
+    expect(marks).toEqual(['sockeye-combomark.svg'])
   })
 })
