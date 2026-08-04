@@ -11,6 +11,17 @@
 import path from 'node:path'
 
 import { BUILD_STAGES } from './constants.mts'
+import { REPO_CACHE_DIR } from '../../../scripts/fleet/paths.mts'
+
+/**
+ * Where downloaded external tools are cached. Rooted at the repo's own
+ * `.cache`, never `node_modules/.cache`: a dependency-tree store is wiped by
+ * any `clean` or reinstall, so every tool re-downloads.
+ */
+export const EXTERNAL_TOOLS_CACHE_DIR = path.join(
+  REPO_CACHE_DIR,
+  'external-tools',
+)
 
 /**
  * Get the canonical download cache directory for a package.

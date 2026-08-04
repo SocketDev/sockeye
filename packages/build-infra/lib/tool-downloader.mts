@@ -23,6 +23,8 @@ import { httpDownload } from '@socketsecurity/lib-stable/http-request/download'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { EXTERNAL_TOOLS_CACHE_DIR } from './paths.mts'
+
 const logger = getDefaultLogger()
 
 /**
@@ -334,8 +336,7 @@ export function getCacheDir() {
   if (process.env['EXTERNAL_TOOLS_CACHE']) {
     return process.env['EXTERNAL_TOOLS_CACHE']
   }
-  // oxlint-disable-next-line socket/prefer-node-modules-dot-cache -- this IS the canonical node_modules/.cache shape; the rule's per-arg check can't see the 'node_modules' literal preceding '.cache'.
-  return path.join(process.cwd(), 'node_modules', '.cache', 'external-tools')
+  return EXTERNAL_TOOLS_CACHE_DIR
 }
 
 /**
