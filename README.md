@@ -1,7 +1,7 @@
 # Sockeye
 
 <div align="center">
-  <img src="assets/repo/brand/sockeye-combomark.svg" width="360" alt="Sockeye — the sockeye badge: a leaping salmon above the SOCKEYE and SOCKET LABS banner, inside the Socket shield">
+  <img src="assets/repo/brand/sockeye-combomark.svg" width="240" alt="Sockeye — the sockeye badge: a leaping salmon above the SOCKEYE and SOCKET LABS banner, inside the Socket shield">
 </div>
 
 [![Follow @SocketSecurity](assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
@@ -113,12 +113,3 @@ layout and test boundaries.
 ## License
 
 MIT
-
-<br/>
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/fleet/socket-combomark-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/fleet/socket-combomark-light.svg">
-    <img width="420" height="120" alt="Socket" src="assets/fleet/socket-combomark-light.svg">
-  </picture>
-</div>
