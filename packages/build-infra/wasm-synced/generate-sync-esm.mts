@@ -16,21 +16,21 @@ import { applyCommonTransforms } from './transform.mts'
 /**
  * Generate ESM synchronous wrapper.
  *
- * @param {object} options - Configuration options.
- * @param {string} options.mtsContent - MJS glue code content.
- * @param {string} options.base64Wasm - Base64-encoded WASM binary.
- * @param {Uint8Array} options.wasmBinary - WASM binary.
- * @param {string} options.mtsFile - Path to input MJS file.
- * @param {string} options.outputSyncMjs - Path to output sync.mts file.
- * @param {string} options.packageName - Package name.
- * @param {string} options.initFunctionName - Init function name.
- * @param {string} options.exportName - Export name.
- * @param {string} [options.description] - Optional description.
- * @param {object} options.logger - Logger instance.
+ * @param {object} config - Configuration options.
+ * @param {string} config.mtsContent - MJS glue code content.
+ * @param {string} config.base64Wasm - Base64-encoded WASM binary.
+ * @param {Uint8Array} config.wasmBinary - WASM binary.
+ * @param {string} config.mtsFile - Path to input MJS file.
+ * @param {string} config.outputSyncMjs - Path to output sync.mts file.
+ * @param {string} config.packageName - Package name.
+ * @param {string} config.initFunctionName - Init function name.
+ * @param {string} config.exportName - Export name.
+ * @param {string} [config.description] - Optional description.
+ * @param {object} config.logger - Logger instance.
  *
  * @returns {Promise<string>} Path to generated file
  */
-export async function generateSyncEsm(options) {
+export async function generateSyncEsm(config) {
   const {
     base64Wasm,
     description,
@@ -42,7 +42,7 @@ export async function generateSyncEsm(options) {
     outputSyncMjs,
     packageName,
     wasmBinary,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   let mjsContent = inputMjsContent
 

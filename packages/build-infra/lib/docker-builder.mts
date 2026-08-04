@@ -28,18 +28,18 @@ const logger = getDefaultLogger()
 /**
  * Build a package using the appropriate strategy (native, docker, or download).
  *
- * @param {object} options - Build options.
- * @param {string} options.packageName - Package to build.
- * @param {string} options.target - Build target.
- * @param {string} options.outputDir - Output directory.
- * @param {string} options.buildMode - Build mode.
- * @param {boolean} options.force - Force rebuild.
- * @param {Function} options.nativeBuild - Function to run native build.
- * @param {Function} options.download - Function to download pre-built binary.
+ * @param {object} config - Build options.
+ * @param {string} config.packageName - Package to build.
+ * @param {string} config.target - Build target.
+ * @param {string} config.outputDir - Output directory.
+ * @param {string} config.buildMode - Build mode.
+ * @param {boolean} config.force - Force rebuild.
+ * @param {Function} config.nativeBuild - Function to run native build.
+ * @param {Function} config.download - Function to download pre-built binary.
  *
  * @returns {Promise<{ ok: boolean; strategy: string; artifactPath?: string }>}
  */
-export async function buildForTarget(options) {
+export async function buildForTarget(config) {
   const {
     buildMode = 'prod',
     download,
@@ -48,7 +48,7 @@ export async function buildForTarget(options) {
     outputDir,
     packageName,
     target,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   const strategy = getBuildStrategy(target)
 
@@ -91,7 +91,7 @@ export async function buildForTarget(options) {
     }
 
     default: {
-      printError(`Unknown build strategy: ${strategy}`)
+      printError(`Unknown build strategy: ${String(strategy)}`)
       return { ok: false, strategy }
     }
   }
@@ -100,23 +100,23 @@ export async function buildForTarget(options) {
 /**
  * Build a package for a specific target using Docker.
  *
- * @param {object} options - Build options.
- * @param {string} options.packageName - Package to build (e.g., 'binpress')
- * @param {string} options.target - Build target (e.g., 'linux-x64-glibc')
- * @param {string} options.outputDir - Directory to output build artifacts.
- * @param {string} options.buildMode - Build mode ('dev' or 'prod')
- * @param {boolean} options.force - Force rebuild.
+ * @param {object} config - Build options.
+ * @param {string} config.packageName - Package to build (e.g., 'binpress')
+ * @param {string} config.target - Build target (e.g., 'linux-x64-glibc')
+ * @param {string} config.outputDir - Directory to output build artifacts.
+ * @param {string} config.buildMode - Build mode ('dev' or 'prod')
+ * @param {boolean} config.force - Force rebuild.
  *
  * @returns {Promise<{ ok: boolean; artifactPath?: string }>}
  */
-export async function buildWithDocker(options) {
+export async function buildWithDocker(config) {
   const {
     buildMode = 'prod',
     force = false,
     outputDir,
     packageName,
     target,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   // Validate target is Docker-buildable
   if (!LINUX_TARGETS.includes(target)) {
@@ -245,7 +245,7 @@ export async function cleanAppleDoubleFiles(dir) {
         stdio: 'pipe',
       },
     )
-    const files = (result.stdout?.toString() || '').split('\n').filter(Boolean)
+    const files = (result.stdout || '').split('\n').filter(Boolean)
     return files.length
   } catch {
     return 0
@@ -299,18 +299,18 @@ export function getDockerPlatform(target) {
 /**
  * Run a command inside a Docker container.
  *
- * @param {object} options - Run options.
- * @param {string} options.image - Docker image to use.
- * @param {string[]} options.command - Command to run.
- * @param {string} options.workdir - Working directory inside container.
- * @param {Record<string, string>} options.env - Environment variables.
- * @param {string[]} options.volumes - Volume mounts.
- * @param {string} options.platform - Docker platform (e.g., 'linux/amd64')
- * @param {boolean} options.interactive - Run interactively.
+ * @param {object} config - Run options.
+ * @param {string} config.image - Docker image to use.
+ * @param {string[]} config.command - Command to run.
+ * @param {string} config.workdir - Working directory inside container.
+ * @param {Record<string, string>} config.env - Environment variables.
+ * @param {string[]} config.volumes - Volume mounts.
+ * @param {string} config.platform - Docker platform (e.g., 'linux/amd64')
+ * @param {boolean} config.interactive - Run interactively.
  *
  * @returns {Promise<{ code: number; stdout: string; stderr: string }>}
  */
-export async function runInDocker(options) {
+export async function runInDocker(config) {
   const {
     command,
     env = {},
@@ -319,7 +319,7 @@ export async function runInDocker(options) {
     platform,
     volumes = [],
     workdir = '/workspace',
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   const args = ['run', '--rm']
 
@@ -334,7 +334,7 @@ export async function runInDocker(options) {
   // Add environment variables
   // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
   for (const [key, value] of Object.entries(env)) {
-    args.push('-e', `${key}=${value}`)
+    args.push('-e', `${key}=${String(value)}`)
   }
 
   // Add volume mounts
@@ -392,8 +392,8 @@ export async function runInDocker(options) {
     const { code, stderr, stdout } = await result
     return {
       code: code ?? 0,
-      stderr: stderr?.toString() ?? '',
-      stdout: stdout?.toString() ?? '',
+      stderr: stderr ?? '',
+      stdout: stdout ?? '',
     }
   } catch (e) {
     return {

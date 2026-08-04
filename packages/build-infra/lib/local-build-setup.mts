@@ -105,7 +105,9 @@ export async function checkDockerSetup() {
  *
  * @returns {'native' | 'docker' | 'download'}
  */
-export function getBuildStrategy(target) {
+export function getBuildStrategy(
+  target: string,
+): 'native' | 'docker' | 'download' {
   const { arch, platform } = getHostInfo()
 
   // Parse target (expects format: platform-arch or platform-arch-libc)

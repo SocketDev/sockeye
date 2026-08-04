@@ -30,25 +30,25 @@ const logger = getDefaultLogger()
  * - Check Python version
  * - Install/verify Python packages from external-tools.json.
  *
- * @param {object} options - Check options.
- * @param {string} options.packageRoot - Package root directory (for loading
+ * @param {object} config - Check options.
+ * @param {string} config.packageRoot - Package root directory (for loading
  *   external-tools.json)
- * @param {string} options.packageJsonPath - Path to package.json (for pip
+ * @param {string} config.packageJsonPath - Path to package.json (for pip
  *   install context)
- * @param {string} [options.buildDir] - Build directory (for disk space check)
- * @param {number} [options.requiredDiskGB=1] - Required disk space in GB.
- * @param {boolean} [options.quiet=false] - Suppress output.
+ * @param {string} [config.buildDir] - Build directory (for disk space check)
+ * @param {number} [config.requiredDiskGB=1] - Required disk space in GB.
+ * @param {boolean} [config.quiet=false] - Suppress output.
  *
  * @returns {Promise<{ pythonPackages: Array; externalTools: object }>}
  */
-export async function checkModelBuildPrerequisites(options) {
+export async function checkModelBuildPrerequisites(config) {
   const {
     buildDir,
     packageJsonPath,
     packageRoot,
     quiet = false,
     requiredDiskGB = 1,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   if (!quiet) {
     logger.step('Pre-flight Checks')

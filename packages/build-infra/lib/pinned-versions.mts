@@ -70,7 +70,7 @@ export function loadExternalToolsJson(
     }
     visited.add(resolvedPath)
 
-    const data = JSON.parse(readFileSync(jsonPath, 'utf8')) as ExternalToolsFile
+    const data: ExternalToolsFile = JSON.parse(readFileSync(jsonPath, 'utf8'))
 
     // Validate against schema.
     const validation = validateExternalTools(data)

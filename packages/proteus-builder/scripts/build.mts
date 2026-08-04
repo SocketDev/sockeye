@@ -13,7 +13,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { exec } from 'build-infra/lib/build-helpers'
+import { execBuildCommand } from 'build-infra/lib/build-helpers'
 import { errorMessage } from 'build-infra/lib/error-utils'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
@@ -53,8 +53,8 @@ async function main() {
   const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
 
   logger.info(`Building proteus daemon with ${makefile} (${mode})…`)
-  // exec throws on a non-zero exit, so reaching the next line means make won.
-  await exec('make', ['-f', makefile], {
+  // execBuildCommand throws on a non-zero exit, so reaching the next line means make won.
+  await execBuildCommand('make', ['-f', makefile], {
     cwd: packageRoot,
     env: { ...process.env, BUILD_MODE: mode, PLATFORM_ARCH: platformArch },
   })

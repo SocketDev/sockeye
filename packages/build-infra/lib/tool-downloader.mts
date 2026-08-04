@@ -82,7 +82,7 @@ export async function acquireLock(lockPath, timeoutMs = 120_000) {
  * @returns {Promise<string>} Hex-encoded SHA256
  */
 export function computeSha256(filePath) {
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const hash = crypto.createHash('sha256')
     const stream = createReadStream(filePath)
     stream.on('data', data => hash.update(data))
@@ -138,7 +138,7 @@ export async function downloadAndCache(
   const releaseLock = await acquireLock(lockPath)
 
   try {
-    // Re-check cache after acquiring lock (another process may have completed)
+    // Re-check cache after acquiring lock: another process may have completed it
     if (
       existsSync(binaryPath) &&
       verifyCacheIntegrity(cachePath, resolverResult.sha256)

@@ -20,26 +20,26 @@ import { generateSyncEsm } from './generate-sync-esm.mts'
 /**
  * Generate a synchronous WASM wrapper with embedded base64 binary.
  *
- * @param {object} options - Configuration options.
- * @param {string} options.wasmFile - Path to input WASM file.
- * @param {string} options.mtsFile - Path to input MJS glue code file.
- * @param {string} options.outputSyncJs - Path to output sync.js file.
- * @param {string} options.packageName - Package name (e.g., 'onnxruntime',
+ * @param {object} config - Configuration options.
+ * @param {string} config.wasmFile - Path to input WASM file.
+ * @param {string} config.mtsFile - Path to input MJS glue code file.
+ * @param {string} config.outputSyncJs - Path to output sync.js file.
+ * @param {string} config.packageName - Package name (e.g., 'onnxruntime',
  *   'yoga-layout')
- * @param {string} options.initFunctionName - Name of the Emscripten init
+ * @param {string} config.initFunctionName - Name of the Emscripten init
  *   function (e.g., 'ortWasmThreaded', 'Module')
- * @param {string} options.exportName - Name of the exported object (e.g.,
+ * @param {string} config.exportName - Name of the exported object (e.g.,
  *   'ort', 'yoga')
- * @param {string} [options.description] - Optional description for the file
+ * @param {string} [config.description] - Optional description for the file
  *   header.
- * @param {object} [options.logger] - Optional logger (defaults to build-output
+ * @param {object} [config.logger] - Optional logger (defaults to build-output
  *   logger)
- * @param {Function} [options.customSmokeTest] - Optional custom smoke test
+ * @param {Function} [config.customSmokeTest] - Optional custom smoke test
  *   function for sync.js.
  *
  * @returns {Promise<void>}
  */
-export async function generateWasmSyncWrapper(options) {
+export async function generateWasmSyncWrapper(config) {
   const {
     customSmokeTest,
     description,
@@ -50,7 +50,7 @@ export async function generateWasmSyncWrapper(options) {
     outputSyncJs,
     packageName,
     wasmFile,
-  } = { __proto__: null, ...options }
+  } = { __proto__: null, ...config }
 
   if (!existsSync(wasmFile)) {
     throw new Error(`WASM file not found: ${wasmFile}`)
@@ -79,7 +79,7 @@ export async function generateWasmSyncWrapper(options) {
   const basename =
     lastSlash === -1 ? outputSyncCjs : outputSyncCjs.substring(lastSlash + 1)
 
-  // Validate basename is non-empty (catches trailing slash edge case)
+  // Validate basename is non-empty: this catches the trailing-slash edge case.
   if (!basename) {
     throw new Error(
       `Invalid output path (ends with slash): ${outputSyncCjs}. ` +

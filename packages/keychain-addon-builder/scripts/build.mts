@@ -21,7 +21,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { exec } from 'build-infra/lib/build-helpers'
+import { execBuildCommand } from 'build-infra/lib/build-helpers'
 import { errorMessage } from 'build-infra/lib/error-utils'
 
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -64,14 +64,14 @@ export interface PlatformBuild {
  * message naming the missing package so a libsecret-less host fails loudly.
  */
 export function pkgConfig(args: readonly string[]): string[] {
-  const r = spawnSync('pkg-config', args as string[], { encoding: 'utf8' })
+  const r = spawnSync('pkg-config', args, { encoding: 'utf8' })
   if (r.status !== 0) {
     throw new Error(
       `pkg-config ${args.join(' ')} failed — is libsecret-1-dev installed? ` +
-        `${r.stderr?.trim() ?? ''}`,
+        (r.stderr?.trim() ?? ''),
     )
   }
-  return String(r.stdout).trim().split(/\s+/u).filter(Boolean)
+  return r.stdout.trim().split(/\s+/u).filter(Boolean)
 }
 
 /**
@@ -152,8 +152,8 @@ async function main() {
   const backendObj = path.join(outDir, 'keystore_backend.o')
 
   logger.info(`Compiling keychain.node sources (${mode}, ${platformArch})…`)
-  // The shim is C++. exec throws on a non-zero exit.
-  await exec(
+  // The shim is C++. execBuildCommand throws on a non-zero exit.
+  await execBuildCommand(
     build.compiler,
     [
       '-c',
@@ -169,7 +169,7 @@ async function main() {
   )
   // The backend: ObjC++ stays under clang++; C compiles with `-x c` so it isn't
   // miscompiled as C++.
-  await exec(
+  await execBuildCommand(
     build.compiler,
     [
       '-c',
@@ -185,7 +185,7 @@ async function main() {
   )
 
   logger.info(`Linking keychain.node…`)
-  await exec(
+  await execBuildCommand(
     build.compiler,
     ['-shared', shimObj, backendObj, ...build.linkFlags, '-o', outPath],
     { cwd: packageRoot },

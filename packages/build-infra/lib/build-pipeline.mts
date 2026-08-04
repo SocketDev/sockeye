@@ -52,7 +52,7 @@ import type {
   PipelineContext,
   PipelinePackageJson,
   PipelineSourceMeta,
-  RunPipelineOptions,
+  RunPipelineConfig,
 } from './build-pipeline-types.mts'
 
 export type {
@@ -62,7 +62,7 @@ export type {
   PipelinePackageJson,
   PipelineSourceMeta,
   PipelineStage,
-  RunPipelineOptions,
+  RunPipelineConfig,
   StageResult,
 } from './build-pipeline-types.mts'
 
@@ -214,12 +214,12 @@ export function resolveCheckpointBuildDir(stage, ctx) {
  * Validate + run a pipeline. On --cache-key, prints the key and exits without
  * building. Returns the context so the caller can render a summary.
  *
- * @param {RunPipelineOptions} options
+ * @param {RunPipelineConfig} config
  * @param {object} [cliOverrides] - Pre-parsed flags (for programmatic use).
  *
  * @returns {Promise<PipelineContext>}
  */
-export async function runPipeline(options, cliOverrides) {
+export async function runPipeline(config, cliOverrides) {
   const {
     extraCacheInputs = [],
     getBuildPaths,
@@ -229,7 +229,7 @@ export async function runPipeline(options, cliOverrides) {
     packageRoot,
     preflight,
     stages,
-  } = { __proto__: null, ...options } as typeof options
+  } = { __proto__: null, ...config } as typeof config
 
   const flags = cliOverrides ?? parseFlags(process.argv.slice(2))
   const buildMode = getBuildMode(flags.raw ?? new Set())
@@ -258,20 +258,9 @@ export async function runPipeline(options, cliOverrides) {
     toolVersions,
   })
 
-  if (flags.printCacheKey) {
-    process.stdout.write(`${cacheKey}\n`) // socket-hook: allow logger -- shell capture of cache key
-    return
-  }
-
   const paths = getBuildPaths(buildMode, platformArch)
   const sharedPaths = getSharedBuildPaths ? getSharedBuildPaths() : undefined
   const outputFiles = getOutputFiles ? getOutputFiles(paths) : []
-
-  // Validate chain for typos / unknown names.
-  validateCheckpointChain(
-    stages.map(s => s.name),
-    packageName,
-  )
 
   const ctx = {
     buildMode,
@@ -287,6 +276,17 @@ export async function runPipeline(options, cliOverrides) {
     sources,
     toolVersions,
   }
+
+  if (flags.printCacheKey) {
+    process.stdout.write(`${cacheKey}\n`) // socket-hook: allow logger -- shell capture of cache key
+    return ctx
+  }
+
+  // Validate chain for typos / unknown names.
+  validateCheckpointChain(
+    stages.map(s => s.name),
+    packageName,
+  )
 
   const totalStart = Date.now()
   logger.step(`🔨 Building ${packageName}`)
@@ -376,11 +376,11 @@ export async function runPipeline(options, cliOverrides) {
 /**
  * CLI entry-point helper. Wraps runPipeline with a top-level error handler.
  *
- * @param {RunPipelineOptions} options
+ * @param {RunPipelineConfig} config
  */
-export async function runPipelineCli(options) {
+export async function runPipelineCli(config) {
   try {
-    await runPipeline(options)
+    await runPipeline(config)
   } catch (e) {
     logger.error(errorMessage(e))
     process.exitCode = 1

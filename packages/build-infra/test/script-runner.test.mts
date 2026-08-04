@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 
 import type * as BinWhich from '@socketsecurity/lib-stable/bin/which'
+import type * as LoggerDefault from '@socketsecurity/lib-stable/logger/default'
 import type * as SpawnChild from '@socketsecurity/lib-stable/process/spawn/child'
 
 import * as binModule from '@socketsecurity/lib-stable/bin/which'
@@ -35,21 +36,19 @@ vi.mock<typeof SpawnChild>(
   }),
 )
 
-vi.mock(
+vi.mock<typeof LoggerDefault>(
   import('@socketsecurity/lib-stable/logger/default'),
-  // Partial logger surface — only the methods script-runner calls; same
-  // as-never shape the fleet's other logger mocks use.
-  () =>
-    ({
-      getDefaultLogger: () => ({
-        error: vi.fn(),
-        log: vi.fn(),
-        step: vi.fn(),
-        success: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-      }),
-    }) as never,
+  // Partial logger surface — only the methods script-runner calls.
+  () => ({
+    getDefaultLogger: () => ({
+      error: vi.fn(),
+      log: vi.fn(),
+      step: vi.fn(),
+      success: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    }),
+  }),
 )
 
 describe('script-runner', () => {
@@ -59,8 +58,8 @@ describe('script-runner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockWhich = binModule.which as Mock
-    mockSpawn = spawnModule.spawn as Mock
+    mockWhich = vi.mocked(binModule.which)
+    mockSpawn = vi.mocked(spawnModule.spawn)
 
     // Default mock: pnpm is available
     mockWhich.mockResolvedValue('/usr/local/bin/pnpm')

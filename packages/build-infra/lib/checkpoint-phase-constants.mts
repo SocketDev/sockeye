@@ -160,7 +160,7 @@ export const CHECKPOINT_CHAINS = {
   /**
    * Yoga Layout WASM pipeline checkpoint chain.
    * Dev skips wasm-optimized for faster builds.
-   * Includes SOURCE_CONFIGURED (yoga needs configuration step).
+   * Includes SOURCE_CONFIGURED because yoga requires a configuration step before building.
    */
   yoga: (mode: string) => {
     if (mode === 'prod') {
@@ -232,7 +232,8 @@ for (const [name, generator] of Object.entries(CHECKPOINT_CHAINS)) {
     validateCheckpointChain(gen('dev'), `CHECKPOINT_CHAINS.${name}(dev)`)
     validateCheckpointChain(gen('prod'), `CHECKPOINT_CHAINS.${name}(prod)`)
   } else {
-    const gen = generator as () => string[]
-    validateCheckpointChain(gen(), `CHECKPOINT_CHAINS.${name}`)
+    // The single-arity generators below never read their argument, so
+    // calling through the shared union signature needs no narrowing cast.
+    validateCheckpointChain(generator('dev'), `CHECKPOINT_CHAINS.${name}`)
   }
 }

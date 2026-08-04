@@ -32,7 +32,7 @@ export const RELEASE_PLATFORM_MAP: Readonly<Partial<Record<string, string>>> =
     darwin: 'darwin',
     linux: 'linux',
     win32: 'win32',
-  } as Partial<Record<string, string>>)
+  })
 
 /**
  * Maps Node.js architecture names to GitHub release architecture names.
@@ -45,7 +45,7 @@ export const RELEASE_ARCH_MAP: Readonly<Partial<Record<string, string>>> =
     arm64: 'arm64',
     ia32: 'x86',
     x64: 'x64',
-  } as Partial<Record<string, string>>)
+  })
 
 /**
  * Get platform-arch string for internal directory paths (download locations).
@@ -206,7 +206,7 @@ const ASSET_PLATFORM_TO_NODE: Readonly<Partial<Record<string, string>>> =
     darwin: 'darwin',
     linux: 'linux',
     win32: 'win32',
-  } as Partial<Record<string, string>>)
+  })
 
 const ASSET_ARCH_TO_NODE: Readonly<Partial<Record<string, string>>> =
   Object.freeze({
@@ -214,7 +214,7 @@ const ASSET_ARCH_TO_NODE: Readonly<Partial<Record<string, string>>> =
     arm64: 'arm64',
     x64: 'x64',
     x86: 'ia32',
-  } as Partial<Record<string, string>>)
+  })
 
 /**
  * Parse an asset platform-arch string (e.g., `linux-x64-musl`) back into the

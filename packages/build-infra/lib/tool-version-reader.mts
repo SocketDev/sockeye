@@ -8,6 +8,8 @@
 
 import { readFileSync } from 'node:fs'
 
+import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
+
 import { NODE_VERSION_FILE, PACKAGE_ROOT } from './constants.mts'
 import {
   loadExternalTools,
@@ -121,7 +123,7 @@ export function getMinPythonVersion(): string {
 
     minPythonVersion = version
   }
-  return minPythonVersion as string
+  return minPythonVersion
 }
 
 let nodeVersion: string | undefined
@@ -149,7 +151,7 @@ export function getNodeVersion(): string {
 
       nodeVersion = version
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isErrnoException(e) && e.code === 'ENOENT') {
         throw new Error(
           `.node-version file not found at: ${NODE_VERSION_FILE}\n` +
             'Please ensure .node-version exists in the monorepo root.',

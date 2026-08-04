@@ -29,7 +29,9 @@ export async function loadChain(builder: string) {
       path.join(PACKAGES_DIR, builder, 'scripts/get-checkpoint-chain.mts'),
     ).href
   )
-  return mod.getCheckpointChain as (mode?: string) => string[]
+  const getCheckpointChain: (mode?: string | undefined) => string[] =
+    mod.getCheckpointChain
+  return getCheckpointChain
 }
 
 describe('get-checkpoint-chain drift guard', () => {

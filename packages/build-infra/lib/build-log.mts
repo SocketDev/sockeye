@@ -54,7 +54,7 @@ export async function readCheckpoint(
   const checkpointFile = path.join(buildDir, 'build-checkpoint')
   try {
     const content = await fs.readFile(checkpointFile, 'utf8')
-    return JSON.parse(content) as Record<string, unknown>
+    return JSON.parse(content)
   } catch {
     return undefined
   }

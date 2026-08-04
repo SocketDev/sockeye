@@ -91,9 +91,7 @@ export function auditExternalToolsJson() {
   )) {
     let parsed: { tools?: Record<string, unknown> | undefined }
     try {
-      parsed = JSON.parse(readFileSync(file, 'utf8')) as {
-        tools?: Record<string, unknown> | undefined
-      }
+      parsed = JSON.parse(readFileSync(file, 'utf8'))
     } catch (error) {
       pushUnannotated(
         'external-tools',
@@ -215,14 +213,14 @@ export function auditWorkflows() {
 export function printBucket(
   label: string,
   items: PinFinding[],
-  options: { alwaysList: boolean },
+  config: { alwaysList: boolean },
 ) {
-  const opts = { __proto__: null, ...options } as { alwaysList: boolean }
+  const cfg = { __proto__: null, ...config } as { alwaysList: boolean }
   if (items.length === 0) {
     return
   }
   logger.log(`${label} (${items.length}):`)
-  if (opts.alwaysList || verbose) {
+  if (cfg.alwaysList || verbose) {
     for (let i = 0, { length } = items; i < length; i += 1) {
       const f = items[i]
       if (!f) {
@@ -243,9 +241,9 @@ export function pushFromSoak(
   lineNumber: number,
   identifier: string,
   published: string,
-  options: { hasSeparateAnnotation: boolean },
+  config: { hasSeparateAnnotation: boolean },
 ) {
-  const opts = { __proto__: null, ...options } as {
+  const cfg = { __proto__: null, ...config } as {
     hasSeparateAnnotation: boolean
   }
   const soak = checkSoak(published)
@@ -255,7 +253,7 @@ export function pushFromSoak(
     lineNumber,
     identifier,
     status: soak.soaked ? 'soaked' : 'in-soak',
-    hasSeparateAnnotation: opts.hasSeparateAnnotation,
+    hasSeparateAnnotation: cfg.hasSeparateAnnotation,
     note: soak.soaked
       ? `soaked (${soak.daysOld}d old)`
       : `IN SOAK: ${soak.daysOld}d old, ${SOAK_DAYS - soak.daysOld}d remaining`,

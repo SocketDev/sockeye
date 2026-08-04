@@ -75,7 +75,7 @@ export async function adHocSign(
     await beforeSign()
   }
 
-  // Sign the binary with --force (replace any invalid signature).
+  // Sign the binary with --force to replace any invalid signature.
   try {
     logger.info(`Ad-hoc signing: ${path.basename(binaryPath)}`)
     await spawn('codesign', ['--sign', '-', '--force', binaryPath])

@@ -2,7 +2,7 @@
  * @file Build-output test for keychain.node. Loads the compiled addon and
  *   exercises the paths that DON'T raise a biometric prompt (a missing item:
  *   get → undefined, del → no-op). Skips unless the addon has been built for
- *   the host platform (a bare checkout hasn't). The write + biometric-read
+ *   the host platform, which a bare checkout hasn't. The write + biometric-read
  *   round-trip needs an interactive Touch ID prompt, so it's verified manually.
  */
 import { existsSync } from 'node:fs'
@@ -24,11 +24,11 @@ const MISSING_SERVICE = 'socket-keychain-addon-test-missing'
 const MISSING_ACCOUNT = 'NOPE'
 
 describe.skipIf(!built)('keychain.node', () => {
-  const keychain = require(binaryPath) as {
+  const keychain: {
     get: (service: string, account: string) => string | undefined
     set: (service: string, account: string, value: string) => undefined
     del: (service: string, account: string) => undefined
-  }
+  } = require(binaryPath)
 
   afterAll(() => {
     // Belt-and-suspenders: ensure the test item never lingers in the keychain.

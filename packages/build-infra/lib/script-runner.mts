@@ -39,7 +39,7 @@ export interface CommandSpec {
 export async function runCommand(
   command: string,
   args: string[] = [],
-  cwd: string | undefined = undefined,
+  cwd?: string | undefined,
 ): Promise<void> {
   logger.info(`Running: ${command} ${args.join(' ')}`)
 
@@ -239,7 +239,7 @@ export const pnpm = {
    * Build all packages or specific package.
    */
   build: async (
-    packageName: string | undefined = undefined,
+    packageName?: string | undefined,
     options: SpawnExtra = {},
   ) => {
     logger.step(packageName ? `Building ${packageName}` : 'Building packages')
@@ -286,7 +286,7 @@ export const pnpm = {
    * Run tests in specific package or all packages.
    */
   test: async (
-    packageName: string | undefined = undefined,
+    packageName?: string | undefined,
     options: SpawnExtra = {},
   ) => {
     logger.step(packageName ? `Testing ${packageName}` : 'Running tests')

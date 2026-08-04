@@ -57,7 +57,7 @@ export interface PrebuiltConfig {
    */
   packageRoot: string
   /**
-   * Files that must exist (relative to the install dir) for the
+   * Files that must exist, relative to the install dir, for the
    * builder's artifact to be considered complete. Array elements may
    * be strings (single required path) or string arrays (alternatives,
    * any one of which must exist — used for MSVC `.lib` vs Unix `.a`
@@ -69,14 +69,14 @@ export interface PrebuiltConfig {
    * `linux-x64-musl`). Per-builder so each can honor its own
    * libc-detection / Windows naming conventions.
    */
-  getCurrentPlatformArch(): string
+  getCurrentPlatformArch(this: void): string
   /**
    * Resolve the local build directory for a given platform-arch.
    * This is the "if the user already built locally" path checked
    * before falling through to the download cache. Returns the
    * directory that should contain `requiredFiles`.
    */
-  getLocalBuildDir(platformArch: string): string
+  getLocalBuildDir(this: void, platformArch: string): string
   /**
    * Optional hook fired after a downloaded tarball is extracted but
    * before the success-return. Lets a builder add platform-specific
@@ -85,7 +85,11 @@ export interface PrebuiltConfig {
    * extract dir and return `undefined`, falling through to source
    * build).
    */
-  onExtracted?(extractDir: string, platformArch: string): Promise<boolean>
+  onExtracted?(
+    this: void,
+    extractDir: string,
+    platformArch: string,
+  ): Promise<boolean>
 }
 
 export interface PrebuiltApi {
@@ -100,7 +104,7 @@ export interface PrebuiltApi {
   /**
    * `existsAt` over the current platform's local build dir.
    */
-  exists(platformArch?: string): boolean
+  exists(platformArch?: string | undefined): boolean
   /**
    * `<packageRoot>/build/downloaded/<name>/<platformArch>/` —
    * where the gh-release download lands after extraction.
@@ -114,7 +118,7 @@ export interface PrebuiltApi {
    */
   downloadPrebuilt(options?: {
     platformArch?: string | undefined
-  }): Promise<string | undefined>
+  } | undefined): Promise<string | undefined>
   /**
    * Orchestrates the lookup chain:
    *
@@ -127,7 +131,7 @@ export interface PrebuiltApi {
   ensure(options?: {
     force?: boolean | undefined
     platformArch?: string | undefined
-  }): Promise<string>
+  } | undefined): Promise<string>
 }
 
 /**
@@ -164,7 +168,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
     return path.join(getDownloadedDir(packageRoot), name, platformArch)
   }
 
-  function exists(platformArch?: string): boolean {
+  function exists(platformArch?: string | undefined): boolean {
     const resolvedPlatformArch = platformArch ?? getCurrentPlatformArch()
     return existsAt(getLocalBuildDir(resolvedPlatformArch))
   }

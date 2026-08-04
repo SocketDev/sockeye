@@ -35,7 +35,7 @@ import { getNodeVersion } from './tool-version-reader.mts'
  */
 export async function fetchNodeChecksum(
   version: string,
-  options?: { timeout?: number | undefined },
+  options?: { timeout?: number | undefined } | undefined,
 ): Promise<
   { hash: string; version: string } | { error: string; version: string }
 > {
@@ -57,20 +57,22 @@ export async function fetchNodeChecksum(
       timeout,
     })
   } catch (e) {
-    return {
+    const fetchFailure: { error: string; version: string } = {
       __proto__: null,
       version,
       error: `Failed to fetch ${url}: ${errorMessage(e)}`,
-    } as unknown as { error: string; version: string }
+    }
+    return fetchFailure
   }
 
   const sri = checksums[tarballName]
   if (!sri) {
-    return {
+    const notFound: { error: string; version: string } = {
       __proto__: null,
       version,
       error: `${tarballName} not found in SHASUMS256.txt`,
-    } as unknown as { error: string; version: string }
+    }
+    return notFound
   }
 
   // fetchChecksumFile returns SRI ("sha256-<base64>"), but .gitmodules and this
@@ -82,10 +84,12 @@ export async function fetchNodeChecksum(
     ? Buffer.from(sri.slice('sha256-'.length), 'base64').toString('hex')
     : sri
 
-  return { __proto__: null, hash, version } as unknown as {
-    hash: string
-    version: string
+  const success: { hash: string; version: string } = {
+    __proto__: null,
+    hash,
+    version,
   }
+  return success
 }
 
 /**
@@ -118,7 +122,7 @@ export async function fetchNodeChecksum(
 export async function verifyNodeChecksum(options?: {
   version?: string | undefined
   timeout?: number | undefined
-}): Promise<{
+} | undefined): Promise<{
   valid: boolean
   expected?: string | undefined
   actual?: string | undefined
@@ -141,29 +145,32 @@ export async function verifyNodeChecksum(options?: {
   )
 
   if (!stored) {
-    return {
+    const missingChecksum: VerifyResult = {
       __proto__: null,
       valid: false,
       version,
       error: 'No checksum found in .gitmodules for node submodule',
-    } as unknown as VerifyResult
+    }
+    return missingChecksum
   }
 
   const result = await fetchNodeChecksum(version, options)
   if ('error' in result) {
-    return {
+    const fetchFailure: VerifyResult = {
       __proto__: null,
       valid: false,
       version,
       error: result.error,
-    } as unknown as VerifyResult
+    }
+    return fetchFailure
   }
 
-  return {
+  const comparison: VerifyResult = {
     __proto__: null,
     valid: stored.hash === result.hash,
     expected: result.hash,
     actual: stored.hash,
     version,
-  } as unknown as VerifyResult
+  }
+  return comparison
 }

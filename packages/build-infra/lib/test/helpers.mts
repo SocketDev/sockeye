@@ -48,7 +48,7 @@ export function createWasmTestHelpers(config) {
   const syncJsPath = path.join(wasmDir, `${wasmName}-sync.js`)
 
   /**
-   * Check if build outputs exist (skip tests if not built).
+   * Check if build outputs exist, so tests can be skipped when not built.
    */
   // eslint-disable-next-line unicorn/consistent-function-scoping
   function skipIfNotBuilt(filePath) {

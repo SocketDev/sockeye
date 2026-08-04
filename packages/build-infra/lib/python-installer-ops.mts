@@ -152,7 +152,7 @@ export async function installPythonPackage(
 
   try {
     const args = ['install']
-    // Only use --user if no venv is available (venv doesn't need it)
+    // Only use --user if no venv is available: a venv doesn't need it
     if (user && !venvAvailable) {
       args.push('--user')
     }

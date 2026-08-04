@@ -1,7 +1,7 @@
 /**
  * Build Helper Utilities.
  *
- * General-purpose build helpers (exec, sizing, durations, executable bits),
+ * General-purpose build helpers (execBuildCommand, sizing, durations, executable bits),
  * plus the aggregation point for the split helper domains: host environment
  * checks, build logs, smoke-test strategy/execution, and binary verification.
  */
@@ -36,7 +36,7 @@ export {
 } from './checkpoint-manager.mts'
 
 /**
- * Options for {@link exec}. Extends spawn options with the legacy `encoding`
+ * Options for {@link execBuildCommand}. Extends spawn options with the legacy `encoding`
  * flag — when set, output is captured instead of inherited.
  */
 export type ExecOptions = SpawnOptions & {
@@ -55,9 +55,9 @@ export function estimateBuildTime(baseMinutes: number, cores: number): number {
 }
 
 /**
- * Execute command using spawn.
+ * Execute a build command using spawn.
  */
-export async function exec(
+export async function execBuildCommand(
   command: string,
   args: string[] | string = [],
   options: ExecOptions = {},
@@ -65,7 +65,7 @@ export async function exec(
   const spawnOptions: ExecOptions = {
     ...options,
   }
-  // Only set stdio to 'inherit' if encoding is not specified (which requires capturing output)
+  // Only set stdio to 'inherit' when encoding is not specified: specifying an encoding requires capturing output.
   if (!spawnOptions.encoding) {
     spawnOptions.stdio = 'inherit'
   }
