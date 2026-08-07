@@ -1,5 +1,5 @@
 {
-  "name": "keychain-cli-builder",
+  "name": "sockeye-packages-keychain-cli-builder",
   "version": "0.0.0",
   "private": true,
   "description": "Builds socket-keychain, a standalone C++ CLI for the operating-system credential store",
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@socketsecurity/lib-stable": "catalog:",
-    "build-infra": "workspace:*",
-    "keystore-infra": "workspace:*"
+    "sockeye-packages-build-infra": "workspace:0.0.0",
+    "sockeye-packages-keystore-infra": "workspace:0.0.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "catalog:",

@@ -40,6 +40,9 @@ place raw values in the command line.
 
 The design follows a few rules:
 
+<details>
+<summary>The design rules the binary follows</summary>
+
 - `set` receives the secret on stdin. It never places secret bytes in argv or
   shell history.
 - A credential has a stable `service + account` identity. Callers ask for one
@@ -63,10 +66,12 @@ The higher-level wheelhouse setup command provides the simple “native up”
 experience. This low-level binary stays generic so other local tools can use the
 same audited credential primitive.
 
+</details>
+
 ## Build
 
 ```bash
-pnpm --filter keychain-cli-builder build
+pnpm --filter sockeye-packages-keychain-cli-builder build
 ```
 
 The output is

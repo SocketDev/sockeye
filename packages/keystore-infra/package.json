@@ -1,5 +1,5 @@
 {
-  "name": "keystore-infra",
+  "name": "sockeye-packages-keystore-infra",
   "version": "0.0.0",
   "private": true,
   "description": "Source-only C/Objective-C++ OS-keychain core (macOS Keychain + Secure-Enclave biometric ACL; libsecret / Credential Manager stubs). No binary release; consumers compile it inline: the proteus daemon (packages/proteus-builder), the node:smol-keychain builtin (node-smol-builder additions), and a .node addon. Mirrors tui-infra / temporal-infra.",

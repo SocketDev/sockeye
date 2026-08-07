@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
-import { errorMessage } from 'build-infra/lib/error-utils'
+import { errorMessage } from 'sockeye-packages-build-infra/lib/error-utils'
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const logger = getDefaultLogger()

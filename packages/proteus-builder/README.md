@@ -44,7 +44,7 @@ native keystore without a biometric prompt.
 ## Build
 
 ```bash
-pnpm --filter proteus-builder build
+pnpm --filter sockeye-packages-proteus-builder build
 ```
 
 This selects `Makefile.<os>` for the host platform and emits the `proteus`

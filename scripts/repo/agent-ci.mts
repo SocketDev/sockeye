@@ -20,6 +20,7 @@ import {
   normalizeAgentCiArguments,
   requestedWorkflowCredentials,
 } from './agent-ci-contract.mts'
+import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getBinaryPath } from './paths.mts'
 
@@ -111,7 +112,9 @@ async function main(): Promise<void> {
   process.exitCode = result.code ?? 1
 }
 
-main().catch((error: unknown) => {
-  logger.fail(`Sockeye Agent-CI launch failed: ${errorMessage(error)}`)
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  main().catch((error: unknown) => {
+    logger.fail(`Sockeye Agent-CI launch failed: ${errorMessage(error)}`)
+    process.exitCode = 1
+  })
+}

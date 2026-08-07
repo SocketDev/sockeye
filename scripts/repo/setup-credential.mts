@@ -15,6 +15,7 @@ import { confirm, input, select } from '@socketsecurity/lib/stdio/prompts'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 import { getBinaryPath, getBuildMode } from './paths.mts'
 import {
   credentialSourceChoices,
@@ -109,7 +110,9 @@ async function main(): Promise<void> {
   await runNative(['import-1password', identifier, reference])
 }
 
-main().catch((error: unknown) => {
-  process.stderr.write(`${errorMessage(error)}\n`)
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  main().catch((error: unknown) => {
+    process.stderr.write(`${errorMessage(error)}\n`)
+    process.exitCode = 1
+  })
+}

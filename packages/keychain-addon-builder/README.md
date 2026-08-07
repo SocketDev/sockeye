@@ -26,7 +26,7 @@ binary), and this **`.node` addon** (in-process, for stock Node).
 ## Build
 
 ```bash
-pnpm --filter keychain-addon-builder build
+pnpm --filter sockeye-packages-keychain-addon-builder build
 ```
 
 Direct `clang++` link, no node-gyp and no new deps, mirroring `napi-go-infra`:

@@ -2950,11 +2950,11 @@ importers:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.7.0(typescript@7.0.2)'
-      build-infra:
-        specifier: workspace:*
+      sockeye-packages-build-infra:
+        specifier: workspace:0.0.0
         version: link:../build-infra
-      keystore-infra:
-        specifier: workspace:*
+      sockeye-packages-keystore-infra:
+        specifier: workspace:0.0.0
         version: link:../keystore-infra
     devDependencies:
       '@vitest/coverage-v8':
@@ -2969,11 +2969,11 @@ importers:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.7.0(typescript@7.0.2)'
-      build-infra:
-        specifier: workspace:*
+      sockeye-packages-build-infra:
+        specifier: workspace:0.0.0
         version: link:../build-infra
-      keystore-infra:
-        specifier: workspace:*
+      sockeye-packages-keystore-infra:
+        specifier: workspace:0.0.0
         version: link:../keystore-infra
     devDependencies:
       '@vitest/coverage-v8':
@@ -2997,8 +2997,8 @@ importers:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/lib@6.7.0(typescript@7.0.2)'
-      build-infra:
-        specifier: workspace:*
+      sockeye-packages-build-infra:
+        specifier: workspace:0.0.0
         version: link:../build-infra
     devDependencies:
       '@vitest/coverage-v8':

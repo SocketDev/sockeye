@@ -1,5 +1,5 @@
 {
-  "name": "proteus-builder",
+  "name": "sockeye-packages-proteus-builder",
   "version": "0.0.0",
   "private": true,
   "description": "proteus — fleet credential broker daemon. Guards provider credentials in the OS keychain (Touch ID + Secure Enclave on macOS) and vends short-lived tokens over a local Unix socket. Builds per-platform binaries published as proteus-<platform> GitHub Release assets.",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@socketsecurity/lib-stable": "catalog:",
-    "build-infra": "workspace:*"
+    "sockeye-packages-build-infra": "workspace:0.0.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "catalog:",

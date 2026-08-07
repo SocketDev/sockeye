@@ -11,6 +11,7 @@ import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import {
   getBinaryPath,
@@ -76,7 +77,9 @@ async function main(): Promise<void> {
   logger.success(`Built ${binaryPath} (${metadata.size} bytes)`)
 }
 
-main().catch((error: unknown) => {
-  logger.fail(`Sockeye build failed: ${errorMessage(error)}`)
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  main().catch((error: unknown) => {
+    logger.fail(`Sockeye build failed: ${errorMessage(error)}`)
+    process.exitCode = 1
+  })
+}

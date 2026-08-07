@@ -21,8 +21,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { execBuildCommand } from 'build-infra/lib/build-helpers'
-import { errorMessage } from 'build-infra/lib/error-utils'
+import { execBuildCommand } from 'sockeye-packages-build-infra/lib/build-helpers'
+import { errorMessage } from 'sockeye-packages-build-infra/lib/error-utils'
 
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'

@@ -3,6 +3,11 @@
  *
  * Implements the npm cacache on-disk format (index-v5, content-v2).
  *
+ * doctrine: allow max-file-lines -- single-header library: the cacache
+ * reader/writer ships as one self-contained header consumed by multiple
+ * builders, and splitting it would break the single-include contract its
+ * consumers compile against.
+ *
  * Three digests, three jobs: SHA-512 = content integrity (the trust boundary,
  * recomputed + memcmp'd on read); SHA-256 = index-v5 key→bucket path (npm
  * format, addressing only); SHA-1 = per-index-line verify (npm format). Only

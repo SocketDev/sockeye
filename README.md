@@ -51,6 +51,9 @@ For a guided Keychain or one-time 1Password import, use
 [`pnpm run setup:credential`](docs/credential-setup.md). The setup command
 never makes 1Password a runtime credential provider.
 
+<details>
+<summary>Running a child process with an exact credential list</summary>
+
 Run one child with an exact credential list, working directory, executable,
 arguments, and optional bound files:
 
@@ -73,6 +76,8 @@ of putting the key in that environment.
 from the parent environment. The private key is a secret and comes from
 Keychain. Keeping that distinction explicit avoids unnecessary biometric
 storage for values that are safe to display.
+
+</details>
 
 ### Agent-CI
 

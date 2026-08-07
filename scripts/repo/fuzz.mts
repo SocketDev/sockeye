@@ -13,6 +13,7 @@ import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { isMainModule } from '../fleet/_shared/is-main-module.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getCmakeBuildDir, getOutputDir } from './paths.mts'
 
@@ -87,7 +88,9 @@ async function main(): Promise<void> {
   logger.success(`Native fuzz gate passed its ${secondsText}s budget`)
 }
 
-main().catch((error: unknown) => {
-  logger.fail(`Sockeye fuzzing failed: ${errorMessage(error)}`)
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  main().catch((error: unknown) => {
+    logger.fail(`Sockeye fuzzing failed: ${errorMessage(error)}`)
+    process.exitCode = 1
+  })
+}
