@@ -75,7 +75,8 @@ export async function ensureAllToolsInstalled(
     const tool = tools[i]
     logger.substep(`[${i + 1}/${tools.length}] Checking ${tool}`)
 
-    // eslint-disable-next-line no-await-in-loop -- Tools must be installed sequentially
+    // Tools must be installed sequentially.
+    // eslint-disable-next-line no-await-in-loop -- sequential on purpose
     const result = await ensureToolInstalled(tool, { autoInstall, autoYes })
 
     if (!result.available) {
@@ -305,7 +306,9 @@ export async function ensureToolInstalled(
     // Try to install dependencies first.
     if (config?.dependencies?.length) {
       logger.warn(`${tool} exists but failed to run - checking dependencies…`)
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+      // iterable is not a bare identifier (could be
+      // Map/Set/Generator/expression).
+      // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
       for (const dep of config.dependencies) {
         // eslint-disable-next-line no-await-in-loop
         const depResult = await ensureToolInstalled(dep, {
@@ -358,7 +361,9 @@ export async function ensureToolInstalled(
   // Install dependencies first.
   if (config?.dependencies?.length) {
     logger.substep(`Installing dependencies for ${tool}...`)
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    // iterable is not a bare identifier (could be
+    // Map/Set/Generator/expression).
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
     for (const dep of config.dependencies) {
       // eslint-disable-next-line no-await-in-loop
       const depResult = await ensureToolInstalled(dep, {

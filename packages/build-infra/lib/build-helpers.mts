@@ -106,7 +106,8 @@ export function formatDuration(milliseconds: number): string {
  * Get file size in human-readable format.
  */
 export async function getFileSize(filePath: string): Promise<string> {
-  // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size for human-readable byte formatter.
+  // need stats.size for human-readable byte formatter.
+  // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
   const stats = await fs.stat(filePath)
   const bytes = stats.size
 

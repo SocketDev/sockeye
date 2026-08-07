@@ -337,7 +337,9 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
 
   async function ensureImpl(
     resolvedPlatformArch: string,
-    // oxlint-disable-next-line socket/no-boolean-trap-param -- private closure, not a public API; options-bag is on the outer `ensure` function
+    // private closure, not a public API; options-bag is on the outer `ensure`
+    // function.
+    // oxlint-disable-next-line socket/no-boolean-trap-param -- private closure
     force: boolean,
   ): Promise<string> {
     // 1. Local build first.

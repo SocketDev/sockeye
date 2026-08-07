@@ -7,7 +7,9 @@
  * Checkpoint names used by checkpoint-manager.
  * Use these instead of hardcoded strings to ensure consistency.
  */
-// socket-lint: allow object-property-order -- grouped by pipeline phase (common → model → wasm → binary), not alphabetical
+// Grouped by pipeline phase (common → model → wasm → binary), not
+// alphabetical.
+// oxlint-disable-next-line socket/sort-object-literal-properties -- phase order
 export const CHECKPOINTS = {
   // Common/universal checkpoints.
   FINALIZED: 'finalized',
@@ -56,7 +58,10 @@ const VALID_CHECKPOINT_VALUES = new Set(Object.values(CHECKPOINTS))
 // are content-agnostic but infra-specific — they route through per-mode
 // checkpoint dirs (see restore-checkpoint action). Model builders pass explicit
 // platform/arch rather than joining this set.
-// oxlint-disable-next-line socket/sort-set-args -- elements reference CHECKPOINTS.* (not literals) so the rule can't verify sort order; already alphabetized by value (source-cloned, source-configured, source-copied, source-patched)
+// elements reference CHECKPOINTS.* (not literals) so the rule can't verify sort
+// order; already alphabetized by value (source-cloned, source-configured,
+// source-copied, source-patched).
+// oxlint-disable-next-line socket/sort-set-args -- refs, not literals
 export const PLATFORM_AGNOSTIC_CHECKPOINTS = new Set<string>([
   CHECKPOINTS.SOURCE_CLONED,
   CHECKPOINTS.SOURCE_CONFIGURED,
@@ -224,7 +229,8 @@ export function validateCheckpointChain(chain: string[], packageName: string) {
 
 // Validate all checkpoint chains at module load time.
 // This catches typos and invalid checkpoint names early.
-// oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+// loop variable is destructured.
+// oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
 for (const [name, generator] of Object.entries(CHECKPOINT_CHAINS)) {
   // Some generators require a mode argument.
   if (name === 'onnxruntime' || name === 'yoga') {

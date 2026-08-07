@@ -63,7 +63,9 @@ export async function checkPythonPackage(packageName) {
  * @returns {Promise<boolean>} True if package is installed with correct
  *   version.
  */
-// oxlint-disable-next-line socket/sort-source-methods -- file is ordered by pip-install pipeline phase (detect → resolve → install → verify); alphabetizing across phases would scatter the install flow.
+// file is ordered by pip-install pipeline phase (detect → resolve → install →
+// verify); alphabetizing across phases would scatter the install flow.
+// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
 export async function checkPythonPackageVersion(packageName, expectedVersion) {
   try {
     const pythonCmd = await getPythonCommand()
@@ -103,7 +105,8 @@ export async function checkPythonPackageVersion(packageName, expectedVersion) {
  *
  * @returns {Promise<boolean>} True if installation succeeded.
  */
-// oxlint-disable-next-line socket/sort-source-methods -- file is ordered by pip-install pipeline phase (detect → resolve → install → verify); alphabetizing across phases would scatter the install flow.
+// Ordered by pip-install pipeline phase; sorting would scatter it.
+// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
 export async function installPythonPackage(
   packageName,
   { consumerPackageJsonPath, quiet = false, upgrade = false, user = true } = {},
@@ -276,7 +279,9 @@ export async function installPythonPackage(
  *
  * @returns {Promise<{ available: boolean; installed: boolean }>}
  */
-// oxlint-disable-next-line socket/sort-source-methods -- file is ordered by pip-install pipeline phase (detect → resolve → install → verify); alphabetizing across phases would scatter the install flow.
+// file is ordered by pip-install pipeline phase (detect → resolve → install →
+// verify); alphabetizing across phases would scatter the install flow.
+// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
 export async function ensurePythonPackage(
   packageName,
   {
@@ -387,7 +392,8 @@ export async function ensurePythonPackage(
  *   installed: string[]
  * }>}
  */
-// oxlint-disable-next-line socket/sort-source-methods -- file is ordered by pip-install pipeline phase (detect → resolve → install → verify); alphabetizing across phases would scatter the install flow.
+// Ordered by pip-install pipeline phase; sorting would scatter it.
+// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
 export async function ensureAllPythonPackages(
   packages,
   { autoInstall = true, consumerPackageJsonPath, quiet = false } = {},
@@ -459,7 +465,9 @@ export async function ensureAllPythonPackages(
  *
  * @returns {string[]} Array of installation instruction strings.
  */
-// oxlint-disable-next-line socket/sort-source-methods -- file is ordered by pip-install pipeline phase (detect → resolve → install → verify); alphabetizing across phases would scatter the install flow.
+// file is ordered by pip-install pipeline phase (detect → resolve → install →
+// verify); alphabetizing across phases would scatter the install flow.
+// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
 export function getPythonPackageInstructions(packages) {
   const pinnedPackages = packages.map(pkg => getPinnedPackage(pkg))
   const instructions = ['Install required Python packages:']

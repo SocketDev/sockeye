@@ -72,7 +72,9 @@ export function parseArgs(args) {
       options.targets = targetsStr.split(',').map(t => t.trim())
 
       // Validate targets.
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+      // iterable is not a bare identifier (could be
+      // Map/Set/Generator/expression).
+      // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
       for (const target of options.targets) {
         if (!LINUX_TARGETS.includes(target)) {
           logger.fail(`Unknown target: ${target}`)
@@ -179,7 +181,8 @@ async function main() {
   logger.log('=== Summary ===')
   logger.log('')
 
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+  // loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
   for (const [target, success] of Object.entries(results)) {
     if (success) {
       logger.success(target)

@@ -100,64 +100,40 @@ export async function cleanCheckpoint(buildDir: string, packageName: string) {
  * Checkpoints are tracked by GitHub Actions workflows to enable
  * phase-specific caching and build resumption.
  *
- * IMPORTANT: This function requires a smokeTest callback to ensure
- * all checkpoints are created AFTER validating the build artifacts.
- * This enforces the pattern: build → smoke test → checkpoint.
+ * The required smokeTest callback enforces build → smoke test → checkpoint:
+ * a checkpoint is only written after the artifacts validate.
  *
- * Cache Invalidation: - If sourcePaths provided, computes SHA256 hash and
- * stores in checkpoint - Next build compares current vs stored hash to
- * determine if stage needs rebuild - Each checkpoint tracks its own source
- * dependencies independently.
+ * Cache invalidation: when sourcePaths is provided, the SHA256 hash of those
+ * files is stored in the checkpoint; the next build compares current vs
+ * stored hash to decide whether the stage needs a rebuild.
  *
- * Artifact Storage: - If artifactPath provided, creates checkpoint.tar.gz
- * (works for files OR directories) - Metadata stores artifactPath for
- * restoration - Use restoreCheckpoint() to extract tarball back to original
+ * Storage under build/{mode}/checkpoints/{package}/: metadata {phase}.json,
+ * plus {phase}.tar.gz when artifactPath is provided (file or directory).
+ * Use restoreCheckpoint() to extract the tarball back to its original
  * location.
  *
- * Stores: - Metadata JSON: build/{mode}/checkpoints/{package}/{phase}.json -
- * Tarball: build/{mode}/checkpoints/{package}/{phase}.tar.gz (if artifactPath
- * provided)
- *
  * @example
- *   // Minimal usage
  *   await createCheckpoint(BUILD_DIR, CHECKPOINTS.FINALIZED, async () => {
  *     await spawn(binaryPath, ['--version'])
  *   })
  *
- *   // With options
- *   await createCheckpoint(
- *     BUILD_DIR,
- *     CHECKPOINTS.BINARY_RELEASED,
- *     async () => {
- *       await spawn(binaryPath, ['--version'])
- *     },
- *     {
- *       artifactPath: './out/Release/node',
- *       sourcePaths: ['build.mts', 'patches/*.patch'],
- *       packageRoot: PACKAGE_ROOT,
- *     },
- *   )
- *
  * @param {string} buildDir - Build directory path.
- * @param {string} checkpointName - Checkpoint name (e.g.,
- *   CHECKPOINTS.FINALIZED, CHECKPOINTS.BINARY_RELEASED)
- * @param {Function} smokeTest - Async function that validates build artifacts
- *   (REQUIRED)
+ * @param {string} checkpointName - Checkpoint name (e.g.
+ *   CHECKPOINTS.FINALIZED).
+ * @param {Function} smokeTest - Async build-artifact validator (REQUIRED).
  * @param {object} [options] - Optional checkpoint metadata.
- * @param {string | undefined} [options.packageName=''] - Package name (defaults
- *   to '' for flat structure)
- * @param {string | undefined} [options.artifactPath] - Path to file or
- *   directory to archive in checkpoint.
+ * @param {string | undefined} [options.packageName=''] - Package name;
+ *   '' means the flat structure.
+ * @param {string | undefined} [options.artifactPath] - File or directory to
+ *   archive in the checkpoint.
  * @param {string[] | undefined} [options.sourcePaths] - Source file paths to
  *   hash for cache validation.
- * @param {string | undefined} [options.packageRoot] - Package root for relative
- *   path display.
- * @param {string | undefined} [options.platform=process.platform] - Platform
- *   (darwin, linux, win32)
- * @param {string | undefined} [options.arch=process.arch] - Architecture (x64,
- *   arm64)
- * @param {string | undefined} [options.binaryPath] - Binary path for macOS code
- *   signing.
+ * @param {string | undefined} [options.packageRoot] - Package root for
+ *   relative path display.
+ * @param {string | undefined} [options.platform=process.platform] - Platform.
+ * @param {string | undefined} [options.arch=process.arch] - Architecture.
+ * @param {string | undefined} [options.binaryPath] - Binary path for macOS
+ *   code signing.
  *
  * @returns {Promise<void>}
  */
@@ -330,7 +306,8 @@ export async function createCheckpoint(
     const tarDir = path.dirname(resolvedArtifactPath)
     const tarBase = path.basename(resolvedArtifactPath)
 
-    // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.isDirectory() to choose dir-vs-file archive flow.
+    // need stats.isDirectory() to choose dir-vs-file archive flow.
+    // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
     const stats = await fs.stat(resolvedArtifactPath)
     const isDir = stats.isDirectory()
 
@@ -441,7 +418,9 @@ export async function createCheckpoint(
         }
       }
 
-      // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size to detect empty or oversized tarball from a failed tar run.
+      // need stats.size to detect empty or oversized tarball from a failed tar
+      // run.
+      // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
       const tempStats = await fs.stat(tempTarballPath)
       if (tempStats.size === 0) {
         safeDeleteSync(tempTarballPath, { force: true })
@@ -507,7 +486,9 @@ export async function createCheckpoint(
           if (renameErrorCode === 'EEXIST' || renameErrorCode === 'EPERM') {
             // Verify existing checkpoint is complete before giving up
             try {
-              // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size to distinguish complete (>0 keep) from incomplete (0 retry).
+              // need stats.size to distinguish complete (>0 keep) from
+              // incomplete (0 retry).
+              // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
               const existingStats = await fs.stat(tarballPath)
               if (existingStats.size > 0) {
                 logger.warn(
@@ -572,7 +553,8 @@ export async function createCheckpoint(
       throw err
     }
 
-    // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size for the human-readable tarball-size log line.
+    // need stats.size for the human-readable tarball-size log line.
+    // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
     const tarStats = await fs.stat(tarballPath)
     const sizeMB = (tarStats.size / 1024 / 1024).toFixed(1)
     logger.substep(`Saved ${checkpointName}.tar.gz (${sizeMB}MB)`)
@@ -766,7 +748,9 @@ export async function createCheckpoint(
           if (existsSync(previousTarball)) {
             // Check if checkpoint is valid before deciding cleanup
             // Invalid checkpoints should be deleted regardless of age.
-            // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size (gzip envelope check) and stats.mtimeMs (cleanup grace).
+            // need stats.size (gzip envelope check) and stats.mtimeMs (cleanup
+            // grace).
+            // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
             const stats = await fs.stat(previousTarball)
             // Too small to be valid gzip (header 10 bytes + footer 8 bytes = 18 minimum)
             const isInvalidCheckpoint = stats.size === 0 || stats.size < 18
@@ -1125,7 +1109,9 @@ export async function restoreCheckpoint(
     }
 
     try {
-      // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size (truncation guard) and stats.mtimeMs (concurrent-replacement detector).
+      // need stats.size (truncation guard) and stats.mtimeMs
+      // (concurrent-replacement detector).
+      // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
       const stats = await fs.stat(tarballPath)
       const initialModTime = stats.mtimeMs
       const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
@@ -1228,7 +1214,9 @@ export async function restoreCheckpoint(
           await withLock(`${tarballPath}.lock`, 'sh', async () => {
             // Re-validate checkpoint exists before extraction (catches TOCTOU
             // deletion).
-            // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size (emptied mid-restore) and stats.mtimeMs (concurrent-replacement delta).
+            // need stats.size (emptied mid-restore) and stats.mtimeMs
+            // (concurrent-replacement delta).
+            // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
             const preExtractStats = await fs.stat(tarballPath)
             if (preExtractStats.size === 0) {
               throw new Error('Checkpoint file became empty before extraction')
@@ -1341,7 +1329,9 @@ export async function restoreCheckpoint(
       // Verify extraction succeeded with a single stat() call (avoid TOCTOU race).
       let extractedStats
       try {
-        // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.isFile() + stats.size to confirm extracted artifact is non-empty file.
+        // need stats.isFile() + stats.size to confirm extracted artifact is
+        // non-empty file.
+        // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
         extractedStats = await fs.stat(targetPath)
       } catch (e) {
         if (isErrnoException(e) && e.code === 'ENOENT') {

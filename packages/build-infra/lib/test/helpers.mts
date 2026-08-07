@@ -112,7 +112,8 @@ export function createWasmTestHelpers(config) {
         return
       }
 
-      // oxlint-disable-next-line socket/prefer-exists-sync -- need stats.size for size-expectations assertions.
+      // need stats.size for size-expectations assertions.
+      // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
       const stats = await fs.stat(wasmPath)
       if (sizeExpectations.wasmMin) {
         expect(stats.size).toBeGreaterThan(sizeExpectations.wasmMin)

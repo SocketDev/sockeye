@@ -103,7 +103,8 @@ export async function applyCommonTransforms(config) {
   })
 
   // Handle require declarators - remove them from their variable declarations
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+  // loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
   for (const { node: declaratorNode, varDecl } of requireDeclaratorsToRemove) {
     const declarators = varDecl.declarations
     const index = declarators.indexOf(declaratorNode)
@@ -307,7 +308,9 @@ export async function applyCommonTransforms(config) {
             for (let i = 0, { length } = bodyStatements; i < length; i += 1) {
               const stmt = bodyStatements[i]
               if (stmt.type === 'VariableDeclaration') {
-                // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+                // iterable is not a bare identifier (could be
+                // Map/Set/Generator/expression).
+                // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
                 for (const decl of stmt.declarations) {
                   const varName = decl.id?.name
                   if (!varName) {

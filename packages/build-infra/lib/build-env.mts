@@ -32,24 +32,28 @@ export function printSetupResults(results: {
   if (results.messages.length > 0) {
     logger.error('')
     logger.info('Build Environment:')
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    // iterable is not a bare identifier (could be
+    // Map/Set/Generator/expression).
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
     for (const message of results.messages) {
-      logger.info(`  ${message}`) // socket-lint: allow logger-decoration
+      logger.info(`  ${message}`)
     }
   }
 
   if (results.errors.length > 0) {
     logger.error('')
     logger.warn('Missing Prerequisites:')
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    // iterable is not a bare identifier (could be
+    // Map/Set/Generator/expression).
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
     for (const error of results.errors) {
-      logger.warn(`  ${error}`) // socket-lint: allow logger-decoration
+      logger.warn(`  ${error}`)
     }
   }
 
   if (!results.success) {
     logger.fail('Build environment setup failed')
-    logger.info('   Run setup script to install missing tools') // socket-lint: allow logger-decoration
+    logger.info('   Run setup script to install missing tools')
     logger.error('')
   }
 }
@@ -96,11 +100,15 @@ export async function setupBuildEnvironment(
 
     if (activated) {
       const version = await getEmscriptenVersion()
-      // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+      // Emoji land in caller-rendered result arrays (JSON, file, stderr),
+      // not in a logger call.
+      // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
       results.messages.push(`✓ Emscripten ${version} activated`)
     } else {
       results.success = false
-      // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+      // Emoji land in caller-rendered result arrays (JSON, file, stderr),
+      // not in a logger call.
+      // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
       results.errors.push('✗ Emscripten SDK not found')
 
       if (autoSetup) {
@@ -119,11 +127,15 @@ export async function setupBuildEnvironment(
     const rustCheck = await checkRust()
 
     if (rustCheck.available) {
-      // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+      // Emoji land in caller-rendered result arrays (JSON, file, stderr),
+      // not in a logger call.
+      // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
       results.messages.push(`✓ Rust ${rustCheck.version} with WASM support`)
     } else {
       results.success = false
-      // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+      // Emoji land in caller-rendered result arrays (JSON, file, stderr),
+      // not in a logger call.
+      // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
       results.errors.push(`✗ Rust: ${rustCheck.reason}`)
 
       if (rustCheck.fix) {
@@ -141,12 +153,16 @@ export async function setupBuildEnvironment(
 
     if (pythonCheck.available) {
       if (pythonCheck.meetsRequirement) {
-        // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+        // Emoji land in caller-rendered result arrays (JSON, file,
+        // stderr), not in a logger call.
+        // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
         results.messages.push(`✓ Python ${pythonCheck.version}`)
       } else {
         results.success = false
         results.errors.push(
-          // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+          // Emoji land in caller-rendered result arrays (JSON, file,
+          // stderr), not in a logger call.
+          // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
           `✗ Python ${pythonCheck.version} is too old (need ${getMinPythonVersion()}+)`,
         )
 
@@ -158,7 +174,9 @@ export async function setupBuildEnvironment(
       }
     } else {
       results.success = false
-      // oxlint-disable-next-line socket/no-status-emoji -- emoji are pushed into result.messages/result.errors arrays that callers may render anywhere (JSON, file, stderr); there is no single logger.success/fail call to migrate to.
+      // Emoji land in caller-rendered result arrays (JSON, file, stderr),
+      // not in a logger call.
+      // oxlint-disable-next-line socket/no-status-emoji -- data, not logs
       results.errors.push(`✗ Python ${getMinPythonVersion()}+ not found`)
 
       if (autoSetup) {
