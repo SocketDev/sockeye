@@ -24,7 +24,7 @@
     "lockstep:emit-schema": "node scripts/fleet/lockstep-emit-schema.mts",
     "notarize": "node scripts/repo/notarize.mts",
     "optimize:svg": "svgo --multipass --input assets/repo/brand/sockeye-combomark.svg --output assets/repo/brand/sockeye-combomark.svg",
-    "prepare": "node scripts/fleet/install-git-hooks.mts && node scripts/fleet/prepare.mts",
+    "prepare": "node scripts/repo/bootstrap/prepare.mts && node scripts/fleet/install-git-hooks.mts && node scripts/fleet/prepare.mts",
     "security": "node scripts/fleet/security.mts",
     "setup-security-tools": "node .claude/hooks/fleet/setup-security-tools/install.mts",
     "sign": "node scripts/repo/sign.mts",
