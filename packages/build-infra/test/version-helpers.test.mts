@@ -3,9 +3,10 @@
  *   Validates .gitmodules version and checksum parsing.
  */
 
+import nock from 'nock'
 import { describe, expect, it } from 'vitest'
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -17,6 +18,11 @@ import {
 } from '../lib/version-helpers.mts'
 import { REPO_ROOT as monorepoRoot } from '../../../scripts/fleet/paths.mts'
 import { tolerantTimeout } from '../../../test/fleet/_shared/lib/timing.mts'
+
+// The .gitmodules-backed helpers only apply to repos that pin upstream
+// submodules; this repo builds from first-party source, so those suites
+// skip explicitly instead of failing on the missing file.
+const hasGitmodules = existsSync(path.join(monorepoRoot, '.gitmodules'))
 
 describe('version-helpers', () => {
   describe(getNodeVersion, () => {
@@ -38,7 +44,7 @@ describe('version-helpers', () => {
     })
   })
 
-  describe(getSubmoduleVersion, () => {
+  describe.skipIf(!hasGitmodules)(getSubmoduleVersion, () => {
     it('should parse node version from .gitmodules', () => {
       const version = getSubmoduleVersion(
         'packages/node-smol-builder/upstream/node',
@@ -93,7 +99,7 @@ describe('version-helpers', () => {
     })
   })
 
-  describe(getSubmoduleChecksum, () => {
+  describe.skipIf(!hasGitmodules)(getSubmoduleChecksum, () => {
     it('should parse checksum for node submodule', () => {
       const checksum = getSubmoduleChecksum(
         'packages/node-smol-builder/upstream/node',
@@ -126,6 +132,11 @@ describe('version-helpers', () => {
       'should fetch checksum for current Node.js version',
       async () => {
         const version = getNodeVersion()
+        const fixtureHash = '0123456789abcdef'.repeat(4)
+        nock('https://nodejs.org')
+          .get(`/dist/v${version}/SHASUMS256.txt`)
+          .reply(200, `${fixtureHash}  node-v${version}.tar.gz\n`)
+
         const result = await fetchNodeChecksum(version, { timeout: 15_000 })
 
         expect('hash' in result).toBe(true)
@@ -148,7 +159,7 @@ describe('version-helpers', () => {
     )
   })
 
-  describe(verifyNodeChecksum, () => {
+  describe.skipIf(!hasGitmodules)(verifyNodeChecksum, () => {
     it(
       'should verify checksum against nodejs.org',
       async () => {
