@@ -24,7 +24,7 @@
  */
 
 import crypto from 'node:crypto'
-import { createReadStream, readFileSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import type { Hash, HashAlgorithm } from '@socketsecurity/lib/integrity'
@@ -151,6 +151,41 @@ export function parseChecksums(content: string): Record<string, string> {
     }
   }
   return checksums
+}
+
+export interface ExtractManifest {
+  // Relative file path under the extract dir → expected sha256-hex digest.
+  files: Record<string, string>
+}
+
+/**
+ * Verify every file in `manifest.files` on disk under `filesDir` against its
+ * expected sha256-hex digest. Returns a list of problem strings — empty means
+ * all verified; a single problem must abort the whole install, fail closed.
+ * Same semantics as the bootstrap verifier in
+ * `scripts/repo/bootstrap/fleet.mjs`.
+ *
+ * A single-file asset's download hash IS its extract hash, so `fetchVerified`
+ * callers that write exactly one file need no second verification pass; this
+ * is for multi-file extracts such as unpacked archives.
+ */
+export async function verifyExtractedFiles(
+  filesDir: string,
+  manifest: ExtractManifest,
+): Promise<string[]> {
+  const problems: string[] = []
+  for (const [rel, expected] of Object.entries(manifest.files)) {
+    const abs = path.join(filesDir, rel)
+    if (!existsSync(abs)) {
+      problems.push(`missing file: ${rel}`)
+      continue
+    }
+    const actual = await computeFileHash(abs)
+    if (actual !== expected) {
+      problems.push(`sha256 mismatch: ${rel} (got ${actual}, want ${expected})`)
+    }
+  }
+  return problems
 }
 
 export interface VerifyConfig {
