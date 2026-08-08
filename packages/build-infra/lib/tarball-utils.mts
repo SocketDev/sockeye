@@ -127,7 +127,7 @@ export async function validateTarballPaths(
   })
 
   const files = (listResult.stdout || '')
-    .split('\n')
+    .split(/\r?\n/)
     .filter(Boolean)
     .map(f => f.trim())
 

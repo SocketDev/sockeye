@@ -57,7 +57,7 @@ async function runCheck(
   const result = await spawn(command, args, { cwd: REPO_ROOT })
   const detail = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
     .trim()
-    .split('\n')
+    .split(/\r?\n/)
     .at(-1)
   return { detail: detail ?? '', passed: result.code === 0 }
 }
