@@ -8,7 +8,7 @@
  * args set.
  *
  * Use:
- * pnpm --filter sockeye-packages-build-infra run docker:builder-glibc.
+ * pnpm --filter local-build-infra run docker:builder-glibc.
  *
  * The published image is `ghcr.io/socketdev/btm-builder-glibc:<tag>` — tag
  * format `YYYY-MM-DD-<sha8>`. Local builds tag as `btm-builder-glibc:local`.

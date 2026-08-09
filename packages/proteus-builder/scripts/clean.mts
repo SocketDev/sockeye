@@ -6,8 +6,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { cleanBuilder } from 'sockeye-packages-build-infra/lib/clean-builder'
-import { errorMessage } from 'sockeye-packages-build-infra/lib/error-utils'
+import { cleanBuilder } from 'local-build-infra/lib/clean-builder'
+import { errorMessage } from 'local-build-infra/lib/error-utils'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 

@@ -14,7 +14,7 @@ import {
   validateNativeBinary,
   validateNativeTarget,
   validatePlainVersion,
-} from 'sockeye-packages-build-infra/lib/native-release-binary'
+} from 'local-build-infra/lib/native-release-binary'
 
 export function assetName(version: string, target: string): string {
   validateVersion(version)

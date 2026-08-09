@@ -71,7 +71,7 @@ same audited credential primitive.
 ## Build
 
 ```bash
-pnpm --filter sockeye-packages-keychain-cli-builder build
+pnpm --filter local-keychain-cli-builder build
 ```
 
 The output is

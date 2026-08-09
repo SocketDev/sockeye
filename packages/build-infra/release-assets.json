@@ -1,6 +1,6 @@
 {
   "$schema": "./release-assets.schema.json",
-  "$comment": "SHA-256 checksums for GitHub release assets. Run 'pnpm --filter sockeye-packages-build-infra update-release-assets' to update.",
+  "$comment": "SHA-256 checksums for GitHub release assets. Run 'pnpm --filter local-build-infra update-release-assets' to update.",
   "binflate": {
     "description": "Binary decompression tool",
     "tag": "binflate-20260507-f1e66a5",

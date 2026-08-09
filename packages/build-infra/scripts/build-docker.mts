@@ -156,7 +156,7 @@ async function main() {
     if (!(await hasBuilderImage(options.target))) {
       printError(`Builder image for ${options.target} not found.`)
       printInfo(
-        'Run setup first: pnpm --filter sockeye-packages-build-infra run setup:docker',
+        'Run setup first: pnpm --filter local-build-infra run setup:docker',
       )
       process.exitCode = 1
       return
