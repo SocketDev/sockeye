@@ -1,0 +1,36 @@
+name: 'Import Code-Signing Certificates'
+description: 'Imports a PKCS12 certificate and private key into a macOS Keychain.'
+author: 'Itty Bitty Apps Pty Ltd'
+inputs:
+  keychain:
+    description: 'The name of the keychain to import into.'
+    required: true
+    default: 'signing_temp'
+  create-keychain:
+    description: 'A boolean indicating whether to create the keychain.'
+    required: true
+    default: 'true'
+  keychain-password:
+    description: 'The password to use with the keychain. Gets auto-generated if keychain is "signing_temp".'
+    required: false
+  p12-filepath:
+    description: 'The path to the PKCS12 file to import.'
+    required: false
+  p12-file-base64:
+    description: 'The certificates in a PKCS12 file encoded as a base64 string.'
+    required: false
+  p12-password:
+    description: 'The password used to import the PKCS12 file.'
+    required: true
+outputs:
+  keychain-password:
+    description: 'The password for temporary keychain.'
+  security-response:
+    description: 'The output of the security commands.'
+runs:
+  using: 'node24'
+  main: 'dist/index.js'
+  post: 'dist/index.js'
+branding:
+  icon: 'lock'
+  color: 'blue'
