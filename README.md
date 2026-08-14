@@ -1,7 +1,7 @@
 # Sockeye
 
 <div align="center">
-  <img src="assets/repo/brand/sockeye-combomark.svg" width="240" alt="Sockeye - the sockeye badge: a leaping salmon above the SOCKEYE and SOCKET LABS banner, inside the Socket shield">
+  <img src="assets/repo/sockeye-combomark.svg" width="240" alt="Sockeye - the sockeye badge: a leaping salmon above the SOCKEYE and SOCKET LABS banner, inside the Socket shield">
 </div>
 
 [![Follow @SocketSecurity](assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
