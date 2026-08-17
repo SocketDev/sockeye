@@ -75,6 +75,12 @@ async function main(): Promise<void> {
   }
   const metadata = await stat(binaryPath)
   logger.success(`Built ${binaryPath} (${metadata.size} bytes)`)
+
+  // The keychain addon is the test suite's other build artifact: the addon
+  // test requires keychain.node on disk, so `pnpm run build` (the test job's
+  // setup) must produce it, not just the daemon.
+  logger.info('Building the keychain addon…')
+  await run('node', ['packages/keychain-addon-builder/scripts/build.mts'])
 }
 
 if (isMainModule(import.meta.url)) {

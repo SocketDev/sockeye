@@ -21,7 +21,6 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { execBuildCommand } from 'local-build-infra/lib/build-helpers'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -30,6 +29,19 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
 
 const logger = getDefaultLogger()
+
+/**
+ * Run one compiler/linker invocation, throwing on a non-zero exit. The addon
+ * build is three of these; nothing fancier from build-infra is needed.
+ */
+function execBuildCommand(command: string, args: string[], cwd: string): void {
+  const result = spawnSync(command, args, { cwd, stdioString: true })
+  if (result.status !== 0) {
+    throw new Error(
+      `${command} exited ${String(result.status)}: ${result.stderr}`,
+    )
+  }
+}
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const keystoreInfraSrc = path.join(packageRoot, '..', 'keystore-infra', 'src')
@@ -153,7 +165,7 @@ async function main() {
 
   logger.info(`Compiling keychain.node sources (${mode}, ${platformArch})…`)
   // The shim is C++. execBuildCommand throws on a non-zero exit.
-  await execBuildCommand(
+  execBuildCommand(
     build.compiler,
     [
       '-c',
@@ -165,11 +177,11 @@ async function main() {
       '-o',
       shimObj,
     ],
-    { cwd: packageRoot },
+    packageRoot,
   )
   // The backend: ObjC++ stays under clang++; C compiles with `-x c` so it isn't
   // miscompiled as C++.
-  await execBuildCommand(
+  execBuildCommand(
     build.compiler,
     [
       '-c',
@@ -181,14 +193,14 @@ async function main() {
       '-o',
       backendObj,
     ],
-    { cwd: packageRoot },
+    packageRoot,
   )
 
   logger.info(`Linking keychain.node…`)
-  await execBuildCommand(
+  execBuildCommand(
     build.compiler,
     ['-shared', shimObj, backendObj, ...build.linkFlags, '-o', outPath],
-    { cwd: packageRoot },
+    packageRoot,
   )
 
   if (!existsSync(outPath)) {
