@@ -13,14 +13,14 @@ import { simple as walkSimple } from 'acorn-walk'
 /**
  * Build the declaration/function/async visitor handlers for the ancestor walk.
  *
- * @param {object} config - Visitor context.
- * @param {string} config.exportName - Export name.
- * @param {string} config.initFunctionName - Init function name.
- * @param {string} config.mjsContent - Source content (read-only during pass).
- * @param {Function} config.safeOverwrite - Safe overwrite helper.
- * @param {Function} config.safeRemove - Safe remove helper.
- * @param {Array} config.topLevelStatementsToRemove - Collector array.
- * @param {Array} config.functionsToGut - Collector array.
+ * @param {object} options - Visitor context.
+ * @param {string} options.exportName - Export name.
+ * @param {string} options.initFunctionName - Init function name.
+ * @param {string} options.mjsContent - Source content (read-only during pass).
+ * @param {Function} options.safeOverwrite - Safe overwrite helper.
+ * @param {Function} options.safeRemove - Safe remove helper.
+ * @param {Array} options.topLevelStatementsToRemove - Collector array.
+ * @param {Array} options.functionsToGut - Collector array.
  *
  * @returns {object} Visitor handlers object for acorn-walk ancestor().
  */

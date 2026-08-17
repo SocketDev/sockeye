@@ -20,17 +20,17 @@ import { applyCommonTransforms } from './transform.mts'
 /**
  * Generate CommonJS synchronous wrapper.
  *
- * @param {object} config - Configuration options.
- * @param {string} config.mtsContent - MJS glue code content.
- * @param {string} config.base64Wasm - Base64-encoded WASM binary.
- * @param {Uint8Array} config.wasmBinary - WASM binary.
- * @param {string} config.mtsFile - Path to input MJS file.
- * @param {string} config.outputSyncJs - Path to output sync.js file.
- * @param {string} config.packageName - Package name.
- * @param {string} config.initFunctionName - Init function name.
- * @param {string} config.exportName - Export name.
- * @param {string} [config.description] - Optional description.
- * @param {object} config.logger - Logger instance.
+ * @param {object} options - Configuration options.
+ * @param {string} options.mtsContent - MJS glue code content.
+ * @param {string} options.base64Wasm - Base64-encoded WASM binary.
+ * @param {Uint8Array} options.wasmBinary - WASM binary.
+ * @param {string} options.mtsFile - Path to input MJS file.
+ * @param {string} options.outputSyncJs - Path to output sync.js file.
+ * @param {string} options.packageName - Package name.
+ * @param {string} options.initFunctionName - Init function name.
+ * @param {string} options.exportName - Export name.
+ * @param {string} [options.description] - Optional description.
+ * @param {object} options.logger - Logger instance.
  *
  * @returns {Promise<string>} Path to generated file
  */
@@ -84,8 +84,8 @@ export async function generateSyncCjs(config) {
     : ' * Built for synchronous instantiation.'
 
   // Get file size for documentation
-  // need stats.size for size-in-comment documentation.
-  // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+  // Need stats.size for size-in-comment documentation.
+  // oxlint-disable-next-line socket/prefer-exists-sync -- stat fields consumed
   const mjsStats = await fs.stat(mjsFile)
 
   // Generate the CommonJS wrapper
@@ -127,8 +127,8 @@ module.exports = ${exportName}Module;
 
   await fs.writeFile(outputSyncJs, jsContent, 'utf8')
 
-  // need stats.size for the size log line.
-  // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+  // Need stats.size for the size log line.
+  // oxlint-disable-next-line socket/prefer-exists-sync -- stat fields consumed
   const syncJsSize = (await fs.stat(outputSyncJs)).size
   logger.substep(`Sync JS (CJS): ${outputSyncJs}`)
   logger.substep(`Sync JS size: ${(syncJsSize / 1024).toFixed(2)} KB`)

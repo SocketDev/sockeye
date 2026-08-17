@@ -70,7 +70,14 @@ export function loadExternalToolsJson(
     }
     visited.add(resolvedPath)
 
-    const data: ExternalToolsFile = JSON.parse(readFileSync(jsonPath, 'utf8'))
+    // JSON.parse returns `any`; the shape is an invariant of the writer
+
+    // in this repo, and a malformed file throws in the surrounding
+
+    // try/catch rather than flowing on.
+
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowed
+    const data = JSON.parse(readFileSync(jsonPath, 'utf8')) as ExternalToolsFile
 
     // Validate against schema.
     const validation = validateExternalTools(data)
@@ -139,8 +146,8 @@ export function loadExternalToolsJson(
  *
  * @returns {object} Merged external tools configuration
  */
-// Co-locates loaders with their consumers; sorting would split them.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// Loaders are co-located with the version-resolvers that consume them.
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function loadExternalTools({
   checkpointName,
   packageRoot,
@@ -207,8 +214,8 @@ export const TOOL_VERSIONS = loadExternalTools()
  */
 export const PYTHON_VERSIONS = (() => {
   const versions: Record<string, string> = {}
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [name, config] of Object.entries(TOOL_VERSIONS)) {
     if (config.packageManager === 'pip' && config.version) {
       versions[name] = config.version
@@ -225,8 +232,8 @@ export const PYTHON_VERSIONS = (() => {
  */
 export const PYTHON_PACKAGE_EXTRAS = (() => {
   const extras: Record<string, string[]> = {}
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [name, config] of Object.entries(TOOL_VERSIONS)) {
     if (
       config.packageManager === 'pip' &&
@@ -248,10 +255,10 @@ export const PYTHON_PACKAGE_EXTRAS = (() => {
  * @returns {string} Package specifier with pinned version (e.g.,
  *   'torch==2.5.0')
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getPinnedPackage(
   packageName: string,
   options?: LoadExternalToolsOptions | undefined,
@@ -284,10 +291,10 @@ export function getPinnedPackage(
  *
  * @returns {string[]} Array of package specifiers with pinned versions
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getPinnedPackages(
   packageNames: string[],
   options?: LoadExternalToolsOptions | undefined,
@@ -303,10 +310,10 @@ export function getPinnedPackages(
  *
  * @returns {object | undefined} Tool configuration or undefined if not found
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getToolConfig(
   toolName: string,
   options?: LoadExternalToolsOptions | undefined,
@@ -325,10 +332,10 @@ export function getToolConfig(
  *
  * @returns {string} Package specifier (e.g., 'cmake@3.31.4' for brew)
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getToolPackageSpec(
   toolName: string,
   packageName: string,
@@ -369,10 +376,10 @@ export function getToolPackageSpec(
  *
  * @returns {string | undefined} Pinned version or undefined if not found
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getToolVersion(
   toolName: string,
   options?: LoadExternalToolsOptions | undefined,
@@ -409,8 +416,8 @@ export function loadPythonVersions(
   const versions: Record<string, string> = {}
   const extras: Record<string, string[]> = {}
 
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [name, config] of Object.entries(tools)) {
     if (config.packageManager === 'pip' && config.version) {
       versions[name] = config.version
@@ -436,10 +443,10 @@ export function loadPythonVersions(
  *
  * @returns {object} All tools configuration
  */
-// file co-locates external-tools.json loaders with the version-resolution
+// File co-locates external-tools.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function loadAllTools(
   options?: LoadExternalToolsOptions | undefined,
 ): ExternalToolsMap {

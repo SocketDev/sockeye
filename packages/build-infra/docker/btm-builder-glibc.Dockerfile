@@ -6,9 +6,9 @@
 # they run on glibc 2.17 hosts; the shims are wired into each builder's
 # Makefile/cmake build, not into this image.
 #
-# Published to `ghcr.io/socketdev/btm-builder-glibc`, tagged with the
-# build date plus commit sha (an eight-hex-digit suffix), by
-# .github/workflows/btm-builder-image.yml. The publish workflow
+# Published to ghcr.io under socketdev/btm-builder-glibc with
+# `YYYY-MM-DD-<sha8>` tags by .github/workflows/btm-builder-image.yml.
+# The publish workflow
 # refreshes the FROM digest below + bumps the soak annotation.
 
 # almalinux:8.10-20251111

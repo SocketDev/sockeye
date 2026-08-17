@@ -20,21 +20,21 @@ import { generateSyncEsm } from './generate-sync-esm.mts'
 /**
  * Generate a synchronous WASM wrapper with embedded base64 binary.
  *
- * @param {object} config - Configuration options.
- * @param {string} config.wasmFile - Path to input WASM file.
- * @param {string} config.mtsFile - Path to input MJS glue code file.
- * @param {string} config.outputSyncJs - Path to output sync.js file.
- * @param {string} config.packageName - Package name (e.g., 'onnxruntime',
+ * @param {object} options - Configuration options.
+ * @param {string} options.wasmFile - Path to input WASM file.
+ * @param {string} options.mtsFile - Path to input MJS glue code file.
+ * @param {string} options.outputSyncJs - Path to output sync.js file.
+ * @param {string} options.packageName - Package name (e.g., 'onnxruntime',
  *   'yoga-layout')
- * @param {string} config.initFunctionName - Name of the Emscripten init
+ * @param {string} options.initFunctionName - Name of the Emscripten init
  *   function (e.g., 'ortWasmThreaded', 'Module')
- * @param {string} config.exportName - Name of the exported object (e.g.,
+ * @param {string} options.exportName - Name of the exported object (e.g.,
  *   'ort', 'yoga')
- * @param {string} [config.description] - Optional description for the file
+ * @param {string} [options.description] - Optional description for the file
  *   header.
- * @param {object} [config.logger] - Optional logger (defaults to build-output
+ * @param {object} [options.logger] - Optional logger (defaults to build-output
  *   logger)
- * @param {Function} [config.customSmokeTest] - Optional custom smoke test
+ * @param {Function} [options.customSmokeTest] - Optional custom smoke test
  *   function for sync.js.
  *
  * @returns {Promise<void>}
@@ -79,7 +79,7 @@ export async function generateWasmSyncWrapper(config) {
   const basename =
     lastSlash === -1 ? outputSyncCjs : outputSyncCjs.substring(lastSlash + 1)
 
-  // Validate basename is non-empty: this catches the trailing-slash edge case.
+  // Validate the basename is non-empty, which catches the trailing-slash edge case.
   if (!basename) {
     throw new Error(
       `Invalid output path (ends with slash): ${outputSyncCjs}. ` +
@@ -133,9 +133,9 @@ export async function generateWasmSyncWrapper(config) {
       throw new Error('Sync CJS file not found after generation')
     }
 
-    // fs.stat() calls consume stats.size to size-report the generated CJS/MJS
+    // Fs.stat() calls consume stats.size to size-report the generated CJS/MJS
     // wrappers.
-    // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+    // oxlint-disable-next-line socket/prefer-exists-sync -- see above
     const syncStats = await fs.stat(outputSyncCjs)
     if (syncStats.size === 0) {
       throw new Error('Sync CJS file is empty')
@@ -158,9 +158,9 @@ export async function generateWasmSyncWrapper(config) {
       throw new Error('Sync MJS file not found after generation')
     }
 
-    // fs.stat() calls consume stats.size to size-report the generated CJS/MJS
+    // Fs.stat() calls consume stats.size to size-report the generated CJS/MJS
     // wrappers.
-    // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+    // oxlint-disable-next-line socket/prefer-exists-sync -- see above
     const syncMjsStats = await fs.stat(outputSyncMjs)
     if (syncMjsStats.size === 0) {
       throw new Error('Sync MJS file is empty')

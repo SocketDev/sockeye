@@ -162,8 +162,8 @@ export function getAvailableTools(
   const key = getPlatformKey(platform, arch)
   const tools = []
 
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [toolName, config] of Object.entries(VFS_TOOL_URLS)) {
     if (config[key]) {
       tools.push(toolName)

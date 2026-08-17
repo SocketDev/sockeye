@@ -19,25 +19,25 @@ const logger = getDefaultLogger()
 /**
  * Generate synchronous wrapper for WASM.
  *
- * @param {object} config - Sync generation options.
- * @param {string} config.buildDir - Build directory.
- * @param {string} config.buildMode - Build mode ('prod' or 'dev')
- * @param {string} config.outputReleaseDir - Release output directory.
- * @param {string} config.outputOptimizedDir - Optimized output directory.
- * @param {string} config.outputSyncDir - Sync output directory.
- * @param {boolean} config.forceRebuild - Force rebuild (ignore checkpoints)
- * @param {object} config.packageConfig - Package-specific configuration.
- * @param {string} config.packageConfig.packageName - Package name (e.g.,
+ * @param {object} options - Sync generation options.
+ * @param {string} options.buildDir - Build directory.
+ * @param {string} options.buildMode - Build mode ('prod' or 'dev')
+ * @param {string} options.outputReleaseDir - Release output directory.
+ * @param {string} options.outputOptimizedDir - Optimized output directory.
+ * @param {string} options.outputSyncDir - Sync output directory.
+ * @param {boolean} options.forceRebuild - Force rebuild (ignore checkpoints)
+ * @param {object} options.packageConfig - Package-specific configuration.
+ * @param {string} options.packageConfig.packageName - Package name (e.g.,
  *   'yoga-layout', 'onnxruntime')
- * @param {string} config.packageConfig.exportName - Export name (e.g., 'yoga',
+ * @param {string} options.packageConfig.exportName - Export name (e.g., 'yoga',
  *   'ort')
- * @param {string} config.packageConfig.initFunctionName - Init function name
+ * @param {string} options.packageConfig.initFunctionName - Init function name
  *   (e.g., 'Module', 'ortWasmThreaded')
- * @param {string} config.packageConfig.description - Build description for
+ * @param {string} options.packageConfig.description - Build description for
  *   wrapper.
- * @param {number | function} config.packageConfig.expectedExports - Expected
+ * @param {number | function} options.packageConfig.expectedExports - Expected
  *   export count (number or function of buildMode)
- * @param {string} config.packageConfig.fileBaseName - Base file name (defaults
+ * @param {string} options.packageConfig.fileBaseName - Base file name (defaults
  *   to exportName)
  */
 export async function generateSync(config) {
@@ -94,9 +94,9 @@ export async function generateSync(config) {
         throw new Error('Sync JS file not found')
       }
 
-      // fs.stat() calls consume stats.size to detect empty-output failures
+      // Fs.stat() calls consume stats.size to detect empty-output failures
       // during the WASM sync-wrapper generation phase.
-      // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+      // oxlint-disable-next-line socket/prefer-exists-sync -- see above
       const syncStats = await fs.stat(syncJsFilePath)
       if (syncStats.size === 0) {
         throw new Error('Sync JS file is empty')
@@ -126,9 +126,9 @@ export async function generateSync(config) {
     binaryPath: path.relative(buildDir, outputSyncDir),
     binarySize: syncSize,
     smokeTest: async () => {
-      // fs.stat() calls consume stats.size to detect empty-output failures
+      // Fs.stat() calls consume stats.size to detect empty-output failures
       // during the WASM sync-wrapper generation phase.
-      // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+      // oxlint-disable-next-line socket/prefer-exists-sync -- see above
       const syncStats = await fs.stat(syncJsFile)
       if (syncStats.size === 0) {
         throw new Error('Sync wrapper file is empty')

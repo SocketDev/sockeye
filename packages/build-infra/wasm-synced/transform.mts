@@ -23,11 +23,11 @@ import { buildDeclVisitor } from './transform-decl-visitor.mts'
 /**
  * Apply common transformations to MJS content.
  *
- * @param {object} config - Transform options.
- * @param {string} config.mtsContent - MJS content to transform.
- * @param {string} config.initFunctionName - Init function name.
- * @param {string} config.exportName - Export name.
- * @param {object} config.logger - Logger instance.
+ * @param {object} options - Transform options.
+ * @param {string} options.mtsContent - MJS content to transform.
+ * @param {string} options.initFunctionName - Init function name.
+ * @param {string} options.exportName - Export name.
+ * @param {object} options.logger - Logger instance.
  *
  * @returns {Promise<string>} Transformed content
  */
@@ -103,8 +103,8 @@ export async function applyCommonTransforms(config) {
   })
 
   // Handle require declarators - remove them from their variable declarations
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const { node: declaratorNode, varDecl } of requireDeclaratorsToRemove) {
     const declarators = varDecl.declarations
     const index = declarators.indexOf(declaratorNode)
@@ -308,9 +308,7 @@ export async function applyCommonTransforms(config) {
             for (let i = 0, { length } = bodyStatements; i < length; i += 1) {
               const stmt = bodyStatements[i]
               if (stmt.type === 'VariableDeclaration') {
-                // iterable is not a bare identifier (could be
-                // Map/Set/Generator/expression).
-                // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+                // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
                 for (const decl of stmt.declarations) {
                   const varName = decl.id?.name
                   if (!varName) {

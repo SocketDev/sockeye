@@ -1,10 +1,9 @@
 /**
  * Build Helper Utilities.
  *
- * General-purpose build helpers (execBuildCommand, sizing, durations,
- * executable bits), plus the aggregation point for the split helper domains:
- * host environment checks, build logs, smoke-test strategy/execution, and
- * binary verification.
+ * General-purpose build helpers (exec, sizing, durations, executable bits),
+ * plus the aggregation point for the split helper domains: host environment
+ * checks, build logs, smoke-test strategy/execution, and binary verification.
  */
 
 import { promises as fs } from 'node:fs'
@@ -37,8 +36,8 @@ export {
 } from './checkpoint-manager.mts'
 
 /**
- * Options for {@link execBuildCommand}. Extends spawn options with the legacy
- * `encoding` flag — when set, output is captured instead of inherited.
+ * Options for {@link exec}. Extends spawn options with the legacy `encoding`
+ * flag — when set, output is captured instead of inherited.
  */
 export type ExecOptions = SpawnOptions & {
   encoding?: BufferEncoding | undefined
@@ -56,9 +55,9 @@ export function estimateBuildTime(baseMinutes: number, cores: number): number {
 }
 
 /**
- * Execute a build command using spawn.
+ * Execute command using spawn.
  */
-export async function execBuildCommand(
+export async function execBuildStep(
   command: string,
   args: string[] | string = [],
   options: ExecOptions = {},
@@ -66,7 +65,7 @@ export async function execBuildCommand(
   const spawnOptions: ExecOptions = {
     ...options,
   }
-  // Only set stdio to 'inherit' when encoding is not specified: specifying an encoding requires capturing output.
+  // Only set stdio to 'inherit' when encoding is unspecified. Specifying it requires capturing output.
   if (!spawnOptions.encoding) {
     spawnOptions.stdio = 'inherit'
   }
@@ -106,8 +105,8 @@ export function formatDuration(milliseconds: number): string {
  * Get file size in human-readable format.
  */
 export async function getFileSize(filePath: string): Promise<string> {
-  // need stats.size for human-readable byte formatter.
-  // oxlint-disable-next-line socket/prefer-exists-sync -- stats needed
+  // Need stats.size for human-readable byte formatter.
+  // oxlint-disable-next-line socket/prefer-exists-sync -- stat fields consumed
   const stats = await fs.stat(filePath)
   const bytes = stats.size
 

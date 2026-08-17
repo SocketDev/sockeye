@@ -9,7 +9,7 @@ import { optimize } from 'svgo'
 import { describe, expect, test } from 'vitest'
 
 const fishPrintUrl = new URL(
-  '../../../assets/repo/brand/sockeye-combomark.svg',
+  '../../../assets/repo/sockeye-combomark.svg',
   import.meta.url,
 )
 

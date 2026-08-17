@@ -3,8 +3,8 @@
  *   build tool installation for C/C++ packages. Replaces duplicate
  *   setup-build-toolchain directories across packages. Usage: import {
  *   createSetupToolchain } from
- *   'local-build-infra/lib/setup-build-toolchain.mts' const setup =
- *   createSetupToolchain({ darwin: ['clang', 'cmake', 'make'], linux: ['gcc',
+ *   'local-build-infra/lib/setup-build-toolchain.mts' const setup
+ *   = createSetupToolchain({ darwin: ['clang', 'cmake', 'make'], linux: ['gcc',
  *   'make', 'cmake'], win32: ['mingw-w64', 'cmake', 'make'], }) await setup()
  */
 
@@ -112,8 +112,8 @@ export async function runSetupToolchain(config) {
       const { ensureSubmodule } = await import('./submodule-init.mts')
       for (let i = 0; i < submodules.length; i += 1) {
         const sub = submodules[i]
-        // serial git submodule update avoids racing the index.lock.
-        // eslint-disable-next-line no-await-in-loop -- sequential on purpose
+        // Serial git submodule update avoids racing the index.lock.
+        // eslint-disable-next-line no-await-in-loop -- serial update
         await ensureSubmodule({ monorepoRoot, ...sub })
       }
     }

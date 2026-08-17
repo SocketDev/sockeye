@@ -1,0 +1,156 @@
+# stuie-main-HEAD
+# no-release-tag: stuie publishes no release tags (git ls-remote --tags is empty)
+[submodule "upstream/stuie"]
+	ignore = dirty
+	path = upstream/stuie
+	url = git@github.com:SocketDev/stuie.git
+	branch = main
+	shallow = true
+# node-v26.7.0 (2026-08-05) sha256:55978d14606877dcb1ffd9d2b789fde4fac5355709eec9913e870b65d94f1f33
+[submodule "packages/node-smol-builder/upstream/node"]
+	ref = b4f23d3619c98bed09af93a21192f6080197a8c6
+	path = packages/node-smol-builder/upstream/node
+	url = https://github.com/nodejs/node.git
+	branch = v26.7.0
+	ignore = dirty
+	shallow = true
+# yoga-3.2.1
+# yoga-v3.2.1 (2024-12-13) sha256:4742f41722a16f181e3da37abf943390db1e928f00f26402cb154662ae7f110f
+[submodule "packages/yoga-layout-builder/upstream/yoga"]
+	ref = 042f5013152eb81c1552dec945b88f7b95ca350f
+	path = packages/yoga-layout-builder/upstream/yoga
+	url = https://github.com/facebook/yoga.git
+	branch = v3.2.1
+	ignore = dirty
+	shallow = true
+# onnxruntime-1.24.4
+# onnxruntime-v1.24.4 (2026-03-16) sha256:7e4a0dbd8b75059c4b82325b6de8428bc58058d0f8b15234724fa29cae492075
+[submodule "packages/onnxruntime-builder/upstream/onnxruntime"]
+	ref = 2d924974ef147392ced8409d36bd6d2e7fcc8a74
+	path = packages/onnxruntime-builder/upstream/onnxruntime
+	url = https://github.com/microsoft/onnxruntime.git
+	branch = v1.24.4
+	ignore = dirty
+	shallow = true
+# lief-0.17.0
+# lief-0.17.0 (2025-09-14) sha256:ad6ea452ca14e2e59a381e3f1dff11e3a38a279bc4035a492708ce2a7de9f5db
+[submodule "packages/lief-builder/upstream/lief"]
+	ref = 038b60671f12dbd86bf84d9f8a38395bd2a8176e
+	path = packages/lief-builder/upstream/lief
+	url = https://github.com/lief-project/LIEF.git
+	branch = 0.17.0
+	ignore = dirty
+	shallow = true
+# curl-8.19.0
+# curl-curl-8_19_0 (2026-03-11) sha256:905a45930dc0a9c3954fb483be38ad4e4bf60805ad61eccbcb605b33976758b5
+[submodule "packages/curl-builder/upstream/curl"]
+	ref = 8c908d2d0a6d32abdedda2c52e90bd56ec76c24d
+	path = packages/curl-builder/upstream/curl
+	url = https://github.com/curl/curl.git
+	branch = curl-8_19_0
+	ignore = dirty
+	shallow = true
+# mbedtls-3.6.6
+# mbedtls-v3.6.6 (2026-03-26) sha256:61ac65f6362f898677b2a4cf2a769b41e4aee0985cb45f046d3b719388e5be59
+[submodule "packages/curl-builder/upstream/mbedtls"]
+	ref = 0bebf8b8c7f07abe3571ded48a11aa907a1ffb20
+	path = packages/curl-builder/upstream/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git
+	branch = mbedtls-3.6.6
+	ignore = dirty
+	shallow = true
+# no-release-tag: wpt publishes only auto-generated epoch snapshot tags, no versioned releases; the streams subtree is pinned by commit SHA
+# streams-epochs/daily/2026-02-25_03H (2026-02-24) sha256:8a097481e63527c3034e83e2dea266c576f2892f74a4231cf3beb70f3e6f6d0d
+[submodule "packages/node-smol-builder/scripts/vendor-fast-webstreams/wpt/streams"]
+	ref = 3641ed2c4cc4728308c498e88f766c0c19bf410d
+	path = packages/node-smol-builder/test/fixtures/wpt/streams
+	url = https://github.com/web-platform-tests/wpt.git
+	ignore = dirty
+	shallow = true
+	# Honored by scripts/git-partial-submodule.mts (vanilla git ignores
+	# this field). WPT is a ~5 GB tree; we only need the streams/ subtree
+	# for WHATWG streams conformance tests.
+	sparse-checkout = streams/
+	verify = pnpm --filter node-smol-builder wpt:streams
+# liburing-2.14
+# liburing-liburing-2.14 (2026-02-04) sha256:3de6beb63ec279192e07863ca5edbdcf83686b470f6066cdaaf4bfb2192fee46
+[submodule "packages/node-smol-builder/upstream/liburing"]
+	ref = e3d35ea59d3ba09075ed4d7751e4bb9049cce64a
+	path = packages/node-smol-builder/upstream/liburing
+	url = https://github.com/axboe/liburing.git
+	branch = liburing-2.14
+	ignore = dirty
+	shallow = true
+# usockets-v0.8.8 (2024-02-07) sha256:c57bfd8150afea91eabbc05231f215436b3500f046adb634ac48ce9f6c46d909
+[submodule "packages/node-smol-builder/upstream/uSockets"]
+	ref = 833497e8e0988f7fd8d33cd4f6f36056c68d225d
+	path = packages/node-smol-builder/upstream/uSockets
+	url = https://github.com/uNetworking/uSockets.git
+	branch = v0.8.8
+	ignore = dirty
+	shallow = true
+# uwebsockets-v20.76.0 (2026-03-20) sha256:6f84515e3b09370a824c8d3d752f3fa7090aa47e7ad2adb01c19b5907e70b3f7
+[submodule "packages/node-smol-builder/upstream/uWebSockets"]
+	ref = e42d69ff338269a5b74d014046e3699e2f27734e
+	path = packages/node-smol-builder/upstream/uWebSockets
+	url = https://github.com/uNetworking/uWebSockets.git
+	branch = v20.76.0
+	ignore = dirty
+	shallow = true
+# zstd-1.5.7
+# zstd-v1.5.7 (2025-02-19) sha256:4b0bd1f0cfb25e61b9103c35f27395530ff5b4c0d2513a00fd745849e85ea52c
+[submodule "packages/bin-infra/upstream/zstd"]
+	ref = f8745da6ff1ad1e7bab384bd1f9d742439278e99
+	path = packages/bin-infra/upstream/zstd
+	url = https://github.com/facebook/zstd.git
+	branch = v1.5.7
+	ignore = dirty
+	shallow = true
+# semver-7.7.4
+# no-release-tag: pinned one docs-typo commit past v7.7.4 (npm/node-semver#853); no tag points at this SHA — re-tag to a release on the next semver bump
+# full-checkout: full source/corpus consumed whole — no narrower cone exists for this tree
+# semver-c368af6 (2026-04-16) sha256:6dfad80c8d7fb46c50f74ee37bc98fa7701f281789a83808619dbc57eb58cd96
+[submodule "packages/node-smol-builder/upstream/semver"]
+	ref = c368af612e521767e960419e6388c5129c857984
+	path = packages/node-smol-builder/upstream/semver
+	url = https://github.com/npm/node-semver.git
+	ignore = dirty
+	shallow = true
+# md4c-0.5.3
+# md4c-release-0.5.3 (2026-04-20) sha256:ecbd85292465df929839897e314d809b5c8b267e20c4e5e24d51a1602d16d99a
+[submodule "packages/node-smol-builder/upstream/md4c"]
+	ref = 472c417005c2c71b8617de4f7b8d6b30411d78f4
+	path = packages/node-smol-builder/upstream/md4c
+	url = https://github.com/mity/md4c
+	branch = release-0.5.3
+	ignore = dirty
+	shallow = true
+# tree-sitter-0.26.9
+# tree-sitter-v0.26.9 (2026-05-19) sha256:3bd3c89502182fd9f930749dcaabc0f39e6b88cc39a3cba9898e46cd04a7810c
+[submodule "packages/node-smol-builder/upstream/tree-sitter"]
+	ref = 7f534862c3ec939c3a6ee147f7600ef5c1bf900f
+	path = packages/node-smol-builder/upstream/tree-sitter
+	url = https://github.com/tree-sitter/tree-sitter
+	branch = v0.26.9
+	ignore = dirty
+	shallow = true
+# libqrencode-4.1.1
+# libqrencode-v4.1.1 (2020-09-28) sha256:7777a49d6b838347ccc35dadd78e47bcf3962536da1b047ccd06a432cf796db9
+[submodule "packages/node-smol-builder/upstream/libqrencode"]
+	ref = 715e29fd4cd71b6e452ae0f4e36d917b43122ce8
+	path = packages/node-smol-builder/upstream/libqrencode
+	url = https://github.com/fukuchi/libqrencode
+	branch = v4.1.1
+	ignore = dirty
+	shallow = true
+# dawn-chromium/7852
+# full-checkout: full source build — the builder compiles/vendors the whole tree
+# no-release-tag: dawn.googlesource.com publishes no release tags; pinned to a snapshot SHA
+# full-checkout: full source/corpus consumed whole — no narrower cone exists for this tree
+# dawn-e935a1b5 sha256:9ab41be7122b73a8484b5bd76d79e5ce5af90611dbf10485f34cf209440ecb43
+[submodule "packages/dawn-builder/upstream/dawn"]
+	path = packages/dawn-builder/upstream/dawn
+	url = https://dawn.googlesource.com/dawn
+	ignore = dirty
+	shallow = true
+	ref = e935a1b57eb859db0d00c522e198711a3f313a25

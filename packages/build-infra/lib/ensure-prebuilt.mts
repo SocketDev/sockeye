@@ -32,7 +32,10 @@ import { errorMessage } from './error-utils.mts'
 // the actual error-handling path, where a failure to load it
 // degrades gracefully (the transient-error hint is omitted).
 import { getDownloadedDir } from './paths.mts'
-import { verifyReleaseChecksum } from './release-checksums/core.mts'
+// The canonical copy is fleet-owned under scripts/fleet/build-infra/. A
+// member-local copy gets pruned by the next cascade, which is exactly what
+// happened to the one recovered here earlier.
+import { verifyReleaseChecksum } from '../../../scripts/fleet/build-infra/lib/release-checksums/core.mts'
 import {
   detectLibc,
   downloadSocketBtmRelease,
@@ -69,14 +72,14 @@ export interface PrebuiltConfig {
    * `linux-x64-musl`). Per-builder so each can honor its own
    * libc-detection / Windows naming conventions.
    */
-  getCurrentPlatformArch(this: void): string
+  getCurrentPlatformArch: () => string
   /**
    * Resolve the local build directory for a given platform-arch.
    * This is the "if the user already built locally" path checked
    * before falling through to the download cache. Returns the
    * directory that should contain `requiredFiles`.
    */
-  getLocalBuildDir(this: void, platformArch: string): string
+  getLocalBuildDir: (platformArch: string) => string
   /**
    * Optional hook fired after a downloaded tarball is extracted but
    * before the success-return. Lets a builder add platform-specific
@@ -85,44 +88,42 @@ export interface PrebuiltConfig {
    * extract dir and return `undefined`, falling through to source
    * build).
    */
-  onExtracted?(
-    this: void,
-    extractDir: string,
-    platformArch: string,
-  ): Promise<boolean>
+  onExtracted?:
+    | ((extractDir: string, platformArch: string) => Promise<boolean>)
+    | undefined
 }
 
 export interface PrebuiltApi {
   /**
    * Validates that every entry in `requiredFiles` resolves under `dir`.
    */
-  verifyAt(dir: string): { valid: boolean; missing: string[] }
+  verifyAt: (dir: string) => { valid: boolean; missing: string[] }
   /**
    * Boolean wrapper around `verifyAt`.
    */
-  existsAt(dir: string): boolean
+  existsAt: (dir: string) => boolean
   /**
    * `existsAt` over the current platform's local build dir.
    */
-  exists(platformArch?: string | undefined): boolean
+  exists: (platformArch?: string | undefined) => boolean
   /**
    * `<packageRoot>/build/downloaded/<name>/<platformArch>/` —
    * where the gh-release download lands after extraction.
    */
-  getDownloadedDir(platformArch: string): string
+  getDownloadedDir: (platformArch: string) => string
   /**
    * Fetch the latest published release tarball for the given platform.
    * Returns the extract directory on success, `undefined` on failure
    * (network error, checksum mismatch, missing release, onExtracted
    * rejection). Callers fall through to a from-source build.
    */
-  downloadPrebuilt(
+  downloadPrebuilt: (
     options?:
       | {
           platformArch?: string | undefined
         }
       | undefined,
-  ): Promise<string | undefined>
+  ) => Promise<string | undefined>
   /**
    * Orchestrates the lookup chain:
    *
@@ -132,14 +133,14 @@ export interface PrebuiltApi {
    *    resolved install dir, or throws if none of the three branches produced a
    *    valid install.
    */
-  ensure(
+  ensure: (
     options?:
       | {
           force?: boolean | undefined
           platformArch?: string | undefined
         }
       | undefined,
-  ): Promise<string>
+  ) => Promise<string>
 }
 
 /**
@@ -337,9 +338,9 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
 
   async function ensureImpl(
     resolvedPlatformArch: string,
-    // private closure, not a public API; options-bag is on the outer `ensure`
+    // Private closure, not a public API; options-bag is on the outer `ensure`
     // function.
-    // oxlint-disable-next-line socket/no-boolean-trap-param -- private closure
+    // oxlint-disable-next-line socket/no-boolean-trap-param -- see note above
     force: boolean,
   ): Promise<string> {
     // 1. Local build first.

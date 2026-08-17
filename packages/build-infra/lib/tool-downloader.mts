@@ -1,9 +1,8 @@
 /**
  * Tool Download + Cache Engine.
  *
- * Downloads pinned tool versions, verifies checksums, and caches them under
- * the repo-root `.cache/repo/external-tools/` (via `EXTERNAL_TOOLS_CACHE_DIR`
- * in ./paths.mts), gitignored via the fleet's `.cache/` rule.
+ * Downloads pinned tool versions, verifies checksums, and caches them
+ * in node_modules/.cache/external-tools/ (gitignored via node_modules/).
  *
  * Override: $EXTERNAL_TOOLS_CACHE.
  */
@@ -23,8 +22,6 @@ import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { httpDownload } from '@socketsecurity/lib-stable/http-request/download'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
-
-import { EXTERNAL_TOOLS_CACHE_DIR } from './paths.mts'
 
 const logger = getDefaultLogger()
 
@@ -85,7 +82,7 @@ export async function acquireLock(lockPath, timeoutMs = 120_000) {
  * @returns {Promise<string>} Hex-encoded SHA256
  */
 export function computeSha256(filePath) {
-  return new Promise<string>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256')
     const stream = createReadStream(filePath)
     stream.on('data', data => hash.update(data))
@@ -141,7 +138,7 @@ export async function downloadAndCache(
   const releaseLock = await acquireLock(lockPath)
 
   try {
-    // Re-check cache after acquiring lock: another process may have completed it
+    // Re-check the cache after acquiring the lock. Another process may have completed.
     if (
       existsSync(binaryPath) &&
       verifyCacheIntegrity(cachePath, resolverResult.sha256)
@@ -181,7 +178,7 @@ export async function downloadAndCache(
         throw new Error(
           `Checksum mismatch for ${tool} ${version}:\n` +
             `  Expected: ${resolverResult.sha256}\n` +
-            `  Actual:   ${actualSha256}`,
+            `  Actual:   ${String(actualSha256)}`,
         )
       }
       logger.substep('Checksum verified')
@@ -337,7 +334,8 @@ export function getCacheDir() {
   if (process.env['EXTERNAL_TOOLS_CACHE']) {
     return process.env['EXTERNAL_TOOLS_CACHE']
   }
-  return EXTERNAL_TOOLS_CACHE_DIR
+  // oxlint-disable-next-line socket/prefer-repo-root-dot-cache -- deliberately the node_modules/.cache shape: this store is a dependency artifact that must die with `rm -rf node_modules`, not survive in the repo root.
+  return path.join(process.cwd(), 'node_modules', '.cache', 'external-tools')
 }
 
 /**

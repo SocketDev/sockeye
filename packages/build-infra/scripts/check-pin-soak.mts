@@ -91,7 +91,13 @@ export function auditExternalToolsJson() {
   )) {
     let parsed: { tools?: Record<string, unknown> | undefined }
     try {
-      parsed = JSON.parse(readFileSync(file, 'utf8'))
+      // JSON.parse returns `any`; the shape is an invariant of the writer
+      // in this repo, and a malformed file throws in the surrounding
+      // try/catch rather than flowing on.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowed
+      parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+        tools?: Record<string, unknown> | undefined
+      }
     } catch (error) {
       pushUnannotated(
         'external-tools',
@@ -215,12 +221,13 @@ export function printBucket(
   items: PinFinding[],
   config: { alwaysList: boolean },
 ) {
-  const cfg = { __proto__: null, ...config } as { alwaysList: boolean }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
+  const opts = { __proto__: null, ...options } as { alwaysList: boolean }
   if (items.length === 0) {
     return
   }
   logger.log(`${label} (${items.length}):`)
-  if (cfg.alwaysList || verbose) {
+  if (opts.alwaysList || verbose) {
     for (let i = 0, { length } = items; i < length; i += 1) {
       const f = items[i]
       if (!f) {
@@ -243,7 +250,8 @@ export function pushFromSoak(
   published: string,
   config: { hasSeparateAnnotation: boolean },
 ) {
-  const cfg = { __proto__: null, ...config } as {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
+  const opts = { __proto__: null, ...options } as {
     hasSeparateAnnotation: boolean
   }
   const soak = checkSoak(published)
@@ -253,7 +261,7 @@ export function pushFromSoak(
     lineNumber,
     identifier,
     status: soak.soaked ? 'soaked' : 'in-soak',
-    hasSeparateAnnotation: cfg.hasSeparateAnnotation,
+    hasSeparateAnnotation: opts.hasSeparateAnnotation,
     note: soak.soaked
       ? `soaked (${soak.daysOld}d old)`
       : `IN SOAK: ${soak.daysOld}d old, ${SOAK_DAYS - soak.daysOld}d remaining`,

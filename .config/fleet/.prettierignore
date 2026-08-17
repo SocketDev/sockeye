@@ -90,3 +90,9 @@
 # appends, must live BELOW the end sentinel; placement preserves that tail
 # byte-for-byte.
 #fleet-canonical-end
+
+# Vendored patched copies of the Node.js source that node-smol-builder's
+# additions/ overlays at build time: someone else's source, byte-identical so a
+# diff against the pinned upstream reads as the patch alone. Same contract as
+# the canonical **/upstream/** span above.
+**/additions/source-patched/**

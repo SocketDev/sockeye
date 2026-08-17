@@ -213,7 +213,7 @@ async function main() {
     const output = {
       $schema: './release-assets.schema.json',
       $comment:
-        "SHA-256 checksums for GitHub release assets. Run 'pnpm --filter local-build-infra update-release-assets' to update.",
+        "SHA-256 checksums for GitHub release assets. Run 'pnpm --filter build-infra update-release-assets' to update.",
       ...rest,
     }
 

@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 
 import type * as BinWhich from '@socketsecurity/lib-stable/bin/which'
-import type * as LoggerDefault from '@socketsecurity/lib-stable/logger/default'
 import type * as SpawnChild from '@socketsecurity/lib-stable/process/spawn/child'
 
 import * as binModule from '@socketsecurity/lib-stable/bin/which'
@@ -36,19 +35,22 @@ vi.mock<typeof SpawnChild>(
   }),
 )
 
-vi.mock<typeof LoggerDefault>(
+vi.mock(
   import('@socketsecurity/lib-stable/logger/default'),
-  // Partial logger surface — only the methods script-runner calls.
-  () => ({
-    getDefaultLogger: () => ({
-      error: vi.fn(),
-      log: vi.fn(),
-      step: vi.fn(),
-      success: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-    }),
-  }),
+  // Partial logger surface — only the methods script-runner calls; same
+  // as-never shape the fleet's other logger mocks use.
+  () =>
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowing a value whose shape is established by the call above; TypeScript cannot carry that proof through this boundary.
+    ({
+      getDefaultLogger: () => ({
+        error: vi.fn(),
+        log: vi.fn(),
+        step: vi.fn(),
+        success: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+      }),
+    }) as never,
 )
 
 describe('script-runner', () => {

@@ -80,35 +80,24 @@ export function collectFiles(dirPath: string): string[] {
 }
 
 /**
- * Compute SHA256 hash of source file(s).
+ * Compute a SHA256 hash of source files, matching the GitHub Actions cache
+ * key algorithm: hash each file, join the hex digests with newlines, hash
+ * the joined string. Paths are sorted so input order never changes the key,
+ * directories are expanded recursively, and symlinks are skipped.
  *
- * Matches GitHub Actions cache key algorithm:
- * 1. Hash each file individually (SHA256)
- * 2. Join hashes with newlines
- * 3. Hash the combined result (SHA256)
- *
- * Files are sorted to ensure stable hash values regardless of input order.
- * Supports both individual files and directories (recursively hashes all files
- * within).
- *
- * Two usage modes via `options.relativeTo`:
- * - Omitted: path is hashed as-is (absolute). Use for source-cache hashes
- * where rename detection across source roots matters — moving foo.ts
- * between two source roots with unchanged content must change the hash.
- * - Provided: path is hashed relative to `relativeTo`. Use for artifact-
- * integrity hashes where the tarball gets extracted to different absolute
- * paths at creation time (temp dir) vs restore time (final dir). The hash
- * must stay stable across absolute-path changes, so only content and
- * intra-artifact layout contribute.
+ * The relativeTo option picks the path form that goes into the hash. Omitted:
+ * absolute paths, for source caches where a file moving between source roots
+ * must change the hash. Provided: paths relative to that root, for artifact
+ * integrity hashes that must stay stable when the tarball is extracted at a
+ * different absolute location than it was created from.
  *
  * @param {string[]} sourcePaths - Source file or directory paths to hash.
- * @param {string} [platformMetadata] - Optional platform metadata (e.g.,
- *   "linux-x64-glibc")
+ * @param {string} [platformMetadata] - Optional platform metadata string.
  * @param {object} [options]
- * @param {string} [options.relativeTo] - If set, hash each path relative to
- *   this root.
+ * @param {string} [options.relativeTo] - Hash paths relative to this root.
  *
- * @returns {string} SHA256 hash (hex)
+ * @returns {string} SHA256 hash hex.
+ *   Full discussion: docs/agents.md/repo/build-caching.md.
  */
 export function computeSourceHash(
   sourcePaths: readonly string[],
@@ -172,10 +161,10 @@ export function computeSourceHash(
       a.hashPath < b.hashPath ? -1 : a.hashPath > b.hashPath ? 1 : 0,
     )
 
-  // Hash each file individually, including the filename, to detect renames that affect ordering.
+  // Hash each file individually. The filename is included so renames that affect ordering are detected.
   const fileHashes: string[] = []
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const { absolutePath, hashPath } of entries) {
     try {
       // Read as raw bytes. Reading with 'utf8' corrupts binary inputs
@@ -185,11 +174,11 @@ export function computeSourceHash(
       // hash identically. The cache would skip regenerating for real
       // source changes.
       const content = readFileSync(absolutePath)
-      // Include the hash-path in the digest: absolute in source-cache mode,
-      // since renames must change the hash there, relative in artifact-
-      // integrity mode, since the absolute path varies between the creation
-      // temp-dir and the restore final-dir and so must not affect the hash.
-      // Missing-file sentinels use the same hash-path for symmetry.
+      // Include the hash-path in the digest: absolute in source-cache mode
+      // Renames must change the hash; relative in artifact-integrity mode.
+      // (absolute path varies between creation temp-dir and restore final-dir
+      // so must NOT affect hash). Missing-file sentinels use the same
+      // hash-path for symmetry.
       // Note: mtime intentionally excluded to avoid git operation sensitivity.
       const hash = crypto.createHash('sha256')
       hash.update(`${hashPath}\n`)
@@ -201,7 +190,7 @@ export function computeSourceHash(
         // Missing file indicates cache should be invalidated, not a fatal error
         // File deletion is a valid operation (e.g., removing unused patches)
         // Use a sentinel value that will differ from any valid hash
-        // Use the hash-path, absolute or relative depending on mode, to avoid collisions
+        // Use the hash-path, absolute or relative per mode, to avoid collisions.
         // when different files with the same basename are missing.
         const sentinelHash = crypto
           .createHash('sha256')
@@ -256,12 +245,12 @@ export function generateHashComment(sourcePaths: string | string[]): string {
  * Compares the SHA256 hash of the source file(s) against the hash
  * stored in the output file. Returns true if extraction is needed.
  *
- * @param {object} config - Extraction cache config.
- * @param {string | string[]} config.sourcePaths - Source file path(s) to hash.
- * @param {string} config.outputPath - Output file path to check.
- * @param {RegExp} config.hashPattern - Pattern to extract hash from output
+ * @param {object} options - Extraction cache options.
+ * @param {string | string[]} options.sourcePaths - Source file path(s) to hash.
+ * @param {string} options.outputPath - Output file path to check.
+ * @param {RegExp} options.hashPattern - Pattern to extract hash from output
  *   (default: /Source hash: ([a-f0-9]{64})/)
- * @param {function} [config.validateOutput] - Optional function to validate
+ * @param {function} [options.validateOutput] - Optional function to validate
  *   output content.
  *
  * @returns {Promise<boolean>} True if extraction needed, false if cached

@@ -14,15 +14,15 @@ const builtinModulesSet = new Set(builtinModules)
 /**
  * Build the call/variable/return visitor handlers for the ancestor walk.
  *
- * @param {object} config - Visitor context.
- * @param {string} config.detectedModuleVar - Detected Emscripten module
+ * @param {object} options - Visitor context.
+ * @param {string} options.detectedModuleVar - Detected Emscripten module
  *   variable name.
- * @param {string} config.mjsContent - Source content (read-only during pass).
- * @param {Function} config.safeOverwrite - Safe overwrite helper.
- * @param {Function} config.safeRemove - Safe remove helper.
- * @param {Array} config.requireDeclaratorsToRemove - Collector array.
- * @param {Array} config.returnModuleToFix - Collector array.
- * @param {Array} config.topLevelStatementsToRemove - Collector array.
+ * @param {string} options.mjsContent - Source content (read-only during pass).
+ * @param {Function} options.safeOverwrite - Safe overwrite helper.
+ * @param {Function} options.safeRemove - Safe remove helper.
+ * @param {Array} options.requireDeclaratorsToRemove - Collector array.
+ * @param {Array} options.returnModuleToFix - Collector array.
+ * @param {Array} options.topLevelStatementsToRemove - Collector array.
  *
  * @returns {object} Visitor handlers object for acorn-walk ancestor().
  */

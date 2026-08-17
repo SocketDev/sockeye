@@ -28,7 +28,7 @@ packages/<pkg>/build/<mode>/<platform-arch>/checkpoints/<pkg>/<checkpoint>.tar.g
 
 Some packages also have `build/shared/checkpoints/<pkg>/...` for stages that are truly platform-independent (e.g. node-smol's `source-copied` stage). Everything else should be platform-scoped.
 
-**Use `getPlatformBuildDir(packageDir, platformArch)`** from `local-build-infra/lib/constants` to compute `build/<mode>/<platform-arch>`. Do not hand-roll `path.join(BUILD_ROOT, mode)` - it drops the platform segment.
+**Use `getPlatformBuildDir(packageDir, platformArch)`** from `build-infra/lib/constants` to compute `build/<mode>/<platform-arch>`. Do not hand-roll `path.join(BUILD_ROOT, mode)` - it drops the platform segment.
 
 ## What a checkpoint chain is
 

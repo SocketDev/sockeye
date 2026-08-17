@@ -152,6 +152,8 @@ catalog:
   #    pinned npm version instead of a sibling working tree.
   '@types/adm-zip': 0.5.8
   'acorn': 8.18.0
+  'octokit': 5.0.5
+  'yoctocolors-cjs': 2.1.3
   'acorn-walk': 8.3.5
   'adm-zip': 0.6.0
   'esm-potrace-wasm': 0.5.0
@@ -559,6 +561,7 @@ allowBuilds:
   '@socketsecurity/sdk': false
   # @swc/core native binding — vitiate's coverage-guided fuzz lane.
   '@swc/core': true
+  onnxruntime-node: set this to true or false
 
 patchedDependencies:
   # default-export interop (managed by socket-wheelhouse sync; do not edit):

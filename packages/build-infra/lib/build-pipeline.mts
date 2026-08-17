@@ -92,13 +92,13 @@ export function buildCacheKey({
   hash.update(`platformArch=${platformArch}`)
   hash.update(`mode=${buildMode}`)
   hash.update(`tools=${toolsHash}`)
-  // iterable is not a bare identifier (could be Map/Set/Generator/expression).
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+  // Iterable is not a bare identifier (could be Map/Set/Generator/expression).
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const tool of Object.keys(toolVersions).toSorted()) {
     hash.update(`${tool}@${toolVersions[tool]}`)
   }
-  // iterable is not a bare identifier (could be Map/Set/Generator/expression).
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+  // Iterable is not a bare identifier (could be Map/Set/Generator/expression).
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const key of Object.keys(sources).toSorted()) {
     const src = sources[key] ?? {}
     hash.update(
@@ -114,8 +114,8 @@ export function buildCacheKey({
 
 export function hashFileContents(files: string[]): string {
   const hash = crypto.createHash('sha256')
-  // iterable is not a bare identifier (could be Map/Set/Generator/expression).
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+  // Iterable is not a bare identifier (could be Map/Set/Generator/expression).
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const file of files.toSorted()) {
     let content = Buffer.alloc(0)
     if (existsSync(file)) {
@@ -139,8 +139,8 @@ export async function loadExternalTools(
   }
   validateExternalTools(data)
   const versions: Record<string, string> = {}
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [tool, meta] of Object.entries(data.tools ?? {})) {
     versions[tool] = meta?.version ?? ''
   }
@@ -218,7 +218,7 @@ export function resolveCheckpointBuildDir(stage, ctx) {
  * Validate + run a pipeline. On --cache-key, prints the key and exits without
  * building. Returns the context so the caller can render a summary.
  *
- * @param {RunPipelineConfig} config
+ * @param {RunPipelineConfig} options
  * @param {object} [cliOverrides] - Pre-parsed flags (for programmatic use).
  *
  * @returns {Promise<PipelineContext>}
@@ -262,9 +262,20 @@ export async function runPipeline(config, cliOverrides) {
     toolVersions,
   })
 
+  if (flags.printCacheKey) {
+    process.stdout.write(`${cacheKey}\n`) // socket-hook: allow logger -- shell capture of cache key
+    return undefined
+  }
+
   const paths = getBuildPaths(buildMode, platformArch)
   const sharedPaths = getSharedBuildPaths ? getSharedBuildPaths() : undefined
   const outputFiles = getOutputFiles ? getOutputFiles(paths) : []
+
+  // Validate chain for typos / unknown names.
+  validateCheckpointChain(
+    stages.map(s => s.name),
+    packageName,
+  )
 
   const ctx = {
     buildMode,
@@ -280,17 +291,6 @@ export async function runPipeline(config, cliOverrides) {
     sources,
     toolVersions,
   }
-
-  if (flags.printCacheKey) {
-    process.stdout.write(`${cacheKey}\n`) // socket-hook: allow logger -- shell capture of cache key
-    return ctx
-  }
-
-  // Validate chain for typos / unknown names.
-  validateCheckpointChain(
-    stages.map(s => s.name),
-    packageName,
-  )
 
   const totalStart = Date.now()
   logger.step(`🔨 Building ${packageName}`)
@@ -315,15 +315,11 @@ export async function runPipeline(config, cliOverrides) {
         `Unknown --clean-stage=${flags.cleanStage}. Valid: ${stages.map(s => s.name).join(', ')}`,
       )
     }
-    // iterable is not a bare identifier (could be
-    // Map/Set/Generator/expression).
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
     for (const stage of stages.slice(idx)) {
       const buildDir = resolveCheckpointBuildDir(stage, ctx)
       const markerDir = path.join(buildDir, 'checkpoints')
-      // iterable is not a bare identifier (could be
-      // Map/Set/Generator/expression).
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
       for (const ext of ['.json', '.tar.gz', '.tar.gz.lock']) {
         const file = path.join(markerDir, `${stage.name}${ext}`)
         if (existsSync(file)) {
@@ -360,8 +356,8 @@ export async function runPipeline(config, cliOverrides) {
     logger.substep(`Starting from stage: ${flags.fromStage}`)
   }
 
-  // iterable is not a bare identifier (could be Map/Set/Generator/expression).
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- not cacheable
+  // Iterable is not a bare identifier (could be Map/Set/Generator/expression).
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const stage of stages.slice(startIdx)) {
     await runStage(stage, ctx, {})
   }
@@ -385,7 +381,7 @@ export async function runPipeline(config, cliOverrides) {
 /**
  * CLI entry-point helper. Wraps runPipeline with a top-level error handler.
  *
- * @param {RunPipelineConfig} config
+ * @param {RunPipelineConfig} options
  */
 export async function runPipelineCli(config) {
   try {
@@ -441,9 +437,9 @@ export async function runStage(stage, ctx, stageParams) {
   )
 
   if (!shouldProceed) {
-    // substep is an indented line marker, not a top-level status; the leading
-    // "✓" complements the substep indent.
-    // oxlint-disable-next-line socket/no-status-emoji -- substep marker
+    // Substep is an indented line marker, not a top-level status; the leading
+    // "OK" complements the substep indent.
+    // oxlint-disable-next-line socket/no-status-emoji -- emoji is payload data
     stageLogger.substep(`✓ ${stage.name} up-to-date (cached)`)
     return
   }

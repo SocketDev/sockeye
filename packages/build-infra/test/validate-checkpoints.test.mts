@@ -10,6 +10,7 @@ import { writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
 import { safeDelete, safeMkdirSync } from '@socketsecurity/lib-stable/fs/safe'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 
@@ -66,9 +67,18 @@ export function createValidTar(tarPath: string): void {
   const testFile = path.join(contentDir, 'test.txt')
   writeFileSync(testFile, 'test content')
 
+  // GNU tar reads a drive-letter colon as a remote-host spec; --force-local
+  // keeps C:\... paths local on Windows runners.
   const result = spawnSync(
     'tar',
-    ['-cf', tarPath, '-C', contentDir, 'test.txt'],
+    [
+      '-cf',
+      tarPath,
+      '-C',
+      contentDir,
+      'test.txt',
+      ...(WIN32 ? ['--force-local'] : []),
+    ],
     {
       encoding: 'utf8',
       stdio: 'pipe',
@@ -96,7 +106,14 @@ export function createValidTarGz(tarPath: string): void {
 
   const result = spawnSync(
     'tar',
-    ['-czf', tarPath, '-C', contentDir, 'test.txt'],
+    [
+      '-czf',
+      tarPath,
+      '-C',
+      contentDir,
+      'test.txt',
+      ...(WIN32 ? ['--force-local'] : []),
+    ],
     {
       encoding: 'utf8',
       stdio: 'pipe',
@@ -295,9 +312,12 @@ describe('corrupted checkpoints', () => {
     const checkpointDir = path.join(packagePath, 'build', 'prod', 'checkpoints')
     safeMkdirSync(checkpointDir)
 
-    // Create an empty but valid tar archive.
+    // Create an empty but valid tar archive: tar reads two 512-byte zero
+    // blocks (padded to the 10240-byte blocking factor) as end-of-archive.
+    // Written directly - a `tar -T /dev/null` spawn has no /dev/null on
+    // Windows runners.
     const emptyTar = path.join(checkpointDir, 'empty.tar')
-    spawnSync('tar', ['-cf', emptyTar, '-T', '/dev/null'], { stdio: 'pipe' })
+    writeFileSync(emptyTar, Buffer.alloc(10_240))
 
     const result = validateCheckpoints({
       buildMode: 'prod',

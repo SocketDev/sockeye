@@ -8,9 +8,8 @@
 import { promises as fs, readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
-
 import { errorMessage } from './error-utils.mts'
+import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 
 /**
  * Load and parse external-tools.json.

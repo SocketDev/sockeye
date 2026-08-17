@@ -28,14 +28,14 @@ const logger = getDefaultLogger()
 /**
  * Build a package using the appropriate strategy (native, docker, or download).
  *
- * @param {object} config - Build options.
- * @param {string} config.packageName - Package to build.
- * @param {string} config.target - Build target.
- * @param {string} config.outputDir - Output directory.
- * @param {string} config.buildMode - Build mode.
- * @param {boolean} config.force - Force rebuild.
- * @param {Function} config.nativeBuild - Function to run native build.
- * @param {Function} config.download - Function to download pre-built binary.
+ * @param {object} options - Build options.
+ * @param {string} options.packageName - Package to build.
+ * @param {string} options.target - Build target.
+ * @param {string} options.outputDir - Output directory.
+ * @param {string} options.buildMode - Build mode.
+ * @param {boolean} options.force - Force rebuild.
+ * @param {Function} options.nativeBuild - Function to run native build.
+ * @param {Function} options.download - Function to download pre-built binary.
  *
  * @returns {Promise<{ ok: boolean; strategy: string; artifactPath?: string }>}
  */
@@ -100,12 +100,12 @@ export async function buildForTarget(config) {
 /**
  * Build a package for a specific target using Docker.
  *
- * @param {object} config - Build options.
- * @param {string} config.packageName - Package to build (e.g., 'binpress')
- * @param {string} config.target - Build target (e.g., 'linux-x64-glibc')
- * @param {string} config.outputDir - Directory to output build artifacts.
- * @param {string} config.buildMode - Build mode ('dev' or 'prod')
- * @param {boolean} config.force - Force rebuild.
+ * @param {object} options - Build options.
+ * @param {string} options.packageName - Package to build (e.g., 'binpress')
+ * @param {string} options.target - Build target (e.g., 'linux-x64-glibc')
+ * @param {string} options.outputDir - Directory to output build artifacts.
+ * @param {string} options.buildMode - Build mode ('dev' or 'prod')
+ * @param {boolean} options.force - Force rebuild.
  *
  * @returns {Promise<{ ok: boolean; artifactPath?: string }>}
  */
@@ -299,14 +299,14 @@ export function getDockerPlatform(target) {
 /**
  * Run a command inside a Docker container.
  *
- * @param {object} config - Run options.
- * @param {string} config.image - Docker image to use.
- * @param {string[]} config.command - Command to run.
- * @param {string} config.workdir - Working directory inside container.
- * @param {Record<string, string>} config.env - Environment variables.
- * @param {string[]} config.volumes - Volume mounts.
- * @param {string} config.platform - Docker platform (e.g., 'linux/amd64')
- * @param {boolean} config.interactive - Run interactively.
+ * @param {object} options - Run options.
+ * @param {string} options.image - Docker image to use.
+ * @param {string[]} options.command - Command to run.
+ * @param {string} options.workdir - Working directory inside container.
+ * @param {Record<string, string>} options.env - Environment variables.
+ * @param {string[]} options.volumes - Volume mounts.
+ * @param {string} options.platform - Docker platform (e.g., 'linux/amd64')
+ * @param {boolean} options.interactive - Run interactively.
  *
  * @returns {Promise<{ code: number; stdout: string; stderr: string }>}
  */
@@ -332,8 +332,8 @@ export async function runInDocker(config) {
   args.push('-w', workdir)
 
   // Add environment variables
-  // loop variable is destructured.
-  // oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+  // Loop variable is destructured.
+  // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
   for (const [key, value] of Object.entries(env)) {
     args.push('-e', `${key}=${String(value)}`)
   }

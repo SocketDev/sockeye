@@ -8,13 +8,12 @@
 
 import { readFileSync } from 'node:fs'
 
-import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
-
 import { NODE_VERSION_FILE, PACKAGE_ROOT } from './constants.mts'
 import {
   loadExternalTools,
   loadExternalToolsSync,
 } from './external-tools-loader.mts'
+import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 
 /**
  * Load CMake version from external-tools.json.
@@ -123,7 +122,8 @@ export function getMinPythonVersion(): string {
 
     minPythonVersion = version
   }
-  return minPythonVersion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowing a value whose shape is established by the call above; TypeScript cannot carry that proof through this boundary.
+  return minPythonVersion as string
 }
 
 let nodeVersion: string | undefined

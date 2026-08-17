@@ -186,11 +186,11 @@ export const NODE_VERSION = `v${nodeVersionRaw}`
  *
  * @returns {string} The build mode ('dev' or 'prod')
  */
-// file is grouped by section header banners ("Path Constants" / "Build
+// File is grouped by section header banners ("Path Constants" / "Build
 // Constants" / ...) with helpers co-located with their constants; autofix bails
 // on the const-interleaved layout and reordering would scatter related
 // declarations across sections.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getBuildMode(
   args?: string[] | Set<string> | undefined,
 ): string {
@@ -227,11 +227,11 @@ export function getBuildMode(
  *
  * @returns {string} Platform-specific build directory path
  */
-// file is grouped by section header banners ("Path Constants" / "Build
+// File is grouped by section header banners ("Path Constants" / "Build
 // Constants" / ...) with helpers co-located with their constants; autofix bails
 // on the const-interleaved layout and reordering would scatter related
 // declarations across sections.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getPlatformBuildDir(
   packageDir: string,
   platformArch: string,
@@ -247,11 +247,11 @@ export function getPlatformBuildDir(
  *
  * @returns {string[]} Array of paths to search for EMSDK
  */
-// file is grouped by section header banners ("Path Constants" / "Build
+// File is grouped by section header banners ("Path Constants" / "Build
 // Constants" / ...) with helpers co-located with their constants; autofix bails
 // on the const-interleaved layout and reordering would scatter related
 // declarations across sections.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getEmsdkSearchPaths(
   platform: string = process.platform,
 ): string[] {
@@ -268,11 +268,11 @@ export function getEmsdkSearchPaths(
  *
  * @returns {string} Path to versioned GCC
  */
-// file is grouped by section header banners ("Path Constants" / "Build
+// File is grouped by section header banners ("Path Constants" / "Build
 // Constants" / ...) with helpers co-located with their constants; autofix bails
 // on the const-interleaved layout and reordering would scatter related
 // declarations across sections.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getGccPath(version: number): string {
   return COMPILER_PATHS.linux.gccVersioned(version)
 }
@@ -284,11 +284,11 @@ export function getGccPath(version: number): string {
  *
  * @returns {string} Path to versioned G++
  */
-// file is grouped by section header banners ("Path Constants" / "Build
+// File is grouped by section header banners ("Path Constants" / "Build
 // Constants" / ...) with helpers co-located with their constants; autofix bails
 // on the const-interleaved layout and reordering would scatter related
 // declarations across sections.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getGxxPath(version: number): string {
   return COMPILER_PATHS.linux.gxxVersioned(version)
 }

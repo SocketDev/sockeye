@@ -7,9 +7,7 @@
  * Checkpoint names used by checkpoint-manager.
  * Use these instead of hardcoded strings to ensure consistency.
  */
-// Grouped by pipeline phase (common → model → wasm → binary), not
-// alphabetical.
-// oxlint-disable-next-line socket/sort-object-literal-properties -- phase order
+// oxlint-disable-next-line socket/sort-object-literal-properties -- grouped by pipeline phase (common → model → wasm → binary), not alphabetical
 export const CHECKPOINTS = {
   // Common/universal checkpoints.
   FINALIZED: 'finalized',
@@ -58,10 +56,10 @@ const VALID_CHECKPOINT_VALUES = new Set(Object.values(CHECKPOINTS))
 // are content-agnostic but infra-specific — they route through per-mode
 // checkpoint dirs (see restore-checkpoint action). Model builders pass explicit
 // platform/arch rather than joining this set.
-// elements reference CHECKPOINTS.* (not literals) so the rule can't verify sort
+// Elements reference CHECKPOINTS.* (not literals) so the rule can't verify sort
 // order; already alphabetized by value (source-cloned, source-configured,
 // source-copied, source-patched).
-// oxlint-disable-next-line socket/sort-set-args -- refs, not literals
+// oxlint-disable-next-line socket/sort-set-args -- see note above
 export const PLATFORM_AGNOSTIC_CHECKPOINTS = new Set<string>([
   CHECKPOINTS.SOURCE_CLONED,
   CHECKPOINTS.SOURCE_CONFIGURED,
@@ -163,9 +161,9 @@ export const CHECKPOINT_CHAINS = {
   simple: () => [CHECKPOINTS.FINALIZED],
 
   /**
-   * Yoga Layout WASM pipeline checkpoint chain. Dev skips wasm-optimized for
-   * faster builds. Includes SOURCE_CONFIGURED because yoga requires a
-   * configuration step before building.
+   * Yoga Layout WASM pipeline checkpoint chain.
+   * Dev skips wasm-optimized for faster builds.
+   * Includes SOURCE_CONFIGURED, because yoga needs a configuration step.
    */
   yoga: (mode: string) => {
     if (mode === 'prod') {
@@ -229,8 +227,8 @@ export function validateCheckpointChain(chain: string[], packageName: string) {
 
 // Validate all checkpoint chains at module load time.
 // This catches typos and invalid checkpoint names early.
-// loop variable is destructured.
-// oxlint-disable-next-line socket/prefer-cached-for-loop -- destructuring
+// Loop variable is destructured.
+// oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
 for (const [name, generator] of Object.entries(CHECKPOINT_CHAINS)) {
   // Some generators require a mode argument.
   if (name === 'onnxruntime' || name === 'yoga') {
@@ -238,8 +236,8 @@ for (const [name, generator] of Object.entries(CHECKPOINT_CHAINS)) {
     validateCheckpointChain(gen('dev'), `CHECKPOINT_CHAINS.${name}(dev)`)
     validateCheckpointChain(gen('prod'), `CHECKPOINT_CHAINS.${name}(prod)`)
   } else {
-    // The single-arity generators below never read their argument, so
-    // calling through the shared union signature needs no narrowing cast.
-    validateCheckpointChain(generator('dev'), `CHECKPOINT_CHAINS.${name}`)
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowing a value whose shape is established by the call above; TypeScript cannot carry that proof through this boundary.
+    const gen = generator as () => string[]
+    validateCheckpointChain(gen(), `CHECKPOINT_CHAINS.${name}`)
   }
 }

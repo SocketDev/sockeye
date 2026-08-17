@@ -3,10 +3,11 @@
  *   Validates .gitmodules version and checksum parsing.
  */
 
-import nock from 'nock'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { existsSync, readFileSync } from 'node:fs'
+import nock from 'nock'
+
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -19,10 +20,44 @@ import {
 import { REPO_ROOT as monorepoRoot } from '../../../scripts/fleet/paths.mts'
 import { tolerantTimeout } from '../../../test/fleet/_shared/lib/timing.mts'
 
-// The .gitmodules-backed helpers only apply to repos that pin upstream
-// submodules; this repo builds from first-party source, so those suites
-// skip explicitly instead of failing on the missing file.
-const hasGitmodules = existsSync(path.join(monorepoRoot, '.gitmodules'))
+// The fleet test setup runs `nock.disableNetConnect()`, so anything reaching
+// nodejs.org must be mocked. Serve the real SHASUMS256.txt shape, using the
+// digest recorded for this submodule in .gitmodules so the verify path compares
+// like for like.
+function mockShasums(version: string, digest: string): void {
+  nock('https://nodejs.org')
+    .get(`/dist/v${version}/SHASUMS256.txt`)
+    .reply(
+      200,
+      [
+        `${digest}  node-v${version}.tar.gz`,
+        `${'0'.repeat(64)}  node-v${version}-darwin-arm64.tar.gz`,
+        '',
+      ].join('\n'),
+      { 'content-type': 'text/plain' },
+    )
+}
+
+// The digest .gitmodules records for the pinned Node submodule.
+function storedNodeDigest(): string {
+  const gitmodules = readFileSync(
+    path.join(monorepoRoot, '.gitmodules'),
+    'utf8',
+  )
+  // Date-tolerant: the fleet pin comment is `# node-v26.7.0 (2026-08-05)
+  // sha256:<hex>` — anything may sit between the version and the hash.
+  const match = /# node-v?[\d.]+[^\n]*?sha256:(?<digest>[0-9a-f]{64})/.exec(
+    gitmodules,
+  )
+  if (!match?.groups) {
+    throw new Error('no node sha256 comment in .gitmodules')
+  }
+  return match.groups['digest']!
+}
+
+afterEach(() => {
+  nock.cleanAll()
+})
 
 describe('version-helpers', () => {
   describe(getNodeVersion, () => {
@@ -44,7 +79,7 @@ describe('version-helpers', () => {
     })
   })
 
-  describe.skipIf(!hasGitmodules)(getSubmoduleVersion, () => {
+  describe(getSubmoduleVersion, () => {
     it('should parse node version from .gitmodules', () => {
       const version = getSubmoduleVersion(
         'packages/node-smol-builder/upstream/node',
@@ -99,7 +134,7 @@ describe('version-helpers', () => {
     })
   })
 
-  describe.skipIf(!hasGitmodules)(getSubmoduleChecksum, () => {
+  describe(getSubmoduleChecksum, () => {
     it('should parse checksum for node submodule', () => {
       const checksum = getSubmoduleChecksum(
         'packages/node-smol-builder/upstream/node',
@@ -112,10 +147,9 @@ describe('version-helpers', () => {
     })
 
     it('should return undefined for submodules without checksum', () => {
-      const checksum = getSubmoduleChecksum(
-        'packages/lief-builder/upstream/lief',
-        'lief',
-      )
+      // `upstream/stuie` tracks a branch and publishes no release tags, so it
+      // carries a version comment with no sha256 — the shape this covers.
+      const checksum = getSubmoduleChecksum('upstream/stuie', 'stuie')
 
       expect(checksum).toBeUndefined()
     })
@@ -132,11 +166,7 @@ describe('version-helpers', () => {
       'should fetch checksum for current Node.js version',
       async () => {
         const version = getNodeVersion()
-        const fixtureHash = '0123456789abcdef'.repeat(4)
-        nock('https://nodejs.org')
-          .get(`/dist/v${version}/SHASUMS256.txt`)
-          .reply(200, `${fixtureHash}  node-v${version}.tar.gz\n`)
-
+        mockShasums(version, storedNodeDigest())
         const result = await fetchNodeChecksum(version, { timeout: 15_000 })
 
         expect('hash' in result).toBe(true)
@@ -159,10 +189,11 @@ describe('version-helpers', () => {
     )
   })
 
-  describe.skipIf(!hasGitmodules)(verifyNodeChecksum, () => {
+  describe(verifyNodeChecksum, () => {
     it(
       'should verify checksum against nodejs.org',
       async () => {
+        mockShasums(getNodeVersion(), storedNodeDigest())
         const result = await verifyNodeChecksum({ timeout: 15_000 })
 
         // Should succeed (stored checksum matches upstream)

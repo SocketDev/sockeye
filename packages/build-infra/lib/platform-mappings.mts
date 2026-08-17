@@ -27,12 +27,13 @@ const logger = getDefaultLogger()
  * @type {Readonly<Record<string, string>>}
  */
 export const RELEASE_PLATFORM_MAP: Readonly<Partial<Record<string, string>>> =
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
   Object.freeze({
     __proto__: null,
     darwin: 'darwin',
     linux: 'linux',
     win32: 'win32',
-  })
+  } as Partial<Record<string, string>>)
 
 /**
  * Maps Node.js architecture names to GitHub release architecture names.
@@ -40,12 +41,13 @@ export const RELEASE_PLATFORM_MAP: Readonly<Partial<Record<string, string>>> =
  * @type {Readonly<Record<string, string>>}
  */
 export const RELEASE_ARCH_MAP: Readonly<Partial<Record<string, string>>> =
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
   Object.freeze({
     __proto__: null,
     arm64: 'arm64',
     ia32: 'x86',
     x64: 'x64',
-  })
+  } as Partial<Record<string, string>>)
 
 /**
  * Get platform-arch string for internal directory paths (download locations).
@@ -104,9 +106,9 @@ export function getPlatformArch(
  *
  * @throws {Error} If platform/arch is unsupported.
  */
-// platform/arch mapping tables (const) and the helpers that read them are
+// Platform/arch mapping tables (const) and the helpers that read them are
 // co-located; autofix bails on the const-interleaved layout.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getAssetPlatformArch(
   platform: string,
   arch: string,
@@ -184,9 +186,9 @@ export async function isMusl(): Promise<boolean> {
  * @returns {Promise<string>} Platform-arch string (e.g., 'win-x64',
  *   'linux-x64-musl').
  */
-// platform/arch mapping tables (const) and the helpers that read them are
+// Platform/arch mapping tables (const) and the helpers that read them are
 // co-located; autofix bails on the const-interleaved layout.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export async function getCurrentPlatformArch(): Promise<string> {
   // If the workflow or Dockerfile set PLATFORM_ARCH explicitly, trust it.
   if (process.env['PLATFORM_ARCH']) {
@@ -205,20 +207,22 @@ export async function getCurrentPlatformArch(): Promise<string> {
 // mostly identity. `x86` remains a legacy alias for `ia32` since some
 // older release assets still ship under that name.
 const ASSET_PLATFORM_TO_NODE: Readonly<Partial<Record<string, string>>> =
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
   Object.freeze({
     __proto__: null,
     darwin: 'darwin',
     linux: 'linux',
     win32: 'win32',
-  })
+  } as Partial<Record<string, string>>)
 
 const ASSET_ARCH_TO_NODE: Readonly<Partial<Record<string, string>>> =
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
   Object.freeze({
     __proto__: null,
     arm64: 'arm64',
     x64: 'x64',
     x86: 'ia32',
-  })
+  } as Partial<Record<string, string>>)
 
 /**
  * Parse an asset platform-arch string (e.g., `linux-x64-musl`) back into the
@@ -294,9 +298,9 @@ export function parsePlatformArch(platformArch: string): {
  *
  * @returns {string | undefined} Requested glibc floor, or undefined.
  */
-// platform/arch mapping tables (const) and the helpers that read them are
+// Platform/arch mapping tables (const) and the helpers that read them are
 // co-located; autofix bails on the const-interleaved layout.
-// oxlint-disable-next-line socket/sort-source-methods -- grouped layout
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getRequestedGlibcFloor(): string | undefined {
   const raw = process.env['GLIBC_FLOOR']
   if (!raw) {
