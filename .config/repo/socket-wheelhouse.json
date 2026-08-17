@@ -6,8 +6,8 @@
   "schemaVersion": 1,
   "repoName": "sockeye",
   "bundle": {
-    "ref": "fleet-pack-dcafeb6111c7f91f192d8d1843e222c8c04cc3d4",
-    "cascadeSha": "dcafeb6111c7f91f192d8d1843e222c8c04cc3d4"
+    "ref": "fleet-pack-00ee4d683e62136461d26eb3781264529d977c09",
+    "cascadeSha": "00ee4d683e62136461d26eb3781264529d977c09"
   },
   "repo": {
     "type": "mono"
@@ -18,6 +18,29 @@
   },
   "fuzz": {
     "exempt": true,
-    "reason": "The untrusted-input boundary is the native C++ core (input-policy request parsing), fuzzed via the libFuzzer harness at test/repo/fuzz/native/input-policy-fuzz.cc (pnpm run fuzz). The JS/TS surface is fleet tooling and the vitest harness around the binary \u2014 no first-party JS parser boundary for a vitiate lane to exercise."
+    "reason": "The untrusted-input boundary is the native C++ core (input-policy request parsing), fuzzed via the libFuzzer harness at test/repo/fuzz/native/input-policy-fuzz.cc (pnpm run fuzz). The JS/TS surface is fleet tooling and the vitest harness around the binary — no first-party JS parser boundary for a vitiate lane to exercise."
+  },
+  "release": {
+    "versionSource": "package.json"
+  },
+  "submoduleRoots": {
+    "grandfathered": [
+      "packages/bin-infra/upstream/zstd",
+      "packages/curl-builder/upstream/curl",
+      "packages/curl-builder/upstream/mbedtls",
+      "packages/dawn-builder/upstream/dawn",
+      "packages/lief-builder/upstream/lief",
+      "packages/node-smol-builder/test/fixtures/wpt/streams",
+      "packages/node-smol-builder/upstream/libqrencode",
+      "packages/node-smol-builder/upstream/liburing",
+      "packages/node-smol-builder/upstream/md4c",
+      "packages/node-smol-builder/upstream/node",
+      "packages/node-smol-builder/upstream/semver",
+      "packages/node-smol-builder/upstream/tree-sitter",
+      "packages/node-smol-builder/upstream/uSockets",
+      "packages/node-smol-builder/upstream/uWebSockets",
+      "packages/onnxruntime-builder/upstream/onnxruntime",
+      "packages/yoga-layout-builder/upstream/yoga"
+    ]
   }
 }

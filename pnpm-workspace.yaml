@@ -348,6 +348,11 @@ minimumReleaseAge: 10080
 resolutionMode: 'highest'
 saveExact: true
 trustPolicy: no-downgrade
+trustPolicyExclude:
+  # Rename-bridge releases (agent-ci -> run-local-ci); the bridge lines
+  # carry no provenance. Owner-directed; see the catalog note.
+  - '@redwoodjs/agent-ci@0.18.0'
+  - 'dtu-github-actions@0.18.0'
 enableGlobalVirtualStore: true
 
 # Refuse transitive (sub-) deps declared via git/tarball/local-tarball

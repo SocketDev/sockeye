@@ -30,14 +30,8 @@ on:
 permissions:
   contents: read
 
-env:
-  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
-  COREPACK_ENABLE_PROJECT_SPEC: '0'
-  DISABLE_TELEMETRY: '1'
-  DO_NOT_TRACK: '1'
-  NO_UPDATE_NOTIFIER: '1'
-  OTEL_SDK_DISABLED: 'true'
-
+# The fleet env knobs come from the setup action's fleet-env.json; the
+# build-sign job runs setup-and-install, so nothing is declared here.
 jobs:
   build-sign:
     runs-on: macos-14
@@ -52,6 +46,7 @@ jobs:
         uses: ./.github/actions/fleet/setup-and-install
         with:
           checkout: 'false'
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
 
       # Import the Developer ID Application certificate from the org-level
       # secret. Skipped on ad-hoc runs.
@@ -63,7 +58,7 @@ jobs:
           p12-password: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS }}
 
       - name: Build prod binary
-        run: pnpm run build -- --mode prod
+        run: pnpm run build --mode prod
 
       - name: Sign with Developer ID
         if: ${{ !inputs.adhoc }}
