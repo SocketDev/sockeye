@@ -17,9 +17,10 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
+
+import { getBinaryPath } from './paths.mts'
 import {
   spawn,
   spawnSync,
@@ -33,18 +34,11 @@ import { safeDeleteSync } from '@socketsecurity/lib-stable/fs/safe'
 
 const logger = getDefaultLogger()
 
-// The repo root, resolved from this script's location rather than
-// process.cwd() — the runner may invoke this from any directory.
-const REPO_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-)
-
 const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
 const BIN_PATH = path.join(BIN_DIR, 'sockeye')
 const ARCH = process.arch
 const PLATFORM = process.platform
+const PLATFORM_ARCH = `${PLATFORM}-${ARCH}`
 
 /**
  * Build, ad-hoc sign, and install from a local checkout.
@@ -69,24 +63,8 @@ async function installLocal(): Promise<void> {
     process.exit(1)
   }
 
-  const prodPath = path.join(
-    REPO_ROOT,
-    'build',
-    'prod',
-    `${PLATFORM}-${ARCH}`,
-    'out',
-    'Final',
-    'sockeye',
-  )
-  const devPath = path.join(
-    REPO_ROOT,
-    'build',
-    'dev',
-    `${PLATFORM}-${ARCH}`,
-    'out',
-    'Final',
-    'sockeye',
-  )
+  const prodPath = getBinaryPath('prod', PLATFORM_ARCH)
+  const devPath = getBinaryPath('dev', PLATFORM_ARCH)
   const builtPath = existsSync(prodPath) ? prodPath : devPath
   if (!existsSync(builtPath)) {
     logger.fail(`Built binary not found at ${prodPath} or ${devPath}.`)

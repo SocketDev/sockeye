@@ -68,6 +68,8 @@ carries the reversal condition and the one measurement that would reopen it.
 
 ## Usage patterns
 
+<details><summary>Usage patterns</summary>
+
 The binary build lives in the builder package, so it is invoked through that
 package rather than from the root. Root `pnpm build` builds the fleet hook
 bundle, not the binary.
@@ -97,6 +99,8 @@ The usage flags beyond mode selection:
   mismatch rather than compiling bytes nobody checked.
 - `--test` runs the binary's smoke tests after the link; `--test-full` runs
   the extended suite. A build without either flag stops at the Final copy.
+
+</details>
 
 ## Binary size optimization strategy
 
