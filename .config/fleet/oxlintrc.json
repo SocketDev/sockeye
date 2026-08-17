@@ -320,6 +320,7 @@
     "**/test/fleet/unit/comment-voice.test.mts",
     "</fleet>",
     "#fleet-canonical-end",
+    "**/additions/source-patched/**",
     "<repo>",
     "</repo>"
   ]
