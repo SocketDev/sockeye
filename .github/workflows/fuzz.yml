@@ -312,7 +312,7 @@ jobs:
           fi
           git checkout -q --detach FETCH_HEAD
       - name: Go toolchain
-        uses: actions/setup-go@4b360d19b5c6759c425a4f563484e5057a94d46b # v6.1.0 (2026-06-26)
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0 (2026-06-26)
         with:
           go-version-file: go.mod
       - name: Smoke go fuzz functions, 60s each
@@ -567,7 +567,7 @@ jobs:
           fi
           git checkout -q --detach FETCH_HEAD
       - name: Go toolchain
-        uses: actions/setup-go@4b360d19b5c6759c425a4f563484e5057a94d46b # v6.1.0 (2026-06-26)
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0 (2026-06-26)
         with:
           go-version-file: go.mod
       - name: Run go fuzz functions, 10 minutes each
