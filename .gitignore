@@ -2947,3 +2947,9 @@ test/fleet/registry-infra/npm/placeholder.test.mts
 test/fleet/scripts/setup.mts
 test/fleet/unit/comment-voice.test.mts
 # </fleet-pack>
+
+# uv.lock parser fixtures — harness-generated goldens, tracked via the documented
+# untracked-by-default escape hatch (!<dir>/ then <dir>/* then !<dir>/<sub>).
+!packages/node-smol-builder/test/fixtures/
+packages/node-smol-builder/test/fixtures/*
+!packages/node-smol-builder/test/fixtures/uv-lock/

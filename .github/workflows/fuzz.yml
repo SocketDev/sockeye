@@ -272,6 +272,10 @@ jobs:
           fi
           git checkout -q --detach FETCH_HEAD
       - uses: ./.github/actions/fleet/setup-and-install
+        with:
+          payload-token-client-id: ${{ vars.SOCKET_PAYLOAD_CLIENT_ID }}
+          payload-token-private-key: ${{ secrets.SOCKET_PAYLOAD_APP_PRIVATE_KEY }}
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
       - name: Smoke the JS fuzz lane
         run: |
           set -euo pipefail
@@ -530,6 +534,10 @@ jobs:
           fi
           git checkout -q --detach FETCH_HEAD
       - uses: ./.github/actions/fleet/setup-and-install
+        with:
+          payload-token-client-id: ${{ vars.SOCKET_PAYLOAD_CLIENT_ID }}
+          payload-token-private-key: ${{ secrets.SOCKET_PAYLOAD_APP_PRIVATE_KEY }}
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
       - name: Run the JS fuzz campaign
         run: |
           set -euo pipefail
