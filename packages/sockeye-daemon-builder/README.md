@@ -1,8 +1,8 @@
-# proteus-builder
+# sockeye-daemon-builder
 
-Builds **proteus**, the fleet credential broker: a small native daemon that
+Builds **sockeye**, the fleet credential broker: a small native daemon that
 guards provider credentials in the OS keychain and vends short-lived tokens to
-socket-lib over a local Unix socket. Named for Proteus, who yields secret
+socket-lib over a local Unix socket. Named for Sockeye, who yields secret
 knowledge only to one who holds his grip through his shape-shifting (the
 biometric gate, mythologized).
 
@@ -25,9 +25,9 @@ native keystore without a biometric prompt.
 
 ## Daemon lifecycle
 
-- **Socket:** `getRuntimeSocketPath('proteus')` from `@socketsecurity/lib`
-  resolves to `$XDG_RUNTIME_DIR/proteus.sock`, then `$TMPDIR/proteus-<uid>.sock`,
-  then a `\\.\pipe\proteus-sock` named pipe on Windows. The daemon and every
+- **Socket:** `getRuntimeSocketPath('sockeye')` from `@socketsecurity/lib`
+  resolves to `$XDG_RUNTIME_DIR/sockeye.sock`, then `$TMPDIR/sockeye-<uid>.sock`,
+  then a `\\.\pipe\sockeye-sock` named pipe on Windows. The daemon and every
   client compute the identical path.
 - **Single instance:** the `<socket>.pid` file is created `O_CREAT|O_EXCL`, so
   the exclusive create is itself the lock. A live pidfile means another daemon
@@ -44,10 +44,10 @@ native keystore without a biometric prompt.
 ## Build
 
 ```bash
-pnpm --filter local-proteus-builder build
+pnpm --filter local-sockeye-daemon-builder build
 ```
 
-This selects `Makefile.<os>` for the host platform and emits the `proteus`
+This selects `Makefile.<os>` for the host platform and emits the `sockeye`
 binary under `build/<mode>/<platform-arch>/out/Final/`. macOS links `-framework
 Security -framework LocalAuthentication`.
 
@@ -79,14 +79,14 @@ write + biometric-read round-trip needs an interactive Touch ID prompt, so it is
 verified manually rather than in CI.
 
 The daemon is now **cross-platform**: POSIX uses an AF_UNIX socket; Windows uses
-a named pipe (`\\.\pipe\proteus-sock`) with peer identity via
+a named pipe (`\\.\pipe\sockeye-sock`) with peer identity via
 `GetNamedPipeClientProcessId` + token-SID compare, `CREATE_NEW` pidfile lock, and
 an overlapped-connect idle timeout. macOS is run-verified (6/6 lifecycle tests);
 the Windows path compiles + links clean via mingw (`Makefile.win`); CI builds the
 real per-platform artifact.
 
-Pending: the OAuth/PKCE runner and the `proteus-<platform>` GitHub Release wiring.
+Pending: the OAuth/PKCE runner and the `sockeye-<platform>` GitHub Release wiring.
 The keystore backends all exist (macOS run-verified, Linux + Windows
 compile-verified), as does the socket-lib broker tier.
 
-Design of record: `socket-lib/.claude/plans/proteus-credential-broker.md`.
+Design of record: `socket-lib/.claude/plans/sockeye-credential-broker.md`.

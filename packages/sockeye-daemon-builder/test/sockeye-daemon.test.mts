@@ -1,5 +1,5 @@
 /**
- * @file Lifecycle tests for the proteus daemon. These spawn the built binary
+ * @file Lifecycle tests for the sockeye daemon. These spawn the built binary
  *   and exercise the socket protocol, so they skip unless the daemon has been
  *   built for the host platform (CI builds it in the release job; a bare
  *   checkout has not). The biometric-gated keychain read can't run unattended,
@@ -17,12 +17,12 @@ import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import type { IOType } from '@socketsecurity/lib-stable/process/spawn/types'
 
-import { getProteusBinaryPath } from '../scripts/paths.mts'
+import { getSockeyeBinaryPath } from '../scripts/paths.mts'
 
 const platformArch = `${process.platform}-${process.arch}`
-const binaryPath = getProteusBinaryPath('dev', platformArch)
+const binaryPath = getSockeyeBinaryPath('dev', platformArch)
 const built = existsSync(binaryPath)
-const sockPath = path.join(process.env['TMPDIR'] ?? '/tmp', 'proteus-test.sock')
+const sockPath = path.join(process.env['TMPDIR'] ?? '/tmp', 'sockeye-test.sock')
 const pidPath = `${sockPath}.pid`
 
 function request(payload: string): Promise<string> {
@@ -36,7 +36,7 @@ function request(payload: string): Promise<string> {
   })
 }
 
-describe.skipIf(!built)('proteus daemon', () => {
+describe.skipIf(!built)('sockeye daemon', () => {
   // The lib spawn() promise resolves on process exit; for a long-lived daemon
   // we keep the live ChildProcess via `.process` and never await the promise
   // (swallowing the SIGTERM-kill rejection at teardown).
@@ -72,7 +72,7 @@ describe.skipIf(!built)('proteus daemon', () => {
       JSON.stringify({
         account: 'NOPE',
         op: 'get',
-        service: 'socket-proteus-test-missing',
+        service: 'socket-sockeye-test-missing',
       }),
     )
     expect(res).toContain('"ok":false')
@@ -84,7 +84,7 @@ describe.skipIf(!built)('proteus daemon', () => {
       JSON.stringify({
         account: 'NOPE',
         op: 'delete',
-        service: 'socket-proteus-test-missing',
+        service: 'socket-sockeye-test-missing',
       }),
     )
     expect(res).toBe('{"ok":true,"deleted":true}')
@@ -98,16 +98,16 @@ describe.skipIf(!built)('proteus daemon', () => {
   })
 })
 
-describe.skipIf(!built)('proteus daemon single-instance', () => {
+describe.skipIf(!built)('sockeye daemon single-instance', () => {
   it('a second daemon refuses to start while the first holds the pidfile', async () => {
     const lockSock = path.join(
       process.env['TMPDIR'] ?? '/tmp',
-      'proteus-single-test.sock',
+      'sockeye-single-test.sock',
     )
     const lockPid = `${lockSock}.pid`
     // Idle-disabled so the first daemon stays up holding the lock.
     const spawnOpts = {
-      env: { ...process.env, PROTEUS_IDLE_SECONDS: '0' },
+      env: { ...process.env, SOCKEYE_IDLE_SECONDS: '0' },
       stdio: ['ignore', 'pipe', 'pipe'] as IOType[],
     }
     const firstRun = spawn(binaryPath, [lockSock, lockPid], spawnOpts)
@@ -146,18 +146,18 @@ describe.skipIf(!built)('proteus daemon single-instance', () => {
   })
 })
 
-describe.skipIf(!built)('proteus daemon idle-shutdown', () => {
+describe.skipIf(!built)('sockeye daemon idle-shutdown', () => {
   it('self-exits cleanly and removes its socket + pidfile after the idle timeout', async () => {
     const idleSock = path.join(
       process.env['TMPDIR'] ?? '/tmp',
-      'proteus-idle-test.sock',
+      'sockeye-idle-test.sock',
     )
     const idlePid = `${idleSock}.pid`
     await new Promise<void>((resolve, reject) => {
-      // PROTEUS_IDLE_SECONDS=1: with no connection, SIGALRM fires in ~1s and the
+      // SOCKEYE_IDLE_SECONDS=1: with no connection, SIGALRM fires in ~1s and the
       // daemon cleans up and exits 0.
       const running = spawn(binaryPath, [idleSock, idlePid], {
-        env: { ...process.env, PROTEUS_IDLE_SECONDS: '1' },
+        env: { ...process.env, SOCKEYE_IDLE_SECONDS: '1' },
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       running.catch(() => {})

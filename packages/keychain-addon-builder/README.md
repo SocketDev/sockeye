@@ -19,7 +19,7 @@ keychain.set('socketsecurity', 'ANTHROPIC_API_KEY', 'sk-…')
 keychain.del('socketsecurity', 'ANTHROPIC_API_KEY')
 ```
 
-It is one of three surfaces over the same core: the proteus **daemon** (broker
+It is one of three surfaces over the same core: the sockeye **daemon** (broker
 plus warm cache), the **`node:smol-keychain` builtin** (in-process, for the smol
 binary), and this **`.node` addon** (in-process, for stock Node).
 

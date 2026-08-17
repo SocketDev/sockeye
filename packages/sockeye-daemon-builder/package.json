@@ -1,8 +1,8 @@
 {
-  "name": "local-proteus-builder",
+  "name": "local-sockeye-daemon-builder",
   "version": "0.0.0",
   "private": true,
-  "description": "proteus — fleet credential broker daemon. Guards provider credentials in the OS keychain (Touch ID + Secure Enclave on macOS) and vends short-lived tokens over a local Unix socket. Builds per-platform binaries published as proteus-<platform> GitHub Release assets.",
+  "description": "sockeye — fleet credential broker daemon. Guards provider credentials in the OS keychain (Touch ID + Secure Enclave on macOS) and vends short-lived tokens over a local Unix socket. Builds per-platform binaries published as sockeye-<platform> GitHub Release assets.",
   "license": "MIT",
   "type": "module",
   "scripts": {

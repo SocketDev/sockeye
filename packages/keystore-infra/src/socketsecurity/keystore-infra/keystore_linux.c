@@ -3,7 +3,7 @@
  * Secret Service (GNOME Keyring / KWallet) via libsecret. Broker-only: Linux
  * has no biometric gate here, the Secret Service daemon owns keyring unlock.
  * Stores secrets as simple passwords keyed by (service, account), matching the
- * macOS backend's interface so consumers (the proteus daemon, the .node addon,
+ * macOS backend's interface so consumers (the sockeye daemon, the .node addon,
  * the node:smol-keychain builtin) are platform-agnostic.
  */
 

@@ -2,7 +2,7 @@
  * keychain_napi — N-API binding that exposes keystore-infra's get/put/delete to
  * JavaScript as a `.node` addon. This is the non-smol surface: regular Node
  * consumers `require('@socketaddon/keychain')` and call these. It compiles the
- * shared keystore-infra core (the same source the proteus daemon and the
+ * shared keystore-infra core (the same source the sockeye daemon and the
  * node:smol-keychain builtin use), so all three surfaces share one
  * implementation.
  *

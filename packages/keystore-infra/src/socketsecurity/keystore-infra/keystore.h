@@ -1,7 +1,7 @@
 /*
  * keystore — the platform-agnostic credential store interface.
  *
- * proteus.c (the daemon lifecycle) calls these; each platform provides the
+ * sockeye.c (the daemon lifecycle) calls these; each platform provides the
  * implementation behind the same C ABI: macOS uses the Keychain with a
  * biometric ACL (keystore_macos.mm), Linux uses the Secret Service via libsecret
  * (keystore_linux.c), and Windows uses the Credential Manager (keystore_win.c).
@@ -9,8 +9,8 @@
  * daemon without name mangling.
  */
 
-#ifndef PROTEUS_KEYSTORE_H
-#define PROTEUS_KEYSTORE_H
+#ifndef SOCKEYE_KEYSTORE_H
+#define SOCKEYE_KEYSTORE_H
 
 #include <stddef.h>
 
@@ -48,4 +48,4 @@ int keystore_delete(const char* service, const char* account);
 }
 #endif
 
-#endif /* PROTEUS_KEYSTORE_H */
+#endif /* SOCKEYE_KEYSTORE_H */

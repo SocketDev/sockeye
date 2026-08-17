@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * @file Build script for proteus-builder. Selects the host platform's Makefile
- *   and emits the `proteus` daemon binary under
+ * @file Build script for sockeye-daemon-builder. Selects the host platform's
+ *   Makefile and emits the `sockeye` daemon binary under
  *   build/<mode>/<platform-arch>/out/Final/. Wraps the Makefile for pnpm
  *   integration, mirroring the other source-built daemons (libpq-builder,
  *   dawn-builder).
@@ -18,7 +18,7 @@ import { errorMessage } from 'local-build-infra/lib/error-utils'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
-import { getProteusBinaryPath } from './paths.mts'
+import { getSockeyeBinaryPath } from './paths.mts'
 
 const logger = getDefaultLogger()
 
@@ -40,7 +40,7 @@ async function main() {
   const makefile = MAKEFILE_BY_PLATFORM[process.platform]
   if (!makefile) {
     throw new Error(
-      `proteus-builder: unsupported platform '${process.platform}'. ` +
+      `sockeye-daemon-builder: unsupported platform '${process.platform}'. ` +
         `Supported: darwin, linux, win32.`,
     )
   }
@@ -52,20 +52,20 @@ async function main() {
   const platformArch = `${process.platform}-${process.arch}`
   const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
 
-  logger.info(`Building proteus daemon with ${makefile} (${mode})…`)
+  logger.info(`Building sockeye daemon with ${makefile} (${mode})…`)
   // execBuildCommand throws on a non-zero exit, so reaching the next line means make won.
   await execBuildCommand('make', ['-f', makefile], {
     cwd: packageRoot,
     env: { ...process.env, BUILD_MODE: mode, PLATFORM_ARCH: platformArch },
   })
 
-  const binaryPath = getProteusBinaryPath(mode, platformArch)
+  const binaryPath = getSockeyeBinaryPath(mode, platformArch)
 
   if (!existsSync(binaryPath)) {
     throw new Error(`Expected daemon binary not found at ${binaryPath}.`)
   }
   const stats = await stat(binaryPath)
-  logger.success(`Built proteus daemon: ${binaryPath} (${stats.size} bytes)`)
+  logger.success(`Built sockeye daemon: ${binaryPath} (${stats.size} bytes)`)
 }
 
 main().catch(e => {

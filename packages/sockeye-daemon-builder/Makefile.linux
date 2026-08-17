@@ -1,4 +1,4 @@
-# proteus-builder Makefile for Linux.
+# sockeye-daemon-builder Makefile for Linux.
 # Broker-only credential daemon fronting the Secret Service (libsecret). No
 # biometric path on Linux.
 
@@ -6,7 +6,7 @@
 include ../build-infra/make/common.mk
 include ../build-infra/make/platform-linux.mk
 
-TARGET = proteus
+TARGET = sockeye
 # The keychain core is the source-only keystore-infra package, compiled inline.
 # Linux fronts the Secret Service via libsecret (broker-only, no biometric);
 # pkg-config supplies the libsecret-1 + glib include/link flags.
@@ -14,7 +14,7 @@ KEYSTORE_INFRA_SRC = ../keystore-infra/src/socketsecurity/keystore-infra
 KEYSTORE_INFRA_INCLUDE = -I../keystore-infra/src
 LIBSECRET_CFLAGS = $(shell pkg-config --cflags libsecret-1)
 LIBSECRET_LDFLAGS = $(shell pkg-config --libs libsecret-1)
-SOURCES = src/socketsecurity/proteus-builder/proteus.c \
+SOURCES = src/socketsecurity/sockeye-daemon-builder/sockeye.c \
           $(KEYSTORE_INFRA_SRC)/keystore_linux.c
 
 CFLAGS = -Wall -Wextra $(OPT_FLAGS) -std=c11 -Isrc $(KEYSTORE_INFRA_INCLUDE) \

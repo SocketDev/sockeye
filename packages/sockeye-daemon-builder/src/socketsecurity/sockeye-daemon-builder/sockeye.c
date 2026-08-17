@@ -1,5 +1,5 @@
 /*
- * proteus — fleet credential broker daemon.
+ * sockeye — fleet credential broker daemon.
  *
  * Cross-platform daemon lifecycle: bind an owner-only local transport, hold it
  * under a single-instance pidfile lock, accept connections from the same user
@@ -9,7 +9,7 @@
  * The transport differs by platform but the wire + protocol are identical:
  *   POSIX  — an AF_UNIX stream socket at <socket-path>; peer-uid via
  *            getpeereid / SO_PEERCRED; idle-exit via SIGALRM.
- *   Win32  — a named pipe at <socket-path> (e.g. \\.\pipe\proteus-sock); peer
+ *   Win32  — a named pipe at <socket-path> (e.g. \\.\pipe\sockeye-sock); peer
  *            identity via GetNamedPipeClientProcessId + token-SID compare;
  *            idle-exit via an overlapped ConnectNamedPipe wait timeout.
  */
@@ -28,7 +28,7 @@
 #ifdef _WIN32
 #include <windows.h>
 typedef HANDLE conn_t;
-#define PROTEUS_INVALID_CONN INVALID_HANDLE_VALUE
+#define SOCKEYE_INVALID_CONN INVALID_HANDLE_VALUE
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -39,7 +39,7 @@ typedef HANDLE conn_t;
 #include <sys/stat.h>
 #include <sys/un.h>
 typedef int conn_t;
-#define PROTEUS_INVALID_CONN (-1)
+#define SOCKEYE_INVALID_CONN (-1)
 #endif
 
 #include "socketsecurity/keystore-infra/keystore.h"
@@ -52,13 +52,13 @@ static char g_pid_path[256];
 
 /* A successful biometric unlock is cached for this long so a burst of spawns
  * doesn't re-prompt Touch ID for every child. Configurable later. */
-#define PROTEUS_TTL_SECONDS 300
-#define PROTEUS_CACHE_SLOTS 32
+#define SOCKEYE_TTL_SECONDS 300
+#define SOCKEYE_CACHE_SLOTS 32
 
 /* Auto-exit after this many seconds with no connection (0 = never). The
  * launcher re-spawns the daemon on demand, so an idle one needn't linger
- * holding the socket and warm secrets. Override with PROTEUS_IDLE_SECONDS. */
-#define PROTEUS_DEFAULT_IDLE_SECONDS 300
+ * holding the socket and warm secrets. Override with SOCKEYE_IDLE_SECONDS. */
+#define SOCKEYE_DEFAULT_IDLE_SECONDS 300
 
 typedef struct {
   char key[128]; /* "<service>\0<account>" join */
@@ -67,11 +67,11 @@ typedef struct {
   int occupied;
 } cache_entry_t;
 
-static cache_entry_t g_cache[PROTEUS_CACHE_SLOTS];
+static cache_entry_t g_cache[SOCKEYE_CACHE_SLOTS];
 
 /* Look up a live (unexpired) cached credential; returns NULL on miss. */
 static const char* cache_lookup(const char* key, time_t now) {
-  for (int i = 0; i < PROTEUS_CACHE_SLOTS; i++) {
+  for (int i = 0; i < SOCKEYE_CACHE_SLOTS; i++) {
     if (g_cache[i].occupied && g_cache[i].expires_at > now &&
         strncmp(g_cache[i].key, key, sizeof(g_cache[i].key)) == 0) {
       return g_cache[i].value;
@@ -84,7 +84,7 @@ static const char* cache_lookup(const char* key, time_t now) {
  * before evicting a live one. The TTL is the biometric-unlock grace window. */
 static void cache_put(const char* key, const char* value, time_t now) {
   int slot = -1;
-  for (int i = 0; i < PROTEUS_CACHE_SLOTS; i++) {
+  for (int i = 0; i < SOCKEYE_CACHE_SLOTS; i++) {
     if (g_cache[i].occupied &&
         strncmp(g_cache[i].key, key, sizeof(g_cache[i].key)) == 0) {
       slot = i;
@@ -99,13 +99,13 @@ static void cache_put(const char* key, const char* value, time_t now) {
   }
   snprintf(g_cache[slot].key, sizeof(g_cache[slot].key), "%s", key);
   snprintf(g_cache[slot].value, sizeof(g_cache[slot].value), "%s", value);
-  g_cache[slot].expires_at = now + PROTEUS_TTL_SECONDS;
+  g_cache[slot].expires_at = now + SOCKEYE_TTL_SECONDS;
   g_cache[slot].occupied = 1;
 }
 
 /* Drop a cached value (after a put/delete changes the underlying secret). */
 static void cache_evict(const char* key) {
-  for (int i = 0; i < PROTEUS_CACHE_SLOTS; i++) {
+  for (int i = 0; i < SOCKEYE_CACHE_SLOTS; i++) {
     if (g_cache[i].occupied &&
         strncmp(g_cache[i].key, key, sizeof(g_cache[i].key)) == 0) {
       memset(&g_cache[i], 0, sizeof(g_cache[i]));
@@ -512,8 +512,8 @@ static int claim_pidfile(void) {
 
 /* Resolve the configured idle timeout (seconds; 0 disables). */
 static unsigned int idle_seconds(void) {
-  const char* idle_env = getenv("PROTEUS_IDLE_SECONDS");
-  return idle_env ? (unsigned int)atoi(idle_env) : PROTEUS_DEFAULT_IDLE_SECONDS;
+  const char* idle_env = getenv("SOCKEYE_IDLE_SECONDS");
+  return idle_env ? (unsigned int)atoi(idle_env) : SOCKEYE_DEFAULT_IDLE_SECONDS;
 }
 
 #ifdef _WIN32
@@ -620,14 +620,14 @@ static int serve(void) {
 
 int main(int argc, char** argv) {
   if (argc < 3) {
-    fprintf(stderr, "usage: proteus <socket-path> <pidfile-path>\n");
+    fprintf(stderr, "usage: sockeye <socket-path> <pidfile-path>\n");
     return 2;
   }
   snprintf(g_sock_path, sizeof(g_sock_path), "%s", argv[1]);
   snprintf(g_pid_path, sizeof(g_pid_path), "%s", argv[2]);
 
   if (claim_pidfile() != 0) {
-    fprintf(stderr, "proteus: already running or pidfile unavailable\n");
+    fprintf(stderr, "sockeye: already running or pidfile unavailable\n");
     return 1;
   }
 

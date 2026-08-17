@@ -1,5 +1,5 @@
 /**
- * @file Clean proteus-builder build artifacts.
+ * @file Clean sockeye-daemon-builder build artifacts.
  */
 
 import path from 'node:path'
@@ -14,7 +14,7 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 const packageDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const logger = getDefaultLogger()
 
-cleanBuilder('proteus-builder', {
+cleanBuilder('sockeye-daemon-builder', {
   checkpointModes: [],
   cleanDirs: ['build', 'out'],
   packageDir,

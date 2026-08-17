@@ -24,13 +24,13 @@ A small `extern "C"` interface (`keystore.h`) plus per-platform backends:
 
 | Consumer            | Surface                                                                    |
 | ------------------- | -------------------------------------------------------------------------- |
-| `proteus-builder`   | the proteus daemon (biometric broker with a warm TTL cache)                |
+| `sockeye-daemon-builder`   | the sockeye daemon (biometric broker with a warm TTL cache)                |
 | `node-smol-builder` | the `node:smol-keychain` builtin (in-process keychain for the smol binary) |
-| a `.node` addon     | `@socketaddon/proteus-keychain-*` for regular Node consumers               |
+| a `.node` addon     | `@socketaddon/sockeye-keychain-*` for regular Node consumers               |
 
 Consumers reference the source directly (`../keystore-infra/src/...` from a
 sibling Makefile, or via the node-smol `additions/source-patched` sync), exactly
-as `proteus-builder` pulls `../bin-infra/src/...`. macOS links `-framework
+as `sockeye-daemon-builder` pulls `../bin-infra/src/...`. macOS links `-framework
 Security -framework LocalAuthentication -framework Foundation`.
 
 The interface is the single source of truth: the daemon adds the warm cache and
