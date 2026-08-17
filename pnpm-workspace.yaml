@@ -451,7 +451,10 @@ allowBuilds:
   '@socketsecurity/sdk': false
   # @swc/core native binding — vitiate's coverage-guided fuzz lane.
   '@swc/core': true
-  onnxruntime-node: set this to true or false
+  # onnxruntime-node's postinstall downloads prebuilt binaries; the repo
+  # builds onnxruntime from source in packages/onnxruntime-builder, so the
+  # script stays denied like every other entry here (fail-closed posture).
+  onnxruntime-node: false
 
 patchedDependencies:
   # default-export interop (managed by socket-wheelhouse sync; do not edit):
