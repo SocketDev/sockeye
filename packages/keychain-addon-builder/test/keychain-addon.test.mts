@@ -13,8 +13,12 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 import { getKeychainAddonBinaryPath } from '../scripts/paths.mts'
 
+// The build resolves its mode as BUILD_MODE, else prod on CI and dev locally;
+// the binary the test loads must come from the same answer.
+const buildMode =
+  process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
 const platformArch = `${process.platform}-${process.arch}`
-const binaryPath = getKeychainAddonBinaryPath('dev', platformArch)
+const binaryPath = getKeychainAddonBinaryPath(buildMode, platformArch)
 const built = existsSync(binaryPath)
 const require = createRequire(import.meta.url)
 
