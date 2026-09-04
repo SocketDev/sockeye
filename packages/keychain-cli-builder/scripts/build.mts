@@ -9,7 +9,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { execBuildCommand } from 'local-build-infra/lib/build-helpers'
+import { execBuildStep } from 'local-build-infra/lib/build-helpers'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
     makeArgs.push(`VERSION=${releaseVersion}`)
   }
   logger.info(`Building socket-keychain (${mode}, ${platformArch})…`)
-  await execBuildCommand('make', makeArgs, {
+  await execBuildStep('make', makeArgs, {
     cwd: packageRoot,
     env: { ...process.env, BUILD_MODE: mode, PLATFORM_ARCH: platformArch },
   })
