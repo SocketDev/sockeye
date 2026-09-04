@@ -88,6 +88,18 @@ int keystore_put(const char* service, const char* account, const char* value) {
   return ok ? KEYSTORE_OK : KEYSTORE_ERR_IO;
 }
 
+// Windows has no biometric gate here (Windows Hello is a later step), so a
+// silent read/write is identical to the normal path.
+int keystore_get_silent(const char* service, const char* account, char* out,
+                        size_t out_len) {
+  return keystore_get(service, account, out, out_len);
+}
+
+int keystore_put_silent(const char* service, const char* account,
+                        const char* value) {
+  return keystore_put(service, account, value);
+}
+
 int keystore_delete(const char* service, const char* account) {
   wchar_t* target = buildTargetName(service, account);
   if (!target) {

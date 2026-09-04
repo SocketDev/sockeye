@@ -37,8 +37,8 @@ NSMutableDictionary* baseQuery(const char* service, const char* account) {
 
 }  // namespace
 
-int keystore_get(const char* service, const char* account, char* out,
-                 size_t out_len) {
+static int getImpl(const char* service, const char* account, char* out,
+                   size_t out_len, bool silent) {
   @autoreleasepool {
     NSMutableDictionary* q = baseQuery(service, account);
     q[(__bridge id)kSecReturnData] = @YES;
@@ -48,6 +48,18 @@ int keystore_get(const char* service, const char* account, char* out,
     // kSecUseAuthenticationContext) is a later refinement when the full auth
     // flow lands; the modern API replaced the now-deprecated
     // kSecUseOperationPrompt.
+    if (silent) {
+      // Fail closed instead of prompting: a biometric-gated item returns
+      // errSecInteractionNotAllowed, a silent item releases its data directly.
+      // kSecUseAuthenticationUIFail is deprecated but still honored; the
+      // LAContext replacement would force every keystore consumer to link
+      // LocalAuthentication, so suppress the deprecation for this one line.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      q[(__bridge id)kSecUseAuthenticationUI] =
+          (__bridge id)kSecUseAuthenticationUIFail;
+#pragma clang diagnostic pop
+    }
 
     CFTypeRef result = NULL;
     OSStatus status =
@@ -56,8 +68,10 @@ int keystore_get(const char* service, const char* account, char* out,
     if (status == errSecItemNotFound) {
       return KEYSTORE_ERR_NOT_FOUND;
     }
-    // The user cancelled the sheet, or biometry failed / isn't available.
-    if (status == errSecUserCanceled || status == errSecAuthFailed) {
+    // The user cancelled the sheet, biometry failed / isn't available, or a
+    // silent read hit a biometric-gated item (interaction not allowed).
+    if (status == errSecUserCanceled || status == errSecAuthFailed ||
+        status == errSecInteractionNotAllowed) {
       return KEYSTORE_ERR_DENIED;
     }
     if (status != errSecSuccess || result == NULL) {
@@ -80,35 +94,67 @@ int keystore_get(const char* service, const char* account, char* out,
   }
 }
 
-int keystore_put(const char* service, const char* account, const char* value) {
+int keystore_get(const char* service, const char* account, char* out,
+                 size_t out_len) {
+  return getImpl(service, account, out, out_len, /*silent=*/false);
+}
+
+int keystore_get_silent(const char* service, const char* account, char* out,
+                        size_t out_len) {
+  return getImpl(service, account, out, out_len, /*silent=*/true);
+}
+
+static int putImpl(const char* service, const char* account, const char* value,
+                   bool silent) {
   @autoreleasepool {
     // Replace-on-write: drop any existing value first so SecItemAdd can't
     // collide with errSecDuplicateItem.
     keystore_delete(service, account);
 
-    CFErrorRef aclError = NULL;
-    SecAccessControlRef access = SecAccessControlCreateWithFlags(
-        kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        kSecAccessControlBiometryCurrentSet, &aclError);
-    if (access == NULL) {
-      if (aclError) {
-        CFRelease(aclError);
-      }
-      return KEYSTORE_ERR_IO;
-    }
-
     NSMutableDictionary* item = baseQuery(service, account);
     item[(__bridge id)kSecValueData] =
         [NSData dataWithBytes:value length:strlen(value)];
-    // kSecAttrAccessControl and kSecAttrAccessible are mutually exclusive; the
-    // ACL supplies the accessibility class, so we set only the control.
-    item[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
+
+    SecAccessControlRef access = NULL;
+    if (silent) {
+      // No access-control object: the item is readable whenever the keychain is
+      // unlocked, on this device, with NO biometric prompt. kSecAttrAccessible
+      // and kSecAttrAccessControl are mutually exclusive, so set the plain
+      // accessibility class here.
+      item[(__bridge id)kSecAttrAccessible] =
+          (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
+    } else {
+      CFErrorRef aclError = NULL;
+      access = SecAccessControlCreateWithFlags(
+          kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+          kSecAccessControlBiometryCurrentSet, &aclError);
+      if (access == NULL) {
+        if (aclError) {
+          CFRelease(aclError);
+        }
+        return KEYSTORE_ERR_IO;
+      }
+      // kSecAttrAccessControl and kSecAttrAccessible are mutually exclusive; the
+      // ACL supplies the accessibility class, so we set only the control.
+      item[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
+    }
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)item, NULL);
-    CFRelease(access);
+    if (access != NULL) {
+      CFRelease(access);
+    }
 
     return status == errSecSuccess ? KEYSTORE_OK : KEYSTORE_ERR_IO;
   }
+}
+
+int keystore_put(const char* service, const char* account, const char* value) {
+  return putImpl(service, account, value, /*silent=*/false);
+}
+
+int keystore_put_silent(const char* service, const char* account,
+                        const char* value) {
+  return putImpl(service, account, value, /*silent=*/true);
 }
 
 int keystore_delete(const char* service, const char* account) {

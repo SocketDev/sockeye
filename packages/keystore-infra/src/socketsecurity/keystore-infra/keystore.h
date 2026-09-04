@@ -40,6 +40,27 @@ int keystore_get(const char* service, const char* account, char* out,
 int keystore_put(const char* service, const char* account, const char* value);
 
 /*
+ * Read a secret WITHOUT ever raising a biometric prompt. A silent slot (written
+ * by keystore_put_silent) reads back directly; a biometric-gated item fails
+ * closed with KEYSTORE_ERR_DENIED rather than showing a Touch ID sheet. For a
+ * per-session hook that must not block on biometry (e.g. the AI balancer
+ * reading its Fireworks key at every SessionStart). On platforms with no
+ * biometric gate (Linux, Windows) this is identical to keystore_get.
+ */
+int keystore_get_silent(const char* service, const char* account, char* out,
+                        size_t out_len);
+
+/*
+ * Store a secret readable WITHOUT a biometric prompt: on macOS the item carries
+ * kSecAttrAccessibleWhenUnlockedThisDeviceOnly and NO access-control object, so
+ * the socket-keychain binary family reads it while the keychain is unlocked. An
+ * existing value for the same service/account is replaced. On platforms with no
+ * biometric gate this is identical to keystore_put.
+ */
+int keystore_put_silent(const char* service, const char* account,
+                        const char* value);
+
+/*
  * Remove a secret. Returns KEYSTORE_OK even when the item was already absent.
  */
 int keystore_delete(const char* service, const char* account);

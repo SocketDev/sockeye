@@ -41,8 +41,8 @@ void secureZero(char* value, size_t length) {
 void printUsage(FILE* stream) {
   std::fprintf(stream,
                "usage:\n"
-               "  socket-keychain get <service> <account>\n"
-               "  socket-keychain set <service> <account>\n"
+               "  socket-keychain get [--silent] <service> <account>\n"
+               "  socket-keychain set [--silent] <service> <account>\n"
                "  socket-keychain delete <service> <account>\n");
 }
 
@@ -112,9 +112,11 @@ bool readSecretFromStdin(char* output, size_t capacity, size_t* length) {
   return true;
 }
 
-int runGet(const char* service, const char* account) {
+int runGet(const char* service, const char* account, bool silent) {
   char value[kMaxValueBytes + 1] = {};
-  const int status = keystore_get(service, account, value, sizeof(value));
+  const int status =
+      silent ? keystore_get_silent(service, account, value, sizeof(value))
+             : keystore_get(service, account, value, sizeof(value));
   if (status != KEYSTORE_OK) {
     secureZero(value, sizeof(value));
     printKeystoreError(status);
@@ -130,7 +132,7 @@ int runGet(const char* service, const char* account) {
   return kSuccess;
 }
 
-int runSet(const char* service, const char* account) {
+int runSet(const char* service, const char* account, bool silent) {
   char value[kMaxValueBytes + 1] = {};
   size_t length = 0;
   if (!readSecretFromStdin(value, sizeof(value), &length)) {
@@ -140,7 +142,8 @@ int runSet(const char* service, const char* account) {
         stderr);
     return kUsage;
   }
-  const int status = keystore_put(service, account, value);
+  const int status = silent ? keystore_put_silent(service, account, value)
+                            : keystore_put(service, account, value);
   secureZero(value, length + 1);
   if (status != KEYSTORE_OK) {
     printKeystoreError(status);
@@ -171,21 +174,33 @@ int main(int argc, char** argv) {
     printUsage(stdout);
     return kSuccess;
   }
-  if (argc != 4 || !validField(argv[2]) || !validField(argv[3])) {
+  // Optional `--silent` flag sits between the command and the service, e.g.
+  // `get --silent <service> <account>`. It applies to get/set only; delete
+  // never prompts, so a silent delete is meaningless and rejected.
+  bool silent = false;
+  int fieldStart = 2;
+  if (argc == 5 && std::strcmp(argv[2], "--silent") == 0) {
+    silent = true;
+    fieldStart = 3;
+  } else if (argc != 4) {
     printUsage(stderr);
     return kUsage;
   }
 
   const char* command = argv[1];
-  const char* service = argv[2];
-  const char* account = argv[3];
+  const char* service = argv[fieldStart];
+  const char* account = argv[fieldStart + 1];
+  if (!validField(service) || !validField(account)) {
+    printUsage(stderr);
+    return kUsage;
+  }
   if (std::strcmp(command, "get") == 0) {
-    return runGet(service, account);
+    return runGet(service, account, silent);
   }
   if (std::strcmp(command, "set") == 0) {
-    return runSet(service, account);
+    return runSet(service, account, silent);
   }
-  if (std::strcmp(command, "delete") == 0) {
+  if (!silent && std::strcmp(command, "delete") == 0) {
     return runDelete(service, account);
   }
   printUsage(stderr);

@@ -70,6 +70,18 @@ int keystore_put(const char* service, const char* account, const char* value) {
   return stored ? KEYSTORE_OK : KEYSTORE_ERR_IO;
 }
 
+// Linux has no biometric gate (the Secret Service daemon owns unlock), so a
+// silent read/write is identical to the normal path.
+int keystore_get_silent(const char* service, const char* account, char* out,
+                        size_t out_len) {
+  return keystore_get(service, account, out, out_len);
+}
+
+int keystore_put_silent(const char* service, const char* account,
+                        const char* value) {
+  return keystore_put(service, account, value);
+}
+
 int keystore_delete(const char* service, const char* account) {
   GError* error = NULL;
   // Returns FALSE when nothing matched, which is success for an idempotent
