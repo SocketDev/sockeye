@@ -11,7 +11,11 @@ import { constants, existsSync } from 'node:fs'
 import { access } from 'node:fs/promises'
 import process from 'node:process'
 
-import { confirm, input, select } from '@socketsecurity/lib/stdio/prompts'
+import {
+  confirm,
+  input,
+  select,
+} from '@socketsecurity/lib-stable/stdio/prompts'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 

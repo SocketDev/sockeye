@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 /**
  * @file Tests for VFS path handling (/snapshot/* path prefix).
  *   These tests verify the path parsing and normalization logic for VFS paths.
@@ -18,17 +20,19 @@ export function findVFSKey(
     return vfsPath
   }
 
+  const normalized = normalizePath(vfsPath)
+
   // Check with trailing slash for directories
-  // oxlint-disable-next-line socket/normalize-path-before-match -- vfsPath is a VFS-internal namespace key ('/'-only by design), not an OS filesystem path; normalizePath's cross-platform separator unification doesn't apply here
-  const withSlash = vfsPath.endsWith('/') ? vfsPath : `${vfsPath}/`
+  const withSlash = normalized.endsWith('/') ? normalized : `${normalized}/`
   if (entries.has(withSlash)) {
     return withSlash
   }
 
   // Check without trailing slash
-  // oxlint-disable-next-line socket/normalize-path-before-match -- vfsPath is a VFS-internal namespace key ('/'-only by design), not an OS filesystem path
-  const withoutSlash = vfsPath.endsWith('/') ? vfsPath.slice(0, -1) : vfsPath
-  if (withoutSlash !== vfsPath && entries.has(withoutSlash)) {
+  const withoutSlash = normalized.endsWith('/')
+    ? normalized.slice(0, -1)
+    : normalized
+  if (withoutSlash !== normalized && entries.has(withoutSlash)) {
     return withoutSlash
   }
 
