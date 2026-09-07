@@ -20,7 +20,7 @@ import {
   normalizeAgentCiArguments,
   requestedWorkflowCredentials,
 } from './agent-ci-contract.mts'
-import { isMainModule } from '../fleet/_shared/is-main-module.mts'
+import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getBinaryPath } from './paths.mts'
 
