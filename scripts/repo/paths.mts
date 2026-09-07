@@ -14,18 +14,10 @@ export const BINARY_NAME = 'sockeye'
  */
 export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 
-/**
- * Absolute path to the repo brand mark
- * (`assets/repo/brand/sockeye-combomark.svg`) — the all-in-one badge the
- * README renders. Committed artwork, not a build output: the badge already
- * carries the SOCKEYE and SOCKET LABS lettering, so there is nothing to
- * compose and no theme variant to derive.
- */
-export const COMBOMARK_SVG_PATH = path.join(
-  ASSETS_REPO_DIR,
-  'brand',
-  'sockeye-combomark.svg',
-)
+export const LOGOMARK_SVG_PATHS = [
+  path.join(ASSETS_REPO_DIR, 'logomark.svg'),
+  path.join(ASSETS_REPO_DIR, 'logomark-inverse.svg'),
+]
 
 /**
  * Resolve the active build mode. An explicit `BUILD_MODE` wins, CI defaults to

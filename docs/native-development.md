@@ -61,14 +61,14 @@ credential value in a fixture, snapshot, command argument, or test log.
 GitHub renders repository SVG files more reliably than large inline SVG blocks.
 Keep repository-facing art under `assets/repo/`. The fleet preset owns
 `assets/repo/badges/coverage.svg`; Sockeye owns
-`assets/repo/brand/sockeye-combomark.svg`. Reference these files from Markdown or HTML, and
-run the pinned SVGO pass after editing Sockeye's mark:
+`assets/repo/logomark.svg` and `assets/repo/logomark-inverse.svg`.
+Reference these files from Markdown or HTML. Run the pinned SVGO pass to optimize both glyph variants:
 
 ```sh
 pnpm run optimize:svg
 ```
 
-`test/repo/unit/svg-assets.test.mts` checks that the committed asset is already
+`test/repo/unit/svg-assets.test.mts` checks that each committed glyph is already
 an SVGO fixpoint. A second optimization pass must produce the same markup.
 
 ## Native quality checks
