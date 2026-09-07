@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 (2026-05-15)
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -93,7 +93,9 @@ jobs:
 
       - name: Notarize and staple
         if: ${{ !inputs.adhoc }}
-        run: pnpm run notarize --run build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip --keychain-profile sockeye-notary
+        run: pnpm run notarize --run
+          build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
+          --keychain-profile sockeye-notary
 
       - name: Verify signature
         run: |
