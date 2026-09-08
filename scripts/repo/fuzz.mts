@@ -9,13 +9,19 @@ import process from 'node:process'
 import { existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
-import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getCmakeBuildDir, getOutputDir } from './paths.mts'
+
+export const SCRIPT_META: ScriptMeta = {
+  describe: 'Build and run the bounded native input-policy fuzz target.',
+  help: 'Usage: pnpm run fuzz\nEnvironment: SOCKEYE_FUZZ_SECONDS sets the positive runtime budget in seconds (default: 60).',
+}
 
 const logger = getDefaultLogger()
 const platformArch = `${process.platform}-${process.arch}`
@@ -89,8 +95,5 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    logger.fail(`Sockeye fuzzing failed: ${errorMessage(error)}`)
-    process.exitCode = 1
-  })
+  runMain(main, SCRIPT_META)
 }

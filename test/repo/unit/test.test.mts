@@ -1,0 +1,27 @@
+import { spawnSync } from 'node:child_process'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { expect, test } from 'vitest'
+import { SCRIPT_META } from '../../../scripts/repo/test.mts'
+
+const entry = fileURLToPath(
+  new URL('../../../scripts/repo/test.mts', import.meta.url),
+)
+
+for (const flag of ['--help', '--describe']) {
+  test(`answers ${flag} without filesystem writes or child processes`, () => {
+    const result = spawnSync(
+      process.execPath,
+      ['--permission', '--allow-fs-read=*', entry, flag],
+      { encoding: 'utf8', timeout: 5000 },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.signal).toBeNull()
+    expect(result.status).toBe(0)
+    expect(result.stdout.trim()).toBe(
+      flag === '--help'
+        ? `${SCRIPT_META.describe}\n\n${SCRIPT_META.help}`
+        : SCRIPT_META.describe,
+    )
+  })
+}

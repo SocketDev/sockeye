@@ -19,10 +19,18 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getBinaryPath, getBuildMode } from './paths.mts'
 
 const logger = getDefaultLogger()
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Sign Sockeye binaries with the hardened runtime; print commands unless execution is requested.',
+  help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with a Developer ID Application identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    identity (default: $SOCKEYE_SIGNING_IDENTITY)\n  --entitlements <p>   entitlements plist\n\nPaths default to the built binary for the current mode.',
+}
 
 export const SIGNING_IDENTIFIER = 'dev.socket.sockeye'
 export const SIGNING_IDENTITY_ENV = 'SOCKEYE_SIGNING_IDENTITY'
@@ -183,8 +191,12 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    logger.fail(`Sockeye signing failed: ${errorMessage(error)}`)
-    process.exitCode = 1
-  })
+  runMain(
+    () =>
+      main().catch((error: unknown) => {
+        logger.fail(`Sockeye signing failed: ${errorMessage(error)}`)
+        process.exitCode = 1
+      }),
+    SCRIPT_META,
+  )
 }

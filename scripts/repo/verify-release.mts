@@ -22,10 +22,18 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { BINARY_NAME, getBinaryPath, getBuildMode } from './paths.mts'
 
 const logger = getDefaultLogger()
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Verify signatures, Gatekeeper acceptance, and checksums of Sockeye release files.',
+  help: 'Usage: pnpm run verify-release [archive-or-binary…]\n\nRequires macOS. Targets default to the built binary for the current mode. Verification runs codesign and spctl and prints release evidence.',
+}
 
 export interface EvidenceRow {
   evidence: string
@@ -218,8 +226,14 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    logger.fail(`Sockeye release verification failed: ${errorMessage(error)}`)
-    process.exitCode = 1
-  })
+  runMain(
+    () =>
+      main().catch((error: unknown) => {
+        logger.fail(
+          `Sockeye release verification failed: ${errorMessage(error)}`,
+        )
+        process.exitCode = 1
+      }),
+    SCRIPT_META,
+  )
 }

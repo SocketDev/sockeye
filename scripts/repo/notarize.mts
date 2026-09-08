@@ -22,10 +22,18 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { displayCommand } from './sign.mts'
 
 const logger = getDefaultLogger()
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Submit signed Sockeye archives to Apple and staple supported archives; dry-run by default.',
+  help: 'Usage: pnpm run notarize [options] <archive…>\n\n  --run                      submit, wait, and staple\n  --keychain-profile <name>   profile (default: $SOCKEYE_NOTARY_PROFILE)\n\nArchives must be .zip, .dmg, or .pkg. Credentials stay in the notarytool Keychain profile.',
+}
 
 export const NOTARY_PROFILE_ENV = 'SOCKEYE_NOTARY_PROFILE'
 
@@ -163,8 +171,12 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    logger.fail(`Sockeye notarization failed: ${errorMessage(error)}`)
-    process.exitCode = 1
-  })
+  runMain(
+    () =>
+      main().catch((error: unknown) => {
+        logger.fail(`Sockeye notarization failed: ${errorMessage(error)}`)
+        process.exitCode = 1
+      }),
+    SCRIPT_META,
+  )
 }

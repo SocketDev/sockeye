@@ -7,11 +7,12 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import process from 'node:process'
 
-import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import {
   getBinaryPath,
@@ -19,6 +20,12 @@ import {
   getCmakeBuildDir,
   getOutputDir,
 } from './paths.mts'
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Build the Sockeye executable and keychain addon with the macOS toolchain.',
+  help: 'Usage: pnpm run build\nEnvironment: BUILD_MODE selects the build mode; RELEASE_VERSION overrides the embedded version.',
+}
 
 const logger = getDefaultLogger()
 
@@ -84,8 +91,5 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    logger.fail(`Sockeye build failed: ${errorMessage(error)}`)
-    process.exitCode = 1
-  })
+  runMain(main, SCRIPT_META)
 }

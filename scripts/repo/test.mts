@@ -11,7 +11,15 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Build native test artifacts, then run the requested Vitest suites.',
+  help: 'Usage: pnpm test [test-path ...] [vitest-options]\nWith no arguments, run test/repo. Test paths and options pass through to the fleet runner.',
+}
 
 const logger = getDefaultLogger()
 
@@ -41,5 +49,5 @@ async function main(): Promise<void> {
 }
 
 if (isMainModule(import.meta.url)) {
-  void main()
+  runMain(main, SCRIPT_META)
 }
