@@ -58,15 +58,15 @@ export type SmolFeature = {
    * flag (postgres/iouring/dawn), dropping = omitting the flag, so this is null
    * and `optInFlag` carries the enable flag instead.
    */
-  configureFlagWhenDropped: string | null
+  configureFlagWhenDropped: string | null | undefined
   /**
    * For opt-in features: the flag that ENABLES them (default off).
    */
-  optInFlag: string | null
+  optInFlag: string | null | undefined
   /**
    * The node_use_* gyp variable gating this feature's sources in node.gyp.
    */
-  gypVar: string | null
+  gypVar: string | null | undefined
   /**
    * Drop policy — see DropPolicy.
    */

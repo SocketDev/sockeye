@@ -25,7 +25,7 @@ import {
 } from 'local-build-infra/lib/tool-installer'
 import { getMinPythonVersion } from 'local-build-infra/lib/version-helpers'
 
-import { whichSync } from '@socketsecurity/lib-stable/bin/which'
+import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 const logger = getDefaultLogger()
@@ -36,11 +36,7 @@ const IS_MACOS = process.platform === 'darwin'
  *
  * @param {string} buildDir - Build directory path.
  */
-export async function checkBuildEnvironment(buildDir) {
-  logger.step('Build Environment Checks')
-
-  let allChecks = true
-
+async function checkBuildDiskSpace(buildDir: string): Promise<boolean> {
   // Check 1: Disk space.
   logger.log('Checking available disk space…')
   const diskSpace = await checkDiskSpace(buildDir)
@@ -54,12 +50,16 @@ export async function checkBuildEnvironment(buildDir) {
         `Disk space: Only ${diskSpace.availableGB}GB available (need 5GB)`,
       )
       logger.substep('Free up disk space before building')
-      allChecks = false
+      return false
     }
   } else {
     logger.warn('Could not check disk space (continuing anyway)')
   }
 
+  return true
+}
+
+async function checkBuildPython(): Promise<boolean> {
   // Check 2: Python version.
   logger.log('Checking Python version…')
   const requiredPythonVersion = getMinPythonVersion()
@@ -70,14 +70,46 @@ export async function checkBuildEnvironment(buildDir) {
     logger.fail(
       `Python ${python.version} is too old (need Python ${requiredPythonVersion}+)`,
     )
-    allChecks = false
+    return false
   } else {
     logger.fail('Python is not available')
     logger.substep(
       `Node.js build requires Python ${requiredPythonVersion} or later`,
     )
-    allChecks = false
+    return false
   }
+
+  return true
+}
+
+function reportBuildPackageManager(
+  pmResult: Awaited<ReturnType<typeof ensurePackageManagerAvailable>>,
+): void {
+  if (pmResult.installed) {
+    logger.success(
+      `Package manager (${pmResult.manager}) installed successfully`,
+    )
+  } else if (pmResult.available) {
+    logger.log(`📦 Package manager detected: ${pmResult.manager}`)
+  } else {
+    logger.warn('No package manager available for auto-installing tools')
+    const pmInstructions = getPackageManagerInstructions()
+    for (let i = 0, { length } = pmInstructions; i < length; i += 1) {
+      const instruction = pmInstructions[i]
+      logger.substep(instruction)
+    }
+  }
+}
+
+export async function checkBuildEnvironment(buildDir) {
+  logger.step('Build Environment Checks')
+
+  let allChecks = true
+
+  allChecks = await checkBuildDiskSpace(buildDir)
+
+  const pythonAvailable = await checkBuildPython()
+  allChecks = pythonAvailable && allChecks
 
   // Check 3: C++ compiler.
   logger.log('Checking C++ compiler…')
@@ -201,20 +233,7 @@ export async function checkRequiredTools({ arch, autoYes }) {
 
   const canAutoInstall = pmResult.available
 
-  if (pmResult.installed) {
-    logger.success(
-      `Package manager (${pmResult.manager}) installed successfully`,
-    )
-  } else if (pmResult.available) {
-    logger.log(`📦 Package manager detected: ${pmResult.manager}`)
-  } else {
-    logger.warn('No package manager available for auto-installing tools')
-    const pmInstructions = getPackageManagerInstructions()
-    for (let i = 0, { length } = pmInstructions; i < length; i += 1) {
-      const instruction = pmInstructions[i]
-      logger.substep(instruction)
-    }
-  }
+  reportBuildPackageManager(pmResult)
 
   // Step 2: Tools that support auto-installation.
   const autoInstallableTools = ['git', 'curl', 'patch', 'make']

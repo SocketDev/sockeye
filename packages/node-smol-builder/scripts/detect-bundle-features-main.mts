@@ -12,7 +12,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
-import { parseArgs } from '@socketsecurity/lib-stable/argv/parse'
+import { parseArgs } from 'node:util'
 
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 

@@ -9,7 +9,7 @@ import process from 'node:process'
 
 import { BYTES, CHECKPOINTS } from 'local-build-infra/lib/constants'
 
-import { parseArgs } from '@socketsecurity/lib-stable/argv/parse'
+import { parseArgs } from 'node:util'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getFeature } from '../../lib/smol-features.mts'
@@ -57,7 +57,7 @@ export function calculateCpuCount() {
  * `./configure` flags. Bare feature names are mapped to their flag via the
  * smol-features registry; `--`-prefixed tokens pass through verbatim.
  */
-export function parseSmolDropArg(raw) {
+export function parseSmolDropArg(raw: unknown) {
   if (!raw || typeof raw !== 'string') {
     return []
   }
@@ -90,6 +90,54 @@ export function parseSmolDropArg(raw) {
  * side effect (read by tests to detect LIEF/Dawn availability) — call this
  * once, at module load, before anything downstream reads them.
  */
+function validateBuildLibc(
+  TARGET_LIBC: string | undefined,
+  TARGET_PLATFORM: string,
+): void {
+  // Validate libc parameter
+  if (TARGET_LIBC && TARGET_LIBC !== 'musl' && TARGET_LIBC !== 'glibc') {
+    throw new Error(
+      `Invalid --libc value: ${TARGET_LIBC}. Valid options: musl, glibc`,
+    )
+  }
+  if (TARGET_LIBC && TARGET_PLATFORM !== 'linux') {
+    throw new Error(
+      `--libc parameter is only valid for Linux platform (got platform: ${TARGET_PLATFORM})`,
+    )
+  }
+}
+
+function validateBuildCheckpoints(config: {
+  FROM_CHECKPOINT?: string | undefined
+  STOP_AT?: string | undefined
+  BUILD_ONLY?: string | undefined
+}): void {
+  const checkpointConfig = { __proto__: null, ...config }
+  const { FROM_CHECKPOINT, STOP_AT, BUILD_ONLY } = checkpointConfig
+  // Validate checkpoint name if provided.
+  if (FROM_CHECKPOINT && !VALID_CHECKPOINTS.includes(FROM_CHECKPOINT)) {
+    throw new Error(
+      `Invalid checkpoint: ${FROM_CHECKPOINT}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
+    )
+  }
+  if (STOP_AT && !VALID_CHECKPOINTS.includes(STOP_AT)) {
+    throw new Error(
+      `Invalid stop-at checkpoint: ${STOP_AT}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
+    )
+  }
+  if (BUILD_ONLY && !VALID_CHECKPOINTS.includes(BUILD_ONLY)) {
+    throw new Error(
+      `Invalid build-only checkpoint: ${BUILD_ONLY}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
+    )
+  }
+  if (BUILD_ONLY && STOP_AT) {
+    throw new Error('Cannot use both --build-only and --stop-at')
+  }
+  if (BUILD_ONLY && FROM_CHECKPOINT) {
+    throw new Error('Cannot use both --build-only and --from-checkpoint')
+  }
+}
+
 export function parseBuildArgs() {
   const { values } = parseArgs({
     options: {
@@ -120,17 +168,7 @@ export function parseBuildArgs() {
   const TARGET_ARCH = stringArg(values['arch']) || process.arch
   const TARGET_LIBC = stringArg(values['libc'])
 
-  // Validate libc parameter
-  if (TARGET_LIBC && TARGET_LIBC !== 'musl' && TARGET_LIBC !== 'glibc') {
-    throw new Error(
-      `Invalid --libc value: ${TARGET_LIBC}. Valid options: musl, glibc`,
-    )
-  }
-  if (TARGET_LIBC && TARGET_PLATFORM !== 'linux') {
-    throw new Error(
-      `--libc parameter is only valid for Linux platform (got platform: ${TARGET_PLATFORM})`,
-    )
-  }
+  validateBuildLibc(TARGET_LIBC, TARGET_PLATFORM)
 
   const CLEAN_BUILD = Boolean(values['clean'])
   const AUTO_YES = Boolean(values['yes'])
@@ -138,28 +176,7 @@ export function parseBuildArgs() {
   const STOP_AT = stringArg(values['stop-at'])
   const BUILD_ONLY = stringArg(values['build-only'])
 
-  // Validate checkpoint name if provided.
-  if (FROM_CHECKPOINT && !VALID_CHECKPOINTS.includes(FROM_CHECKPOINT)) {
-    throw new Error(
-      `Invalid checkpoint: ${FROM_CHECKPOINT}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
-    )
-  }
-  if (STOP_AT && !VALID_CHECKPOINTS.includes(STOP_AT)) {
-    throw new Error(
-      `Invalid stop-at checkpoint: ${STOP_AT}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
-    )
-  }
-  if (BUILD_ONLY && !VALID_CHECKPOINTS.includes(BUILD_ONLY)) {
-    throw new Error(
-      `Invalid build-only checkpoint: ${BUILD_ONLY}. Valid options: ${VALID_CHECKPOINTS.join(', ')}`,
-    )
-  }
-  if (BUILD_ONLY && STOP_AT) {
-    throw new Error('Cannot use both --build-only and --stop-at')
-  }
-  if (BUILD_ONLY && FROM_CHECKPOINT) {
-    throw new Error('Cannot use both --build-only and --from-checkpoint')
-  }
+  validateBuildCheckpoints({ FROM_CHECKPOINT, STOP_AT, BUILD_ONLY })
 
   // Build mode: dev (fast builds) vs prod (optimized builds).
   // - CI: defaults to prod (unless --dev specified)

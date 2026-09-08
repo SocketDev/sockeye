@@ -25,7 +25,7 @@ import process from 'node:process'
 
 import { fileURLToPath } from 'node:url'
 
-import { parseArgs } from '@socketsecurity/lib-stable/argv/parse'
+import { parseArgs } from 'node:util'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
