@@ -16,6 +16,8 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { cleanCheckpoint } from './checkpoint-manager.mts'
 
+const logger = getDefaultLogger()
+
 /**
  * Clean build artifacts for a builder package.
  *
@@ -53,7 +55,7 @@ import { cleanCheckpoint } from './checkpoint-manager.mts'
  * @returns {Promise<void>}
  */
 export async function cleanBuilder(packageName, options = {}) {
-  const logger = options.logger || getDefaultLogger()
+  const activeLogger = options.logger || logger
 
   // Resolve package directory (default: caller's parent directory)
   let { packageDir } = options
@@ -78,7 +80,7 @@ export async function cleanBuilder(packageName, options = {}) {
     cleanDirs = ['build'],
   } = options
 
-  logger.info(`Cleaning ${packageName}…`)
+  activeLogger.info(`Cleaning ${packageName}…`)
 
   let cleanedCount = 0
 
@@ -89,7 +91,7 @@ export async function cleanBuilder(packageName, options = {}) {
     if (existsSync(dirPath)) {
       // eslint-disable-next-line no-await-in-loop
       await safeDelete(dirPath)
-      logger.success(`Removed ${dir}/`)
+      activeLogger.success(`Removed ${dir}/`)
       cleanedCount++
     }
   }
@@ -103,13 +105,13 @@ export async function cleanBuilder(packageName, options = {}) {
       // eslint-disable-next-line no-await-in-loop
       await cleanCheckpoint(modeDirPath, '')
     }
-    logger.success('Cleaned checkpoints')
+    activeLogger.success('Cleaned checkpoints')
     cleanedCount++
   }
 
   if (cleanedCount === 0) {
-    logger.info('Nothing to clean')
+    activeLogger.info('Nothing to clean')
   } else {
-    logger.success('Clean complete')
+    activeLogger.success('Clean complete')
   }
 }

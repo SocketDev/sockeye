@@ -113,14 +113,14 @@ function reportCoverageResults(results: {
   if (results.passed.length > 0) {
     // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
     for (const name of results.passed) {
-      logger.substep(String(name))
+      logger.substep(name)
     }
   }
   if (results.failed.length > 0) {
     logger.error(`Failed: ${results.failed.length}`)
     // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
     for (const name of results.failed) {
-      logger.substep(String(name))
+      logger.substep(name)
     }
     throw new Error(`Coverage failed for ${results.failed.length} run(s)`)
   }

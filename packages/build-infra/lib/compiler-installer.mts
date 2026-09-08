@@ -30,6 +30,23 @@ export const COMPILER_REQUIREMENTS = {
   },
 }
 
+export function canInstallGcc(config: { quiet: boolean }): boolean {
+  const { quiet } = { __proto__: null, ...config } as typeof config
+  if (getPlatform() !== 'linux') {
+    if (!quiet) {
+      logger.warn('Automatic GCC installation is only supported on Linux')
+    }
+    return false
+  }
+  if (!detectPackageManagers().includes('apt')) {
+    if (!quiet) {
+      logger.warn('Automatic GCC installation requires apt package manager')
+    }
+    return false
+  }
+  return true
+}
+
 /**
  * Check if GCC version meets minimum requirements.
  *
@@ -153,26 +170,7 @@ export async function ensureGccVersion({
     }
   }
 
-  // Attempt to install GCC 12
-  const platform = getPlatform()
-  if (platform !== 'linux') {
-    if (!quiet) {
-      logger.warn('Automatic GCC installation is only supported on Linux')
-    }
-    return {
-      __proto__: null,
-      available: false,
-      installed: false,
-      version: currentCheck.version,
-    }
-  }
-
-  // Check if apt is available
-  const managers = detectPackageManagers()
-  if (!managers.includes('apt')) {
-    if (!quiet) {
-      logger.warn('Automatic GCC installation requires apt package manager')
-    }
+  if (!canInstallGcc({ quiet })) {
     return {
       __proto__: null,
       available: false,
