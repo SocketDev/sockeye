@@ -186,6 +186,17 @@ export function getPythonVenvParentPath(venvPath: string): string {
   return path.dirname(venvPath)
 }
 
+export function getReleaseChecksumDownloadPath(config: {
+  tool: string
+  tag: string
+}): string {
+  const { tool, tag } = { __proto__: null, ...config } as typeof config
+  return path.join(
+    getBuildTempDir(PACKAGE_ROOT),
+    `${tool}-checksums-${tag}.txt`,
+  )
+}
+
 export function getSocketSourceDir(packageRoot: string, name: string): string {
   return path.join(packageRoot, 'src', 'socketsecurity', name)
 }
@@ -227,4 +238,9 @@ export const BINARY_SMOKE_MODULES_FIXTURE = path.join(
 export const BINARY_SMOKE_TEMPORAL_FIXTURE = path.join(
   BINARY_SMOKE_FIXTURES_DIR,
   'smoke-test-temporal.mjs',
+)
+
+export const BUILD_RELEASE_ASSETS_FILE = path.join(
+  PACKAGE_ROOT,
+  'release-assets.json',
 )
