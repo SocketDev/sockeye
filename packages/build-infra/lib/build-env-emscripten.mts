@@ -18,6 +18,12 @@ import {
 } from './constants.mts'
 import { errorMessage } from './error-utils.mts'
 import {
+  getEmscriptenCmakePath,
+  getEmsdkRootFromCompilerPath,
+  getEmsdkScriptPath,
+} from './paths.mts'
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
+import {
   commandExists,
   getCommandOutput,
   getPlatform,
@@ -115,50 +121,22 @@ export async function findEmscriptenSDK() {
 
   if (await commandExists('emcc')) {
     try {
-      const isWin32 = getPlatform() === 'win32'
-      const whichCommand = isWin32 ? 'where' : 'which'
-      let emccPath = await getCommandOutput(whichCommand, ['emcc'])
-
+      const emccPath = await resolveEmscriptenCompilerPath()
       if (emccPath) {
-        const platform = getPlatform()
-        if (platform !== 'win32' && existsSync(emccPath)) {
-          try {
-            let realPath
-            try {
-              realPath = await getCommandOutput('readlink', ['-f', emccPath])
-            } catch {
-              realPath = await getCommandOutput('readlink', [emccPath])
-            }
-            if (realPath) {
-              emccPath = realPath
-            }
-          } catch {
-            // If readlink fails, continue with original path.
-          }
-        }
-
         if (emccPath.includes(HOMEBREW_CELLAR_EMSCRIPTEN_PATTERN)) {
           const match = emccPath.match(/(.*\/Cellar\/emscripten\/[^/]+)/)
           if (match) {
             const homebrewPath = match[1]
-            const cmakeFile = path.join(
-              homebrewPath,
-              'libexec/cmake/Modules/Platform/Emscripten.cmake',
-            )
+            const cmakeFile = getEmscriptenCmakePath(homebrewPath)
             if (existsSync(cmakeFile)) {
               return { __proto__: null, path: homebrewPath, type: 'homebrew' }
             }
           }
         }
 
-        const emscriptenDir = path.dirname(emccPath)
-        const upstreamDir = path.dirname(emscriptenDir)
-        const emsdkPath = path.dirname(upstreamDir)
+        const emsdkPath = getEmsdkRootFromCompilerPath(emccPath)
 
-        const emsdkScript = path.join(
-          emsdkPath,
-          getPlatform() === 'win32' ? 'emsdk.bat' : 'emsdk',
-        )
+        const emsdkScript = getEmsdkScriptPath(emsdkPath, getPlatform())
 
         if (existsSync(emsdkScript)) {
           return { __proto__: null, path: emsdkPath, type: 'emsdk' }
@@ -173,10 +151,7 @@ export async function findEmscriptenSDK() {
 
   for (let i = 0, { length } = searchPaths; i < length; i += 1) {
     const emsdkPath = searchPaths[i]
-    const emsdkScript = path.join(
-      emsdkPath,
-      getPlatform() === 'win32' ? 'emsdk.bat' : 'emsdk',
-    )
+    const emsdkScript = getEmsdkScriptPath(emsdkPath, getPlatform())
 
     if (existsSync(emsdkScript)) {
       return { __proto__: null, path: emsdkPath, type: 'emsdk' }
@@ -204,4 +179,26 @@ export async function getEmscriptenVersion() {
   } catch {
     return undefined
   }
+}
+
+export async function resolveEmscriptenCompilerPath() {
+  const platform = getPlatform()
+  let emccPath = await getCommandOutput(
+    platform === 'win32' ? 'where' : 'which',
+    ['emcc'],
+  )
+  if (emccPath && platform !== 'win32' && existsSync(emccPath)) {
+    try {
+      let realPath
+      try {
+        realPath = await getCommandOutput('readlink', ['-f', emccPath])
+      } catch {
+        realPath = await getCommandOutput('readlink', [emccPath])
+      }
+      if (realPath) {
+        emccPath = realPath
+      }
+    } catch {}
+  }
+  return emccPath ? normalizePath(emccPath) : emccPath
 }

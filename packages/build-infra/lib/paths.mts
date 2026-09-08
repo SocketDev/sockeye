@@ -55,6 +55,25 @@ export function getDownloadedDir(packageRoot: string): string {
   return path.join(packageRoot, 'build', 'downloaded')
 }
 
+export function getEmscriptenCmakePath(homebrewPath: string): string {
+  return path.join(
+    homebrewPath,
+    'libexec',
+    'cmake',
+    'Modules',
+    'Platform',
+    'Emscripten.cmake',
+  )
+}
+
+export function getEmsdkRootFromCompilerPath(emccPath: string): string {
+  return path.dirname(path.dirname(path.dirname(emccPath)))
+}
+
+export function getEmsdkScriptPath(sdkPath: string, platform: string): string {
+  return path.join(sdkPath, platform === 'win32' ? 'emsdk.bat' : 'emsdk')
+}
+
 /**
  * Get the canonical final-binary path for a binsuite tool
  * (binpress, binflate, binject) for a specific build mode and platform.
@@ -112,6 +131,38 @@ export const REPOSITORY_GITMODULES = path.join(
 export function getPackageManifestPath(packageRoot: string): string {
   return path.join(packageRoot, 'package.json')
 }
+export function getPythonDefaultVenvPath(homeDir: string): string {
+  return path.join(homeDir, '.socket-btm-venv')
+}
+
+export function getPythonPrefixCandidates(pipPath: string): string[] {
+  const versionDir = path.dirname(path.dirname(pipPath))
+  const pythonVersion = path.basename(versionDir)
+  const libDir = path.dirname(versionDir)
+  if (path.basename(libDir) !== 'lib') {
+    return []
+  }
+  const binDir = path.join(path.dirname(libDir), 'bin')
+  return ['python3', pythonVersion, 'python'].map(candidate =>
+    path.join(binDir, candidate),
+  )
+}
+
+export function getPythonVenvBinaryPaths(venvPath: string): {
+  pipPath: string
+  pythonPath: string
+} {
+  const binDir = path.join(venvPath, 'bin')
+  return {
+    pipPath: path.join(binDir, 'pip3'),
+    pythonPath: path.join(binDir, 'python3'),
+  }
+}
+
+export function getPythonVenvParentPath(venvPath: string): string {
+  return path.dirname(venvPath)
+}
+
 export function getSocketSourceDir(packageRoot: string, name: string): string {
   return path.join(packageRoot, 'src', 'socketsecurity', name)
 }
@@ -136,3 +187,21 @@ export {
 
 export const NODE_SOURCE_SUBMODULE_PATH =
   'packages/node-smol-builder/upstream/node'
+
+export const BINARY_SMOKE_FIXTURES_DIR = path.join(
+  PACKAGE_ROOT,
+  'test',
+  'fixtures',
+)
+export const BINARY_SMOKE_SIMPLE_FIXTURE = path.join(
+  BINARY_SMOKE_FIXTURES_DIR,
+  'smoke-test-simple.mjs',
+)
+export const BINARY_SMOKE_MODULES_FIXTURE = path.join(
+  BINARY_SMOKE_FIXTURES_DIR,
+  'smoke-test-modules.mjs',
+)
+export const BINARY_SMOKE_TEMPORAL_FIXTURE = path.join(
+  BINARY_SMOKE_FIXTURES_DIR,
+  'smoke-test-temporal.mjs',
+)

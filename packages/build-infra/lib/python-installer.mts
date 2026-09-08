@@ -1,3 +1,9 @@
+import {
+  getPythonDefaultVenvPath,
+  getPythonPrefixCandidates,
+  getPythonVenvBinaryPaths,
+  getPythonVenvParentPath,
+} from './paths.mts'
 /**
  * Python Package Installation Utilities.
  *
@@ -112,8 +118,8 @@ export function getPipCommand() {
   // Lazy detection — see getPythonCommand() for rationale.
   if (!venvInitialized) {
     const probeVenvPath = venvPath || getDefaultVenvPath()
-    const probePython = path.join(probeVenvPath, 'bin', 'python3')
-    const probePip = path.join(probeVenvPath, 'bin', 'pip3')
+    const { pythonPath: probePython, pipPath: probePip } =
+      getPythonVenvBinaryPaths(probeVenvPath)
     if (existsSync(probePython) && existsSync(probePip)) {
       venvPath = probeVenvPath
       venvPythonPath = probePython
@@ -143,7 +149,7 @@ export function getPipCommand() {
 // verify); alphabetizing across phases would scatter the install flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getDefaultVenvPath() {
-  return path.join(os.homedir(), '.socket-btm-venv')
+  return getPythonDefaultVenvPath(os.homedir())
 }
 
 /**
@@ -170,9 +176,8 @@ export async function initializeVenv({ quiet = false, venvDir } = {}) {
   venvPath = targetVenvPath
 
   // Check if venv already exists and is valid
-  const venvBinDir = path.join(targetVenvPath, 'bin')
-  const potentialPip = path.join(venvBinDir, 'pip3')
-  const potentialPython = path.join(venvBinDir, 'python3')
+  const { pipPath: potentialPip, pythonPath: potentialPython } =
+    getPythonVenvBinaryPaths(targetVenvPath)
 
   if (existsSync(potentialPip) && existsSync(potentialPython)) {
     venvPipPath = potentialPip
@@ -195,9 +200,91 @@ export async function initializeVenv({ quiet = false, venvDir } = {}) {
     return false
   }
 
+  return createPythonVenv({
+    targetVenvPath,
+    potentialPip,
+    potentialPython,
+    systemPython,
+    quiet,
+  })
+}
+
+// Cache for Python command derived from pip
+let cachedPythonCommand
+
+/**
+ * Get Python command that corresponds to pip.
+ *
+ * This ensures we use the same Python that pip installs packages for.
+ * On macOS, pip3 and python3 may point to different Python installations.
+ *
+ * If a venv is available, uses the venv's Python.
+ * Otherwise derives Python path from `pip --version` output which shows the pip
+ * installation path. From this path, we can find the corresponding Python.
+ *
+ * @returns {Promise<string | undefined>} Resolved python command path or
+ *   undefined if not found.
+ */
+// File is ordered by pip-install pipeline phase (detect → resolve → install →
+// verify); alphabetizing across phases would scatter the install flow.
+// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
+export async function getPythonCommand() {
+  // If venv is available, use it
+  if (venvAvailable && venvPythonPath) {
+    return venvPythonPath
+  }
+  // Lazy detection: if a venv already exists on disk from a previous
+  // run but initializeVenv() hasn't been called yet in this process,
+  // pick it up rather than falling back to system python (which is
+  // likely to be PEP 668 locked and missing packages we installed in
+  // the venv earlier).
+  if (!venvInitialized) {
+    const probeVenvPath = venvPath || getDefaultVenvPath()
+    const { pythonPath: probePython, pipPath: probePip } =
+      getPythonVenvBinaryPaths(probeVenvPath)
+    if (existsSync(probePython) && existsSync(probePip)) {
+      venvPath = probeVenvPath
+      venvPythonPath = probePython
+      venvPipPath = probePip
+      venvAvailable = true
+      venvInitialized = true
+      return probePython
+    }
+  }
+
+  if (cachedPythonCommand !== undefined) {
+    return cachedPythonCommand || undefined
+  }
+
+  const pip = getPipCommand()
+  if (!pip) {
+    cachedPythonCommand = ''
+    return undefined
+  }
+
+  const matchedPython = await resolvePythonFromPip(pip)
+  if (matchedPython) {
+    cachedPythonCommand = matchedPython
+    return matchedPython
+  }
+
+  // Fallback: use whichSync
+  const python3Path = whichSync('python3', { nothrow: true })
+  if (python3Path) {
+    cachedPythonCommand = python3Path
+    return cachedPythonCommand
+  }
+  const pythonPath = whichSync('python', { nothrow: true })
+  cachedPythonCommand = pythonPath || ''
+  return cachedPythonCommand || undefined
+}
+
+export async function createPythonVenv(config) {
+  const { targetVenvPath, potentialPip, potentialPython, systemPython, quiet } =
+    { __proto__: null, ...config }
   // Create venv
   try {
-    await fs.mkdir(path.dirname(targetVenvPath), { recursive: true })
+    await fs.mkdir(getPythonVenvParentPath(targetVenvPath), { recursive: true })
     if (!quiet) {
       logger.substep(`Creating Python venv: ${targetVenvPath}`)
     }
@@ -249,59 +336,7 @@ export async function initializeVenv({ quiet = false, venvDir } = {}) {
   }
 }
 
-// Cache for Python command derived from pip
-let cachedPythonCommand
-
-/**
- * Get Python command that corresponds to pip.
- *
- * This ensures we use the same Python that pip installs packages for.
- * On macOS, pip3 and python3 may point to different Python installations.
- *
- * If a venv is available, uses the venv's Python.
- * Otherwise derives Python path from `pip --version` output which shows the pip
- * installation path. From this path, we can find the corresponding Python.
- *
- * @returns {Promise<string | undefined>} Resolved python command path or
- *   undefined if not found.
- */
-// File is ordered by pip-install pipeline phase (detect → resolve → install →
-// verify); alphabetizing across phases would scatter the install flow.
-// oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
-export async function getPythonCommand() {
-  // If venv is available, use it
-  if (venvAvailable && venvPythonPath) {
-    return venvPythonPath
-  }
-  // Lazy detection: if a venv already exists on disk from a previous
-  // run but initializeVenv() hasn't been called yet in this process,
-  // pick it up rather than falling back to system python (which is
-  // likely to be PEP 668 locked and missing packages we installed in
-  // the venv earlier).
-  if (!venvInitialized) {
-    const probeVenvPath = venvPath || getDefaultVenvPath()
-    const probePython = path.join(probeVenvPath, 'bin', 'python3')
-    const probePip = path.join(probeVenvPath, 'bin', 'pip3')
-    if (existsSync(probePython) && existsSync(probePip)) {
-      venvPath = probeVenvPath
-      venvPythonPath = probePython
-      venvPipPath = probePip
-      venvAvailable = true
-      venvInitialized = true
-      return probePython
-    }
-  }
-
-  if (cachedPythonCommand !== undefined) {
-    return cachedPythonCommand || undefined
-  }
-
-  const pip = getPipCommand()
-  if (!pip) {
-    cachedPythonCommand = ''
-    return undefined
-  }
-
+export async function resolvePythonFromPip(pip) {
   // Run pip --version to get pip's installation path
   // Format: pip X.X.X from /path/to/lib/pythonX.X/site-packages/pip (python X.X)
   try {
@@ -313,35 +348,11 @@ export async function getPythonCommand() {
     const pathMatch = pipVersion.trim().match(/from\s+(.+?)(?:$|\s+\()/)
     if (pathMatch) {
       const pipPath = pathMatch[1].trim()
-      // pipPath is like: /path/to/lib/pythonX.X/site-packages/pip
-      // We need: /path/to/bin/pythonX.X
-
-      // Walk up from site-packages to find bin directory
-      // Pattern: .../lib/pythonX.X/site-packages/pip -> .../bin/pythonX
-      // site-packages
-      let current = path.dirname(pipPath)
-      // pythonX.X
-      current = path.dirname(current)
-      // e.g., "python3.9"
-      const pythonVersion = path.basename(current)
-      // lib
-      current = path.dirname(current)
-      const libDir = path.basename(current)
-
-      if (libDir === 'lib') {
-        // parent of lib
-        current = path.dirname(current)
-        const binDir = path.join(current, 'bin')
-
-        // Try python3 first, then pythonX.X
-        const candidates = ['python3', pythonVersion, 'python']
-        for (let i = 0, { length } = candidates; i < length; i += 1) {
-          const candidate = candidates[i]
-          const pythonPath = path.join(binDir, candidate)
-          if (existsSync(pythonPath)) {
-            cachedPythonCommand = pythonPath
-            return cachedPythonCommand
-          }
+      const candidates = getPythonPrefixCandidates(pipPath)
+      for (let i = 0, { length } = candidates; i < length; i += 1) {
+        const pythonPath = candidates[i]
+        if (existsSync(pythonPath)) {
+          return pythonPath
         }
       }
     }
@@ -349,13 +360,5 @@ export async function getPythonCommand() {
     // Fall through to fallback
   }
 
-  // Fallback: use whichSync
-  const python3Path = whichSync('python3', { nothrow: true })
-  if (python3Path) {
-    cachedPythonCommand = python3Path
-    return cachedPythonCommand
-  }
-  const pythonPath = whichSync('python', { nothrow: true })
-  cachedPythonCommand = pythonPath || ''
-  return cachedPythonCommand || undefined
+  return undefined
 }
