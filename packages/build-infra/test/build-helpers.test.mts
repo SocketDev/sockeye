@@ -91,6 +91,31 @@ describe('build-helpers', () => {
   })
 
   describe(selectCrossCompileSmokeTestStrategy, () => {
+    it('uses static fallbacks when optional emulation capabilities are omitted', () => {
+      expect(
+        selectCrossCompileSmokeTestStrategy({
+          hostArch: 'x64',
+          hostPlatform: 'linux',
+          isMusl: true,
+          targetArch: 'arm64',
+        }),
+      ).toBe('docker-static')
+      expect(
+        selectCrossCompileSmokeTestStrategy({
+          hostArch: 'x64',
+          hostPlatform: 'linux',
+          targetArch: 'arm64',
+        }),
+      ).toBe('qemu-static')
+      expect(
+        selectCrossCompileSmokeTestStrategy({
+          hostArch: 'arm64',
+          hostPlatform: 'darwin',
+          targetArch: 'x64',
+        }),
+      ).toBe('rosetta-static')
+    })
+
     it('picks docker-musl when Docker is available for a linux musl target', () => {
       const strategy = selectCrossCompileSmokeTestStrategy({
         hasDocker: true,

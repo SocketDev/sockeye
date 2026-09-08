@@ -148,12 +148,12 @@ export function selectCrossCompileSmokeTestStrategy(
   input: CrossCompileStrategyInput,
 ): CrossCompileSmokeTestStrategy {
   const {
-    hasDocker = false,
-    hasQemu = false,
-    hasRosetta = false,
+    hasDocker,
+    hasQemu,
+    hasRosetta,
     hostArch,
     hostPlatform,
-    isMusl = false,
+    isMusl,
     targetArch,
   } = { __proto__: null, ...input } as CrossCompileStrategyInput
 

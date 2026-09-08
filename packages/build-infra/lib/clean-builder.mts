@@ -8,13 +8,17 @@
  */
 
 import { existsSync } from 'node:fs'
-import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { cleanCheckpoint } from './checkpoint-manager.mts'
+import {
+  builderCheckpointModePath,
+  builderCleanDirectoryPath,
+  builderPackageFromCallerPath,
+} from './paths.mts'
 
 const logger = getDefaultLogger()
 
@@ -68,7 +72,7 @@ export async function cleanBuilder(packageName, options = {}) {
         : undefined
     if (callerUrl) {
       const callerPath = fileURLToPath(callerUrl)
-      packageDir = path.resolve(path.dirname(callerPath), '..')
+      packageDir = builderPackageFromCallerPath(callerPath)
     } else {
       throw new Error('packageDir must be provided or auto-detectable')
     }
@@ -87,7 +91,7 @@ export async function cleanBuilder(packageName, options = {}) {
   // Delete each specified directory
   for (let i = 0, { length } = cleanDirs; i < length; i += 1) {
     const dir = cleanDirs[i]
-    const dirPath = path.join(packageDir, dir)
+    const dirPath = builderCleanDirectoryPath(packageDir, dir)
     if (existsSync(dirPath)) {
       // eslint-disable-next-line no-await-in-loop
       await safeDelete(dirPath)
@@ -96,22 +100,41 @@ export async function cleanBuilder(packageName, options = {}) {
     }
   }
 
-  // Clean checkpoints for specified modes
-  if (checkpointModes.length > 0) {
-    const buildDirPath = path.join(packageDir, buildDir)
-    for (let i = 0, { length } = checkpointModes; i < length; i += 1) {
-      const mode = checkpointModes[i]
-      const modeDirPath = path.join(buildDirPath, mode)
-      // eslint-disable-next-line no-await-in-loop
-      await cleanCheckpoint(modeDirPath, '')
-    }
-    activeLogger.success('Cleaned checkpoints')
-    cleanedCount++
-  }
+  cleanedCount += await cleanBuilderCheckpoints({
+    packageDir,
+    buildDir,
+    checkpointModes,
+    logger: activeLogger,
+  })
 
   if (cleanedCount === 0) {
     activeLogger.info('Nothing to clean')
   } else {
     activeLogger.success('Clean complete')
   }
+}
+
+export async function cleanBuilderCheckpoints(config) {
+  const {
+    packageDir,
+    buildDir,
+    checkpointModes,
+    logger: activeLogger,
+  } = {
+    __proto__: null,
+    ...config,
+  }
+  if (checkpointModes.length === 0) {
+    return 0
+  }
+  for (let i = 0, { length } = checkpointModes; i < length; i += 1) {
+    const modeDirPath = builderCheckpointModePath(
+      packageDir,
+      buildDir,
+      checkpointModes[i],
+    )
+    await cleanCheckpoint(modeDirPath, '')
+  }
+  activeLogger.success('Cleaned checkpoints')
+  return 1
 }
