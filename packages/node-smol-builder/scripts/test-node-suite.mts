@@ -77,6 +77,7 @@ export function compileSkipPatterns(skipPatterns) {
   return skipPatterns.map(pattern => {
     const lowerPattern = pattern.toLowerCase()
     return {
+      __proto__: null,
       regex: new RegExp(
         `^${lowerPattern.replaceAll('*', '.*').replaceAll('?', '.')}$`,
       ),
@@ -171,6 +172,7 @@ export function filterTests(testFiles, skipPatterns) {
   }
 
   return {
+    __proto__: null,
     filtered,
     skipped,
     stats: {

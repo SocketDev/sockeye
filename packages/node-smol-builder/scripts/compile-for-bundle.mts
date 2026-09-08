@@ -3,7 +3,7 @@
 /**
  * @file Bundle-driven node-smol compile orchestrator (plan + invoke).
  *   USAGE:
- *   pnpm --filter node-smol-builder run compile-for-bundle --\
+ *   `pnpm --filter` node-smol-builder run compile-for-bundle --\
  *   --bundle=path/to/main.js [--vfs=path/to/vfs.tar] [--overrides=package.json]\
  *   [--v8-lite] [--prod] [--dry-run]
  *   Pipeline (see docs/plans/bundle-driven-module-detection.md):
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
   // source-patched sub-phase, so this doesn't re-clone/re-patch unnecessarily.
   logger.log('')
   logger.log('Starting build…')
-  const r = await spawn('node', buildArgs, { stdio: 'inherit' })
+  const r = await spawn(process.execPath, buildArgs, { stdio: 'inherit' })
   if (r.code !== 0) {
     logger.fail(`build failed (exit ${r.code})`)
     process.exitCode = r.code ?? 1

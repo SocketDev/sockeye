@@ -54,6 +54,7 @@ export interface DockerBinaryTestOptions {
  * Perform static verification on a binary (for cross-compiled builds).
  *
  * Verifies:
+ *
  * 1. Binary is not empty
  * 2. Correct architecture (if cross-compiled)
  * 3. Valid binary format (Mach-O/ELF/PE)

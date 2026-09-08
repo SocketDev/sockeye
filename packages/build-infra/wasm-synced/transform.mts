@@ -2,6 +2,7 @@
  * Common AST transformations for both CJS and ESM sync wrappers.
  *
  * Applies transformations that are shared between CommonJS and ESM:
+ *
  * - Remove export/import statements
  * - Remove async/await keywords
  * - Transform WebAssembly.instantiate to synchronous WebAssembly.Instance
@@ -9,8 +10,9 @@
  * - Handle Node.js module patterns.
  *
  * Visitor implementations are split into:
- * - transform-decl-visitor.mts: declaration/function/async handlers
- * - transform-call-visitor.mts: call/variable/return handlers.
+ *
+ * - Transform-decl-visitor.mts: declaration/function/async handlers
+ * - Transform-call-visitor.mts: call/variable/return handlers.
  */
 
 import { Parser } from 'acorn'

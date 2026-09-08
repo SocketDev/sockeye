@@ -69,11 +69,11 @@ function secretPatterns() {
     // Socket API token.
     new RegExp(`${joinFragments(['skt', 'sec_'])}[A-Za-z0-9_-]{24,}`),
     // AWS access key id.
-    new RegExp(`AKIA[A-Z0-9]{16}`),
+    /AKIA[A-Z0-9]{16}/u,
     // GitHub personal access token.
-    new RegExp(`ghp_[A-Za-z0-9]{36}`),
+    /ghp_[A-Za-z0-9]{36}/u,
     // JWT (three base64url segments).
-    new RegExp(`eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}`),
+    /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/u,
   ]
 }
 

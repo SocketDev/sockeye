@@ -32,7 +32,12 @@ export function validateBinary(bytes: Buffer, target: string): void {
 }
 
 async function main(): Promise<void> {
-  const [version, target, input, outputDir] = process.argv.slice(2)
+  const {
+    0: version,
+    1: target,
+    2: input,
+    3: outputDir,
+  } = process.argv.slice(2)
   if (!version || !target || !input || !outputDir) {
     throw new Error(
       'Usage: stage-release.mts <version> <target> <input> <output-dir>',

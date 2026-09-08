@@ -43,10 +43,11 @@ export async function cloneOnnxSource(config) {
     onnxVersion,
     sharedBuildDir,
     sharedCmakeDepsFile,
+    sharedCmakeListsFile,
     sharedCmakeWebassemblyFile,
     sharedPostBuildSourceFile,
     sharedSourceDir,
-  } = { __proto__: null, ...options } as typeof config
+  } = { __proto__: null, ...config } as typeof config
 
   logger.step('Cloning ONNX Runtime Source')
 
@@ -93,11 +94,10 @@ export async function cloneOnnxSource(config) {
     } else {
       logger.substep('All patches already applied, skipping clone')
       return {
+        __proto__: null,
         artifactPath: sharedSourceDir,
         smokeTest: async () => {
-          if (
-            !existsSync(path.join(sharedSourceDir, 'cmake', 'CMakeLists.txt'))
-          ) {
+          if (!existsSync(sharedCmakeListsFile)) {
             throw new Error(
               `Cloned ORT source missing CMakeLists.txt: ${sharedSourceDir}`,
             )
@@ -222,11 +222,7 @@ export async function cloneOnnxSource(config) {
   logger.substep(
     'Patching onnxruntime_webassembly.cmake to fix MLFloat16 build…',
   )
-  const cmakePath = path.join(
-    sharedSourceDir,
-    'cmake',
-    'onnxruntime_webassembly.cmake',
-  )
+  const cmakePath = sharedCmakeWebassemblyFile
   let cmakeContent = await fs.readFile(cmakePath, 'utf8')
   cmakeContent = cmakeContent.replace(
     /add_compile_definitions\(\s*BUILD_MLAS_NO_ONNXRUNTIME\s*\)/,
@@ -252,13 +248,7 @@ export async function cloneOnnxSource(config) {
   // 2. Delete cached build copy if present (forces CMake recopy from patched source)
   // 3. Clear CMake cache (ensures full reconfiguration)
   logger.substep('Patching wasm_post_build.js to handle modern Emscripten…')
-  const postBuildSourcePath = path.join(
-    sharedSourceDir,
-    'js',
-    'web',
-    'script',
-    'wasm_post_build.js',
-  )
+  const postBuildSourcePath = sharedPostBuildSourceFile
   if (existsSync(postBuildSourcePath)) {
     let postBuildContent = await fs.readFile(postBuildSourcePath, 'utf8')
 
@@ -306,9 +296,10 @@ export async function cloneOnnxSource(config) {
   logger.success('ONNX Runtime source cloned and patched')
 
   return {
+    __proto__: null,
     artifactPath: sharedSourceDir,
     smokeTest: async () => {
-      if (!existsSync(path.join(sharedSourceDir, 'cmake', 'CMakeLists.txt'))) {
+      if (!existsSync(sharedCmakeListsFile)) {
         throw new Error(
           `Cloned ORT source missing CMakeLists.txt: ${sharedSourceDir}`,
         )

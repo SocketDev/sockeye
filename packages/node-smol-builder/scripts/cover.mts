@@ -3,8 +3,9 @@
  * Works on macOS, Linux, and Windows (with MinGW/MSYS).
  *
  * Runs coverage for both:
+ *
  * - C packages (binject, binpress, binflate) via their platform Makefiles
- * - node-smol-builder's own JS tests via vitest.
+ * - Node-smol-builder's own JS tests via vitest.
  *
  * Usage:
  * node scripts/cover.mts              # both C packages and vitest
@@ -132,7 +133,7 @@ async function main() {
     logger.info(`C packages to analyze: ${cPackages.join(', ')}`)
     const cPromises = cPackages.map(async pkg => {
       const success = await runCCoverageForPackage(pkg)
-      return { name: pkg, success }
+      return { __proto__: null, name: pkg, success }
     })
     const cResults = await Promise.allSettled(cPromises)
     for (let i = 0, { length } = cResults; i < length; i += 1) {

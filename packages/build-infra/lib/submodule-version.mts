@@ -1,3 +1,4 @@
+import { REPOSITORY_GITMODULES } from './paths.mts'
 /**
  * Submodule version and checksum readers for .gitmodules.
  *
@@ -10,9 +11,7 @@
  */
 
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
 
-import { PACKAGE_ROOT } from './constants.mts'
 import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 import { coerceVersion } from '@socketsecurity/lib-stable/versions/parse'
 
@@ -93,7 +92,7 @@ export function getSubmoduleVersion(
  * entry is missing — a build must never guess a pin.
  */
 export function readSubmoduleEntry(submodulePath: string): GitmodulesEntry {
-  const gitmodulesPath = path.join(PACKAGE_ROOT, '..', '..', '.gitmodules')
+  const gitmodulesPath = REPOSITORY_GITMODULES
 
   let content
   try {

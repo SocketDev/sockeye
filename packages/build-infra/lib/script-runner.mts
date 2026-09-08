@@ -261,7 +261,7 @@ export const pnpm = {
   },
 
   /**
-   * Run pnpm install with frozen lockfile.
+   * Run `pnpm install` with frozen lockfile.
    */
   install: async (options: SpawnExtra = {}) => {
     logger.step('Installing dependencies')

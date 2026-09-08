@@ -47,6 +47,7 @@ export async function checkGccVersion(gccPath, minVersion) {
 
   if (!version) {
     return {
+      __proto__: null,
       installed: false,
       meetsRequirements: false,
       version: undefined,
@@ -58,11 +59,7 @@ export async function checkGccVersion(gccPath, minVersion) {
   // failed to parse — treat that as "does not meet", not "equal".
   const meetsRequirements = !Number.isNaN(cmp) && cmp >= 0
 
-  return {
-    installed: true,
-    meetsRequirements,
-    version,
-  }
+  return { __proto__: null, installed: true, meetsRequirements, version }
 }
 
 /**
@@ -133,6 +130,7 @@ export async function ensureGccVersion({
       )
     }
     return {
+      __proto__: null,
       available: true,
       installed: false,
       version: currentCheck.version,
@@ -148,6 +146,7 @@ export async function ensureGccVersion({
 
   if (!autoInstall) {
     return {
+      __proto__: null,
       available: false,
       installed: false,
       version: currentCheck.version,
@@ -161,6 +160,7 @@ export async function ensureGccVersion({
       logger.warn('Automatic GCC installation is only supported on Linux')
     }
     return {
+      __proto__: null,
       available: false,
       installed: false,
       version: currentCheck.version,
@@ -174,6 +174,7 @@ export async function ensureGccVersion({
       logger.warn('Automatic GCC installation requires apt package manager')
     }
     return {
+      __proto__: null,
       available: false,
       installed: false,
       version: currentCheck.version,
@@ -187,6 +188,7 @@ export async function ensureGccVersion({
 
   if (!installed) {
     return {
+      __proto__: null,
       available: false,
       installed: false,
       version: currentCheck.version,
@@ -200,6 +202,7 @@ export async function ensureGccVersion({
       logger.success(`GCC ${verifyCheck.version} installed successfully`)
     }
     return {
+      __proto__: null,
       available: true,
       installed: true,
       version: verifyCheck.version,
@@ -210,6 +213,7 @@ export async function ensureGccVersion({
     printError('GCC installation completed but version check failed')
   }
   return {
+    __proto__: null,
     available: false,
     installed: false,
     version: verifyCheck.version,
@@ -369,6 +373,7 @@ export function parseVersion(versionString) {
   }
 
   return {
+    __proto__: null,
     major: Number.parseInt(match[1], 10),
     minor: Number.parseInt(match[2], 10),
     patch: Number.parseInt(match[3], 10),

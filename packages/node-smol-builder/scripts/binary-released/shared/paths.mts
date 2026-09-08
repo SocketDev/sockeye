@@ -37,3 +37,9 @@ export const ADDITIONS_SOURCE_PATCHED_DIR = path.join(
   'additions',
   'source-patched',
 )
+
+export const LSQUIC_PATCHED_DIR = path.join(
+  ADDITIONS_SOURCE_PATCHED_DIR,
+  'deps',
+  'lsquic',
+)

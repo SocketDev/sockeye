@@ -1,3 +1,4 @@
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 import { describe, expect, it } from 'vitest'
 
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
@@ -87,15 +88,7 @@ export function isValidVFSPrefix(prefix: string): {
   return { valid: true }
 }
 
-/**
- * Simulate path normalization (backslash → forward slash)
- */
-export function normalizePath(filepath: string): string {
-  // This function IS the thing under test, a simulation of the production
-  // separator rewrite; it cannot call the lib helper it stands in for.
-  // oxlint-disable-next-line socket/prefer-normalize-path -- see above
-  return filepath.replace(/\\/g, '/')
-}
+export { normalizePath }
 
 /**
  * Simulate toVFSPath logic (extract relative path from VFS prefix path)

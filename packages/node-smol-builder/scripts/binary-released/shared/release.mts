@@ -344,12 +344,7 @@ export async function createReleaseArchive(
   const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
   logger.log(`  Size: ${sizeMB} MB`)
 
-  return {
-    archiveName,
-    archivePath,
-    checksum,
-    sizeMB,
-  }
+  return { __proto__: null, archiveName, archivePath, checksum, sizeMB }
 }
 
 /**

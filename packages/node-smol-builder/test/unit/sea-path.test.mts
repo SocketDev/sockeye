@@ -1,3 +1,4 @@
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 /**
  * @file Tests for SEA path handling (/sea/* path prefix).
  *   These tests verify the path parsing and normalization logic for SEA paths.
@@ -60,15 +61,7 @@ export function isSeaPath(filepath: string | undefined): boolean {
   )
 }
 
-/**
- * Simulate path normalization (backslash → forward slash)
- */
-export function normalizePath(filepath: string): string {
-  // This function IS the thing under test, a simulation of the production
-  // separator rewrite; it cannot call the lib helper it stands in for.
-  // oxlint-disable-next-line socket/prefer-normalize-path -- see above
-  return filepath.replace(/\\/g, '/')
-}
+export { normalizePath }
 
 describe('sEA Path Handling', () => {
   describe('isSeaPath', () => {

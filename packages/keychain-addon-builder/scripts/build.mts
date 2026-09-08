@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+import {
+  getSocketSourceDir,
+  KEYSTORE_PACKAGE_ROOT,
+  KEYSTORE_SOURCE_DIR,
+} from 'local-build-infra/lib/paths'
 /**
  * @file Build the keychain `.node` addon: a direct-compiler build of the
  *   cross-platform N-API shim (keychain_napi.cc) + the host's keystore-infra
@@ -44,12 +49,7 @@ function execBuildCommand(command: string, args: string[], cwd: string): void {
 }
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const keystoreInfraSrc = path.join(packageRoot, '..', 'keystore-infra', 'src')
-const keystoreDir = path.join(
-  keystoreInfraSrc,
-  'socketsecurity',
-  'keystore-infra',
-)
+const keystoreDir = getSocketSourceDir(KEYSTORE_PACKAGE_ROOT, 'keystore-infra')
 const shim = path.join(
   packageRoot,
   'src',
@@ -159,7 +159,7 @@ async function main() {
 
   const build = resolvePlatformBuild(process.platform, mode)
   const optimize = mode === 'prod' ? '-O2' : '-O0'
-  const includes = [`-I${nodeInclude}`, `-I${keystoreInfraSrc}`]
+  const includes = [`-I${nodeInclude}`, `-I${KEYSTORE_SOURCE_DIR}`]
   const shimObj = path.join(outDir, 'keychain_napi.o')
   const backendObj = path.join(outDir, 'keystore_backend.o')
 

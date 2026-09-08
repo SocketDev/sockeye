@@ -1,3 +1,4 @@
+import { WRAPPER_DIR } from '../../paths.mts'
 /**
  * WASM sync wrapper generation phase for Yoga Layout.
  *
@@ -28,7 +29,6 @@ import { PACKAGE_ROOT } from '../../paths.mts'
 const logger = getDefaultLogger()
 
 // Wrapper source files.
-const WRAPPER_DIR = path.join(PACKAGE_ROOT, 'src', 'wrapper')
 const YG_ENUMS_FILE = path.join(WRAPPER_DIR, 'YGEnums.mts')
 const WRAP_ASSEMBLY_FILE = path.join(WRAPPER_DIR, 'wrapAssembly.mts')
 
@@ -100,6 +100,7 @@ export async function generateSync(config) {
   logger.logNewline()
 
   return {
+    __proto__: null,
     artifactPath: outputSyncDir,
     binaryPath: path.relative(buildDir, outputSyncDir),
     binarySize: syncSize,

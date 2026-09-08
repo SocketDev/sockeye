@@ -3,7 +3,7 @@
 /**
  * @file Fail-closed gate for a bundle-trimmed node-smol binary.
  *   USAGE:
- *   pnpm --filter node-smol-builder run gate --\
+ *   `pnpm --filter` node-smol-builder run gate --\
  *   --binary=path/to/trimmed/node --bundle=path/to/main.js\
  *   [--vfs=path/to/vfs.tar] [--overrides=package.json]\
  *   [--suite="<shell command that runs the app's tests against $SMOL_BINARY>"]

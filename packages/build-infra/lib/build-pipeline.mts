@@ -177,6 +177,7 @@ export function parseFlags(argv) {
     return undefined
   }
   return {
+    __proto__: null,
     force: args.has('--force'),
     clean: args.has('--clean'),
     printCacheKey: args.has('--cache-key'),
@@ -240,11 +241,13 @@ export async function runPipeline(config, cliOverrides) {
   const platformArch = await getCurrentPlatformArch()
   const nodeVersion = getNodeVersion().replace(/^v/, '')
 
-  const [pkgJson, { versions: toolVersions, rawHash: toolsHash }] =
-    await Promise.all([
-      loadPackageJson(packageRoot),
-      loadExternalTools(packageRoot),
-    ])
+  const {
+    0: pkgJson,
+    1: { versions: toolVersions, rawHash: toolsHash },
+  } = await Promise.all([
+    loadPackageJson(packageRoot),
+    loadExternalTools(packageRoot),
+  ])
 
   const sources = pkgJson.sources ?? {}
   const packageVersion = pkgJson.version ?? '0.0.0'
@@ -263,7 +266,7 @@ export async function runPipeline(config, cliOverrides) {
   })
 
   if (flags.printCacheKey) {
-    process.stdout.write(`${cacheKey}\n`) // socket-hook: allow logger -- shell capture of cache key
+    process.stdout.write(`${cacheKey}\n`)
     return undefined
   }
 
@@ -293,7 +296,7 @@ export async function runPipeline(config, cliOverrides) {
   }
 
   const totalStart = Date.now()
-  logger.step(`🔨 Building ${packageName}`)
+  logger.step(`Building ${packageName}`)
   logger.info(`Mode: ${buildMode}`)
   logger.info(`Platform: ${platformArch}`)
   logger.info(`Cache key: ${cacheKey}`)
@@ -363,7 +366,7 @@ export async function runPipeline(config, cliOverrides) {
   }
 
   const seconds = ((Date.now() - totalStart) / 1000).toFixed(1)
-  logger.step('🎉 Build Complete!')
+  logger.step('Build Complete!')
   logger.success(`Total time: ${seconds}s`)
   logger.success(`Output: ${paths.outputFinalDir ?? paths.buildDir}`)
   if (outputFiles.length) {
@@ -419,6 +422,7 @@ export async function runStage(stage, ctx, stageParams) {
     : (() => {
         const { platform, arch, libc } = parsePlatformArch(ctx.platformArch)
         return {
+          __proto__: null,
           arch,
           buildMode,
           libc,

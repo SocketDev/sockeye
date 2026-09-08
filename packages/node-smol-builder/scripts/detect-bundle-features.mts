@@ -1,5 +1,5 @@
 /**
- * @file Static feature detector for node-smol SEA bundles. USAGE: pnpm --filter
+ * @file Static feature detector for node-smol SEA bundles. USAGE: `pnpm --filter`
  *   node-smol-builder run detect -- --bundle=path/to/main.js
  *   [--vfs=path/to/vfs.tar] [--overrides=package.json] [--json] What it does:
  *

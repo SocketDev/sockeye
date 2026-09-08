@@ -1,7 +1,9 @@
+import { getPackageManifestPath } from 'local-build-infra/lib/paths'
 /**
  * Build codet5-models - Convert and optimize CodeT5 models for Socket CLI.
  *
  * This script downloads, converts, and optimizes CodeT5 models:
+ *
  * - Downloads models from Hugging Face
  * - Converts to ONNX format
  * - Applies INT4/INT8 mixed-precision quantization
@@ -45,7 +47,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Package paths for model build prerequisites
 const packageRoot = path.join(dirname, '..')
-const packageJsonPath = path.join(dirname, '..', 'package.json')
+const packageJsonPath = getPackageManifestPath(packageRoot)
 
 // Parse arguments.
 const args = new Set(process.argv.slice(2))

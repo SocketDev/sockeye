@@ -1,3 +1,4 @@
+import { getBuildTempDir } from 'local-build-infra/lib/paths'
 // max-file-lines: builder-pipeline -- single builder pipeline (fetch → patch → build → package); phases share local state and early-return across the full sequence — splitting would fracture control flow
 /**
  * Build script for libcurl with mbedTLS.
@@ -102,7 +103,7 @@ export function getBuildDirs(platformArch) {
     BUILD_STAGES.FINAL,
     'mbedtls',
   )
-  return { buildDir, curlBuildDir, mbedtlsBuildDir }
+  return { __proto__: null, buildDir, curlBuildDir, mbedtlsBuildDir }
 }
 
 /**
@@ -148,7 +149,7 @@ export async function verifyArchiveChecksum(archivePath, assetName) {
   return verifyReleaseChecksum({
     assetName,
     filePath: archivePath,
-    tempDir: path.join(packageRoot, 'build', 'temp'),
+    tempDir: getBuildTempDir(packageRoot),
     tool: 'curl',
   })
 }

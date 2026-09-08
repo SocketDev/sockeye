@@ -5,6 +5,7 @@
  * across builder packages (onnxruntime-builder, yoga-layout-builder).
  *
  * It handles:
+ *
  * - Reading WASM binary and converting to base64
  * - Generating both CommonJS (.js) and ESM (.mts) synchronous wrappers
  * - Smoke testing the generated wrappers.

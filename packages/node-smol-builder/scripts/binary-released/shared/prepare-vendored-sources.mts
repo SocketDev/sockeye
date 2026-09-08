@@ -1,3 +1,4 @@
+import { LSQUIC_PATCHED_DIR } from './paths.mts'
 /**
  * Vendored and upstream source mappings for the Node.js build.
  *
@@ -100,7 +101,7 @@ const VENDORED_SOURCES = [
   // use_smol_quic configure flag.
   {
     from: path.join(LSQUIC_INFRA_DIR, 'upstream', 'lsquic'),
-    to: path.join(ADDITIONS_SOURCE_PATCHED_DIR, 'deps', 'lsquic'),
+    to: LSQUIC_PATCHED_DIR,
   },
   // ls-qpack: HTTP/3 header compression (QPACK). Pinned to v2.6.2 in
   // lsquic-infra/upstream/ls-qpack. node.gyp consumes deps/ls-qpack/lsqpack.c

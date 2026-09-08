@@ -1,3 +1,4 @@
+import { getBuildTempDir } from 'local-build-infra/lib/paths'
 /**
  * Shared factory for builder `ensureX` helpers.
  *
@@ -232,7 +233,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
       const checksumResult = await verifyReleaseChecksum({
         assetName,
         filePath: downloadedArchive,
-        tempDir: path.join(packageRoot, 'build', 'temp'),
+        tempDir: getBuildTempDir(packageRoot),
         tool: name,
       })
       if (!checksumResult.valid) {

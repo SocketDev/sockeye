@@ -1,3 +1,5 @@
+import { getSocketSourceDir } from 'local-build-infra/lib/paths'
+import { TEMPORAL_HEADERS_DIR } from '../../paths.mts'
 /**
  * Phase-specific build source file collection, split out of build.mts to
  * keep the orchestrator under the file-size soft cap.
@@ -74,9 +76,9 @@ export async function collectBuildSourceFiles(phase, platform, arch) {
   // Include source package files (canonical source, not copies in additions/)
   // These are the source of truth that get copied to additions/source-patched/
   const sourcePackageDirs = [
-    path.join(BINJECT_DIR, 'src', 'socketsecurity', 'binject'),
-    path.join(BIN_INFRA_DIR, 'src', 'socketsecurity', 'bin-infra'),
-    path.join(BUILD_INFRA_DIR, 'src', 'socketsecurity', 'build-infra'),
+    getSocketSourceDir(BINJECT_DIR, 'binject'),
+    getSocketSourceDir(BIN_INFRA_DIR, 'bin-infra'),
+    getSocketSourceDir(BUILD_INFRA_DIR, 'build-infra'),
     // temporal-infra ships TWO source trees: the spec-faithful C++
     // port under src/, and the V8-facing diplomat shim under include/.
     // Both must contribute to the cache key — a libnode rebuild has
@@ -85,11 +87,11 @@ export async function collectBuildSourceFiles(phase, platform, arch) {
     // include-of-everything fallback today, but listing them here
     // explicitly guards against a future additionsIgnorePatterns
     // entry silently dropping them out of the hash.
-    path.join(TEMPORAL_INFRA_DIR, 'src', 'socketsecurity', 'temporal'),
-    path.join(TEMPORAL_INFRA_DIR, 'include', 'temporal_rs'),
+    getSocketSourceDir(TEMPORAL_INFRA_DIR, 'temporal'),
+    TEMPORAL_HEADERS_DIR,
     // promise-infra ships one source tree: the keyed promise combinators
     // compiled into libnode as the smol_promise binding.
-    path.join(PROMISE_INFRA_DIR, 'src', 'socketsecurity', 'promise'),
+    getSocketSourceDir(PROMISE_INFRA_DIR, 'promise'),
   ]
 
   for (let i = 0, { length } = sourcePackageDirs; i < length; i += 1) {

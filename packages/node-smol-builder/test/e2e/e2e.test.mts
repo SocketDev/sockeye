@@ -8,7 +8,7 @@
  *   4. Execute and verify functionality
  *   5. Test VFS extraction to ~/.socket/_dlx/
  *   6. Verify compressed binary decompression Note: These are expensive tests that
- *      build the entire binary. Run with: pnpm test:e2e
+ *      build the entire binary. Run with: `pnpm test`:e2e
  */
 
 import { afterAll, beforeAll, describe, expect, it, test } from 'vitest'

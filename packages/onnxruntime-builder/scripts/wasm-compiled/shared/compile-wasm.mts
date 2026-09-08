@@ -293,6 +293,7 @@ export async function compileWasm(config) {
 
   const wasmSize = await getFileSize(wasmFile)
   return {
+    __proto__: null,
     artifactPath: path.dirname(wasmFile),
     binaryPath: path.relative(buildDir, wasmFile),
     binarySize: wasmSize,

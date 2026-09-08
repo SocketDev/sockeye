@@ -1,4 +1,18 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { existsSync, promises as fs } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { makeExecutable } from 'local-build-infra/lib/build-helpers'
+import { getBuildMode } from 'local-build-infra/lib/constants'
+import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
+import { safeDelete, safeMkdir } from '@socketsecurity/lib-stable/fs/safe'
+import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
+import type { SpawnOptions } from '@socketsecurity/lib-stable/process/spawn/types'
+import { getLatestFinalBinary } from '../paths.mts'
+import { REPO_ROOT } from '../../scripts/paths.mts'
+import { tolerantTimeout } from '../../../../test/fleet/_shared/lib/timing.mts'
+import { execCommand, getBinaryPath } from './helpers/cross-tool-fixtures.mts'
 
 /**
  * @file Cross-tool repacking integration tests Tests cyclic workflows where
@@ -16,31 +30,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
  *   - Both SEA and VFS data remain intact through multiple alternating operations
  */
 
-import { existsSync, promises as fs } from 'node:fs'
-import os from 'node:os'
-import path from 'node:path'
-
-import { makeExecutable } from 'local-build-infra/lib/build-helpers'
-import { getBuildMode } from 'local-build-infra/lib/constants'
-import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
-
-import { safeDelete, safeMkdir } from '@socketsecurity/lib-stable/fs/safe'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
-import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
-
-import type { SpawnOptions } from '@socketsecurity/lib-stable/process/spawn/types'
-
-import { getLatestFinalBinary } from '../paths.mts'
-import { REPO_ROOT } from '../../scripts/paths.mts'
-import { tolerantTimeout } from '../../../../test/fleet/_shared/lib/timing.mts'
-
 const TIMEOUT_180S = tolerantTimeout(180_000)
 const TIMEOUT_300S = tolerantTimeout(300_000)
 const TIMEOUT_420S = tolerantTimeout(420_000)
 
 const logger = getDefaultLogger()
-
-import { execCommand, getBinaryPath } from './helpers/cross-tool-fixtures.mts'
 
 const NODE_BINARY = getLatestFinalBinary() ?? ''
 

@@ -78,7 +78,7 @@ export async function cleanBuilder(packageName, options = {}) {
     cleanDirs = ['build'],
   } = options
 
-  logger.info(`🧹 Cleaning ${packageName}…`)
+  logger.info(`Cleaning ${packageName}…`)
 
   let cleanedCount = 0
 

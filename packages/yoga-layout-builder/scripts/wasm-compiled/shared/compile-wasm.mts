@@ -101,6 +101,7 @@ export async function compileWasm(config) {
   const wasmSize = await getFileSize(buildWasmFile)
 
   return {
+    __proto__: null,
     artifactPath: path.dirname(buildWasmFile),
     binaryPath: path.relative(buildDir, path.dirname(buildWasmFile)),
     binarySize: wasmSize,
@@ -173,5 +174,5 @@ export function getLinkingFlags(buildMode) {
           '--bind',
         ]
 
-  return { cxxFlags, linkerFlags }
+  return { __proto__: null, cxxFlags, linkerFlags }
 }

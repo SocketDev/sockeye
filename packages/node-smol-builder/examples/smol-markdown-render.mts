@@ -100,7 +100,7 @@ export function processEvents(
   }
 
   for (let i = 0, { length } = events; i < length; i += 1) {
-    const [code, payload] = events[i]
+    const { 0: code, 1: payload } = events[i]
     const cat = code & CATEGORY_MASK
     const val = code & VALUE_MASK
 
@@ -181,7 +181,7 @@ export function processEvents(
 }
 
 export function stdoutWrite(data: Uint8Array | string): void {
-  process.stdout.write(data) // socket-hook: allow console
+  process.stdout.write(data)
 }
 
 function main(): void {

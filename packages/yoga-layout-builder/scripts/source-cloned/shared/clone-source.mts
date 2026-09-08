@@ -1,3 +1,4 @@
+import { WRAPPER_DIR } from '../../paths.mts'
 /**
  * Source cloning phase for Yoga Layout.
  *
@@ -43,6 +44,7 @@ export async function cloneYogaSource(config) {
       logger.substep('Yoga source already exists, skipping clone')
       await regenerateEnums(sharedSourceDir, yogaVersion)
       return {
+        __proto__: null,
         artifactPath: sharedSourceDir,
         smokeTest: async () => {
           if (!existsSync(path.join(sharedSourceDir, 'CMakeLists.txt'))) {
@@ -109,6 +111,7 @@ export async function cloneYogaSource(config) {
   await regenerateEnums(sharedSourceDir, yogaVersion)
 
   return {
+    __proto__: null,
     artifactPath: sharedSourceDir,
     smokeTest: async () => {
       if (!existsSync(path.join(sharedSourceDir, 'CMakeLists.txt'))) {
@@ -134,7 +137,7 @@ export async function regenerateEnums(
   if (!existsSync(headerPath)) {
     throw new Error(`Yoga enum header missing: ${headerPath}`)
   }
-  const wrapperDir = path.join(PACKAGE_ROOT, 'src', 'wrapper')
+  const wrapperDir = WRAPPER_DIR
   await generateEnumsFile(
     headerPath,
     path.join(wrapperDir, 'YGEnums.mts'),

@@ -146,6 +146,7 @@ export async function configureCMake(config) {
   logger.success('CMake configured')
 
   return {
+    __proto__: null,
     artifactPath: sourceDir,
     smokeTest: async () => {
       if (!existsSync(cmakeBuildDir)) {

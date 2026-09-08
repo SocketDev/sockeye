@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import { getPackageManifestPath } from 'local-build-infra/lib/paths'
 /**
  * MiniLM Model Builder.
  *
  * Converts and optimizes MiniLM models for Socket CLI:
+ *
  * 1. Download models from Hugging Face
  * 2. Convert to ONNX format
  * 3. Apply INT4/INT8 mixed-precision quantization
@@ -48,7 +50,7 @@ const logger = getDefaultLogger()
 
 // Package paths for model build prerequisites
 const packageRoot = path.join(dirname, '..')
-const packageJsonPath = path.join(dirname, '..', 'package.json')
+const packageJsonPath = getPackageManifestPath(packageRoot)
 
 // Parse arguments.
 const cliArgs = new Set(process.argv.slice(2))

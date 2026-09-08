@@ -3,8 +3,9 @@
  *
  * Re-exports toolchain and emscripten helpers and provides the top-level
  * `setupBuildEnvironment` orchestrator. Implementation split across:
- * - build-env-toolchain.mts  (command detection, Python, Rust, source flags)
- * - build-env-emscripten.mts (EMSDK detection and activation)
+ *
+ * - Build-env-toolchain.mts (command detection, Python, Rust, source flags)
+ * - Build-env-emscripten.mts (EMSDK detection and activation)
  */
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'

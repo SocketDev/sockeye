@@ -128,10 +128,7 @@ export async function checkModelBuildPrerequisites(config) {
     logger.success('Pre-flight checks passed')
   }
 
-  return {
-    externalTools,
-    pythonPackages,
-  }
+  return { __proto__: null, externalTools, pythonPackages }
 }
 
 /**
@@ -162,7 +159,7 @@ export function extractPythonPackages(externalTools) {
     .map(([name]) => {
       // Handle packages that need special import names
       if (name === 'onnxruntime') {
-        return { importName: 'onnxruntime', name }
+        return { __proto__: null, importName: 'onnxruntime', name }
       }
       return name
     })

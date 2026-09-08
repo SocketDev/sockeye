@@ -191,6 +191,7 @@ export function parseBuildArgs() {
   }
 
   return {
+    __proto__: null,
     ARCH: TARGET_ARCH,
     AUTO_YES,
     BUILD_MODE,

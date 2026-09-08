@@ -214,17 +214,20 @@ export async function runRosettaBinaryTest(
  * Smoke test a binary - deterministic, no automatic fallbacks.
  *
  * Test strategy is determined explicitly:
+ *
  * - Native binaries: Execute directly (must succeed)
  * - Cross-compiled with Docker: Use Docker (must succeed)
  * - Cross-compiled with QEMU: Use QEMU (must succeed)
  * - Cross-compiled, no emulation: Static verification only.
  *
  * Functional tests (when executable):
+ *
  * 1. Version check: Verify binary executes and reports version
  * 2. JavaScript execution: Verify V8 can execute code
  * 3. Built-in modules: Verify core modules load correctly.
  *
  * Static verification (when not executable):
+ *
  * 1. Binary size check
  * 2. Architecture verification
  * 3. Binary format validation
@@ -345,7 +348,11 @@ export async function smokeTestBinary(
     // use — an idle `which qemu-aarch64-static` on a musl build, or an
     // `arch -x86_64 /usr/bin/true` on Linux, wastes a spawn for a strategy
     // selectCrossCompileSmokeTestStrategy will never pick anyway.
-    const [hasDocker, hasQemu, hasRosetta] = await Promise.all([
+    const {
+      0: hasDocker,
+      1: hasQemu,
+      2: hasRosetta,
+    } = await Promise.all([
       hostPlatform === 'linux' && isMusl
         ? isDockerAvailable()
         : Promise.resolve(false),

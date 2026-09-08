@@ -219,7 +219,7 @@ export async function getPythonRelease() {
     })
   }
 
-  return { assets, version }
+  return { __proto__: null, assets, version }
 }
 
 /**
@@ -276,7 +276,7 @@ export async function getLatestRelease(toolName) {
     }
   }
 
-  return { assets, version }
+  return { __proto__: null, assets, version }
 }
 
 /**

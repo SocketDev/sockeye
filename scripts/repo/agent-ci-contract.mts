@@ -75,17 +75,17 @@ export function parseAgentCiRequest(argv: readonly string[]): AgentCiRequest {
   if (!workflow || workflow.endsWith('.lock.yml') || repository === '') {
     throw new Error('Pass one non-gh-aw workflow with --workflow <path>')
   }
-  const flags = [
-    '--github-token',
-    '--json',
-    '--pause-on-failure',
-    '--quiet',
-  ].filter(
-    flag =>
-      values[
-        flag.slice(2) as 'github-token' | 'json' | 'pause-on-failure' | 'quiet'
-      ],
-  )
+  const flags: string[] = []
+  for (const flag of [
+    'github-token',
+    'json',
+    'pause-on-failure',
+    'quiet',
+  ] as const) {
+    if (values[flag]) {
+      flags.push(`--${flag}`)
+    }
+  }
   const variableValues = parseAgentCiVariables(values.var ?? [])
   return {
     repository,

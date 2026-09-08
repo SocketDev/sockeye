@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { getBuildTempDir } from 'local-build-infra-stable/lib/paths'
 /**
  * Update checksums from GitHub releases to release-assets.json.
  *
@@ -79,7 +80,7 @@ export async function fetchToolChecksums(tool) {
     }
 
     // Download checksums.txt to temp location.
-    const tempDir = path.join(packageRoot, 'build', 'temp')
+    const tempDir = getBuildTempDir(packageRoot)
     await safeMkdir(tempDir)
     const checksumPath = path.join(tempDir, `${tool}-checksums-${tag}.txt`)
 
@@ -99,7 +100,7 @@ export async function fetchToolChecksums(tool) {
     // Clean up temp file.
     await safeDelete(checksumPath).catch(() => {})
 
-    return { checksums, tag }
+    return { __proto__: null, checksums, tag }
   } catch (e) {
     logger.warn(`Failed to fetch checksums for ${tool}: ${errorMessage(e)}`)
     return undefined

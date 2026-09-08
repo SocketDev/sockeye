@@ -1,3 +1,4 @@
+import { getBuildTempDir } from 'local-build-infra/lib/paths'
 // max-file-lines: builder-pipeline -- single builder pipeline (fetch → patch → build → package); phases share state variables and early-return across the full sequence — splitting would fracture control flow
 /**
  * Build script for LIEF library.
@@ -128,7 +129,7 @@ export async function verifyArchiveChecksum(archivePath, assetName) {
   return verifyReleaseChecksum({
     assetName,
     filePath: archivePath,
-    tempDir: path.join(packageRoot, 'build', 'temp'),
+    tempDir: getBuildTempDir(packageRoot),
     tool: 'lief',
   })
 }

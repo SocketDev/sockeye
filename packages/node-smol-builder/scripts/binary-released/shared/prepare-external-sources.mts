@@ -1,3 +1,9 @@
+import { LSQUIC_PATCHED_DIR } from './paths.mts'
+import {
+  getSocketSourceDir,
+  REPOSITORY_GITMODULES,
+} from 'local-build-infra/lib/paths'
+import { TEMPORAL_HEADERS_DIR } from '../../paths.mts'
 /**
  * Prepare external sources for Node.js build.
  * Copies binject-core sources from monorepo packages to additions/ directory.
@@ -66,7 +72,7 @@ import {
  *   a redundant safety net.
  */
 export const EXTERNAL_PIN_FILES = [
-  path.join(PACKAGE_ROOT, '..', '..', '.gitmodules'),
+  REPOSITORY_GITMODULES,
   path.join(PACKAGE_ROOT, '..', '..', '.config', 'lockstep.json'),
   path.join(LANGUAGE_MODEL_INFRA_DIR, 'CMakeLists.txt'),
 ]
@@ -93,15 +99,15 @@ export const MONOREPO_PACKAGE_SOURCES = [
     relativeTo: path.join('lib', 'internal', 'socketsecurity', 'ai'),
   },
   {
-    from: path.join(BINJECT_DIR, 'src', 'socketsecurity', 'binject'),
+    from: getSocketSourceDir(BINJECT_DIR, 'binject'),
     relativeTo: path.join('src', 'socketsecurity', 'binject'),
   },
   {
-    from: path.join(BIN_INFRA_DIR, 'src', 'socketsecurity', 'bin-infra'),
+    from: getSocketSourceDir(BIN_INFRA_DIR, 'bin-infra'),
     relativeTo: path.join('src', 'socketsecurity', 'bin-infra'),
   },
   {
-    from: path.join(BUILD_INFRA_DIR, 'src', 'socketsecurity', 'build-infra'),
+    from: getSocketSourceDir(BUILD_INFRA_DIR, 'build-infra'),
     relativeTo: path.join('src', 'socketsecurity', 'build-infra'),
   },
   // keystore-infra: the shared OS-keychain core (extern "C" get/put/delete,
@@ -111,12 +117,7 @@ export const MONOREPO_PACKAGE_SOURCES = [
   // backend for the host OS; the same core also backs the proteus daemon and
   // package-level Node bindings.
   {
-    from: path.join(
-      KEYSTORE_INFRA_DIR,
-      'src',
-      'socketsecurity',
-      'keystore-infra',
-    ),
+    from: getSocketSourceDir(KEYSTORE_INFRA_DIR, 'keystore-infra'),
     relativeTo: path.join('src', 'socketsecurity', 'keystore-infra'),
   },
   // promise-infra: the keyed promise combinators from
@@ -125,11 +126,11 @@ export const MONOREPO_PACKAGE_SOURCES = [
   // lib/internal/socketsecurity/polyfills/promise-keyed.js and is wired by
   // patch 002.
   {
-    from: path.join(PROMISE_INFRA_DIR, 'src', 'socketsecurity', 'promise'),
+    from: getSocketSourceDir(PROMISE_INFRA_DIR, 'promise'),
     relativeTo: path.join('src', 'socketsecurity', 'promise'),
   },
   {
-    from: path.join(TEMPORAL_INFRA_DIR, 'src', 'socketsecurity', 'temporal'),
+    from: getSocketSourceDir(TEMPORAL_INFRA_DIR, 'temporal'),
     relativeTo: path.join('src', 'socketsecurity', 'temporal'),
   },
   // temporal_rs compat shim: drop-in replacement for the diplomat
@@ -139,7 +140,7 @@ export const MONOREPO_PACKAGE_SOURCES = [
   // static lib. The node.gyp source-list patch wires the include path
   // into v8.gyp.
   {
-    from: path.join(TEMPORAL_INFRA_DIR, 'include', 'temporal_rs'),
+    from: TEMPORAL_HEADERS_DIR,
     relativeTo: path.join('include', 'temporal_rs'),
   },
   // tui-infra: ANSI emit primitives + (Tier 2+) cell buffer / render
@@ -167,7 +168,7 @@ export const VENDOR_PATCH_BUNDLES = [
   {
     name: 'lsquic',
     patchesDir: path.join(LSQUIC_INFRA_DIR, 'patches', 'lsquic'),
-    targetDir: path.join(ADDITIONS_SOURCE_PATCHED_DIR, 'deps', 'lsquic'),
+    targetDir: LSQUIC_PATCHED_DIR,
   },
 ]
 
@@ -411,7 +412,7 @@ export async function syncVendoredPackages() {
   }
 
   try {
-    await spawn('node', [syncScript], {
+    await spawn(process.execPath, [syncScript], {
       cwd: PACKAGE_ROOT,
       stdio: 'inherit',
     })

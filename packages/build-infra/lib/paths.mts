@@ -10,7 +10,7 @@
 
 import path from 'node:path'
 
-import { BUILD_STAGES } from './constants.mts'
+import { BUILD_STAGES, PACKAGE_ROOT } from './constants.mts'
 
 /**
  * Get the canonical download cache directory for a package.
@@ -24,6 +24,10 @@ import { BUILD_STAGES } from './constants.mts'
  *
  * @returns {string} Absolute path to the package's download cache directory.
  */
+export function getBuildTempDir(packageRoot: string): string {
+  return path.join(packageRoot, 'build', 'temp')
+}
+
 export function getDownloadedDir(packageRoot: string): string {
   return path.join(packageRoot, 'build', 'downloaded')
 }
@@ -73,3 +77,24 @@ export function getFinalBinaryPath(
 export function getFinalOutputDir(buildRoot: string): string {
   return path.join(buildRoot, 'out', BUILD_STAGES.FINAL)
 }
+
+export const REPOSITORY_GITMODULES = path.join(
+  PACKAGE_ROOT,
+  '..',
+  '..',
+  '.gitmodules',
+)
+
+export function getPackageManifestPath(packageRoot: string): string {
+  return path.join(packageRoot, 'package.json')
+}
+export function getSocketSourceDir(packageRoot: string, name: string): string {
+  return path.join(packageRoot, 'src', 'socketsecurity', name)
+}
+
+export const KEYSTORE_PACKAGE_ROOT = path.join(
+  PACKAGE_ROOT,
+  '..',
+  'keystore-infra',
+)
+export const KEYSTORE_SOURCE_DIR = path.join(KEYSTORE_PACKAGE_ROOT, 'src')

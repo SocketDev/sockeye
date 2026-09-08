@@ -23,6 +23,7 @@ export const PACKAGE_ROOT = path.resolve(__dirname, '..')
 export function getBindingsPaths(sourceDir) {
   const bindingsDir = path.join(sourceDir, 'javascript/src')
   return {
+    __proto__: null,
     bindingsDir,
     bindingsFiles: [
       path.join(bindingsDir, 'embind.cpp'),
@@ -47,11 +48,7 @@ export function getSharedBuildPaths() {
   const sourceDir = path.join(buildDir, 'source')
   const checkpointsDir = path.join(buildDir, 'checkpoints')
 
-  return {
-    buildDir,
-    checkpointsDir,
-    sourceDir,
-  }
+  return { __proto__: null, buildDir, checkpointsDir, sourceDir }
 }
 
 /**
@@ -101,6 +98,7 @@ export function getBuildPaths(mode, platformArch) {
   const outputSyncMjsFile = path.join(outputFinalDir, 'yoga-sync.mjs')
 
   return {
+    __proto__: null,
     buildDir,
     checkpointsDir,
     cmakeDir,
@@ -129,3 +127,5 @@ export function getBuildPaths(mode, platformArch) {
 export async function getCurrentPlatform() {
   return await getCurrentPlatformArch()
 }
+
+export const WRAPPER_DIR = path.join(PACKAGE_ROOT, 'src', 'wrapper')
