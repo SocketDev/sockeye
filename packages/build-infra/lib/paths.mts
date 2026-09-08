@@ -47,6 +47,10 @@ export function getBuildTempDir(packageRoot: string): string {
   return path.join(packageRoot, 'build', 'temp')
 }
 
+export function getConsumerManifestDirectoryPath(manifestPath: string): string {
+  return path.dirname(manifestPath)
+}
+
 export function getDownloadedDir(packageRoot: string): string {
   return path.join(packageRoot, 'build', 'downloaded')
 }
@@ -93,6 +97,7 @@ export function getFinalBinaryPath(
  *
  * @returns {string} Absolute path to its final output directory.
  */
+
 export function getFinalOutputDir(buildRoot: string): string {
   return path.join(buildRoot, 'out', BUILD_STAGES.FINAL)
 }

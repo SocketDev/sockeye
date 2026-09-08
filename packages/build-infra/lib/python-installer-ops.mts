@@ -1,3 +1,12 @@
+import { getPinnedPackage } from './pinned-versions.mts'
+import {
+  getExpectedPythonVersion,
+  getPythonInstallSpec,
+} from './python-package-pin.mts'
+import {
+  getPythonInstallArgs,
+  runPythonPipRetries,
+} from './python-pip-retry.mts'
 /**
  * Python package install/verify operations.
  *
@@ -5,7 +14,6 @@
  * python-installer.mts to keep each file under the 500-line soft cap.
  */
 
-import path from 'node:path'
 import process from 'node:process'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
@@ -14,25 +22,13 @@ import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { printError } from './build-output.mts'
 import { errorMessage } from './error-utils.mts'
 import {
-  getPinnedPackage,
-  loadPythonVersions,
-  PYTHON_VERSIONS,
-} from './pinned-versions.mts'
-import {
   getPipCommand,
   getPythonCommand,
   initializeVenv,
-  isPEP668Managed,
-  setCachedPEP668,
-  venvAvailable,
   venvInitialized,
 } from './python-installer.mts'
 
 const logger = getDefaultLogger()
-
-// PEP 668 error token: substring pip prints when it rejects a system-wide
-// install on an externally-managed interpreter.
-const PEP_668_ERROR_TOKEN = 'externally-managed-environment'
 
 /**
  * Check if a Python package is installed.
@@ -123,58 +119,17 @@ export async function installPythonPackage(
     return false
   }
 
-  // Use pinned version for reproducible builds
-  // Load Python versions with consumer overrides if provided
-  let pinnedPackage
-  if (consumerPackageJsonPath) {
-    // Convert package.json path to packageRoot for loadPythonVersions
-    const packageRoot = path.dirname(consumerPackageJsonPath)
-    const {
-      PYTHON_PACKAGE_EXTRAS: consumerExtras,
-      PYTHON_VERSIONS: consumerVersions,
-    } = loadPythonVersions({ packageRoot })
-    const version = consumerVersions[packageName]
-    if (!version) {
-      throw new Error(
-        `No pinned version found for ${packageName}. Add to build-requirements.json with type: "python"`,
-      )
-    }
-    const extras = consumerExtras[packageName]
-    const packageSpec = extras
-      ? `${packageName}[${extras.join(',')}]`
-      : packageName
-    pinnedPackage = `${packageSpec}==${version}`
-  } else {
-    pinnedPackage = getPinnedPackage(packageName)
-  }
+  const pinnedPackage = getPythonInstallSpec({
+    packageName,
+    consumerPackageJsonPath,
+  })
 
   if (!quiet) {
     logger.info(`Installing Python package: ${pinnedPackage}`)
   }
 
   try {
-    const args = ['install']
-    // Only use --user when no venv is available. A venv does not need it.
-    if (user && !venvAvailable) {
-      args.push('--user')
-    }
-    if (upgrade) {
-      args.push('--upgrade')
-    }
-    // On a PEP 668 managed system (Ubuntu 24.04, etc.) where no venv
-    // is usable, pip refuses to touch the system interpreter without
-    // --break-system-packages. We only reach this branch when the
-    // venv path is unavailable (e.g. python3-venv not installed in a
-    // build sandbox container), so the interpreter is intentionally
-    // single-purpose and this opt-out is safe.
-    if (!venvAvailable && isPEP668Managed()) {
-      args.push('--break-system-packages')
-    }
-    // Prefer prebuilt binary wheels to avoid source compilation issues,
-    // especially on Python 3.14+ where many packages don't have source compatibility yet.
-    // This ensures packages like tokenizers use abi3 wheels.
-    args.push('--only-binary=:all:')
-    args.push(pinnedPackage)
+    const args = getPythonInstallArgs({ pinnedPackage, user, upgrade })
 
     // Set PyO3 forward compatibility flag for Python 3.14+ support.
     // This allows packages like tokenizers (which use Rust/PyO3) to build
@@ -194,55 +149,13 @@ export async function installPythonPackage(
       ? { env: pipEnv, stdio: 'pipe' }
       : { env: pipEnv, stdio: 'inherit' }
 
-    let result = await spawn(pip, args, spawnOptions)
-    let exitCode = result.code ?? 0
-
-    // PEP 668 runtime retry (quiet mode only): if the marker file was
-    // missing but pip still rejected with the externally-managed token,
-    // retry once with --break-system-packages added. Verbose (inherit)
-    // mode relies on the marker-file check above.
-    const stderrText =
-      typeof result.stderr === 'string'
-        ? result.stderr
-        : result.stderr instanceof Buffer
-          ? result.stderr.toString('utf8')
-          : ''
-    if (
-      exitCode !== 0 &&
-      !venvAvailable &&
-      !args.includes('--break-system-packages') &&
-      stderrText.includes(PEP_668_ERROR_TOKEN)
-    ) {
-      setCachedPEP668(true)
-      const pepArgs = [...args]
-      // Insert --break-system-packages before the trailing package
-      // specifier so pip parses it as a flag, not as a package name.
-      pepArgs.splice(pepArgs.length - 1, 0, '--break-system-packages')
-      result = await spawn(pip, pepArgs, spawnOptions)
-      exitCode = result.code ?? 0
-    }
-
-    if (exitCode !== 0 && args.includes('--only-binary=:all:')) {
-      // Binary wheel not available (e.g., Python 3.14+ without prebuilt wheels).
-      // Retry without --only-binary to allow source builds as fallback.
-      if (!quiet) {
-        logger.warn(
-          `No binary wheel for ${packageName}, retrying with source build…`,
-        )
-      }
-      const retryArgs = args.filter(a => a !== '--only-binary=:all:')
-      // Preserve --break-system-packages on the source-build retry so
-      // PEP 668 doesn't block it on Debian/Ubuntu.
-      if (
-        !venvAvailable &&
-        isPEP668Managed() &&
-        !retryArgs.includes('--break-system-packages')
-      ) {
-        retryArgs.splice(retryArgs.length - 1, 0, '--break-system-packages')
-      }
-      result = await spawn(pip, retryArgs, spawnOptions)
-      exitCode = result.code ?? 0
-    }
+    const exitCode = await runPythonPipRetries({
+      pip,
+      args,
+      spawnOptions,
+      packageName,
+      quiet,
+    })
 
     if (exitCode !== 0) {
       if (!quiet) {
@@ -291,19 +204,10 @@ export async function ensurePythonPackage(
 ) {
   const checkName = importName || packageName
 
-  // Check if package exists and get expected version
-  // Use consumer overrides if provided
-  let expectedVersion
-  if (consumerPackageJsonPath) {
-    // Convert package.json path to packageRoot for loadPythonVersions
-    const packageRoot = path.dirname(consumerPackageJsonPath)
-    const { PYTHON_VERSIONS: consumerVersions } = loadPythonVersions({
-      packageRoot,
-    })
-    expectedVersion = consumerVersions[packageName]
-  } else {
-    expectedVersion = PYTHON_VERSIONS[packageName]
-  }
+  const expectedVersion = getExpectedPythonVersion({
+    packageName,
+    consumerPackageJsonPath,
+  })
 
   // Check if already installed with correct version
   const isInstalled = await checkPythonPackage(checkName)
@@ -313,34 +217,16 @@ export async function ensurePythonPackage(
       expectedVersion,
     )
     if (!hasCorrectVersion) {
-      const pythonCmd = await getPythonCommand()
-      try {
-        const result = await spawn(
-          pythonCmd,
-          ['-c', `import ${checkName}; print(${checkName}.__version__)`],
-          { stdio: 'pipe' },
-        )
-        const installedVersion = (result.stdout || '').trim()
-        if (!quiet) {
-          logger.warn(
-            `Python package '${packageName}' version mismatch: installed ${installedVersion}, expected ${expectedVersion}`,
-          )
-        }
-        // Version mismatch - need to reinstall
-        if (autoInstall) {
-          if (!quiet) {
-            logger.substep(`Reinstalling ${packageName} with pinned version…`)
-          }
-          const installed = await installPythonPackage(packageName, {
-            consumerPackageJsonPath,
-            quiet,
-            upgrade: true,
-          })
-          return { __proto__: null, available: installed, installed }
-        }
-        return { __proto__: null, available: false, installed: false }
-      } catch {
-        // Could not check version, proceed with reinstall if autoInstall
+      const reinstallResult = await retryPythonVersionMismatch({
+        checkName,
+        packageName,
+        expectedVersion,
+        quiet,
+        autoInstall,
+        consumerPackageJsonPath,
+      })
+      if (reinstallResult) {
+        return reinstallResult
       }
     } else if (hasCorrectVersion) {
       return { __proto__: null, available: true, installed: false }
@@ -433,18 +319,7 @@ export async function ensureAllPythonPackages(
     }
   }
 
-  // Summary
-  if (!quiet && packages.length > 1) {
-    if (missing.length === 0) {
-      logger.success(
-        `All Python packages available (${packages.length}/${packages.length}${installed.length > 0 ? `, ${installed.length} newly installed` : ''})`,
-      )
-    } else {
-      logger.warn(
-        `${packages.length - missing.length}/${packages.length} Python packages available (${missing.length} missing: ${missing.join(', ')})`,
-      )
-    }
-  }
+  reportPythonPackageSummary({ packages, quiet, missing, installed })
 
   return {
     __proto__: null,
@@ -468,4 +343,60 @@ export function getPythonPackageInstructions(packages) {
   const instructions = ['Install required Python packages:']
   instructions.push(`  pip3 install --user ${pinnedPackages.join(' ')}`)
   return instructions
+}
+
+export function reportPythonPackageSummary(config) {
+  const { packages, quiet, missing, installed } = { __proto__: null, ...config }
+  // Summary
+  if (!quiet && packages.length > 1) {
+    if (missing.length === 0) {
+      logger.success(
+        `All Python packages available (${packages.length}/${packages.length}${installed.length > 0 ? `, ${installed.length} newly installed` : ''})`,
+      )
+    } else {
+      logger.warn(
+        `${packages.length - missing.length}/${packages.length} Python packages available (${missing.length} missing: ${missing.join(', ')})`,
+      )
+    }
+  }
+}
+
+export async function retryPythonVersionMismatch(config) {
+  const {
+    checkName,
+    packageName,
+    expectedVersion,
+    quiet,
+    autoInstall,
+    consumerPackageJsonPath,
+  } = { __proto__: null, ...config }
+  const pythonCmd = await getPythonCommand()
+  try {
+    const result = await spawn(
+      pythonCmd,
+      ['-c', `import ${checkName}; print(${checkName}.__version__)`],
+      { stdio: 'pipe' },
+    )
+    const installedVersion = (result.stdout || '').trim()
+    if (!quiet) {
+      logger.warn(
+        `Python package '${packageName}' version mismatch: installed ${installedVersion}, expected ${expectedVersion}`,
+      )
+    }
+    // Version mismatch - need to reinstall
+    if (autoInstall) {
+      if (!quiet) {
+        logger.substep(`Reinstalling ${packageName} with pinned version…`)
+      }
+      const installed = await installPythonPackage(packageName, {
+        consumerPackageJsonPath,
+        quiet,
+        upgrade: true,
+      })
+      return { __proto__: null, available: installed, installed }
+    }
+    return { __proto__: null, available: false, installed: false }
+  } catch {
+    // Could not check version, proceed with reinstall if autoInstall
+  }
 }
