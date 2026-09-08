@@ -92,8 +92,11 @@ export function discoverSharedTestFiles(
         // Missing or unreadable candidates retain native exclusion behavior.
       }
     }
-    if (regularFile) exactFiles.add(pattern)
-    else globExcludes.push(pattern)
+    if (regularFile) {
+      exactFiles.add(pattern)
+    } else {
+      globExcludes.push(pattern)
+    }
   }
   return [
     ...globSync(patterns, { cwd: options.cwd, exclude: globExcludes }),
