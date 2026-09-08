@@ -50,6 +50,34 @@ const CREATE_PROCESS_ENVIRONMENT_INDEX = 6
  * URL never starts a comment, and a log line that mentions `execve()` is not
  * an exec call.
  */
+function blankQuotedLiteral(
+  source: string,
+  start: number,
+  out: string[],
+): number {
+  let index = start
+  const char = source[index] as string
+  const quote = char
+  out.push(quote)
+  index += 1
+  while (index < source.length) {
+    const inner = source[index] as string
+    if (inner === '\\') {
+      out.push('  ')
+      index += 2
+      continue
+    }
+    if (inner === quote) {
+      out.push(quote)
+      index += 1
+      break
+    }
+    out.push(inner === '\n' ? '\n' : ' ')
+    index += 1
+  }
+  return index
+}
+
 function stripCommentsAndLiterals(source: string): string {
   const out: string[] = []
   let index = 0
@@ -80,24 +108,7 @@ function stripCommentsAndLiterals(source: string): string {
       continue
     }
     if (char === "'" || char === '"') {
-      const quote = char
-      out.push(quote)
-      index += 1
-      while (index < source.length) {
-        const inner = source[index] as string
-        if (inner === '\\') {
-          out.push('  ')
-          index += 2
-          continue
-        }
-        if (inner === quote) {
-          out.push(quote)
-          index += 1
-          break
-        }
-        out.push(inner === '\n' ? '\n' : ' ')
-        index += 1
-      }
+      index = blankQuotedLiteral(source, index, out)
       continue
     }
     out.push(char)

@@ -55,26 +55,14 @@ export async function cloneNodeSource(config) {
     { force: cleanBuild },
   )
 
-  // Check Node version mismatch
-  let versionMismatch = false
-  if (!needsClone) {
-    const checkpointData = await getCheckpointData(
+  const versionMismatch =
+    !needsClone &&
+    (await hasNodeSourceVersionMismatch({
       sharedBuildDir,
       packageName,
-      CHECKPOINTS.SOURCE_COPIED,
-    )
-    if (checkpointData && checkpointData.nodeVersion !== nodeVersion) {
-      logger.log(
-        `Node version changed from ${checkpointData.nodeVersion} to ${nodeVersion}, re-cloning…`,
-      )
-      versionMismatch = true
-    } else if (checkpointData && checkpointData.nodeSha !== nodeSha) {
-      logger.log(
-        `Node SHA changed from ${checkpointData.nodeSha?.slice(0, 8)} to ${nodeSha.slice(0, 8)}, re-cloning…`,
-      )
-      versionMismatch = true
-    }
-  }
+      nodeVersion,
+      nodeSha,
+    }))
 
   if (!needsClone && !versionMismatch) {
     logger.log('')
@@ -122,28 +110,7 @@ export async function cloneNodeSource(config) {
     logger.info('Copying pristine source from upstream to build directory…')
     logger.log('')
 
-    // Verify upstream commit matches expected SHA (if SHA is provided).
-    if (nodeSha) {
-      const verifyResult = await spawn(
-        'git',
-        ['-C', upstreamPath, 'rev-parse', 'HEAD'],
-        { stdio: 'pipe' },
-      )
-
-      if (verifyResult.code !== 0) {
-        throw new Error('Failed to verify upstream commit SHA')
-      }
-
-      const upstreamSha = verifyResult.stdout.trim()
-      if (upstreamSha !== nodeSha) {
-        throw new Error(
-          `Upstream SHA mismatch: expected ${nodeSha}, got ${upstreamSha}. ` +
-            `Please update the upstream to the correct commit: cd ${upstreamPath} && git checkout ${nodeSha}`,
-        )
-      }
-
-      logger.success(`Upstream SHA verified (${nodeSha.slice(0, 8)})`)
-    }
+    await verifyNodeSourceCommit(upstreamPath, nodeSha)
 
     // Copy upstream to shared source directory.
     await safeMkdir(path.dirname(sharedSourceDir))
@@ -215,5 +182,58 @@ export async function cloneNodeSource(config) {
       },
     )
     logger.log('')
+  }
+}
+
+export async function hasNodeSourceVersionMismatch(config: {
+  sharedBuildDir: string
+  packageName: string
+  nodeVersion: string
+  nodeSha: string
+}): Promise<boolean> {
+  const { sharedBuildDir, packageName, nodeVersion, nodeSha } = config
+  const checkpointData = await getCheckpointData(
+    sharedBuildDir,
+    packageName,
+    CHECKPOINTS.SOURCE_COPIED,
+  )
+  if (checkpointData && checkpointData.nodeVersion !== nodeVersion) {
+    logger.log(
+      `Node version changed from ${checkpointData.nodeVersion} to ${nodeVersion}, re-cloning…`,
+    )
+    return true
+  } else if (checkpointData && checkpointData.nodeSha !== nodeSha) {
+    logger.log(
+      `Node SHA changed from ${checkpointData.nodeSha?.slice(0, 8)} to ${nodeSha.slice(0, 8)}, re-cloning…`,
+    )
+    return true
+  }
+  return false
+}
+
+export async function verifyNodeSourceCommit(
+  upstreamPath: string,
+  nodeSha?: string | undefined,
+): Promise<void> {
+  if (nodeSha) {
+    const verifyResult = await spawn(
+      'git',
+      ['-C', upstreamPath, 'rev-parse', 'HEAD'],
+      { stdio: 'pipe' },
+    )
+
+    if (verifyResult.code !== 0) {
+      throw new Error('Failed to verify upstream commit SHA')
+    }
+
+    const upstreamSha = verifyResult.stdout.trim()
+    if (upstreamSha !== nodeSha) {
+      throw new Error(
+        `Upstream SHA mismatch: expected ${nodeSha}, got ${upstreamSha}. ` +
+          `Please update the upstream to the correct commit: cd ${upstreamPath} && git checkout ${nodeSha}`,
+      )
+    }
+
+    logger.success(`Upstream SHA verified (${nodeSha.slice(0, 8)})`)
   }
 }

@@ -36,6 +36,24 @@ function getSpinner() {
   return cachedSpinner || (cachedSpinner = getDefaultSpinner())
 }
 
+export async function addRootBuildArgument(
+  buildArgs: string[],
+  modeSourceDir: string,
+): Promise<void> {
+  if (process.getuid && process.getuid() === 0) {
+    const buildPy = path.join(modeSourceDir, 'tools', 'ci_build', 'build.py')
+    const buildPyArgsResult = await spawn('python3', [buildPy, '--help'], {
+      cwd: modeSourceDir,
+      stdio: 'pipe',
+    }).catch(() => undefined)
+    const helpText =
+      (buildPyArgsResult?.stdout || '') + (buildPyArgsResult?.stderr || '')
+    if (helpText.includes('--allow_running_as_root')) {
+      buildArgs.push('--allow_running_as_root')
+    }
+  }
+}
+
 /**
  * Build ONNX Runtime with Emscripten.
  *
@@ -151,22 +169,7 @@ export async function compileWasm(config) {
     'extended',
   ]
 
-  // Add --allow_running_as_root only when necessary AND supported.
-  // Upstream removed the flag in v1.23 then restored it in v1.24, so we
-  // probe build.py (the actual argparse target — build.sh is just a
-  // shell wrapper) and only add the flag if argparse knows about it.
-  if (process.getuid && process.getuid() === 0) {
-    const buildPy = path.join(modeSourceDir, 'tools', 'ci_build', 'build.py')
-    const buildPyArgsResult = await spawn('python3', [buildPy, '--help'], {
-      cwd: modeSourceDir,
-      stdio: 'pipe',
-    }).catch(() => undefined)
-    const helpText =
-      (buildPyArgsResult?.stdout || '') + (buildPyArgsResult?.stderr || '')
-    if (helpText.includes('--allow_running_as_root')) {
-      buildArgs.push('--allow_running_as_root')
-    }
-  }
+  await addRootBuildArgument(buildArgs, modeSourceDir)
 
   // Add optimization flags based on build mode
   if (buildMode === 'prod') {

@@ -29,7 +29,7 @@ import {
 } from 'local-build-infra/lib/platform-mappings'
 import { runCommand } from 'local-build-infra/lib/script-runner'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
@@ -93,7 +93,7 @@ export async function buildBinSuitePackage(config: BuildBinSuitePackageConfig) {
     const buildDir = getPlatformBuildDir(packageDir, platformArch)
 
     // Determine binary name and path
-    const binaryName = WIN32 ? `${packageName}.exe` : packageName
+    const binaryName = isWin32() ? `${packageName}.exe` : packageName
     const binaryPath = path.join(
       buildDir,
       'out',
@@ -124,25 +124,15 @@ export async function buildBinSuitePackage(config: BuildBinSuitePackageConfig) {
       },
     ))
 
-    // Basic checkpoint validation
-    if (checkpointExists && !validateCheckpointWithBinary) {
-      logger.success(`${packageName} already built (checkpoint exists)`)
+    if (
+      hasReusableBinCheckpoint({
+        binaryPath,
+        checkpointExists,
+        packageName,
+        validateCheckpointWithBinary,
+      })
+    ) {
       return
-    }
-
-    // Enhanced checkpoint validation: both checkpoint file AND binary must exist
-    if (validateCheckpointWithBinary) {
-      if (checkpointExists && existsSync(binaryPath)) {
-        logger.success(`${packageName} already built (checkpoint exists)`)
-        return
-      }
-
-      // If checkpoint exists but binary is missing, invalidate checkpoint
-      if (checkpointExists && !existsSync(binaryPath)) {
-        logger.info(
-          'Checkpoint exists but binary missing, rebuilding from scratch',
-        )
-      }
     }
 
     logger.info(`Building ${packageName}...`)
@@ -187,7 +177,7 @@ export async function buildBinSuitePackage(config: BuildBinSuitePackageConfig) {
       const result = await spawn('make', args, {
         cwd: packageDir,
         env: makeEnv,
-        shell: WIN32,
+        shell: isWin32(),
         stdio: 'inherit',
       })
       if (result.code !== 0) {
@@ -286,6 +276,42 @@ export async function defaultSmokeTest(
   logger.info('Binary validated')
 }
 
+export function hasReusableBinCheckpoint(config: {
+  binaryPath: string
+  checkpointExists: boolean
+  packageName: string
+  validateCheckpointWithBinary: boolean
+}): boolean {
+  const {
+    binaryPath,
+    checkpointExists,
+    packageName,
+    validateCheckpointWithBinary,
+  } = config
+  // Basic checkpoint validation
+  if (checkpointExists && !validateCheckpointWithBinary) {
+    logger.success(`${packageName} already built (checkpoint exists)`)
+    return true
+  }
+
+  // Enhanced checkpoint validation: both checkpoint file AND binary must exist
+  if (validateCheckpointWithBinary) {
+    if (checkpointExists && existsSync(binaryPath)) {
+      logger.success(`${packageName} already built (checkpoint exists)`)
+      return true
+    }
+
+    // If checkpoint exists but binary is missing, invalidate checkpoint
+    if (checkpointExists && !existsSync(binaryPath)) {
+      logger.info(
+        'Checkpoint exists but binary missing, rebuilding from scratch',
+      )
+    }
+  }
+
+  return false
+}
+
 /**
  * Check whether we are cross-compiling, i.e. the target arch differs from the
  * host arch. When cross-compiling, we can't run the binary for smoke tests.
@@ -313,7 +339,7 @@ export function selectMakefile() {
   if (process.platform === 'linux') {
     return 'Makefile.linux'
   }
-  if (WIN32) {
+  if (isWin32()) {
     return 'Makefile.win'
   }
   return 'Makefile.macos'

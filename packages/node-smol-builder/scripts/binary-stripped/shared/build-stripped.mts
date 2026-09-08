@@ -91,9 +91,6 @@ export async function buildStripped(config, buildOptions = {}) {
     }
   }
 
-  const IS_MACOS = platform === 'darwin'
-  const IS_WINDOWS = platform === 'win32'
-  const IS_LINUX = platform === 'linux'
   const IS_MUSL = libc === 'musl'
 
   // Clean up source/out/ to free disk space (~4-6GB)
@@ -141,6 +138,138 @@ export async function buildStripped(config, buildOptions = {}) {
   logger.log('Removing debug symbols and unnecessary sections…')
   logger.log('')
 
+  await stripPlatformBinary(outputStrippedBinary, { arch, platform })
+
+  const sizeAfterStrip = await getFileSize(outputStrippedBinary)
+  logger.log(`Size after stripping: ${sizeAfterStrip}`)
+
+  reportStrippedBinarySize(sizeAfterStrip)
+
+  logger.log('')
+
+  // Smoke test stripped binary (signing happens automatically inside smoke test for macOS).
+  // Will automatically fall back to static verification if cross-compiled.
+  logger.step('Testing Stripped Binary')
+  const smokeTestPassed = await smokeTestBinary(
+    outputStrippedBinary,
+    isCrossCompiling ? { arch, libc } : { libc },
+  )
+
+  if (!smokeTestPassed) {
+    printError(
+      'Binary Corrupted After Stripping',
+      'Binary failed smoke test after stripping',
+      [
+        'Strip command may have corrupted the binary',
+        'Try rebuilding: pnpm build --clean',
+        'Report this issue if it persists',
+      ],
+    )
+    throw new Error('Binary corrupted after stripping')
+  }
+
+  logger.success('Binary functional after stripping')
+  logger.log('')
+
+  // Clean Stripped directory before checkpoint to ensure only the stripped binary is archived
+  // This removes any leftover files from previous stages (e.g., release binary)
+  if (!skipCheckpoint) {
+    logger.substep('Cleaning checkpoint directory…')
+    const strippedDirFiles = await fs.readdir(outputStrippedNodeDir)
+    const strippedBinaryName = path.basename(outputStrippedBinary)
+    for (let i = 0, { length } = strippedDirFiles; i < length; i += 1) {
+      const file = strippedDirFiles[i]
+      if (file !== strippedBinaryName) {
+        const filePath = path.join(outputStrippedNodeDir, file)
+        await safeDelete(filePath)
+        logger.substep(`Removed: ${file}`)
+      }
+    }
+    logger.logNewline()
+
+    // Create checkpoint with smoke test.
+    const strippedBinarySize = await getFileSize(outputStrippedBinary)
+    await createCheckpoint(
+      buildDir,
+      CHECKPOINTS.BINARY_STRIPPED,
+      async () => {
+        // Use smokeTestBinary with automatic fallback for cross-compiled builds
+        const validated = await smokeTestBinary(outputStrippedBinary, {
+          arch: isCrossCompiling ? arch : undefined,
+          libc: IS_MUSL ? 'musl' : 'glibc',
+        })
+        if (!validated) {
+          throw new Error('Stripped binary validation failed')
+        }
+        logger.substep('Stripped binary validated')
+      },
+      {
+        packageName,
+        nodeVersion,
+        binarySize: strippedBinarySize,
+        binaryPath: path.relative(buildDir, outputStrippedBinary),
+        artifactPath: outputStrippedNodeDir,
+        // Cache depends on same sources as release
+        sourcePaths: buildSourcePaths,
+        packageRoot: PACKAGE_ROOT,
+        platform,
+        arch,
+        libc,
+        buildMode: isProdBuild ? 'prod' : 'dev',
+        withLief,
+      },
+    )
+    logger.log('')
+  }
+}
+
+/**
+ * Check if a command exists in PATH.
+ */
+export function commandExists(cmd) {
+  return Boolean(whichSync(cmd, { nothrow: true }))
+}
+
+export function reportStrippedBinarySize(sizeAfterStrip: string): void {
+  // Parse and check size.
+  const sizeMatch = sizeAfterStrip.match(/^(\d+(?:\.\d+)?)([KMG])/)
+  if (sizeMatch) {
+    const size = Number.parseFloat(sizeMatch[1])
+    const unit = sizeMatch[2]
+
+    if (unit === 'M' && size >= 20 && size <= 30) {
+      logger.log(
+        // Emoji is wrapped in colors.green() decorator, which composes color
+        // with the marker, before being embedded in a multi-line summary
+        // string; logger.success() would drop the color.
+        // oxlint-disable-next-line socket/no-status-emoji -- see above
+        `${colors.green('✓')} Binary size is optimal (20-30MB with V8 Lite Mode)`,
+      )
+    } else if (unit === 'M' && size < 20) {
+      logger.warn(
+        `Binary smaller than expected: ${sizeAfterStrip} (expected ~23-27MB)`,
+      )
+      logger.substep('Some features may be missing')
+      logger.substep('Verify configure flags were applied correctly')
+    } else if (unit === 'M' && size > 35) {
+      logger.warn(
+        `Binary larger than expected: ${sizeAfterStrip} (expected ~23-27MB)`,
+      )
+      logger.substep('Debug symbols may not be fully stripped')
+      logger.substep('Configure flags may not be applied')
+      logger.substep('Binary will still work but will be larger')
+    }
+  }
+}
+
+export async function stripPlatformBinary(
+  outputStrippedBinary: string,
+  config: { arch: string; platform: string },
+): Promise<void> {
+  const { arch, platform } = config
+  const IS_MACOS = platform === 'darwin'
+  const IS_WINDOWS = platform === 'win32'
+  const IS_LINUX = platform === 'linux'
   // Platform-specific stripping with enhanced optimization:
   // - macOS: Multi-phase (strip → llvm-strip if available)
   // - Linux: Multi-phase (strip --strip-debug → objcopy section removal → sstrip if available)
@@ -253,121 +382,4 @@ export async function buildStripped(config, buildOptions = {}) {
       `Unsupported platform for binary stripping: ${platform}. Supported platforms: darwin, linux, win32`,
     )
   }
-
-  const sizeAfterStrip = await getFileSize(outputStrippedBinary)
-  logger.log(`Size after stripping: ${sizeAfterStrip}`)
-
-  // Parse and check size.
-  const sizeMatch = sizeAfterStrip.match(/^(\d+(?:\.\d+)?)([KMG])/)
-  if (sizeMatch) {
-    const size = Number.parseFloat(sizeMatch[1])
-    const unit = sizeMatch[2]
-
-    if (unit === 'M' && size >= 20 && size <= 30) {
-      logger.log(
-        // Emoji is wrapped in colors.green() decorator, which composes color
-        // with the marker, before being embedded in a multi-line summary
-        // string; logger.success() would drop the color.
-        // oxlint-disable-next-line socket/no-status-emoji -- see above
-        `${colors.green('✓')} Binary size is optimal (20-30MB with V8 Lite Mode)`,
-      )
-    } else if (unit === 'M' && size < 20) {
-      logger.warn(
-        `Binary smaller than expected: ${sizeAfterStrip} (expected ~23-27MB)`,
-      )
-      logger.substep('Some features may be missing')
-      logger.substep('Verify configure flags were applied correctly')
-    } else if (unit === 'M' && size > 35) {
-      logger.warn(
-        `Binary larger than expected: ${sizeAfterStrip} (expected ~23-27MB)`,
-      )
-      logger.substep('Debug symbols may not be fully stripped')
-      logger.substep('Configure flags may not be applied')
-      logger.substep('Binary will still work but will be larger')
-    }
-  }
-
-  logger.log('')
-
-  // Smoke test stripped binary (signing happens automatically inside smoke test for macOS).
-  // Will automatically fall back to static verification if cross-compiled.
-  logger.step('Testing Stripped Binary')
-  const smokeTestPassed = await smokeTestBinary(
-    outputStrippedBinary,
-    isCrossCompiling ? { arch, libc } : { libc },
-  )
-
-  if (!smokeTestPassed) {
-    printError(
-      'Binary Corrupted After Stripping',
-      'Binary failed smoke test after stripping',
-      [
-        'Strip command may have corrupted the binary',
-        'Try rebuilding: pnpm build --clean',
-        'Report this issue if it persists',
-      ],
-    )
-    throw new Error('Binary corrupted after stripping')
-  }
-
-  logger.success('Binary functional after stripping')
-  logger.log('')
-
-  // Clean Stripped directory before checkpoint to ensure only the stripped binary is archived
-  // This removes any leftover files from previous stages (e.g., release binary)
-  if (!skipCheckpoint) {
-    logger.substep('Cleaning checkpoint directory…')
-    const strippedDirFiles = await fs.readdir(outputStrippedNodeDir)
-    const strippedBinaryName = path.basename(outputStrippedBinary)
-    for (let i = 0, { length } = strippedDirFiles; i < length; i += 1) {
-      const file = strippedDirFiles[i]
-      if (file !== strippedBinaryName) {
-        const filePath = path.join(outputStrippedNodeDir, file)
-        await safeDelete(filePath)
-        logger.substep(`Removed: ${file}`)
-      }
-    }
-    logger.logNewline()
-
-    // Create checkpoint with smoke test.
-    const strippedBinarySize = await getFileSize(outputStrippedBinary)
-    await createCheckpoint(
-      buildDir,
-      CHECKPOINTS.BINARY_STRIPPED,
-      async () => {
-        // Use smokeTestBinary with automatic fallback for cross-compiled builds
-        const validated = await smokeTestBinary(outputStrippedBinary, {
-          arch: isCrossCompiling ? arch : undefined,
-          libc: IS_MUSL ? 'musl' : 'glibc',
-        })
-        if (!validated) {
-          throw new Error('Stripped binary validation failed')
-        }
-        logger.substep('Stripped binary validated')
-      },
-      {
-        packageName,
-        nodeVersion,
-        binarySize: strippedBinarySize,
-        binaryPath: path.relative(buildDir, outputStrippedBinary),
-        artifactPath: outputStrippedNodeDir,
-        // Cache depends on same sources as release
-        sourcePaths: buildSourcePaths,
-        packageRoot: PACKAGE_ROOT,
-        platform,
-        arch,
-        libc,
-        buildMode: isProdBuild ? 'prod' : 'dev',
-        withLief,
-      },
-    )
-    logger.log('')
-  }
-}
-
-/**
- * Check if a command exists in PATH.
- */
-export function commandExists(cmd) {
-  return Boolean(whichSync(cmd, { nothrow: true }))
 }

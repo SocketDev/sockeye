@@ -29,49 +29,12 @@ export {
   RESOURCE_SMOL_VFS_CONFIG as SMOL_VFS_CONFIG,
 }
 
-/**
- * Runs binject from the binject package with proper context. Binary path is
- * made absolute, resource path stays relative.
- *
- * @param {string} binaryPath - Path to the binary to inject into; may be a
- *   compressed stub.
- * @param {string} resourceName - Resource name: 'NODE_SEA_BLOB',
- *   RESOURCE_SMOL_VFS_BLOB, or 'BOTH'.
- * @param {string | object} resourcePath - Path to the resource file, or { sea:
- *   string, vfs: string } for dual injection.
- * @param {object} options - Additional options.
- * @param {string} options.testDir - Test directory for file resolution.
- * @param {string} [options.vfsMode] - VFS mode: 'on-disk', 'in-memory', or
- *   'compat'. Defaults to 'on-disk'.
- *
- * @returns {Promise<object>} Spawn result.
- *   Full discussion: docs/agents.md/repo/release-build-pipeline.md.
- */
-export async function runBinject(
-  binaryPath,
+export function getBinjectResourceArguments(
   resourceName,
   resourcePath,
-  options,
+  config,
 ) {
-  const { testDir, vfsMode = 'on-disk' } = options
-
-  // Convert binary path to absolute
-  const absoluteBinaryPath = path.isAbsolute(binaryPath)
-    ? binaryPath
-    : path.join(testDir, binaryPath)
-
-  // Path to binject binary
-  const binjectName = process.platform === 'win32' ? 'binject.exe' : 'binject'
-  const binjectPath = path.join(
-    BINJECT_DIR,
-    'build',
-    BUILD_MODE,
-    PLATFORM_ARCH,
-    'out',
-    BUILD_STAGES.FINAL,
-    binjectName,
-  )
-
+  const { absoluteBinaryPath, testDir, vfsMode } = config
   // Build args based on resource type
   const args = ['inject', '-e', absoluteBinaryPath, '-o', absoluteBinaryPath]
 
@@ -123,6 +86,58 @@ export async function runBinject(
       )
     }
   }
+
+  return args
+}
+
+/**
+ * Runs binject from the binject package with proper context. Binary path is
+ * made absolute, resource path stays relative.
+ *
+ * @param {string} binaryPath - Path to the binary to inject into; may be a
+ *   compressed stub.
+ * @param {string} resourceName - Resource name: 'NODE_SEA_BLOB',
+ *   RESOURCE_SMOL_VFS_BLOB, or 'BOTH'.
+ * @param {string | object} resourcePath - Path to the resource file, or { sea:
+ *   string, vfs: string } for dual injection.
+ * @param {object} options - Additional options.
+ * @param {string} options.testDir - Test directory for file resolution.
+ * @param {string} [options.vfsMode] - VFS mode: 'on-disk', 'in-memory', or
+ *   'compat'. Defaults to 'on-disk'.
+ *
+ * @returns {Promise<object>} Spawn result.
+ *   Full discussion: docs/agents.md/repo/release-build-pipeline.md.
+ */
+export async function runBinject(
+  binaryPath,
+  resourceName,
+  resourcePath,
+  options,
+) {
+  const { testDir, vfsMode = 'on-disk' } = options
+
+  // Convert binary path to absolute
+  const absoluteBinaryPath = path.isAbsolute(binaryPath)
+    ? binaryPath
+    : path.join(testDir, binaryPath)
+
+  // Path to binject binary
+  const binjectName = process.platform === 'win32' ? 'binject.exe' : 'binject'
+  const binjectPath = path.join(
+    BINJECT_DIR,
+    'build',
+    BUILD_MODE,
+    PLATFORM_ARCH,
+    'out',
+    BUILD_STAGES.FINAL,
+    binjectName,
+  )
+
+  const args = getBinjectResourceArguments(resourceName, resourcePath, {
+    absoluteBinaryPath,
+    testDir,
+    vfsMode,
+  })
 
   // Build binject arguments using new CLI format:
   // binject inject -e <executable> -o <output> [--sea <path>] [--vfs <path>]
