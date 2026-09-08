@@ -216,17 +216,7 @@ export async function setupDockerBuilds(options = {}) {
     }
   }
 
-  // 5. Report summary
-  const successful = Object.values(results).filter(Boolean).length
-  const total = targets.filter(t => LINUX_TARGETS.includes(t)).length
-
-  if (successful === total) {
-    printSuccess(`All ${total} builder images ready`)
-    return { __proto__: null, ok: true, results }
-  }
-
-  printError(`${successful}/${total} builder images ready`)
-  return { __proto__: null, ok: false, results }
+  return summarizeDockerBuilds({ results, targets })
 }
 
 /**
@@ -263,4 +253,22 @@ export async function setupQemuEmulation() {
     printError(`QEMU setup error: ${errorMessage(e)}`)
     return false
   }
+}
+
+export function summarizeDockerBuilds(config: {
+  results: Record<string, boolean>
+  targets: string[]
+}): { ok: boolean; results: Record<string, boolean> } {
+  const { results, targets } = { __proto__: null, ...config } as typeof config
+  // 5. Report summary
+  const successful = Object.values(results).filter(Boolean).length
+  const total = targets.filter(t => LINUX_TARGETS.includes(t)).length
+
+  if (successful === total) {
+    printSuccess(`All ${total} builder images ready`)
+    return { __proto__: null, ok: true, results }
+  }
+
+  printError(`${successful}/${total} builder images ready`)
+  return { __proto__: null, ok: false, results }
 }

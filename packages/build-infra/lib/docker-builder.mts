@@ -302,21 +302,7 @@ export function getDockerPlatform(target) {
   return 'linux/amd64'
 }
 
-/**
- * Run a command inside a Docker container.
- *
- * @param {object} options - Run options.
- * @param {string} options.image - Docker image to use.
- * @param {string[]} options.command - Command to run.
- * @param {string} options.workdir - Working directory inside container.
- * @param {Record<string, string>} options.env - Environment variables.
- * @param {string[]} options.volumes - Volume mounts.
- * @param {string} options.platform - Docker platform (e.g., 'linux/amd64')
- * @param {boolean} options.interactive - Run interactively.
- *
- * @returns {Promise<{ code: number; stdout: string; stderr: string }>}
- */
-export async function runInDocker(config) {
+export function getDockerRunArgs(config) {
   const {
     command,
     env = {},
@@ -359,17 +345,33 @@ export async function runInDocker(config) {
   args.push(image)
   args.push(...command)
 
+  return args
+}
+
+/**
+ * Run a command inside a Docker container.
+ *
+ * @param {object} config - Run config.
+ * @param {string} config.image - Docker image to use.
+ * @param {string[]} config.command - Command to run.
+ * @param {string} config.workdir - Working directory inside container.
+ * @param {Record<string, string>} config.env - Environment variables.
+ * @param {string[]} config.volumes - Volume mounts.
+ * @param {string} config.platform - Docker platform (e.g., 'linux/amd64')
+ * @param {boolean} config.interactive - Run interactively.
+ *
+ * @returns {Promise<{ code: number; stdout: string; stderr: string }>}
+ */
+export async function runInDocker(config) {
+  const { interactive = false } = {
+    __proto__: null,
+    ...config,
+  } as typeof config
+  const args = getDockerRunArgs(config)
+
   // For interactive mode, use inherit directly
   if (interactive) {
-    try {
-      const result = await spawn('docker', args, {
-        shell: WIN32,
-        stdio: 'inherit',
-      })
-      return { __proto__: null, code: result.code ?? 0, stderr: '', stdout: '' }
-    } catch (e) {
-      return { __proto__: null, code: e.code ?? 1, stderr: '', stdout: '' }
-    }
+    return runInteractiveDocker(args)
   }
 
   // For non-interactive mode, stream output while capturing it
@@ -402,6 +404,18 @@ export async function runInDocker(config) {
       stderr: e.stderr?.toString() ?? '',
       stdout: e.stdout?.toString() ?? '',
     }
+  }
+}
+
+export async function runInteractiveDocker(args: string[]) {
+  try {
+    const result = await spawn('docker', args, {
+      shell: WIN32,
+      stdio: 'inherit',
+    })
+    return { __proto__: null, code: result.code ?? 0, stderr: '', stdout: '' }
+  } catch (e) {
+    return { __proto__: null, code: e.code ?? 1, stderr: '', stdout: '' }
   }
 }
 
