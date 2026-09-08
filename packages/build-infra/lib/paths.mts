@@ -131,6 +131,29 @@ export const REPOSITORY_GITMODULES = path.join(
 export function getPackageManifestPath(packageRoot: string): string {
   return path.join(packageRoot, 'package.json')
 }
+export function getPrebuiltDownloadDir(config: {
+  packageRoot: string
+  name: string
+  platformArch: string
+}): string {
+  const { packageRoot, name, platformArch } = {
+    __proto__: null,
+    ...config,
+  } as typeof config
+  return path.join(getDownloadedDir(packageRoot), name, platformArch)
+}
+
+export function getPrebuiltMemberPath(
+  extractDir: string,
+  member: string,
+): string {
+  return path.join(extractDir, member)
+}
+
+export function getPrebuiltVersionPath(extractDir: string): string {
+  return path.join(extractDir, '.version')
+}
+
 export function getPythonDefaultVenvPath(homeDir: string): string {
   return path.join(homeDir, '.socket-btm-venv')
 }

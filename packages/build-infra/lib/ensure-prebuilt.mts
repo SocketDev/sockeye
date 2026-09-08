@@ -1,4 +1,3 @@
-import { getBuildTempDir } from 'local-build-infra/lib/paths'
 /**
  * Shared factory for builder `ensureX` helpers.
  *
@@ -22,7 +21,7 @@ import { getBuildTempDir } from 'local-build-infra/lib/paths'
  * factory does NOT bake them in.
  */
 
-import { existsSync, promises as fs, readdirSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 import { errorMessage } from './error-utils.mts'
@@ -32,11 +31,16 @@ import { errorMessage } from './error-utils.mts'
 // fires at module-load time. Lazy-loading defers the resolution to
 // the actual error-handling path, where a failure to load it
 // degrades gracefully (the transient-error hint is omitted).
-import { getDownloadedDir } from './paths.mts'
-// The canonical copy is fleet-owned under scripts/fleet/build-infra/. A
-// member-local copy gets pruned by the next cascade, which is exactly what
-// happened to the one recovered here earlier.
-import { verifyReleaseChecksum } from '../../../scripts/fleet/build-infra/lib/release-checksums/core.mts'
+import {
+  getBuildTempDir,
+  getPrebuiltDownloadDir,
+  getPrebuiltMemberPath,
+  getPrebuiltVersionPath,
+} from './paths.mts'
+import {
+  discardPrebuiltArchive,
+  verifyPrebuiltArchive,
+} from './prebuilt-archive-validation.mts'
 import {
   detectLibc,
   downloadSocketBtmRelease,
@@ -162,9 +166,11 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
     const missing = requiredFiles
       .filter(requirement => {
         if (Array.isArray(requirement)) {
-          return !requirement.some(alt => existsSync(path.join(dir, alt)))
+          return !requirement.some(alt =>
+            existsSync(getPrebuiltMemberPath(dir, alt)),
+          )
         }
-        return !existsSync(path.join(dir, requirement))
+        return !existsSync(getPrebuiltMemberPath(dir, requirement))
       })
       .map(req => (Array.isArray(req) ? `{${req.join(',')}}` : req))
     return { valid: missing.length === 0, missing }
@@ -175,7 +181,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
   }
 
   function getDownloadedDirForArch(platformArch: string): string {
-    return path.join(getDownloadedDir(packageRoot), name, platformArch)
+    return getPrebuiltDownloadDir({ packageRoot, name, platformArch })
   }
 
   function exists(platformArch?: string | undefined): boolean {
@@ -200,60 +206,20 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
         downloadDir: targetDir,
       })
       const extractDir = path.dirname(downloadedArchive)
+      const versionFile = getPrebuiltVersionPath(extractDir)
       if (!existsSync(downloadedArchive)) {
         throw new Error(
           `Downloaded archive not found at expected path: ${downloadedArchive}`,
         )
       }
 
-      // Verify tarball integrity via gzip magic bytes — catches
-      // truncated downloads before the checksum stage.
-      const fd = await fs.open(downloadedArchive, 'r')
-      const gzipMagic = Buffer.alloc(2)
-      try {
-        await fd.read(gzipMagic, 0, 2, 0)
-      } finally {
-        await fd.close()
-      }
-      if (gzipMagic[0] !== 0x1f || gzipMagic[1] !== 0x8b) {
-        const versionFile = path.join(extractDir, '.version')
-        await safeDelete(downloadedArchive)
-        if (existsSync(versionFile)) {
-          await safeDelete(versionFile)
-        }
-        throw new Error(
-          'Downloaded archive is not a valid gzip file (missing magic bytes). ' +
-            `File may be corrupted or truncated. Deleted ${downloadedArchive} to force re-download.`,
-        )
-      }
-
-      // Verify SHA256 checksum — catches corrupted-but-magic-byte-valid
-      // downloads.
-      logger.info('Verifying archive checksum…')
-      const checksumResult = await verifyReleaseChecksum({
+      await verifyPrebuiltArchive({
+        downloadedArchive,
+        versionFile,
         assetName,
-        filePath: downloadedArchive,
         tempDir: getBuildTempDir(packageRoot),
         tool: name,
       })
-      if (!checksumResult.valid) {
-        const versionFile = path.join(extractDir, '.version')
-        await safeDelete(downloadedArchive)
-        if (existsSync(versionFile)) {
-          await safeDelete(versionFile)
-        }
-        throw new Error(
-          'Archive checksum mismatch - file is corrupted.\n' +
-            `  Expected: ${checksumResult.expected}\n` +
-            `  Actual:   ${checksumResult.actual}\n` +
-            `Deleted ${downloadedArchive} to force re-download.`,
-        )
-      }
-      if (checksumResult.actual) {
-        logger.info(
-          `Checksum verified: ${checksumResult.actual.slice(0, 16)}...${checksumResult.actual.slice(-8)}`,
-        )
-      }
 
       // Clean stale extraction (cached Docker layers / partial extracts).
       const extractDirContents = readdirSync(extractDir)
@@ -261,7 +227,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
       for (let i = 0, { length } = extractDirContents; i < length; i += 1) {
         const item = extractDirContents[i]
         if (item !== archiveBasename && item !== '.version') {
-          const itemPath = path.join(extractDir, item)
+          const itemPath = getPrebuiltMemberPath(extractDir, item)
           await safeDelete(itemPath, { maxRetries: 3, retryDelay: 100 })
         }
       }
@@ -273,11 +239,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
           validate: true,
         })
       } catch (e) {
-        const versionFile = path.join(extractDir, '.version')
-        await safeDelete(downloadedArchive)
-        if (existsSync(versionFile)) {
-          await safeDelete(versionFile)
-        }
+        await discardPrebuiltArchive({ downloadedArchive, versionFile })
         throw new Error(
           `Failed to extract ${name} archive from ${downloadedArchive}: ${errorMessage(e)}. ` +
             'Deleted corrupted archive to allow re-download on next run.',
@@ -290,11 +252,7 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
       // re-download next run.
       const verifyResult = verifyAt(extractDir)
       if (!verifyResult.valid) {
-        const versionFile = path.join(extractDir, '.version')
-        await safeDelete(downloadedArchive)
-        if (existsSync(versionFile)) {
-          await safeDelete(versionFile)
-        }
+        await discardPrebuiltArchive({ downloadedArchive, versionFile })
         throw new Error(
           `${name} required files missing after extraction in ${extractDir}: ${verifyResult.missing.join(', ')}. ` +
             'Deleted cached files to allow re-download on retry.',
