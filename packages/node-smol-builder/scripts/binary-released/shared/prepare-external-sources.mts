@@ -1,4 +1,5 @@
 import { LSQUIC_PATCHED_DIR } from './paths.mts'
+import { LOCKSTEP_MANIFEST_PATH } from '../../../../../scripts/repo/paths.mts'
 import {
   getSocketSourceDir,
   REPOSITORY_GITMODULES,
@@ -68,12 +69,12 @@ import {
  * - .gitmodules — every submodule SHA bump rewrites at least the version comment
  *   line, so hashing this file catches Dawn, md4c, tree-sitter, libqrencode,
  *   etc. bumps in one shot.
- * - .config/lockstep.json — tracks pinned_sha for every upstream; hashing this is
- *   a redundant safety net.
+ * - .config/repo/lockstep.json — tracks pinned_sha for every upstream; hashing
+ *   this is a redundant safety net.
  */
 export const EXTERNAL_PIN_FILES = [
   REPOSITORY_GITMODULES,
-  path.join(PACKAGE_ROOT, '..', '..', '.config', 'lockstep.json'),
+  LOCKSTEP_MANIFEST_PATH,
   path.join(LANGUAGE_MODEL_INFRA_DIR, 'CMakeLists.txt'),
 ]
 

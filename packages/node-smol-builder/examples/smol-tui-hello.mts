@@ -74,7 +74,7 @@ export function drawFrame(rendererId: number): void {
   )
 
   // Title bar (manual since rendererDrawBox doesn't take title yet —
-  // see the tui-infra-renderables row in .config/lockstep.json
+  // see the tui-infra-renderables row in .config/repo/lockstep.json
   // deviations).
   const title = ' node:smol-tui demo '
   const titleBytes = new TextEncoder().encode(title)

@@ -5,9 +5,14 @@
 import path from 'node:path'
 import process from 'node:process'
 
-import { REPO_ROOT } from '../fleet/paths.mts'
+import { REPO_ROOT, segregatedConfigPath } from '../fleet/paths.mts'
 
 export const BINARY_NAME = 'sockeye'
+
+export const LOCKSTEP_MANIFEST_PATH = segregatedConfigPath(
+  REPO_ROOT,
+  'lockstep.json',
+)
 
 /**
  * Absolute path to the committed repo-asset directory (`assets/repo`).
