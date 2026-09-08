@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest'
 import { promises as fs } from 'node:fs'
 import process from 'node:process'
 import { getLatestRelease } from '@socketsecurity/lib-stable/releases/github-listing'
@@ -76,9 +84,9 @@ describe('release asset checksum updates', () => {
       lief: { description: 'Example binaries' },
     })
     await main()
-    const output = JSON.parse(
-      String(vi.mocked(fs.writeFile).mock.calls[0]?.[1]),
-    )
+    const serialized = vi.mocked(fs.writeFile).mock.calls[0]?.[1]
+    assert(typeof serialized === 'string')
+    const output = JSON.parse(serialized)
     expect(output.$schema).toBe('./release-assets.schema.json')
     expect(output.lief).toEqual({
       description: 'Example binaries',
