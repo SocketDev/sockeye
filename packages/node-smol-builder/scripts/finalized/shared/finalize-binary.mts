@@ -70,19 +70,16 @@ export async function finalizeBinary(config) {
   // tags the cache key with platform/arch/libc/nodeVersion so cross-
   // compile builds don't restore a host-tagged binary.
   if (
-    !(await shouldRun(
-      buildDir,
-      undefined,
-      CHECKPOINTS.FINALIZED,
-      forceRebuild,
-      [sourceBinary],
-      {
+    !(await shouldRun(buildDir, undefined, CHECKPOINTS.FINALIZED, {
+      ...{
         arch,
         libc,
         nodeVersion,
         platform,
       },
-    ))
+      force: forceRebuild,
+      sourcePaths: [sourceBinary],
+    }))
   ) {
     return
   }

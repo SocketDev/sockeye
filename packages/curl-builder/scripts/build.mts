@@ -831,7 +831,7 @@ async function main() {
       buildDir,
       '',
       CHECKPOINTS.FINALIZED,
-      forceRebuild,
+      { force: forceRebuild },
     ))
 
     // Validate checkpoint: both checkpoint file AND library file must exist.
@@ -923,7 +923,7 @@ async function main() {
       buildDir,
       '',
       CHECKPOINTS.MBEDTLS_BUILT,
-      forceRebuild,
+      { force: forceRebuild },
     ))
 
     let mbedtlsDir

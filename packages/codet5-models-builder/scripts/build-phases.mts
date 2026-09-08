@@ -41,7 +41,11 @@ export async function downloadModels(ctx) {
     tokenizerFile,
     configFile,
   } = ctx
-  if (!(await shouldRun(buildDir, '', CHECKPOINTS.DOWNLOADED, forceBuild))) {
+  if (
+    !(await shouldRun(buildDir, '', CHECKPOINTS.DOWNLOADED, {
+      force: forceBuild,
+    }))
+  ) {
     return
   }
 
@@ -101,7 +105,11 @@ export async function convertToOnnx(ctx) {
     targetArch,
     targetPlatform,
   } = ctx
-  if (!(await shouldRun(buildDir, '', CHECKPOINTS.CONVERTED, forceBuild))) {
+  if (
+    !(await shouldRun(buildDir, '', CHECKPOINTS.CONVERTED, {
+      force: forceBuild,
+    }))
+  ) {
     return
   }
 
@@ -205,7 +213,11 @@ export async function quantizeModels(ctx) {
     targetArch,
     targetPlatform,
   } = ctx
-  if (!(await shouldRun(buildDir, '', CHECKPOINTS.QUANTIZED, forceBuild))) {
+  if (
+    !(await shouldRun(buildDir, '', CHECKPOINTS.QUANTIZED, {
+      force: forceBuild,
+    }))
+  ) {
     return
   }
 
@@ -303,7 +315,11 @@ export async function optimizeModels(ctx) {
     return
   }
 
-  if (!(await shouldRun(buildDir, '', CHECKPOINTS.OPTIMIZED, forceBuild))) {
+  if (
+    !(await shouldRun(buildDir, '', CHECKPOINTS.OPTIMIZED, {
+      force: forceBuild,
+    }))
+  ) {
     return
   }
 

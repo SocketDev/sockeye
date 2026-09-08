@@ -348,7 +348,7 @@ async function main() {
       buildDir,
       '',
       CHECKPOINTS.FINALIZED,
-      forceRebuild,
+      { force: forceRebuild },
     ))
 
     // Check if stub exists in any location (local or downloaded).

@@ -60,13 +60,10 @@ export async function applySocketPatches(config) {
 
   // Combined-key short-circuit: nothing changed at all (patches OR additions).
   if (
-    !(await shouldRun(
-      buildDir,
-      packageName,
-      CHECKPOINTS.SOURCE_PATCHED,
-      cleanBuild,
-      allSourcePaths,
-    ))
+    !(await shouldRun(buildDir, packageName, CHECKPOINTS.SOURCE_PATCHED, {
+      force: cleanBuild,
+      sourcePaths: allSourcePaths,
+    }))
   ) {
     logger.skip('Socket patches already applied, skipping')
     logger.log('')
@@ -100,8 +97,7 @@ export async function applySocketPatches(config) {
     buildDir,
     packageName,
     CHECKPOINTS.SOURCE_PATCHED,
-    cleanBuild,
-    patchChainPaths,
+    { force: cleanBuild, sourcePaths: patchChainPaths },
   )
 
   if (!patchChainStale) {

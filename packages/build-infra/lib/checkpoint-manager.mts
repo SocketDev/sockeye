@@ -1335,9 +1335,6 @@ export async function restoreCheckpoint(
  * @param {string} buildDir - Build directory path.
  * @param {string} packageName - Package name.
  * @param {string} checkpointName - Checkpoint name.
- * @param {boolean} force - Force rebuild flag.
- * @param {string[]} [sourcePaths] - Source paths to validate cache hash
- *   against.
  * @param {object} [options] - Build options for cross-compilation validation.
  * @param {string} [options.platform] - Target platform (darwin, linux, win32)
  * @param {string} [options.arch] - Target architecture (x64, arm64)
@@ -1349,9 +1346,9 @@ export async function shouldRun(
   buildDir: string,
   packageName: string,
   checkpointName: string,
-  force = false,
-  sourcePaths?: string[] | undefined,
   options: {
+    readonly force?: boolean | undefined
+    readonly sourcePaths?: string[] | undefined
     readonly arch?: string | undefined
     readonly buildMode?: string | undefined
     readonly configureFlags?: string | undefined
@@ -1361,6 +1358,7 @@ export async function shouldRun(
     readonly withLief?: boolean | undefined
   } = {},
 ): Promise<boolean> {
+  const { force = false, sourcePaths } = options
   if (force) {
     return true
   }

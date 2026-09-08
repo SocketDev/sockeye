@@ -431,14 +431,11 @@ export async function runStage(stage, ctx, stageParams) {
         }
       })()
 
-  const shouldProceed = await shouldRun(
-    buildDir,
-    '',
-    stage.name,
-    forceRebuild,
-    sourcePaths,
-    platformMeta,
-  )
+  const shouldProceed = await shouldRun(buildDir, '', stage.name, {
+    ...platformMeta,
+    force: forceRebuild,
+    sourcePaths: sourcePaths,
+  })
 
   if (!shouldProceed) {
     // Substep is an indented line marker, not a top-level status; the leading

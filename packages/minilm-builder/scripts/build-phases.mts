@@ -93,7 +93,9 @@ export async function downloadModels(ctx) {
     targetPlatform,
   } = ctx
   if (
-    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.DOWNLOADED, forceBuild))
+    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.DOWNLOADED, {
+      force: forceBuild,
+    }))
   ) {
     return
   }
@@ -156,7 +158,9 @@ export async function convertToOnnx(ctx) {
     targetPlatform,
   } = ctx
   if (
-    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.CONVERTED, forceBuild))
+    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.CONVERTED, {
+      force: forceBuild,
+    }))
   ) {
     return
   }
@@ -218,7 +222,9 @@ export async function optimizeGraphs(ctx) {
     targetPlatform,
   } = ctx
   if (
-    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.OPTIMIZED, forceBuild))
+    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.OPTIMIZED, {
+      force: forceBuild,
+    }))
   ) {
     return
   }
@@ -300,7 +306,9 @@ export async function quantizeModels(ctx) {
     targetPlatform,
   } = ctx
   if (
-    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.QUANTIZED, forceBuild))
+    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.QUANTIZED, {
+      force: forceBuild,
+    }))
   ) {
     return
   }
@@ -367,7 +375,9 @@ export async function verifyModels(ctx) {
     targetPlatform,
   } = ctx
   if (
-    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.FINALIZED, forceBuild))
+    !(await shouldRun(buildDir, 'minilm', CHECKPOINTS.FINALIZED, {
+      force: forceBuild,
+    }))
   ) {
     return
   }

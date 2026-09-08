@@ -1151,7 +1151,7 @@ async function main() {
       buildDir,
       '',
       CHECKPOINTS.LIEF_BUILT,
-      forceRebuild,
+      { force: forceRebuild },
     ))
 
     // Validate checkpoint: both checkpoint file AND library file must exist.

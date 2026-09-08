@@ -511,8 +511,7 @@ export async function buildRelease(config, buildOptions = {}) {
       buildDir,
       packageName,
       CHECKPOINTS.SOURCE_PATCHED,
-      cleanBuild,
-      patchChainCachePaths,
+      { force: cleanBuild, sourcePaths: patchChainCachePaths },
     )
 
     if (needsPatching) {
@@ -796,16 +795,18 @@ export async function buildRelease(config, buildOptions = {}) {
     buildDir,
     packageName,
     CHECKPOINTS.BINARY_RELEASED,
-    cleanBuild,
-    buildSourcePaths,
     {
-      arch,
-      buildMode: isProdBuild ? 'prod' : 'dev',
-      configureFlags: configureFlags.toSorted().join(','),
-      libc,
-      nodeVersion: nodeVersionRaw,
-      platform,
-      withLief,
+      ...{
+        arch,
+        buildMode: isProdBuild ? 'prod' : 'dev',
+        configureFlags: configureFlags.toSorted().join(','),
+        libc,
+        nodeVersion: nodeVersionRaw,
+        platform,
+        withLief,
+      },
+      force: cleanBuild,
+      sourcePaths: buildSourcePaths,
     },
   )
 

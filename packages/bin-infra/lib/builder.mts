@@ -115,12 +115,14 @@ export async function buildBinSuitePackage(config: BuildBinSuitePackageConfig) {
       buildDir,
       '',
       CHECKPOINTS.FINALIZED,
-      forceRebuild,
-      sourcePaths,
       {
-        arch,
-        libc,
-        platform,
+        ...{
+          arch,
+          libc,
+          platform,
+        },
+        force: forceRebuild,
+        sourcePaths: sourcePaths,
       },
     ))
 

@@ -52,7 +52,7 @@ export async function cloneNodeSource(config) {
     sharedBuildDir,
     packageName,
     CHECKPOINTS.SOURCE_COPIED,
-    cleanBuild,
+    { force: cleanBuild },
   )
 
   // Check Node version mismatch

@@ -257,7 +257,7 @@ describe('checkpoint-manager', () => {
         testBuildDir,
         'test-pkg',
         'new-checkpoint',
-        false,
+        { force: false },
       )
       expect(result).toBeTruthy()
     })
@@ -267,12 +267,9 @@ describe('checkpoint-manager', () => {
         ...TARGET,
         packageName: 'test-pkg',
       })
-      const result = await shouldRun(
-        testBuildDir,
-        'test-pkg',
-        'existing',
-        false,
-      )
+      const result = await shouldRun(testBuildDir, 'test-pkg', 'existing', {
+        force: false,
+      })
       expect(result).toBeFalsy()
     })
 
@@ -281,17 +278,16 @@ describe('checkpoint-manager', () => {
         ...TARGET,
         packageName: 'test-pkg',
       })
-      const result = await shouldRun(testBuildDir, 'test-pkg', 'existing', true)
+      const result = await shouldRun(testBuildDir, 'test-pkg', 'existing', {
+        force: true,
+      })
       expect(result).toBeTruthy()
     })
 
     it('should return true when force flag is set even without checkpoint', async () => {
-      const result = await shouldRun(
-        testBuildDir,
-        'test-pkg',
-        'non-existent',
-        true,
-      )
+      const result = await shouldRun(testBuildDir, 'test-pkg', 'non-existent', {
+        force: true,
+      })
       expect(result).toBeTruthy()
     })
   })
