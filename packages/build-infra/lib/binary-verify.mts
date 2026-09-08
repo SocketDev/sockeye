@@ -103,51 +103,14 @@ export async function staticVerifyBinary(
       return true
     }
 
-    // Verify architecture if specified
-    if (arch) {
-      const archPatterns: Partial<Record<'arm64' | 'x64', RegExp>> = {
-        arm64: /arm64|aarch64/i,
-        x64: /x86[-_]64|x64|amd64/i,
-      }
-
-      const pattern = archPatterns[arch]
-      if (pattern && !pattern.test(fileInfo)) {
-        printError(`Expected ${arch} architecture but got: ${fileInfo}`)
-        return false
-      }
-      logger.success(`Confirmed ${arch} architecture`)
-    }
-
-    // Verify binary format by target platform (not host — supports cross-compilation).
-    const formatChecks: Partial<
-      Record<string, { format: string | string[]; name: string }>
-    > = {
-      darwin: { format: 'Mach-O', name: 'Mach-O' },
-      linux: { format: 'ELF', name: 'ELF' },
-      win32: { format: ['PE32', 'MS Windows'], name: 'PE' },
-    }
-
-    const check = formatChecks[targetPlatform]
-    if (check) {
-      const formats = Array.isArray(check.format)
-        ? check.format
-        : [check.format]
-      const hasValidFormat = formats.some(fmt => fileInfo.includes(fmt))
-
-      if (!hasValidFormat) {
-        printError(`Expected ${check.name} binary but got: ${fileInfo}`)
-        return false
-      }
-      logger.success(`Valid ${check.name} binary`)
-
-      // Check static linking for musl (Linux only)
-      if (targetPlatform === 'linux' && expectStatic) {
-        if (fileInfo.includes('statically linked')) {
-          logger.success('Binary is statically linked (musl)')
-        } else {
-          logger.warn('Binary may not be statically linked')
-        }
-      }
+    if (
+      !verifyBinaryFormat(fileInfo, {
+        arch,
+        platform: targetPlatform,
+        static: expectStatic,
+      })
+    ) {
+      return false
     }
 
     logger.success('Static verification passed')
@@ -257,4 +220,65 @@ export async function testBinaryWithDocker(
     printError('Docker test failed', e)
     return false
   }
+}
+
+export function verifyBinaryFormat(
+  fileInfo: string,
+  config: {
+    arch: string | undefined
+    platform: string
+    static: boolean | undefined
+  },
+): boolean {
+  const {
+    arch,
+    platform: targetPlatform,
+    static: expectStatic,
+  } = { __proto__: null, ...config } as typeof config
+  // Verify architecture if specified
+  if (arch) {
+    const archPatterns: Partial<Record<'arm64' | 'x64', RegExp>> = {
+      arm64: /arm64|aarch64/i,
+      x64: /x86[-_]64|x64|amd64/i,
+    }
+
+    const pattern = archPatterns[arch]
+    if (pattern && !pattern.test(fileInfo)) {
+      printError(`Expected ${arch} architecture but got: ${fileInfo}`)
+      return false
+    }
+    logger.success(`Confirmed ${arch} architecture`)
+  }
+
+  // Verify binary format by target platform (not host — supports cross-compilation).
+  const formatChecks: Partial<
+    Record<string, { format: string | string[]; name: string }>
+  > = {
+    darwin: { format: 'Mach-O', name: 'Mach-O' },
+    linux: { format: 'ELF', name: 'ELF' },
+    win32: { format: ['PE32', 'MS Windows'], name: 'PE' },
+  }
+
+  const check = formatChecks[targetPlatform]
+  if (check) {
+    const formats = Array.isArray(check.format) ? check.format : [check.format]
+    const hasValidFormat = formats.some(fmt => fileInfo.includes(fmt))
+
+    if (!hasValidFormat) {
+      printError(`Expected ${check.name} binary but got: ${fileInfo}`)
+      return false
+    }
+    logger.success(`Valid ${check.name} binary`)
+
+    // Check static linking for musl (Linux only)
+    if (targetPlatform === 'linux' && expectStatic) {
+      if (fileInfo.includes('statically linked')) {
+        logger.success('Binary is statically linked (musl)')
+      } else {
+        logger.warn('Binary may not be statically linked')
+      }
+    }
+  }
+
+  return true
 }
