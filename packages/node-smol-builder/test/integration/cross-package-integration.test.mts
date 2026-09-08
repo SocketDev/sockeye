@@ -25,16 +25,10 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { getSocketDlxDir } from '@socketsecurity/lib-stable/paths/socket'
 
 import { getLatestFinalBinary } from '../paths.mts'
-import {
-  execCommand,
-  getBinaryPath,
-} from './cross-package-execution.mts'
+import { execCommand, getBinaryPath } from './cross-package-execution.mts'
 import { tolerantTimeout } from '../../../../test/fleet/_shared/lib/timing.mts'
 
-export {
-  execCommand,
-  getBinaryPath,
-} from './cross-package-execution.mts'
+export { execCommand, getBinaryPath } from './cross-package-execution.mts'
 
 const logger = getDefaultLogger()
 

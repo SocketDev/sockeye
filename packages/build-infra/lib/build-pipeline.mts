@@ -1,4 +1,10 @@
-import { getBuildRequirementsPath } from './paths.mts'
+import { getBuildRequirementsPath, getPackageManifestPath } from './paths.mts'
+import {
+  getCheckpointArchiveFile,
+  getCheckpointDirectory,
+  getCheckpointFile,
+  getCheckpointLockPath,
+} from './checkpoint/paths.mts'
 /**
  * WASM build pipeline orchestrator.
  *
@@ -113,6 +119,51 @@ export function buildCacheKey({
   return `v${nodeVersion}-${platformArch}-${buildMode}-${digest}-${packageVersion}`
 }
 
+export async function cleanPipelineCheckpoints(config) {
+  const { flags, paths, sharedPaths, stages, ctx, outputFiles } = config
+  // Handle --clean / --clean-stage / missing-output clean-up.
+  if (flags.clean) {
+    logger.substep('Clean build requested — removing all checkpoints')
+    await cleanCheckpoint(paths.buildDir, '')
+    if (sharedPaths?.buildDir) {
+      await cleanCheckpoint(sharedPaths.buildDir, '')
+    }
+  } else if (flags.cleanStage) {
+    logger.substep(`Clean requested for stage: ${flags.cleanStage}`)
+    // Invalidates this stage + anything depending on it.
+    const idx = stages.findIndex(s => s.name === flags.cleanStage)
+    if (idx === -1) {
+      throw new Error(
+        `Unknown --clean-stage=${flags.cleanStage}. Valid: ${stages.map(s => s.name).join(', ')}`,
+      )
+    }
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    for (const stage of stages.slice(idx)) {
+      const buildDir = resolveCheckpointBuildDir(stage, ctx)
+      const markerDir = getCheckpointDirectory(buildDir, '')
+      const archive = getCheckpointArchiveFile(markerDir, stage.name)
+      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+      for (const file of [
+        getCheckpointFile(markerDir, stage.name),
+        archive,
+        getCheckpointLockPath(archive),
+      ]) {
+        if (existsSync(file)) {
+          await safeDelete(file)
+        }
+      }
+    }
+  } else if (outputFiles.length && outputFiles.some(p => !existsSync(p))) {
+    logger.substep(
+      'Output artifacts missing — invalidating all checkpoints to rebuild',
+    )
+    await cleanCheckpoint(paths.buildDir, '')
+    if (sharedPaths?.buildDir) {
+      await cleanCheckpoint(sharedPaths.buildDir, '')
+    }
+  }
+}
+
 export function hashFileContents(files: string[]): string {
   const hash = crypto.createHash('sha256')
   // Iterable is not a bare identifier (could be Map/Set/Generator/expression).
@@ -206,6 +257,23 @@ export async function readJson(filePath) {
     throw new Error(`Failed to parse ${filePath}: ${errorMessage(e)}`, {
       cause: e,
     })
+  }
+}
+
+export function reportPipelineResult(config) {
+  const { totalStart, paths, outputFiles, packageRoot } = config
+  const seconds = ((Date.now() - totalStart) / 1000).toFixed(1)
+  logger.step('Build Complete!')
+  logger.success(`Total time: ${seconds}s`)
+  logger.success(`Output: ${paths.outputFinalDir ?? paths.buildDir}`)
+  if (outputFiles.length) {
+    logger.info('')
+    logger.info('Files:')
+    for (let i = 0, { length } = outputFiles; i < length; i += 1) {
+      const file = outputFiles[i]
+      logger.info(`  - ${path.relative(packageRoot, file)}`)
+    }
+    logger.info('')
   }
 }
 
@@ -303,43 +371,14 @@ export async function runPipeline(config, cliOverrides) {
   logger.info(`Cache key: ${cacheKey}`)
   logger.info('')
 
-  // Handle --clean / --clean-stage / missing-output clean-up.
-  if (flags.clean) {
-    logger.substep('Clean build requested — removing all checkpoints')
-    await cleanCheckpoint(paths.buildDir, '')
-    if (sharedPaths?.buildDir) {
-      await cleanCheckpoint(sharedPaths.buildDir, '')
-    }
-  } else if (flags.cleanStage) {
-    logger.substep(`Clean requested for stage: ${flags.cleanStage}`)
-    // Invalidates this stage + anything depending on it.
-    const idx = stages.findIndex(s => s.name === flags.cleanStage)
-    if (idx === -1) {
-      throw new Error(
-        `Unknown --clean-stage=${flags.cleanStage}. Valid: ${stages.map(s => s.name).join(', ')}`,
-      )
-    }
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-    for (const stage of stages.slice(idx)) {
-      const buildDir = resolveCheckpointBuildDir(stage, ctx)
-      const markerDir = path.join(buildDir, 'checkpoints')
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-      for (const ext of ['.json', '.tar.gz', '.tar.gz.lock']) {
-        const file = path.join(markerDir, `${stage.name}${ext}`)
-        if (existsSync(file)) {
-          await safeDelete(file)
-        }
-      }
-    }
-  } else if (outputFiles.length && outputFiles.some(p => !existsSync(p))) {
-    logger.substep(
-      'Output artifacts missing — invalidating all checkpoints to rebuild',
-    )
-    await cleanCheckpoint(paths.buildDir, '')
-    if (sharedPaths?.buildDir) {
-      await cleanCheckpoint(sharedPaths.buildDir, '')
-    }
-  }
+  await cleanPipelineCheckpoints({
+    flags,
+    paths,
+    sharedPaths,
+    stages,
+    ctx,
+    outputFiles,
+  })
 
   if (preflight) {
     logger.step('Pre-flight Checks')
@@ -366,19 +405,8 @@ export async function runPipeline(config, cliOverrides) {
     await runStage(stage, ctx, {})
   }
 
-  const seconds = ((Date.now() - totalStart) / 1000).toFixed(1)
-  logger.step('Build Complete!')
-  logger.success(`Total time: ${seconds}s`)
-  logger.success(`Output: ${paths.outputFinalDir ?? paths.buildDir}`)
-  if (outputFiles.length) {
-    logger.info('')
-    logger.info('Files:')
-    for (let i = 0, { length } = outputFiles; i < length; i += 1) {
-      const file = outputFiles[i]
-      logger.info(`  - ${path.relative(packageRoot, file)}`)
-    }
-    logger.info('')
-  }
+  reportPipelineResult({ totalStart, paths, outputFiles, packageRoot })
+
   return ctx
 }
 
@@ -408,7 +436,7 @@ export async function runStage(stage, ctx, stageParams) {
   const buildDir = resolveCheckpointBuildDir(stage, ctx)
   const sourcePaths = [
     getBuildRequirementsPath(ctx.packageRoot),
-    path.join(ctx.packageRoot, 'package.json'),
+    getPackageManifestPath(ctx.packageRoot),
     ...(stage.sourcePaths ?? []),
   ].filter(p => existsSync(p))
 

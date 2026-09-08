@@ -1,4 +1,5 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
@@ -14,6 +15,12 @@ import {
   getPackageManifestPath,
 } from '../lib/paths.mts'
 import { cleanCheckpoint } from '../lib/checkpoint-manager.mts'
+import {
+  getCheckpointArchiveFile,
+  getCheckpointDirectory,
+  getCheckpointFile,
+  getCheckpointLockPath,
+} from '../lib/checkpoint/paths.mts'
 
 vi.mock(import('../lib/checkpoint-manager.mts'), async importOriginal => ({
   ...(await importOriginal()),
@@ -85,4 +92,25 @@ test('invalidates checkpoints when required output is absent', async () => {
   const getOutputFiles = () => [path.join(config.packageRoot, 'missing-output')]
   await runPipeline({ ...config, getOutputFiles }, parseFlags([]))
   expect(cleanCheckpoint).toHaveBeenCalledTimes(2)
+})
+
+test('cleans the requested stage while retaining earlier checkpoints', async () => {
+  const config = await pipelineFixture()
+  config.stages.push({ name: 'source-patched', run: async () => undefined })
+  const directory = getCheckpointDirectory(config.packageRoot, '')
+  await mkdir(directory)
+  const earlier = getCheckpointFile(directory, 'source-copied')
+  const metadata = getCheckpointFile(directory, 'source-patched')
+  const archive = getCheckpointArchiveFile(directory, 'source-patched')
+  const lock = getCheckpointLockPath(archive)
+  const files = [earlier, metadata, archive, lock]
+  await Promise.all(files.map(file => writeFile(file, 'fixture')))
+  await runPipeline(config, parseFlags(['--clean-stage=source-patched']))
+  expect(files.map(file => existsSync(file))).toEqual([
+    true,
+    false,
+    false,
+    false,
+  ])
+  expect(cleanCheckpoint).not.toHaveBeenCalled()
 })
