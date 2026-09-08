@@ -34,13 +34,6 @@ import {
 import { printError } from 'local-build-infra/lib/build-output'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 import {
-  computeBuildInputsFingerprint,
-  formatStaleCheckpointMessage,
-  isCheckpointFingerprintCurrent,
-} from 'local-build-infra/lib/checkpoint-cache-key'
-import {
-  getCheckpointData,
-  hasCheckpoint,
   restoreCheckpoint,
   shouldRun,
 } from 'local-build-infra/lib/checkpoint-manager'
@@ -50,6 +43,7 @@ import {
   nodeVersionRaw,
   validateCheckpointChain,
 } from 'local-build-infra/lib/constants'
+import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
 import { appendCCRemapFlags } from 'local-build-infra/lib/path-remap-flags'
 import colors from 'yoctocolors-cjs'
 import process from 'node:process'
@@ -61,10 +55,9 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { LOG_SYMBOLS } from '@socketsecurity/lib-stable/logger/symbols'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
-import { getBuildPaths as getDawnBuildPaths } from 'local-dawn-builder/scripts/paths'
-import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
-
 import { copyBuildAdditions } from './copy-additions.mts'
+import { getReleaseConfigureFlags } from './release-configure.mts'
+import { inspectReleaseCheckpoints } from './release-checkpoints.mts'
 import { PATCHES_SOURCE_PATCHED_DIR } from './paths.mts'
 import {
   checkBuildEnvironment,
@@ -359,87 +352,15 @@ export async function buildRelease(config, buildOptions = {}) {
   // Ensure build directory exists.
   await safeMkdir(buildDir, { recursive: true })
 
-  // Progressive checkpoint restoration (same as CI restore-checkpoint action).
-  // Walk backward through checkpoint chain to find latest valid checkpoint.
-  // This allows local builds to resume from the same point as CI builds.
-  const checkpointChain = getCheckpointChain(buildMode)
-  let resumeFromCheckpoint
-
-  // Build-inputs fingerprint: sha256 over additions/, patches/, and the
-  // target Node.js version. Gates the FINALIZED short-circuit below so a
-  // checkpoint saved against different inputs is refused instead of
-  // silently standing in for a fresh build.
-  const buildInputsFingerprint = computeBuildInputsFingerprint({
-    dirs: [
-      path.join(packageRoot, 'additions'),
-      path.join(packageRoot, 'patches'),
-    ],
-    nodeVersion: nodeVersionRaw,
-  })
-
-  for (let i = 0, { length } = checkpointChain; i < length; i += 1) {
-    const checkpoint = checkpointChain[i]
-    // Check if this checkpoint exists
-    const exists = hasCheckpoint(buildDir, packageName, checkpoint)
-
-    if (exists) {
-      logger.log('')
-      logger.step('Progressive Checkpoint Restoration')
-      logger.substep(`Found checkpoint: ${checkpoint}`)
-
-      // If finalized, the build MAY already be complete — but only when
-      // its saved build-inputs fingerprint still matches the current
-      // additions/patches/node-version. A mismatch means the checkpoint
-      // was saved against different inputs and must never be restored
-      // silently.
-      if (checkpoint === CHECKPOINTS.FINALIZED) {
-        const checkpointData = await getCheckpointData(
-          buildDir,
-          packageName,
-          checkpoint,
-        )
-
-        if (
-          isCheckpointFingerprintCurrent({
-            checkpointData,
-            currentFingerprint: buildInputsFingerprint,
-          })
-        ) {
-          resumeFromCheckpoint = checkpoint
-          logger.success('Build already complete')
-          logger.log('')
-          return { __proto__: null, releaseBinaryPath: outputReleaseBinary }
-        }
-
-        logger.warn(
-          formatStaleCheckpointMessage({
-            checkpointFile: path.join(
-              buildDir,
-              'checkpoints',
-              ...(packageName ? [packageName] : []),
-              `${checkpoint}.json`,
-            ),
-            checkpointName: checkpoint,
-            currentFingerprint: buildInputsFingerprint,
-            savedFingerprint: checkpointData?.inputsFingerprint,
-          }),
-        )
-        logger.log('')
-        break
-      }
-
-      resumeFromCheckpoint = checkpoint
-      logger.substep(`Build will resume from ${checkpoint} checkpoint`)
-      logger.log('')
-      break
-    }
-  }
-
-  if (!resumeFromCheckpoint) {
-    logger.log('')
-    logger.step('Starting Fresh Build')
-    logger.substep('No checkpoints found - building from scratch')
-    logger.log('')
+  if (
+    await inspectReleaseCheckpoints({
+      buildDir,
+      checkpointChain: getCheckpointChain(buildMode),
+      packageName,
+      packageRoot,
+    })
+  ) {
+    return { __proto__: null, releaseBinaryPath: outputReleaseBinary }
   }
 
   // Check if we can use cached build.
@@ -663,129 +584,8 @@ export async function buildRelease(config, buildOptions = {}) {
   }
   logger.log('')
 
-  const configureFlags = [
-    '--ninja',
-    '--with-intl=small-icu',
-    '--without-npm',
-    '--without-amaro',
-    '--without-node-options',
-    '--experimental-enable-pointer-compression',
-    // Node 26 ships Temporal via temporal_rs (Rust crate) linked
-    // statically. socket-btm replaces this with the temporal-infra
-    // C++ port: patch 004 lands the port sources in libnode; patch
-    // 021 hijacks the deps/crates/crates.gyp:temporal_capi target to
-    // compile our C++ port instead of building the Rust crate (so
-    // V8's mksnapshot — which links temporal_capi but NOT libnode —
-    // still resolves the temporal symbols); patch 018 disables
-    // configure.py's cargo gate (the cargo/rustc probe near line 1580).
-    // No rustc/cargo on PATH needed.
-    '--v8-enable-temporal-support',
-  ]
-
-  // LIEF/binject support: disabled by default, enable with --with-lief flag
-  // When disabled, --build-sea flag is silently ignored (patch 014)
-  if (!withLief) {
-    // Only disable LIEF when explicitly NOT wanted
-    // Otherwise defaults to enabled (Node.js default on mac/linux/win)
-    configureFlags.push('--without-lief')
-  }
-
-  // Dawn / WebGPU support: opt-in via --with-dawn. Hard-fails when
-  // requested but dawn-builder's artifact is missing — building Dawn
-  // takes 30-60 min so the operator must produce it explicitly via
-  // `pnpm --filter dawn-builder build` before re-running this flow.
-  //
-  // The artifact's canonical path lives in dawn-builder's paths.mts;
-  // we import getBuildPaths from there to avoid re-deriving the
-  // layout (per the "1 path, 1 reference" rule). When the configure.py
-  // + node.gyp patches land (D6), the gate's success flips
-  // `node_use_dawn=true` into the configure flags below.
-  if (withDawn) {
-    const dawnPaths = getDawnBuildPaths(
-      buildMode,
-      await getCurrentPlatformArch(),
-    )
-    if (!existsSync(dawnPaths.outputLibFile)) {
-      throw new Error(
-        '--with-dawn requested but dawn-builder artifact is missing.\n\n' +
-          `Expected: ${dawnPaths.outputLibFile}\n\n` +
-          'Build Dawn first:\n' +
-          '  pnpm --filter dawn-builder build' +
-          (buildMode === 'prod' ? ':prod' : '') +
-          '\n\n' +
-          'Then re-run this build with --with-dawn.',
-      )
-    }
-    // D6 will append: `configureFlags.push('--with-dawn')` here.
-    // For now the gate alone is the integration contract — the
-    // HAVE_DAWN compile-time define wiring (configure.py + node.gyp)
-    // lands once the Dawn build has been smoke-tested.
-  }
-
-  // For Linux x64 builds, disable OpenSSL assembly to avoid AVX/AVX2 instructions
-  // that may not be available on all x86-64 CPUs (e.g., GitHub Actions runners).
-  // This ensures binary portability across different CPU generations.
-  if (IS_LINUX && arch === 'x64') {
-    configureFlags.push('--openssl-no-asm')
-  }
-
-  if (isProdBuild) {
-    configureFlags.push('--without-inspector')
-    // Enable LTO for smaller binaries and better optimization.
-    // Linux: Uses GCC/Clang LTO.
-    // macOS: Uses Apple Clang's -flto=thin for faster builds with good optimization.
-    if (IS_LINUX || IS_MACOS) {
-      configureFlags.push('--enable-lto')
-    }
-  }
-
-  // For musl builds, statically link libstdc++ to avoid runtime dependencies
-  if (IS_MUSL) {
-    configureFlags.push('--fully-static')
-  }
-
-  // Cross-compilation support (Windows only, or with --allow-cross flag).
-  const hostArch = process.arch
-  const isArchMismatch = arch !== hostArch
-  const isCrossCompiling = isArchMismatch && (IS_WINDOWS || allowCross)
-  if (isCrossCompiling) {
-    if (IS_WINDOWS) {
-      logger.log(`Cross-compiling for Windows ${arch} on ${hostArch} host`)
-    } else {
-      logger.warn(
-        `Cross-compiling for ${platform} ${arch} on ${hostArch} host (experimental)`,
-      )
-      logger.warn(
-        '   This may cause build errors. Use a native runner if possible.',
-      )
-    }
-    configureFlags.push(`--dest-cpu=${arch}`)
-  } else if (isArchMismatch) {
-    logger.fail(
-      `Cross-compilation not supported: building ${arch} on ${hostArch} host`,
-    )
-    logger.log(`   Use a native ${arch} runner or add --allow-cross flag.`)
-    throw new Error('Cross-compilation not supported')
-  }
-
-  // Bundle-driven feature trimming: append the detector's flags last, deduped,
-  // skipping any already present (e.g. --without-inspector in prod). Each
-  // --without-smol-* flips its node_use_smol_* gyp var off (patches 004+018);
-  // --without-sqlite uses upstream Node's existing gate.
-  if (extraConfigureFlags.length) {
-    const present = new Set(configureFlags)
-    const added = []
-    for (const flag of extraConfigureFlags) {
-      if (!present.has(flag)) {
-        configureFlags.push(flag)
-        present.add(flag)
-        added.push(flag)
-      }
-    }
-    if (added.length) {
-      logger.log(`Extra configure flags (bundle-driven): ${added.join(' ')}`)
-    }
-  }
+  const { configureFlags, isCrossCompiling } =
+    await getReleaseConfigureFlags(config)
 
   // Collect build source files.
   const buildSourcePaths = await collectSourceFiles()
