@@ -16,7 +16,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-import { parseArgs } from '@socketsecurity/lib-stable/argv/parse'
+import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -43,6 +43,18 @@ async function runXcrun(args: string[]): Promise<void> {
   })
   if (result.code !== 0) {
     throw new Error(`xcrun ${args[0]} failed with exit code ${result.code}`)
+  }
+}
+
+function validateNotaryArchives(archives: string[]): void {
+  for (let i = 0, { length } = archives; i < length; i += 1) {
+    const archive = archives[i]!
+    const extension = path.extname(archive).toLowerCase()
+    if (!SUBMITTABLE_EXTENSIONS.has(extension)) {
+      throw new Error(
+        `notarytool only accepts .zip, .dmg, or .pkg; got ${archive}`,
+      )
+    }
   }
 }
 
@@ -85,15 +97,7 @@ async function main(): Promise<void> {
   const profile = configuredProfile ?? `$${NOTARY_PROFILE_ENV}`
   const archives = positionals.map(String)
 
-  for (let i = 0, { length } = archives; i < length; i += 1) {
-    const archive = archives[i]!
-    const extension = path.extname(archive).toLowerCase()
-    if (!SUBMITTABLE_EXTENSIONS.has(extension)) {
-      throw new Error(
-        `notarytool only accepts .zip, .dmg, or .pkg; got ${archive}`,
-      )
-    }
-  }
+  validateNotaryArchives(archives)
 
   if (!execute) {
     logger.info('Dry run — nothing is submitted. Exact invocations:')

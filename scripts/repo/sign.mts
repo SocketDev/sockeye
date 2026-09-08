@@ -13,7 +13,7 @@
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 
-import { parseArgs } from '@socketsecurity/lib-stable/argv/parse'
+import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -64,6 +64,47 @@ async function runCodesign(args: string[]): Promise<void> {
   }
 }
 
+function signingPlans(positionals: string[], values: Record<string, unknown>) {
+  const adHoc = values['ad-hoc'] === true
+  const execute = adHoc || values['run'] === true
+  const entitlements =
+    typeof values['entitlements'] === 'string'
+      ? values['entitlements']
+      : undefined
+  const configuredIdentity =
+    typeof values['identity'] === 'string'
+      ? values['identity']
+      : process.env[SIGNING_IDENTITY_ENV]
+  const targets =
+    positionals.length > 0
+      ? positionals.map(String)
+      : [getBinaryPath(getBuildMode(), `${process.platform}-${process.arch}`)]
+
+  if (entitlements !== undefined && !existsSync(entitlements)) {
+    throw new Error(
+      `Entitlements file not found at ${entitlements}; pass an existing plist to --entitlements`,
+    )
+  }
+  if (!adHoc && execute && configuredIdentity === undefined) {
+    throw new Error(
+      `No signing identity: pass --identity or set ${SIGNING_IDENTITY_ENV} to the Developer ID Application identity in the login keychain, or use --ad-hoc for a local certificate-free run`,
+    )
+  }
+
+  const identity = adHoc
+    ? '-'
+    : (configuredIdentity ?? `$${SIGNING_IDENTITY_ENV}`)
+  const plans: SignPlan[] = targets.map(target => ({
+    __proto__: null,
+    entitlements,
+    identity,
+    target,
+    timestamp: !adHoc,
+  }))
+
+  return { __proto__: null, adHoc, execute, plans }
+}
+
 async function main(): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error(
@@ -95,41 +136,7 @@ async function main(): Promise<void> {
     return
   }
 
-  const adHoc = values['ad-hoc'] === true
-  const execute = adHoc || values['run'] === true
-  const entitlements =
-    typeof values['entitlements'] === 'string'
-      ? values['entitlements']
-      : undefined
-  const configuredIdentity =
-    typeof values['identity'] === 'string'
-      ? values['identity']
-      : process.env[SIGNING_IDENTITY_ENV]
-  const targets =
-    positionals.length > 0
-      ? positionals.map(String)
-      : [getBinaryPath(getBuildMode(), `${process.platform}-${process.arch}`)]
-
-  if (entitlements !== undefined && !existsSync(entitlements)) {
-    throw new Error(
-      `Entitlements file not found at ${entitlements}; pass an existing plist to --entitlements`,
-    )
-  }
-  if (!adHoc && execute && configuredIdentity === undefined) {
-    throw new Error(
-      `No signing identity: pass --identity or set ${SIGNING_IDENTITY_ENV} to the Developer ID Application identity in the login keychain, or use --ad-hoc for a local certificate-free run`,
-    )
-  }
-
-  const identity = adHoc
-    ? '-'
-    : (configuredIdentity ?? `$${SIGNING_IDENTITY_ENV}`)
-  const plans: SignPlan[] = targets.map(target => ({
-    entitlements,
-    identity,
-    target,
-    timestamp: !adHoc,
-  }))
+  const { adHoc, execute, plans } = signingPlans(positionals, values)
 
   if (!execute) {
     logger.info('Dry run — no signature is written. Exact invocations:')
