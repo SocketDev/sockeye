@@ -24,6 +24,25 @@ import { BUILD_STAGES, PACKAGE_ROOT } from './constants.mts'
  *
  * @returns {string} Absolute path to the package's download cache directory.
  */
+export function builderCheckpointModePath(
+  packageDir: string,
+  buildDir: string,
+  mode: string,
+): string {
+  return path.join(builderCleanDirectoryPath(packageDir, buildDir), mode)
+}
+
+export function builderCleanDirectoryPath(
+  packageDir: string,
+  directory: string,
+): string {
+  return path.join(packageDir, directory)
+}
+
+export function builderPackageFromCallerPath(callerPath: string): string {
+  return path.resolve(path.dirname(callerPath), '..')
+}
+
 export function getBuildTempDir(packageRoot: string): string {
   return path.join(packageRoot, 'build', 'temp')
 }
@@ -98,3 +117,17 @@ export const KEYSTORE_PACKAGE_ROOT = path.join(
   'keystore-infra',
 )
 export const KEYSTORE_SOURCE_DIR = path.join(KEYSTORE_PACKAGE_ROOT, 'src')
+
+export {
+  BUILD_REQUIREMENTS_FILENAME,
+  BUILD_REQUIREMENTS_PACKAGE_ROOT,
+  BUILD_REQUIREMENTS_SCHEMA_PATH,
+  ML_BUILD_REQUIREMENTS_FILENAME,
+  getBuildRequirementsPath,
+  getCheckpointRequirementsPath,
+  isBuildRequirementsPath,
+  resolveRequirementReference,
+} from './build-requirements/paths.mts'
+
+export const NODE_SOURCE_SUBMODULE_PATH =
+  'packages/node-smol-builder/upstream/node'

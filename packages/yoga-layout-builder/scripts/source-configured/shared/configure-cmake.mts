@@ -30,7 +30,7 @@ const logger = getDefaultLogger()
  * @param {string} options.sourceDir - Source directory.
  * @param {string} options.buildMode - Build mode ('prod' or 'dev')
  * @param {string} options.emscriptenVersion - Emscripten version from
- *   external-tools.json.
+ *   build-requirements.json.
  * @param {boolean} options.forceRebuild - Force rebuild (ignore checkpoints)
  */
 export async function configureCMake(config) {

@@ -1,3 +1,4 @@
+import { isBuildRequirementsPath } from '../lib/paths.mts'
 /**
  * Check-pin-soak — auditor for external pin soak compliance.
  *
@@ -7,7 +8,7 @@
  * - .gitmodules submodule SHA pins
  * - `.github/workflows/**`/`*.yml` + `.github/actions/**`/`*.yml` uses: pins
  * - `**`/`Dockerfile*` FROM @sha256: digests
- * - `**`/`external-tools.json` `published` fields
+ * - `**`/`build-requirements.json` `published` fields
  * - Pnpm-workspace.yaml minimumReleaseAgeExclude annotations
  *
  * Pure annotation validation — no network. The hook
@@ -87,7 +88,9 @@ export function auditDockerfiles() {
 export function auditExternalToolsJson() {
   for (const file of walk(
     REPO_ROOT,
-    p => p.endsWith('external-tools.json') && !p.includes('node_modules'),
+    p =>
+      (isBuildRequirementsPath(p) || p.endsWith('external-tools.json')) &&
+      !p.includes('node_modules'),
   )) {
     let parsed: { tools?: Record<string, unknown> | undefined }
     try {

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "Schema for external-tools.json files",
+  "description": "Schema for build-requirements.json files",
   "type": "object",
   "properties": {
     "$schema": { "type": "string" },
@@ -10,7 +10,7 @@
         { "type": "string" },
         { "type": "array", "items": { "type": "string" } }
       ],
-      "description": "Path(s) to a base external-tools.json to inherit from. Mirrors ESLint: accepts a single string or an array of strings. Later entries in an array override earlier ones; the current file overrides all."
+      "description": "Path(s) to a base build-requirements.json to inherit from. Mirrors ESLint: accepts a single string or an array of strings. Later entries in an array override earlier ones; the current file overrides all."
     },
     "tools": {
       "type": "object",

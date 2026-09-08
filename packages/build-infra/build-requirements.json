@@ -1,5 +1,5 @@
 {
-  "$schema": "./lib/external-tools-schema.json",
+  "$schema": "lib/build-requirements-schema.json",
   "description": "Foundational tools required across all build processes. These are installed first before any package-specific tools.",
   "tools": {
     "node": {
@@ -51,7 +51,7 @@
       "notes": "Required for BoringSSL's source-generation tooling (perlasm + go-based codegen). Pre-installed on GitHub Actions Linux/macOS runners. On Windows: choco install golang --version=1.26.3. Pin matches the latest stable upstream tag (github.com/golang/go) at the time of this entry."
     },
     "nasm": {
-      "description": "Netwide Assembler (NASM) — x86/x64 assembler",
+      "description": "Netwide Assembler (NASM) \u2014 x86/x64 assembler",
       "version": "3.1.0",
       "notes": "Required by BoringSSL's CMakeLists.txt which unconditionally calls enable_language(ASM_NASM) on Windows. Pre-installed on Linux (apt: nasm) and macOS (brew: nasm). On Windows: choco install nasm --version=3.1.0. Version pin tracks chocolatey.org/packages/nasm; bump in lockstep with workflow `choco install --version=` flags."
     },
@@ -109,16 +109,16 @@
       "version": "27.0.3",
       "notes": [
         "Optional tool for testing musl-linked binaries in Alpine containers. When available, smoke tests can execute musl binaries in Docker (~1-2s overhead). Falls back to static verification if not installed. Requires Docker daemon to be running.",
-        "macOS: install via OrbStack (https://docs.orbstack.dev/, brew install --cask orbstack) — a faster, lighter Docker Desktop drop-in with a native docker CLI. Linux: use the distro's native Docker/Podman. CI runs on Linux runners with native Docker, so OrbStack is a local-dev convenience only, not a build requirement."
+        "macOS: install via OrbStack (https://docs.orbstack.dev/, brew install --cask orbstack) \u2014 a faster, lighter Docker Desktop drop-in with a native docker CLI. Linux: use the distro's native Docker/Podman. CI runs on Linux runners with native Docker, so OrbStack is a local-dev convenience only, not a build requirement."
       ]
     },
     "agent-ci": {
-      "description": "@redwoodjs/agent-ci — optional local GitHub Actions runner. Runs ci.yml jobs in a Linux container for fast local feedback before pushing.",
+      "description": "@redwoodjs/agent-ci \u2014 optional local GitHub Actions runner. Runs ci.yml jobs in a Linux container for fast local feedback before pushing.",
       "version": "0.16.2",
       "packageManager": "npm",
       "repository": "github:redwoodjs/agent-ci",
       "notes": [
-        "Optional, local-dev only. Requires a Docker runtime (see the docker entry — OrbStack on macOS).",
+        "Optional, local-dev only. Requires a Docker runtime (see the docker entry \u2014 OrbStack on macOS).",
         "Run via the fleet dlx (integrity-checked through Socket Firewall), NEVER raw npx: import { dlxPackage, executePackage } from '@socketsecurity/lib/dlx/package'. The pinned version here is the spec dlx resolves + verifies.",
         "LIMITATIONS: skips reusable workflows (the fleet ci.yml's SocketDev/socket-registry/.github/workflows/* uses are SKIPPED with a warning), has no access to GH secrets, no concurrency groups, and a simplified job-`if` evaluator. Useful for the self-contained ci.yml jobs (lint/type/test matrix), not the provenance/release reusable workflows."
       ]

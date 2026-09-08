@@ -65,7 +65,7 @@ export function printSetupResults(results: {
  * @param {boolean} options.emscripten - Require Emscripten SDK.
  * @param {boolean} options.rust - Require Rust with WASM support.
  * @param {boolean} options.python - Require Python (version from
- *   external-tools.json)
+ *   build-requirements.json)
  * @param {boolean} options.autoSetup - Automatically run setup script if tools
  *   missing.
  *

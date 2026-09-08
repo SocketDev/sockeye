@@ -1,3 +1,4 @@
+import { getBuildRequirementsPath } from '../lib/paths.mts'
 /**
  * @file Tests for pinned-versions utility.
  *   Validates version pinning and package specifier generation.
@@ -217,7 +218,7 @@ describe('pinned-versions', () => {
     it('should load Python versions from consumer package', () => {
       // Load with a consumer package that has Python tools
       const consumerRoot = path.join(packageDir, '..', 'codet5-models-builder')
-      const consumerPath = path.join(consumerRoot, 'external-tools.json')
+      const consumerPath = getBuildRequirementsPath(consumerRoot)
 
       if (existsSync(consumerPath)) {
         const { PYTHON_VERSIONS: versions } = loadPythonVersions({
@@ -246,7 +247,7 @@ describe('pinned-versions', () => {
 
     it('should merge consumer package overrides', () => {
       const consumerRoot = path.join(packageDir, '..', 'minilm-builder')
-      const consumerPath = path.join(consumerRoot, 'external-tools.json')
+      const consumerPath = getBuildRequirementsPath(consumerRoot)
 
       if (existsSync(consumerPath)) {
         const { PYTHON_VERSIONS: versions } = loadPythonVersions({
@@ -293,7 +294,7 @@ describe('pinned-versions', () => {
   describe('python package testing with consumer package', () => {
     it('should work with Python packages from consumer package', () => {
       const consumerRoot = path.join(packageDir, '..', 'codet5-models-builder')
-      const consumerPath = path.join(consumerRoot, 'external-tools.json')
+      const consumerPath = getBuildRequirementsPath(consumerRoot)
 
       if (existsSync(consumerPath)) {
         const { PYTHON_VERSIONS: versions } = loadPythonVersions({
@@ -336,9 +337,9 @@ describe('pinned-versions', () => {
     async function writeConfig(dirName: string, body: object): Promise<string> {
       const dir = path.join(tmpDir, dirName)
       await fs.mkdir(dir, { recursive: true })
-      // loadAllTools({packageRoot}) reads `<packageRoot>/external-tools.json`.
+      // loadAllTools({packageRoot}) reads `<packageRoot>/build-requirements.json`.
       await fs.writeFile(
-        path.join(dir, 'external-tools.json'),
+        getBuildRequirementsPath(dir),
         JSON.stringify(body, null, 2),
       )
       return dir
@@ -362,8 +363,8 @@ describe('pinned-versions', () => {
       const consumer = await writeConfig('consumer-array', {
         description: 'array extends',
         extends: [
-          path.join(baseA, 'external-tools.json'),
-          path.join(baseB, 'external-tools.json'),
+          getBuildRequirementsPath(baseA),
+          getBuildRequirementsPath(baseB),
         ],
         tools: {
           ccc: { description: 'from-consumer', version: '3.0.0' },
@@ -389,7 +390,7 @@ describe('pinned-versions', () => {
       })
       const consumer = await writeConfig('consumer-override', {
         description: 'current overrides all',
-        extends: [path.join(base, 'external-tools.json')],
+        extends: [getBuildRequirementsPath(base)],
         tools: {
           overridden: { description: 'from-current', version: '9.9.9' },
         },
@@ -410,7 +411,7 @@ describe('pinned-versions', () => {
       })
       const consumer = await writeConfig('consumer-single', {
         description: 'single string extends',
-        extends: path.join(base, 'external-tools.json'),
+        extends: getBuildRequirementsPath(base),
         tools: {},
       })
 
@@ -443,14 +444,14 @@ describe('pinned-versions', () => {
       })
       const parent = await writeConfig('parent', {
         description: 'parent',
-        extends: path.join(grandparent, 'external-tools.json'),
+        extends: getBuildRequirementsPath(grandparent),
         tools: {
           parent: { description: 'from-parent', version: '2.0.0' },
         },
       })
       const consumer = await writeConfig('consumer-nested', {
         description: 'consumer',
-        extends: [path.join(parent, 'external-tools.json')],
+        extends: [getBuildRequirementsPath(parent)],
         tools: {
           child: { description: 'from-child', version: '3.0.0' },
         },
@@ -475,7 +476,7 @@ describe('pinned-versions', () => {
 
       // Fixture tool is present.
       expect(tools['custom']?.version).toBe('7.7.7')
-      // Foundational tools from packages/build-infra/external-tools.json are
+      // Foundational tools from packages/build-infra/build-requirements.json are
       // always prepended by loadAllTools and must not be lost.
       expect(tools['git']).toBeDefined()
       expect(tools['curl']).toBeDefined()

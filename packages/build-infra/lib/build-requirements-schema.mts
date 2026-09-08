@@ -1,14 +1,4 @@
-/**
- * TypeBox schema for external-tools.json files.
- *
- * Validates tool configuration used by the tool-installer to auto-download and
- * verify external build dependencies.
- *
- * Normalized schema across all Socket repos: socket-btm: build tools (system
- * tools, pip packages) socket-cli: bundle tools (npm packages, GitHub release
- * binaries) socket-registry: CI tools (GitHub release binaries) ultrathink:
- * build tools (compilers, language toolchains)
- */
+/** TypeBox schema for Sockeye builder requirements. */
 
 import { Type } from '@sinclair/typebox'
 
@@ -114,7 +104,7 @@ const toolSchema = Type.Object(
   { additionalProperties: true },
 )
 
-export const externalToolsSchema = Type.Object(
+export const buildRequirementsSchema = Type.Object(
   {
     $schema: Type.Optional(Type.String()),
     description: Type.Optional(
@@ -125,7 +115,7 @@ export const externalToolsSchema = Type.Object(
     extends: Type.Optional(
       Type.Union([Type.String(), Type.Array(Type.String())], {
         description:
-          'Path(s) to a base external-tools.json to inherit tools from. Mirrors ESLint: accepts a single string or an array of strings. Later entries in an array override earlier ones; the current file overrides all.',
+          'Path(s) to a base build-requirements.json to inherit tools from. Mirrors ESLint: accepts a single string or an array of strings. Later entries in an array override earlier ones; the current file overrides all.',
       }),
     ),
     tools: Type.Optional(
@@ -138,23 +128,23 @@ export const externalToolsSchema = Type.Object(
 )
 
 /**
- * A single tool entry in an external-tools.json `tools` map.
+ * A single tool entry in an build-requirements.json `tools` map.
  */
-export type ExternalTool = Static<typeof toolSchema>
+export type BuildRequirement = Static<typeof toolSchema>
 
 /**
- * The full shape of an external-tools.json file.
+ * The full shape of an build-requirements.json file.
  */
-export type ExternalToolsFile = Static<typeof externalToolsSchema>
+export type BuildRequirementsFile = Static<typeof buildRequirementsSchema>
 
 /**
- * Validate an external-tools.json object against the schema.
+ * Validate an build-requirements.json object against the schema.
  *
  * @param {unknown} data - Parsed JSON data.
  *
  * @returns `{ ok: true, value }` on success, `{ ok: false, errors }` with
  *   normalized `{ path, message }` issues on failure.
  */
-export function validateExternalTools(data: unknown) {
-  return validateSchema(externalToolsSchema, data)
+export function validateBuildRequirements(data: unknown) {
+  return validateSchema(buildRequirementsSchema, data)
 }

@@ -5,7 +5,7 @@
  * orchestrator handles:
  *
  * - --prod / --dev / --force / --clean / --clean-stage / --from-stage
- * - Unified cache key (external-tools.json + package.json sources)
+ * - Unified cache key (build-requirements.json + package.json sources)
  * - Per-stage shouldRun() / createCheckpoint() wrapping
  * - Missing-output clean-up
  *

@@ -58,7 +58,7 @@ ENV CI=true
 RUN pnpm install --frozen-lockfile --filter build-infra --filter yoga-layout-builder
 
 # Install and activate Emscripten.
-# Load version from external-tools.json (single source of truth).
+# Load version from build-requirements.json (single source of truth).
 RUN EMSCRIPTEN_VERSION=$(node packages/build-infra/scripts/get-tool-version.mts emscripten emsdk --package-root packages/yoga-layout-builder) && \
     git clone https://github.com/emscripten-core/emsdk.git /emsdk && \
     cd /emsdk && \

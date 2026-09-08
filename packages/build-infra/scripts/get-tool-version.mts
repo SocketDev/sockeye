@@ -1,5 +1,5 @@
 /**
- * Get tool version from external-tools.json.
+ * Get tool version from build-requirements.json.
  *
  * Zero external dependencies — safe to run before `pnpm install`.
  *
@@ -14,24 +14,25 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
+import {
+  BUILD_REQUIREMENTS_PACKAGE_ROOT,
+  getBuildRequirementsPath,
+} from '../lib/build-requirements/paths.mts'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// Parse --package-root flag to find the right external-tools.json.
+// Parse --package-root flag to find the right build-requirements.json.
 const args = process.argv.slice(2)
-let packageRoot = path.join(__dirname, '..')
+let packageRoot = BUILD_REQUIREMENTS_PACKAGE_ROOT
 const packageRootIdx = args.indexOf('--package-root')
 if (packageRootIdx !== -1 && args[packageRootIdx + 1]) {
   packageRoot = path.resolve(args[packageRootIdx + 1])
   args.splice(packageRootIdx, 2)
 }
 
-const EXTERNAL_TOOLS_PATH = path.join(packageRoot, 'external-tools.json')
+const BUILD_REQUIREMENTS_PATH = getBuildRequirementsPath(packageRoot)
 const toolName = args[0]
 const versionKey = args[1] || 'version'
 
-// This script runs BEFORE `pnpm install` (it reads external-tools.json
+// This script runs BEFORE `pnpm install` (it reads build-requirements.json
 // to learn the pnpm + node versions). Importing @socketsecurity/lib's
 // logger would create a chicken-and-egg dependency — node_modules
 // doesn't exist yet. Use console directly; the markers exempt the
@@ -44,11 +45,11 @@ if (!toolName) {
   process.exitCode = 1
 } else {
   try {
-    const data = JSON.parse(readFileSync(EXTERNAL_TOOLS_PATH, 'utf8'))
+    const data = JSON.parse(readFileSync(BUILD_REQUIREMENTS_PATH, 'utf8'))
     const tool = data.tools?.[toolName]
     if (!tool) {
       // oxlint-disable-next-line socket/no-console-prefer-logger -- runs before `pnpm install`, no lib logger available yet
-      console.error(`Tool '${toolName}' not found in external-tools.json`) // socket-hook: allow logger
+      console.error(`Tool '${toolName}' not found in build-requirements.json`) // socket-hook: allow logger
       // oxlint-disable-next-line socket/no-console-prefer-logger -- runs before `pnpm install`, no lib logger available yet
       console.error(`Available: ${Object.keys(data.tools || {}).join(', ')}`) // socket-hook: allow logger
       process.exitCode = 1

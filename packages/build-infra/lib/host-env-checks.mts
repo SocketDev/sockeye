@@ -153,7 +153,7 @@ export async function checkPythonVersion(
   sufficient: boolean
   version: string | undefined
 }> {
-  // Use single source of truth from external-tools.json if no version specified
+  // Use single source of truth from build-requirements.json if no version specified
   const effectiveMinVersion = minVersion ?? getMinPythonVersion()
   logger.substep('Checking Python version')
 

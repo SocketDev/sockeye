@@ -1,0 +1,6 @@
+{
+  "$schema": "../build-infra/lib/build-requirements-schema.json",
+  "description": "External tools for MiniLM model building (extends shared ML tools)",
+  "extends": "../build-infra/ml-build-requirements.json",
+  "tools": {}
+}

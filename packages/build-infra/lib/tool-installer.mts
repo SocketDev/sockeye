@@ -1,3 +1,7 @@
+import {
+  installMissingTool,
+  repairInstalledTool,
+} from './tool-installer-phases.mts'
 /**
  * Tool Installation Utilities.
  *
@@ -16,7 +20,6 @@ import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
-import { getPlatform } from './build-env.mts'
 import { errorMessage } from './error-utils.mts'
 import { downloadAndCache, getCachedToolBinary } from './tool-downloader.mts'
 import { getToolConfig } from './pinned-versions.mts'
@@ -173,7 +176,7 @@ export async function ensurePackageManagerAvailable({
  * Checks system PATH first, then user-level cache, then downloads.
  *
  * @param {string} tool - Tool name.
- * @param {object} config - Tool config from external-tools.json.
+ * @param {object} config - Tool config from build-requirements.json.
  * @param {boolean} autoInstall - Whether to auto-download if missing.
  *
  * @returns {Promise<{
@@ -291,7 +294,7 @@ export async function ensurePinnedTool(tool, config, autoInstall) {
  * @param {boolean} options.autoYes - Auto-answer yes to prompts, default
  *   false.
  * @param {object} options.toolOptions - Loading options for
- *   external-tools.json.
+ *   build-requirements.json.
  *
  * @returns {Promise<object>} Result with available and installed booleans
  *   plus optional path, packageManager, and error fields.
@@ -313,73 +316,14 @@ export async function ensureToolInstalled(
   // Check if binary exists in PATH.
   const binPath = whichSync(tool, { nothrow: true })
   if (binPath) {
-    // Binary exists, but verify it actually works (catches broken dependencies).
-    const verifyArgs = config?.verify || ['--version']
-    const works = await verifyToolWorks(tool, verifyArgs)
-    if (works) {
-      return {
-        __proto__: null,
-        available: true,
-        installed: false,
-        packageManager: undefined,
-      }
-    }
-
-    // Tool exists but doesn't work - likely missing dependency.
-    // Try to install dependencies first.
-    if (config?.dependencies?.length) {
-      logger.warn(`${tool} exists but failed to run - checking dependencies…`)
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-      for (const dep of config.dependencies) {
-        // eslint-disable-next-line no-await-in-loop
-        const depResult = await ensureToolInstalled(dep, {
-          autoInstall,
-          autoYes,
-          toolOptions,
-        })
-        if (!depResult.available) {
-          const depConfig = getToolConfig(dep, toolOptions)
-          return {
-            __proto__: null,
-            available: false,
-            error: `Dependency ${dep} not available: ${depConfig?.note || 'install required'}`,
-            installed: false,
-            packageManager: undefined,
-          }
-        }
-      }
-      // Dependencies installed, try verifying again.
-      const worksAfterDeps = await verifyToolWorks(tool, verifyArgs)
-      if (worksAfterDeps) {
-        return {
-          __proto__: null,
-          available: true,
-          installed: false,
-          packageManager: undefined,
-        }
-      }
-    }
-
-    // Still broken - suggest reinstall.
-    const platform = getPlatform()
-
-    logger.error(`${tool} exists but failed to run`)
-    if (config?.notes) {
-      logger.substep(config.notes)
-    }
-    if (platform === 'darwin') {
-      logger.substep(`Try: brew reinstall ${tool}`)
-    } else if (platform === 'linux') {
-      logger.substep(`Try: sudo apt-get install --reinstall ${tool}`)
-    }
-
-    return {
-      __proto__: null,
-      available: false,
-      error: `${tool} exists but failed to run (possible broken dependency)`,
-      installed: false,
-      packageManager: undefined,
-    }
+    return repairInstalledTool({
+      tool,
+      config,
+      autoInstall,
+      autoYes,
+      toolOptions,
+      ensureDependency: ensureToolInstalled,
+    })
   }
 
   if (!autoInstall) {
@@ -391,77 +335,12 @@ export async function ensureToolInstalled(
     }
   }
 
-  // Install dependencies first.
-  if (config?.dependencies?.length) {
-    logger.substep(`Installing dependencies for ${tool}...`)
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-    for (const dep of config.dependencies) {
-      // eslint-disable-next-line no-await-in-loop
-      const depResult = await ensureToolInstalled(dep, {
-        autoInstall,
-        autoYes,
-        toolOptions,
-      })
-      if (!depResult.available) {
-        return {
-          __proto__: null,
-          available: false,
-          error: `Failed to install dependency: ${dep}`,
-          installed: false,
-          packageManager: undefined,
-        }
-      }
-    }
-  }
-
-  // Detect available package managers.
-  const managers = detectPackageManagers()
-  if (!managers.length) {
-    logger.warn(`No package manager detected for auto-installing ${tool}`)
-    return {
-      __proto__: null,
-      available: false,
-      installed: false,
-      packageManager: undefined,
-    }
-  }
-
-  // Try to install using the first available package manager.
-  const packageManager = managers[0]
-  if (!packageManager) {
-    // Defensive fallback for race conditions
-    logger.error('Package manager became unavailable')
-    return {
-      __proto__: null,
-      available: false,
-      installed: false,
-      packageManager: undefined,
-    }
-  }
-  logger.substep(`Attempting to install ${tool} using ${packageManager}`)
-
-  const installed = await installTool(tool, packageManager, { autoYes })
-
-  // Verify installation works.
-  if (installed) {
-    const verifyArgs = config?.verify || ['--version']
-    const works = await verifyToolWorks(tool, verifyArgs)
-    if (!works) {
-      logger.error(`${tool} installed but failed verification`)
-      return {
-        __proto__: null,
-        available: false,
-        error: `${tool} installed but failed to run`,
-        installed: true,
-        packageManager,
-      }
-    }
-  }
-
-  return {
-    __proto__: null,
-    available: installed,
-    installed,
-    packageManager: installed ? packageManager : undefined,
-  }
+  return installMissingTool({
+    tool,
+    config,
+    autoInstall,
+    autoYes,
+    toolOptions,
+    ensureDependency: ensureToolInstalled,
+  })
 }

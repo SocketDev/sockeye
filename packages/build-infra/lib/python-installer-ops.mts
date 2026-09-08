@@ -136,7 +136,7 @@ export async function installPythonPackage(
     const version = consumerVersions[packageName]
     if (!version) {
       throw new Error(
-        `No pinned version found for ${packageName}. Add to external-tools.json with type: "python"`,
+        `No pinned version found for ${packageName}. Add to build-requirements.json with type: "python"`,
       )
     }
     const extras = consumerExtras[packageName]

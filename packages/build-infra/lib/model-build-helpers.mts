@@ -23,10 +23,10 @@ const logger = getDefaultLogger()
 /**
  * Run preflight checks for model builds: free and check disk space, install
  * and verify Python at the minimum version, and install the Python packages
- * required by external-tools.json. Throws when a prerequisite cannot be met.
+ * required by build-requirements.json. Throws when a prerequisite cannot be met.
  *
  * @param {object} options - Check options.
- * @param {string} options.packageRoot - Root for loading external-tools.json.
+ * @param {string} options.packageRoot - Root for loading build-requirements.json.
  * @param {string} options.packageJsonPath - Package.json for pip context.
  * @param {string} [options.buildDir] - Build directory for disk space check.
  * @param {number} [options.requiredDiskGB=1] - Required disk space in GB.
@@ -87,7 +87,7 @@ export async function checkModelBuildPrerequisites(config) {
     throw new Error(`Python ${requiredPythonVersion}+ required`)
   }
 
-  // Load Python packages from external-tools.json (with extends support).
+  // Load Python packages from build-requirements.json (with extends support).
   const externalTools = loadAllTools({ packageRoot })
   const pythonPackages = extractPythonPackages(externalTools)
 
@@ -132,7 +132,7 @@ export async function checkModelBuildPrerequisites(config) {
 }
 
 /**
- * Extract Python packages from external-tools.json config.
+ * Extract Python packages from build-requirements.json config.
  *
  * @param {object} externalTools - Tools config from loadAllTools()
  *
@@ -145,10 +145,10 @@ export function extractPythonPackages(externalTools) {
         // pip is the installer itself — distros that ship it via dpkg
         // refuse `pip install --upgrade pip` even with
         // --break-system-packages (no RECORD file on the dpkg copy).
-        // Treat it as bootstrap; pin via external-tools.json for docs
+        // Treat it as bootstrap; pin via build-requirements.json for docs
         // but don't auto-reinstall it.
         name !== 'pip' &&
-        // Two equivalent shapes exist in external-tools.json files:
+        // Two equivalent shapes exist in build-requirements.json files:
         //   { packageManager: "pip", ... }                  (newer)
         //   { type: "python", versions: { pip: "x.y.z" } }  (shared ml-tools)
         // Both should count as a Python package to auto-install via pip.

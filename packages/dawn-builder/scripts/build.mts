@@ -128,13 +128,13 @@ async function main(): Promise<void> {
   const cmakePath = await which('cmake')
   if (typeof cmakePath !== 'string') {
     throw new Error(
-      `cmake not found on PATH. Dawn requires CMake ≥ 3.30; pinned version + install lives in packages/dawn-builder/external-tools.json.`,
+      `cmake not found on PATH. Dawn requires CMake ≥ 3.30; pinned version + install lives in packages/dawn-builder/build-requirements.json.`,
     )
   }
   const ninjaPath = await which('ninja')
   if (typeof ninjaPath !== 'string') {
     throw new Error(
-      `ninja not found on PATH. Dawn's CMake setup generates Ninja files; pinned version lives in packages/dawn-builder/external-tools.json.`,
+      `ninja not found on PATH. Dawn's CMake setup generates Ninja files; pinned version lives in packages/dawn-builder/build-requirements.json.`,
     )
   }
 

@@ -31,7 +31,7 @@ describe('python-installer', () => {
   describe(getPythonPackageInstructions, () => {
     it('should return array of instruction strings', () => {
       // Note: getPythonPackageInstructions requires packages to be defined
-      // in external-tools.json with type: "python". Since the core external-tools.json
+      // in build-requirements.json with type: "python". Since the core build-requirements.json
       // doesn't include Python packages, we test with empty list.
       const instructions = getPythonPackageInstructions([])
       expect(Array.isArray(instructions)).toBeTruthy()

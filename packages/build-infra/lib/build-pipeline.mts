@@ -1,3 +1,4 @@
+import { getBuildRequirementsPath } from './paths.mts'
 /**
  * WASM build pipeline orchestrator.
  *
@@ -9,7 +10,7 @@
  * 340-line build.mts:
  *
  * - Build mode + platform-arch detection (uses centralized helpers).
- * - Loading external-tools.json + package.json `sources` metadata.
+ * - Loading build-requirements.json + package.json `sources` metadata.
  * - Deriving a unified cache key from: node version, platform, arch, build mode,
  *   pinned tool versions, and source refs. Tool bump or source SHA bump
  *   invalidates the cache automatically — no hand-wired busting.
@@ -39,7 +40,7 @@ import {
 } from './checkpoint-manager.mts'
 import { getBuildMode, validateCheckpointChain } from './constants.mts'
 import { errorMessage } from './error-utils.mts'
-import { validateExternalTools } from './external-tools-schema.mts'
+import { validateBuildRequirements } from './build-requirements-schema.mts'
 import {
   getCurrentPlatformArch,
   parsePlatformArch,
@@ -47,7 +48,7 @@ import {
 import { getNodeVersion } from './version-helpers.mts'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 
-import type { ExternalToolsFile } from './external-tools-schema.mts'
+import type { BuildRequirementsFile } from './build-requirements-schema.mts'
 import type {
   PipelineContext,
   PipelinePackageJson,
@@ -132,12 +133,12 @@ export function hashFileContents(files: string[]): string {
 export async function loadExternalTools(
   packageRoot: string,
 ): Promise<{ rawHash: string; versions: Record<string, string> }> {
-  const filePath = path.join(packageRoot, 'external-tools.json')
-  const data = await readJson<ExternalToolsFile>(filePath)
+  const filePath = getBuildRequirementsPath(packageRoot)
+  const data = await readJson<BuildRequirementsFile>(filePath)
   if (!data) {
     return { versions: {}, rawHash: '' }
   }
-  validateExternalTools(data)
+  validateBuildRequirements(data)
   const versions: Record<string, string> = {}
   // Loop variable is destructured.
   // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
@@ -406,7 +407,7 @@ export async function runStage(stage, ctx, stageParams) {
 
   const buildDir = resolveCheckpointBuildDir(stage, ctx)
   const sourcePaths = [
-    path.join(ctx.packageRoot, 'external-tools.json'),
+    getBuildRequirementsPath(ctx.packageRoot),
     path.join(ctx.packageRoot, 'package.json'),
     ...(stage.sourcePaths ?? []),
   ].filter(p => existsSync(p))

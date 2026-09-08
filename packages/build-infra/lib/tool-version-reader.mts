@@ -1,6 +1,6 @@
 /**
  * Per-tool version readers — each reads one named tool's version from
- * external-tools.json or a pinned file (.node-version).
+ * build-requirements.json or a pinned file (.node-version).
  *
  * Separate from the loaders so callers that only need one version string
  * don't drag in the full loader pair.
@@ -12,11 +12,11 @@ import { NODE_VERSION_FILE, PACKAGE_ROOT } from './constants.mts'
 import {
   loadExternalTools,
   loadExternalToolsSync,
-} from './external-tools-loader.mts'
+} from './build-requirements-loader.mts'
 import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 
 /**
- * Load CMake version from external-tools.json.
+ * Load CMake version from build-requirements.json.
  *
  * @example
  *   const version = await getCMakeVersion(PACKAGE_ROOT)
@@ -26,7 +26,7 @@ import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
  *
  * @returns {Promise<string>} CMake version (e.g., '3.28.1')
  *
- * @throws {Error} If version not found or external-tools.json missing
+ * @throws {Error} If version not found or build-requirements.json missing
  */
 export async function getCMakeVersion(packageRoot: string): Promise<string> {
   const data = await loadExternalTools(packageRoot)
@@ -34,7 +34,7 @@ export async function getCMakeVersion(packageRoot: string): Promise<string> {
   const cmakeConfig = data.tools?.cmake
   if (!cmakeConfig) {
     throw new Error(
-      `CMake config not found in external-tools.json at: ${packageRoot}\n` +
+      `CMake config not found in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "cmake": { ... } } }`,
     )
   }
@@ -42,7 +42,7 @@ export async function getCMakeVersion(packageRoot: string): Promise<string> {
   const version = cmakeConfig.version
   if (!version) {
     throw new Error(
-      `CMake version not found in external-tools.json at: ${packageRoot}\n` +
+      `CMake version not found in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "cmake": { "version": "..." } } }`,
     )
   }
@@ -51,7 +51,7 @@ export async function getCMakeVersion(packageRoot: string): Promise<string> {
 }
 
 /**
- * Load Emscripten version from external-tools.json.
+ * Load Emscripten version from build-requirements.json.
  *
  * @example
  *   const version = await getEmscriptenVersion(PACKAGE_ROOT)
@@ -61,7 +61,7 @@ export async function getCMakeVersion(packageRoot: string): Promise<string> {
  *
  * @returns {Promise<string>} Emscripten emsdk version (e.g., '4.0.20')
  *
- * @throws {Error} If version not found or external-tools.json missing
+ * @throws {Error} If version not found or build-requirements.json missing
  */
 export async function getEmscriptenVersion(
   packageRoot: string,
@@ -71,7 +71,7 @@ export async function getEmscriptenVersion(
   const emscriptenConfig = data.tools?.emscripten
   if (!emscriptenConfig) {
     throw new Error(
-      `Emscripten config not found in external-tools.json at: ${packageRoot}\n` +
+      `Emscripten config not found in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "emscripten": { ... } } }`,
     )
   }
@@ -79,7 +79,7 @@ export async function getEmscriptenVersion(
   const version = emscriptenConfig.version
   if (!version) {
     throw new Error(
-      `Emscripten version not found in external-tools.json at: ${packageRoot}\n` +
+      `Emscripten version not found in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "emscripten": { "version": "..." } } }`,
     )
   }
@@ -89,7 +89,7 @@ export async function getEmscriptenVersion(
 
 let minPythonVersion: string | undefined
 /**
- * Load minimum Python version from build-infra/external-tools.json.
+ * Load minimum Python version from build-infra/build-requirements.json.
  * Result is memoized for performance.
  *
  * @example
@@ -98,7 +98,7 @@ let minPythonVersion: string | undefined
  *
  * @returns {string} Minimum Python version (e.g., '3.6')
  *
- * @throws {Error} If version not found or external-tools.json missing
+ * @throws {Error} If version not found or build-requirements.json missing
  */
 export function getMinPythonVersion(): string {
   if (minPythonVersion === undefined) {
@@ -107,7 +107,7 @@ export function getMinPythonVersion(): string {
     const pythonConfig = data.tools?.python
     if (!pythonConfig) {
       throw new Error(
-        `Python config not found in external-tools.json at: ${PACKAGE_ROOT}\n` +
+        `Python config not found in build-requirements.json at: ${PACKAGE_ROOT}\n` +
           `Expected: { "tools": { "python": { ... } } }`,
       )
     }
@@ -115,7 +115,7 @@ export function getMinPythonVersion(): string {
     const version = pythonConfig.version
     if (!version) {
       throw new Error(
-        `Python version not found in external-tools.json at: ${PACKAGE_ROOT}\n` +
+        `Python version not found in build-requirements.json at: ${PACKAGE_ROOT}\n` +
           `Expected: { "tools": { "python": { "version": "..." } } }`,
       )
     }
@@ -165,7 +165,7 @@ export function getNodeVersion(): string {
 }
 
 /**
- * Generic tool version loader from external-tools.json.
+ * Generic tool version loader from build-requirements.json.
  *
  * @example
  *   const version = await getToolVersion(PACKAGE_ROOT, 'emscripten')
@@ -176,7 +176,7 @@ export function getNodeVersion(): string {
  *
  * @returns {Promise<string>} Tool version
  *
- * @throws {Error} If version not found or external-tools.json missing
+ * @throws {Error} If version not found or build-requirements.json missing
  */
 export async function getToolVersion(
   packageRoot: string,
@@ -187,7 +187,7 @@ export async function getToolVersion(
   const toolConfig = data.tools?.[toolName]
   if (!toolConfig) {
     throw new Error(
-      `Tool '${toolName}' config not found in external-tools.json at: ${packageRoot}\n` +
+      `Tool '${toolName}' config not found in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "${toolName}": { ... } } }\n` +
         `Available tools: ${Object.keys(data.tools || {}).join(', ')}`,
     )
@@ -196,7 +196,7 @@ export async function getToolVersion(
   const version = toolConfig.version
   if (!version) {
     throw new Error(
-      `Version not found for tool '${toolName}' in external-tools.json at: ${packageRoot}\n` +
+      `Version not found for tool '${toolName}' in build-requirements.json at: ${packageRoot}\n` +
         `Expected: { "tools": { "${toolName}": { "version": "..." } } }`,
     )
   }

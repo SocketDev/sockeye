@@ -3,7 +3,7 @@
  *
  * Mirrors pnpm-workspace.yaml `minimumReleaseAge: 10080` (7 days). One
  * constant, one annotation shape, every pin surface (.gitmodules, workflow
- * `uses:`, Docker `FROM @sha256:`, external-tools.json, pnpm-workspace.yaml).
+ * `uses:`, Docker `FROM @sha256:`, build-requirements.json, pnpm-workspace.yaml).
  *
  * Annotation shape:
  *

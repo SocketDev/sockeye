@@ -10,7 +10,7 @@
  * - Node-checksum.mts (fetchNodeChecksum, verifyNodeChecksum)
  */
 
-export * from './external-tools-loader.mts'
+export * from './build-requirements-loader.mts'
 export * from './node-checksum.mts'
 export * from './submodule-version.mts'
 export * from './tool-version-reader.mts'

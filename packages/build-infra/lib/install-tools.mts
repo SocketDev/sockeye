@@ -1,6 +1,6 @@
 /**
- * @file Tool installation helper using external-tools.json
- *   Installs system dependencies with pinned versions from external-tools.json.
+ * @file Tool installation helper using build-requirements.json
+ *   Installs system dependencies with pinned versions from build-requirements.json.
  *   Detects platform and package manager, handles version pinning.
  */
 
@@ -71,7 +71,7 @@ export async function detectPackageManager() {
 /**
  * Install a single tool with version pinning.
  *
- * @param {string} toolName - Tool name from external-tools.json.
+ * @param {string} toolName - Tool name from build-requirements.json.
  * @param {object} options - Installation options.
  * @param {string} [options.packageRoot] - Package root for hierarchical
  *   loading.

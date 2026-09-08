@@ -1,9 +1,9 @@
 {
-  "$schema": "../build-infra/lib/external-tools-schema.json",
-  "description": "Package-level external tools for yoga-layout-builder (shared across all checkpoints)",
+  "$schema": "../build-infra/lib/build-requirements-schema.json",
+  "description": "Package-level external tools for onnxruntime-builder (shared across all checkpoints)",
   "tools": {
     "cmake": {
-      "description": "CMake build system (required for Yoga Layout)",
+      "description": "CMake build system (required for ONNX Runtime)",
       "version": "3.31.4"
     },
     "emscripten": {

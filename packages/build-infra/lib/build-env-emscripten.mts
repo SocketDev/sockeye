@@ -190,7 +190,7 @@ export async function findEmscriptenSDK() {
  * Get Emscripten version from the installed emcc binary.
  *
  * Note: this detects the runtime emcc version; for the configured/pinned
- * version from external-tools.json see `build-infra/lib/version-helpers`.
+ * version from build-requirements.json see `build-infra/lib/version-helpers`.
  */
 export async function getEmscriptenVersion() {
   if (!(await commandExists('emcc'))) {

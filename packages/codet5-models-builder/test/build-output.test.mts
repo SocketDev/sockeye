@@ -1,3 +1,4 @@
+import { getBuildRequirementsPath } from '../../build-infra/lib/paths.mts'
 /**
  * @file Tests for codet5-models-builder model output files. Validates that the
  *   build process generates correct encoder/decoder structure and formats.
@@ -197,8 +198,8 @@ describe.skipIf(!hasBuiltArtifacts)(
         expect(pkgJson.private).toBeTruthy()
       })
 
-      it('should have external-tools.json for Python dependencies', async () => {
-        const externalToolsPath = path.join(packageDir, 'external-tools.json')
+      it('should have build-requirements.json for Python dependencies', async () => {
+        const externalToolsPath = getBuildRequirementsPath(packageDir)
         expect(existsSync(externalToolsPath)).toBeTruthy()
 
         // Load tools with extends support

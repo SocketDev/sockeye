@@ -5,34 +5,39 @@
  * specific versions to ensure reproducible builds and prevent supply chain
  * attacks.
  *
- * Tool configurations are now loaded from external-tools.json files in a
+ * Tool configurations are now loaded from build-requirements.json files in a
  * hierarchical structure:
  *
- * 1. Build-infra/external-tools.json (core fundamentals: git, curl, patch, make)
- * 2. <package>/external-tools.json (package-level tools)
- * 3. <package>/scripts/<checkpoint>/shared/external-tools.json
+ * 1. Build-infra/build-requirements.json (core fundamentals: git, curl, patch,
+ *    make)
+ * 2. <package>/build-requirements.json (package-level tools)
+ * 3. <package>/scripts/<checkpoint>/shared/build-requirements.json
  *    (checkpoint-specific tools)
  */
 
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import {
+  BUILD_REQUIREMENTS_PACKAGE_ROOT,
+  getBuildRequirementsPath,
+  getCheckpointRequirementsPath,
+  resolveRequirementReference,
+} from './paths.mts'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { errorMessage } from './error-utils.mts'
-import { validateExternalTools } from './external-tools-schema.mts'
+import { validateBuildRequirements } from './build-requirements-schema.mts'
 
 import type {
-  ExternalTool,
-  ExternalToolsFile,
-} from './external-tools-schema.mts'
+  BuildRequirement,
+  BuildRequirementsFile,
+} from './build-requirements-schema.mts'
 
 const logger = getDefaultLogger()
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /**
- * Hierarchical lookup context for external-tools.json resolution.
+ * Hierarchical lookup context for build-requirements.json resolution.
  */
 export interface LoadExternalToolsOptions {
   checkpointName?: string | undefined
@@ -40,18 +45,19 @@ export interface LoadExternalToolsOptions {
 }
 
 /**
- * Tool-name → configuration map merged from external-tools.json files.
- * A JSON document shape — the map round-trips to external-tools.json on disk
- * and a Map would not serialize without a replacer, so the record is the
- * honest shape for it.
+ * Tool-name → configuration map merged from build-requirements.json files. A
+ * JSON document shape — the map round-trips to build-requirements.json on disk
+ * and a Map would not serialize without a replacer, so the record is the honest
+ * shape for it.
  */
 // oxlint-disable-next-line socket/prefer-refined-record -- JSON doc
-export type ExternalToolsMap = Record<string, ExternalTool>
+export type ExternalToolsMap = Record<string, BuildRequirement>
 
 /**
- * Load external tools from an external-tools.json file with extends support.
+ * Load external tools from an build-requirements.json file with extends
+ * support.
  *
- * @param {string} jsonPath - Path to external-tools.json.
+ * @param {string} jsonPath - Path to build-requirements.json.
  * @param {Set<string>} [visited] - Set of visited paths to prevent circular
  *   dependencies.
  *
@@ -81,10 +87,12 @@ export function loadExternalToolsJson(
     // try/catch rather than flowing on.
 
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowed
-    const data = JSON.parse(readFileSync(jsonPath, 'utf8')) as ExternalToolsFile
+    const data = JSON.parse(
+      readFileSync(jsonPath, 'utf8'),
+    ) as BuildRequirementsFile
 
     // Validate against schema.
-    const validation = validateExternalTools(data)
+    const validation = validateBuildRequirements(data)
     if (!validation.ok) {
       const issueLines = validation.errors.map(
         i => `  ${i.path.join('.') || '(root)'}: ${i.message}`,
@@ -113,7 +121,10 @@ export function loadExternalToolsJson(
       if (relativeBase === undefined) {
         continue
       }
-      const extendsPath = path.resolve(path.dirname(jsonPath), relativeBase)
+      const extendsPath = resolveRequirementReference({
+        manifestPath: jsonPath,
+        reference: relativeBase,
+      })
       const extendedTools = loadExternalToolsJson(extendsPath, visited)
       tools = { ...tools, ...extendedTools }
     }
@@ -126,7 +137,7 @@ export function loadExternalToolsJson(
     return tools
   } catch (e) {
     logger.fail(
-      `Failed to load external-tools.json from ${jsonPath}: ${errorMessage(e)}`,
+      `Failed to load build-requirements.json from ${jsonPath}: ${errorMessage(e)}`,
     )
     return {}
   }
@@ -138,9 +149,9 @@ export function loadExternalToolsJson(
  * Precedence (highest to lowest):
  *
  * 1. Checkpoint-specific:
- *    <package>/scripts/<checkpoint>/shared/external-tools.json
- * 2. Package-level: <package>/external-tools.json
- * 3. Core fundamentals: build-infra/external-tools.json
+ *    <package>/scripts/<checkpoint>/shared/build-requirements.json
+ * 2. Package-level: <package>/build-requirements.json
+ * 3. Core fundamentals: build-infra/build-requirements.json
  *
  * @param {object} options - Loading options.
  * @param {string} [options.packageRoot] - Package root directory (e.g.,
@@ -159,25 +170,24 @@ export function loadExternalTools({
   let tools: ExternalToolsMap = {}
 
   // 1. Load core fundamentals from build-infra
-  const buildInfraPath = path.join(__dirname, '..', 'external-tools.json')
+  const buildInfraPath = getBuildRequirementsPath(
+    BUILD_REQUIREMENTS_PACKAGE_ROOT,
+  )
   const coreTools = loadExternalToolsJson(buildInfraPath)
   tools = { ...tools, ...coreTools }
 
   // 2. Load package-level tools if packageRoot provided
   if (packageRoot) {
-    const packageToolsPath = path.join(packageRoot, 'external-tools.json')
+    const packageToolsPath = getBuildRequirementsPath(packageRoot)
     const packageTools = loadExternalToolsJson(packageToolsPath)
     tools = { ...tools, ...packageTools }
 
     // 3. Load checkpoint-specific tools if checkpointName provided
     if (checkpointName) {
-      const checkpointToolsPath = path.join(
+      const checkpointToolsPath = getCheckpointRequirementsPath({
         packageRoot,
-        'scripts',
         checkpointName,
-        'shared',
-        'external-tools.json',
-      )
+      })
       const checkpointTools = loadExternalToolsJson(checkpointToolsPath)
       tools = { ...tools, ...checkpointTools }
     }
@@ -187,9 +197,9 @@ export function loadExternalTools({
 }
 
 /**
- * Pinned tool versions loaded from external-tools.json files.
+ * Pinned tool versions loaded from build-requirements.json files.
  *
- * Loaded from external-tools.json files in hierarchical structure.
+ * Loaded from build-requirements.json files in hierarchical structure.
  * This is the single source of truth for all external dependencies.
  *
  * Format:
@@ -207,7 +217,7 @@ export const TOOL_VERSIONS = loadExternalTools()
 
 /**
  * Pinned Python package versions.
- * Loaded from external-tools.json files (type: "python").
+ * Loaded from build-requirements.json files (type: "python").
  *
  * Version compatibility matrix (tested working combination): - PyTorch 2.10.0 +
  * transformers 5.3.0 (Python 3.14 compatible via abi3 wheels) - ONNX 1.17.0 +
@@ -230,7 +240,7 @@ export const PYTHON_VERSIONS = (() => {
 
 /**
  * Python package extras (optional dependencies).
- * Loaded from external-tools.json files (extras array).
+ * Loaded from build-requirements.json files (extras array).
  *
  * Format: { packageName: ['extra1', 'extra2'] }
  */
@@ -260,7 +270,7 @@ export const PYTHON_PACKAGE_EXTRAS = (() => {
  * @returns {string} Package specifier with pinned version (e.g.,
  *   'torch==2.5.0')
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
@@ -273,7 +283,7 @@ export function getPinnedPackage(
 
   if (!config || config.packageManager !== 'pip' || !config.version) {
     throw new Error(
-      `No pinned version found for ${packageName}. Add to external-tools.json with packageManager: "pip"`,
+      `No pinned version found for ${packageName}. Add to build-requirements.json with packageManager: "pip"`,
     )
   }
 
@@ -296,7 +306,7 @@ export function getPinnedPackage(
  *
  * @returns {string[]} Array of package specifiers with pinned versions
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
@@ -315,14 +325,14 @@ export function getPinnedPackages(
  *
  * @returns {object | undefined} Tool configuration or undefined if not found
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getToolConfig(
   toolName: string,
   options?: LoadExternalToolsOptions | undefined,
-): ExternalTool | undefined {
+): BuildRequirement | undefined {
   const tools = options ? loadExternalTools(options) : TOOL_VERSIONS
   return tools[toolName] || undefined
 }
@@ -337,7 +347,7 @@ export function getToolConfig(
  *
  * @returns {string} Package specifier (e.g., 'cmake@3.31.4' for brew)
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
@@ -381,7 +391,7 @@ export function getToolPackageSpec(
  *
  * @returns {string | undefined} Pinned version or undefined if not found
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
@@ -401,7 +411,7 @@ export function getToolVersion(
  * Load Python versions with optional package/checkpoint context.
  *
  * This allows checkpoints to have their own Python package versions
- * by creating checkpoint-specific external-tools.json files.
+ * by creating checkpoint-specific build-requirements.json files.
  *
  * @param {object} [options] - Loading options.
  * @param {string} [options.packageRoot] - Package root directory.
@@ -452,7 +462,7 @@ export function loadPythonVersions(
  *
  * @returns {object} All tools configuration
  */
-// File co-locates external-tools.json loaders with the version-resolution
+// File co-locates build-requirements.json loaders with the version-resolution
 // helpers that consume them; alphabetical reordering would split loader from
 // consumer and obscure the hierarchical lookup flow.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering

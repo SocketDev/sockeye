@@ -26,7 +26,7 @@ const logger = getDefaultLogger()
  *   check.
  * @param {boolean} [options.python=false] - Check Python version.
  * @param {string} [options.pythonVersion] - Minimum Python version (defaults to
- *   external-tools.json minimumVersion)
+ *   build-requirements.json minimumVersion)
  * @param {boolean} [options.quiet=false] - Suppress output.
  * @param {boolean} [options.failFast=true] - Exit on first failure.
  *
@@ -44,7 +44,7 @@ export async function runPreflightChecks(options = {}) {
     quiet = false,
   } = options
 
-  // Use single source of truth from external-tools.json if no version specified
+  // Use single source of truth from build-requirements.json if no version specified
   const effectivePythonVersion = pythonVersion ?? getMinPythonVersion()
 
   const failures = []

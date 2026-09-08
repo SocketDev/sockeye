@@ -28,6 +28,6 @@ First-time init (clones ~500MB of upstream ONNX Runtime):
 git submodule update --init --recursive packages/onnxruntime-builder/upstream/onnxruntime
 ```
 
-Prereqs: `cmake`, `ninja`, `python3`, and the Emscripten SDK version pinned in `external-tools.json`. The preflight will auto-install Emscripten on first use; `cmake` / `ninja` / `python3` must be on PATH.
+Prereqs: `cmake`, `ninja`, `python3`, and the Emscripten SDK version pinned in `build-requirements.json`. The preflight will auto-install Emscripten on first use; `cmake` / `ninja` / `python3` must be on PATH.
 
 Output: `build/<mode>/<platform-arch>/wasm/out/Final/` with `ort.wasm`, `ort.mjs` (ESM loader), and `ort-sync.cjs` (sync CJS loader with embedded base64 WASM).

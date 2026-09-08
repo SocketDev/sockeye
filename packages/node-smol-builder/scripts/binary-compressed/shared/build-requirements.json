@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../build-infra/lib/external-tools-schema.json",
+  "$schema": "../../../../build-infra/lib/build-requirements-schema.json",
   "description": "External tools required for the binary-compressed checkpoint phase (additional tools beyond build-infra)",
   "tools": {
     "libssl-dev": {

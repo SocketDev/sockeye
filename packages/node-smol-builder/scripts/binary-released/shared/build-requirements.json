@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../build-infra/lib/external-tools-schema.json",
+  "$schema": "../../../../build-infra/lib/build-requirements-schema.json",
   "description": "External tools required for the binary-released checkpoint phase (Node.js compilation)",
   "tools": {
     "g++-13": {

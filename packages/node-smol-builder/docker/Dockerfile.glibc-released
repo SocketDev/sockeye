@@ -73,7 +73,7 @@ RUN dnf -y update && \
     PLATFORM="linux-${ARCH}" && \
     PNPM_VERSION=$(jq -r .pnpm.version /tmp/registry-tools.json) && \
     PNPM_ASSET=$(jq -r ".pnpm.platforms[\"${PLATFORM}\"].asset" /tmp/registry-tools.json) && \
-    # external-tools.json carries SRI integrity strings (`<algo>-<base64>`)
+    # build-requirements.json carries SRI integrity strings (`<algo>-<base64>`)
     # since the schema migration in socket-registry@9246c28b. Decode the
     # base64 portion to hex so sha256sum -c can verify it. Same pattern
     # for any future tarball-pinned tool added here.
