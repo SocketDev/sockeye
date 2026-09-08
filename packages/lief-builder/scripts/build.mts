@@ -37,8 +37,8 @@ import { extractTarball } from 'local-build-infra/lib/tarball-utils'
 import { getSubmoduleVersion } from 'local-build-infra/lib/version-helpers'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 
-import { which } from '@socketsecurity/lib-stable/bin/which'
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { which } from '@socketsecurity/lib-stable/exe/path/which'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { safeDelete, safeMkdir } from '@socketsecurity/lib-stable/fs/safe'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import {
@@ -74,7 +74,7 @@ const liefPatchedDir = path.join(
 export function getLiefBuildDirs(platformArch) {
   const buildDir = getPlatformBuildDir(packageRoot, platformArch)
   const liefBuildDir = path.join(buildDir, 'out', BUILD_STAGES.FINAL, 'lief')
-  return { buildDir, liefBuildDir }
+  return { __proto__: null, buildDir, liefBuildDir }
 }
 
 /**
@@ -168,6 +168,7 @@ export function verifyLiefAt(dir) {
     })
     .map(req => (Array.isArray(req) ? `{${req.join(',')}}` : req))
   return {
+    __proto__: null,
     valid: missing.length === 0,
     missing,
   }
@@ -319,7 +320,7 @@ export async function runCommand(command, args, cwd, env = {}) {
  */
 export async function verifyMuslCompatibility(libPath) {
   if (!(await isMusl())) {
-    return { compatible: true }
+    return { __proto__: null, compatible: true }
   }
 
   logger.info('Verifying LIEF library for musl compatibility…')
@@ -334,6 +335,7 @@ export async function verifyMuslCompatibility(libPath) {
     await spawn('which', ['nm'], { stdio: 'pipe' })
   } catch {
     return {
+      __proto__: null,
       compatible: false,
       reason: 'nm not found; cannot verify musl compatibility',
     }
@@ -346,6 +348,7 @@ export async function verifyMuslCompatibility(libPath) {
     nmOutput = result?.stdout
   } catch (nmError) {
     return {
+      __proto__: null,
       compatible: false,
       reason: `nm failed on ${libPath}: ${errorMessage(nmError)}`,
     }
@@ -353,6 +356,7 @@ export async function verifyMuslCompatibility(libPath) {
 
   if (!nmOutput) {
     return {
+      __proto__: null,
       compatible: false,
       reason: 'nm returned empty output; cannot verify musl compatibility',
     }
@@ -382,13 +386,14 @@ export async function verifyMuslCompatibility(libPath) {
   if (foundSymbols.length > 0) {
     logger.info(`Found ${foundSymbols.length} glibc fortify symbol(s)`)
     return {
+      __proto__: null,
       compatible: false,
       reason: `Library contains glibc-specific fortify symbols: ${foundSymbols.join(', ')}`,
     }
   }
 
   logger.info('No glibc fortify symbols found - library is musl-compatible')
-  return { compatible: true }
+  return { __proto__: null, compatible: true }
 }
 
 /**
@@ -401,6 +406,79 @@ export async function verifyMuslCompatibility(libPath) {
 // configure → build → install → smoke test); alphabetizing across pipeline
 // phases would scatter the flow and break the checkpoint reading order.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
+async function copyLiefSourceOnWindows(sourceDir) {
+  // Windows: use robocopy
+  // robocopy exit codes: 0=no change, 1=files copied, 2-7=other success states, 8+=errors
+  logger.info('Running: robocopy (copying LIEF source)')
+  let result
+  try {
+    result = await spawn(
+      'robocopy',
+      [
+        liefUpstream,
+        sourceDir,
+        '/E',
+        '/XD',
+        '.git',
+        '/NFL',
+        '/NDL',
+        '/NJH',
+        '/NJS',
+      ],
+      {
+        cwd: packageRoot,
+        stdio: 'inherit',
+      },
+    )
+  } catch (e) {
+    // String-shaped errno (`'ENOENT'`, `'EACCES'`) means robocopy didn't
+    // run at all — missing from PATH, blocked by policy, etc. Treat that
+    // as a hard fail instead of falling through to the existsSync check,
+    // which only verifies a pre-existing OLD copy and would report
+    // success against stale source. The numeric `>= 8` form below is the
+    // actual robocopy "real error" classifier; 1-7 are partial successes.
+    if (typeof e?.code === 'string') {
+      throw new Error(`robocopy did not run: ${e.code} (${errorMessage(e)})`)
+    }
+    // spawn throws on non-zero exit codes, but robocopy uses 1-7 for success
+    if (e?.code >= 8) {
+      throw new Error(
+        `robocopy failed with exit code ${e.code} (indicates error)`,
+      )
+    }
+    // Exit codes 1-7 are success, continue
+    result = e
+  }
+
+  if (result.error) {
+    throw new Error(`robocopy failed to spawn: ${errorMessage(result.error)}`)
+  }
+
+  if (result.signal) {
+    throw new Error(`robocopy terminated by signal: ${result.signal}`)
+  }
+
+  // Verify copy succeeded
+  if (!existsSync(sourceDir)) {
+    throw new Error('robocopy completed but source directory is missing')
+  }
+
+  try {
+    if (readdirSync(sourceDir).length === 0) {
+      throw new Error('robocopy completed but source directory is empty')
+    }
+  } catch (e) {
+    if (e?.code === 'EACCES' || e?.code === 'EPERM') {
+      throw new Error(
+        `robocopy completed but cannot read source directory: ${errorMessage(e)}`,
+      )
+    }
+    throw e
+  }
+
+  logger.info(`robocopy completed with exit code ${result.code} (success)`)
+}
+
 export async function copyLiefSource(sourceDir) {
   if (!existsSync(liefUpstream)) {
     throw new Error(
@@ -415,77 +493,8 @@ export async function copyLiefSource(sourceDir) {
   await safeMkdir(path.dirname(sourceDir))
 
   logger.info('Copying LIEF source to build directory…')
-  if (WIN32) {
-    // Windows: use robocopy
-    // robocopy exit codes: 0=no change, 1=files copied, 2-7=other success states, 8+=errors
-    logger.info('Running: robocopy (copying LIEF source)')
-    let result
-    try {
-      result = await spawn(
-        'robocopy',
-        [
-          liefUpstream,
-          sourceDir,
-          '/E',
-          '/XD',
-          '.git',
-          '/NFL',
-          '/NDL',
-          '/NJH',
-          '/NJS',
-        ],
-        {
-          cwd: packageRoot,
-          stdio: 'inherit',
-        },
-      )
-    } catch (e) {
-      // String-shaped errno (`'ENOENT'`, `'EACCES'`) means robocopy didn't
-      // run at all — missing from PATH, blocked by policy, etc. Treat that
-      // as a hard fail instead of falling through to the existsSync check,
-      // which only verifies a pre-existing OLD copy and would report
-      // success against stale source. The numeric `>= 8` form below is the
-      // actual robocopy "real error" classifier; 1-7 are partial successes.
-      if (typeof e?.code === 'string') {
-        throw new Error(`robocopy did not run: ${e.code} (${errorMessage(e)})`)
-      }
-      // spawn throws on non-zero exit codes, but robocopy uses 1-7 for success
-      if (e?.code >= 8) {
-        throw new Error(
-          `robocopy failed with exit code ${e.code} (indicates error)`,
-        )
-      }
-      // Exit codes 1-7 are success, continue
-      result = e
-    }
-
-    if (result.error) {
-      throw new Error(`robocopy failed to spawn: ${errorMessage(result.error)}`)
-    }
-
-    if (result.signal) {
-      throw new Error(`robocopy terminated by signal: ${result.signal}`)
-    }
-
-    // Verify copy succeeded
-    if (!existsSync(sourceDir)) {
-      throw new Error('robocopy completed but source directory is missing')
-    }
-
-    try {
-      if (readdirSync(sourceDir).length === 0) {
-        throw new Error('robocopy completed but source directory is empty')
-      }
-    } catch (e) {
-      if (e?.code === 'EACCES' || e?.code === 'EPERM') {
-        throw new Error(
-          `robocopy completed but cannot read source directory: ${errorMessage(e)}`,
-        )
-      }
-      throw e
-    }
-
-    logger.info(`robocopy completed with exit code ${result.code} (success)`)
+  if (isWin32()) {
+    await copyLiefSourceOnWindows(sourceDir)
   } else {
     // Unix: use rsync or cp
     try {
@@ -588,6 +597,91 @@ export async function applyLiefPatches(sourceDir) {
 // configure → build → install → smoke test); alphabetizing across pipeline
 // phases would scatter the flow and break the checkpoint reading order.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
+async function clearLiefArchive(downloadedArchive, extractDir) {
+  const versionFile = path.join(extractDir, '.version')
+  await safeDelete(downloadedArchive)
+  if (existsSync(versionFile)) {
+    await safeDelete(versionFile)
+  }
+}
+
+async function validateLiefArchive(downloadedArchive, assetName, extractDir) {
+  if (!existsSync(downloadedArchive)) {
+    throw new Error(
+      `Downloaded archive not found at expected path: ${downloadedArchive}`,
+    )
+  }
+
+  // Verify tarball integrity before extraction (detect corrupted/truncated downloads).
+  // This catches issues where a previous download was cached but is corrupt.
+  // Multiple fs.stat() calls consume stats.size for downloaded-archive /
+  // built-library size reporting and minimum-size quick checks.
+  // oxlint-disable-next-line socket/prefer-exists-sync -- reads file size
+  const archiveStats = await fs.stat(downloadedArchive)
+  logger.info(
+    `Archive size: ${(archiveStats.size / 1024 / 1024).toFixed(2)} MB`,
+  )
+
+  // Check gzip magic bytes (0x1f 0x8b) to verify it's a valid gzip file.
+  const gzipMagic = Buffer.alloc(2)
+  const fd = await fs.open(downloadedArchive, 'r')
+  try {
+    await fd.read(gzipMagic, 0, 2, 0)
+  } finally {
+    await fd.close()
+  }
+
+  if (gzipMagic[0] !== 0x1f || gzipMagic[1] !== 0x8b) {
+    // Delete corrupted archive and version file so next run will re-download.
+    await clearLiefArchive(downloadedArchive, extractDir)
+    throw new Error(
+      'Downloaded archive is not a valid gzip file (missing magic bytes). ' +
+        `File may be corrupted or truncated. Deleted ${downloadedArchive} to force re-download.`,
+    )
+  }
+
+  // Verify SHA256 checksum to detect corrupt/truncated downloads.
+  // This catches issues where size/magic bytes pass but content is corrupted.
+  logger.info('Verifying archive checksum…')
+  const checksumResult = await verifyArchiveChecksum(
+    downloadedArchive,
+    assetName,
+  )
+  if (!checksumResult.valid) {
+    await clearLiefArchive(downloadedArchive, extractDir)
+    throw new Error(
+      'Archive checksum mismatch - file is corrupted.\n' +
+        `  Expected: ${checksumResult.expected}\n` +
+        `  Actual:   ${checksumResult.actual}\n` +
+        `Deleted ${downloadedArchive} to force re-download.`,
+    )
+  }
+  // Only log checksum if it was actually verified (not skipped due to missing expected checksum).
+  if (checksumResult.actual) {
+    logger.info(
+      `Checksum verified: ${checksumResult.actual.slice(0, 16)}...${checksumResult.actual.slice(-8)}`,
+    )
+  }
+
+  // Verify file size matches expected before extraction.
+  // This catches incomplete downloads that might have correct partial checksums.
+  // Expected sizes will be re-populated from release metadata after the next
+  // LIEF release with LTO enabled lands.
+  const EXPECTED_SIZES = {
+    __proto__: null,
+  }
+  const expectedSize = EXPECTED_SIZES[assetName]
+  if (expectedSize && archiveStats.size !== expectedSize) {
+    await clearLiefArchive(downloadedArchive, extractDir)
+    throw new Error(
+      'Archive size mismatch - file may be incomplete.\n' +
+        `  Expected: ${expectedSize} bytes\n` +
+        `  Actual:   ${archiveStats.size} bytes\n` +
+        `Deleted ${downloadedArchive} to force re-download.`,
+    )
+  }
+}
+
 export async function downloadPrebuiltLIEF(options = {}) {
   // Check if download is blocked by BUILD_DEPS_FROM_SOURCE environment flag.
   checkBuildSourceFlag('LIEF', 'DEPS', {
@@ -624,92 +718,7 @@ export async function downloadPrebuiltLIEF(options = {}) {
     const extractDir = path.dirname(downloadedArchive)
     logger.info('Extracting LIEF archive…')
 
-    if (!existsSync(downloadedArchive)) {
-      throw new Error(
-        `Downloaded archive not found at expected path: ${downloadedArchive}`,
-      )
-    }
-
-    // Verify tarball integrity before extraction (detect corrupted/truncated downloads).
-    // This catches issues where a previous download was cached but is corrupt.
-    // Multiple fs.stat() calls consume stats.size for downloaded-archive /
-    // built-library size reporting and minimum-size quick checks.
-    // oxlint-disable-next-line socket/prefer-exists-sync -- see above
-    const archiveStats = await fs.stat(downloadedArchive)
-    logger.info(
-      `Archive size: ${(archiveStats.size / 1024 / 1024).toFixed(2)} MB`,
-    )
-
-    // Check gzip magic bytes (0x1f 0x8b) to verify it's a valid gzip file.
-    const gzipMagic = Buffer.alloc(2)
-    const fd = await fs.open(downloadedArchive, 'r')
-    try {
-      await fd.read(gzipMagic, 0, 2, 0)
-    } finally {
-      await fd.close()
-    }
-
-    if (gzipMagic[0] !== 0x1f || gzipMagic[1] !== 0x8b) {
-      // Delete corrupted archive and version file so next run will re-download.
-      const versionFile = path.join(extractDir, '.version')
-      await safeDelete(downloadedArchive)
-      if (existsSync(versionFile)) {
-        await safeDelete(versionFile)
-      }
-      throw new Error(
-        'Downloaded archive is not a valid gzip file (missing magic bytes). ' +
-          `File may be corrupted or truncated. Deleted ${downloadedArchive} to force re-download.`,
-      )
-    }
-
-    // Verify SHA256 checksum to detect corrupt/truncated downloads.
-    // This catches issues where size/magic bytes pass but content is corrupted.
-    logger.info('Verifying archive checksum…')
-    const checksumResult = await verifyArchiveChecksum(
-      downloadedArchive,
-      assetName,
-    )
-    if (!checksumResult.valid) {
-      const versionFile = path.join(extractDir, '.version')
-      await safeDelete(downloadedArchive)
-      if (existsSync(versionFile)) {
-        await safeDelete(versionFile)
-      }
-      throw new Error(
-        'Archive checksum mismatch - file is corrupted.\n' +
-          `  Expected: ${checksumResult.expected}\n` +
-          `  Actual:   ${checksumResult.actual}\n` +
-          `Deleted ${downloadedArchive} to force re-download.`,
-      )
-    }
-    // Only log checksum if it was actually verified (not skipped due to missing expected checksum).
-    if (checksumResult.actual) {
-      logger.info(
-        `Checksum verified: ${checksumResult.actual.slice(0, 16)}...${checksumResult.actual.slice(-8)}`,
-      )
-    }
-
-    // Verify file size matches expected before extraction.
-    // This catches incomplete downloads that might have correct partial checksums.
-    // Expected sizes will be re-populated from release metadata after the next
-    // LIEF release with LTO enabled lands.
-    const EXPECTED_SIZES = {
-      __proto__: null,
-    }
-    const expectedSize = EXPECTED_SIZES[assetName]
-    if (expectedSize && archiveStats.size !== expectedSize) {
-      const versionFile = path.join(extractDir, '.version')
-      await safeDelete(downloadedArchive)
-      if (existsSync(versionFile)) {
-        await safeDelete(versionFile)
-      }
-      throw new Error(
-        'Archive size mismatch - file may be incomplete.\n' +
-          `  Expected: ${expectedSize} bytes\n` +
-          `  Actual:   ${archiveStats.size} bytes\n` +
-          `Deleted ${downloadedArchive} to force re-download.`,
-      )
-    }
+    await validateLiefArchive(downloadedArchive, assetName, extractDir)
 
     // Clean extraction directory to prevent "File exists" errors from cached layers.
     // This handles cases where Docker cached a partial extraction before failure,
@@ -737,11 +746,7 @@ export async function downloadPrebuiltLIEF(options = {}) {
       })
     } catch (e) {
       // On extraction failure, delete the corrupted archive to allow re-download.
-      const versionFile = path.join(extractDir, '.version')
-      await safeDelete(downloadedArchive)
-      if (existsSync(versionFile)) {
-        await safeDelete(versionFile)
-      }
+      await clearLiefArchive(downloadedArchive, extractDir)
       throw new Error(
         `Failed to extract LIEF archive from ${downloadedArchive}: ${errorMessage(e)}. ` +
           'Deleted corrupted archive to allow re-download on next run.',
@@ -761,11 +766,7 @@ export async function downloadPrebuiltLIEF(options = {}) {
 
       // Library missing after extraction - delete cached files to force re-download on retry.
       // This handles corrupted/incomplete cached tarballs.
-      const versionFile = path.join(extractDir, '.version')
-      await safeDelete(downloadedArchive)
-      if (existsSync(versionFile)) {
-        await safeDelete(versionFile)
-      }
+      await clearLiefArchive(downloadedArchive, extractDir)
 
       throw new Error(
         `LIEF library not found after extraction in ${extractDir}. ` +
@@ -891,6 +892,246 @@ export async function ensureLiefImpl(options = {}) {
   )
 }
 
+async function downloadLiefCheckpoint({ platformArch, buildDir }) {
+  // Not building LIEF itself - download prebuilt.
+  logger.info('LIEF submodule not initialized, downloading prebuilt…')
+  const downloadDir = await downloadPrebuiltLIEF({ platformArch })
+  if (downloadDir) {
+    // Verify library exists after download.
+    const liefLibPathNew = getLiefLibPathAt(downloadDir)
+
+    if (liefLibPathNew) {
+      // oxlint-disable-next-line socket/prefer-exists-sync -- reads file size
+      const stats = await fs.stat(liefLibPathNew)
+      const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
+
+      // Extract arch from platformArch for checkpoint (e.g., "darwin-arm64" -> "arm64")
+      const targetArch = process.env['TARGET_ARCH'] || process.arch
+      const targetPlatform = isWin32() ? 'win' : process.platform
+
+      await createCheckpoint(
+        buildDir,
+        CHECKPOINTS.LIEF_BUILT,
+        async () => {
+          // Verify library exists and has reasonable size.
+          // oxlint-disable-next-line socket/prefer-exists-sync -- reads file size
+          const libStats = await fs.stat(liefLibPathNew)
+          if (libStats.size < 1_000_000) {
+            throw new Error(
+              `LIEF library too small: ${libStats.size} bytes (expected >1MB)`,
+            )
+          }
+
+          // Verify all required files exist.
+          logger.info(`Verifying LIEF at: ${downloadDir}`)
+          const verification = verifyLiefAt(downloadDir)
+          if (!verification.valid) {
+            logger.error(`LIEF verification failed!`)
+            logger.error(`Checked directory: ${downloadDir}`)
+            logger.error(`Missing files: ${verification.missing.join(', ')}`)
+            // List what's actually in the directory
+            try {
+              const actualContents = readdirSync(downloadDir)
+              logger.error(`Actual contents: ${actualContents.join(', ')}`)
+              if (actualContents.includes('include')) {
+                const includeContents = readdirSync(
+                  path.join(downloadDir, 'include'),
+                )
+                logger.error(
+                  `Contents of include/: ${includeContents.join(', ')}`,
+                )
+              }
+            } catch (e) {
+              logger.error(
+                `Failed to list directory contents: ${errorMessage(e)}`,
+              )
+            }
+            throw new Error(
+              `Incomplete LIEF download - missing files:\n  ${verification.missing.join('\n  ')}`,
+            )
+          }
+        },
+        {
+          arch: targetArch,
+          artifactPath: downloadDir,
+          buildDir: path.relative(packageRoot, downloadDir),
+          libPath: path.relative(buildDir, liefLibPathNew),
+          libSize: stats.size,
+          libSizeMB: sizeMB,
+          platform: targetPlatform,
+          platformArch,
+          version: LIEF_VERSION,
+        },
+      )
+      return
+    }
+  }
+
+  // Prebuilt download failed - cannot continue.
+  throw new Error(
+    'Failed to download prebuilt LIEF. Run: node scripts/fleet/git-partial-submodule.mts clone packages/lief-builder/upstream/lief',
+  )
+}
+
+function configureLiefWindowsCompiler(cmakeArgs) {
+  // Support cross-compilation via TARGET_ARCH environment variable.
+  const targetArch = process.env['TARGET_ARCH']
+  const isCrossCompileArm64 = targetArch === 'aarch64' || targetArch === 'arm64'
+
+  // Use cross-compiler for ARM64, native gcc for x64.
+  const cc = isCrossCompileArm64 ? 'aarch64-w64-mingw32-gcc' : 'gcc'
+  const cxx = isCrossCompileArm64 ? 'aarch64-w64-mingw32-g++' : 'g++'
+
+  cmakeArgs.push(`-DCMAKE_C_COMPILER=${cc}`, `-DCMAKE_CXX_COMPILER=${cxx}`)
+
+  // Use MinGW Makefiles generator for MinGW toolchain
+  cmakeArgs.push('-G', 'MinGW Makefiles')
+
+  if (isCrossCompileArm64) {
+    // Set target system for CMake cross-compilation.
+    cmakeArgs.push('-DCMAKE_SYSTEM_NAME=Windows')
+    cmakeArgs.push('-DCMAKE_SYSTEM_PROCESSOR=aarch64')
+    logger.info(
+      'Building LIEF with aarch64-w64-mingw32-gcc for ARM64 cross-compilation',
+    )
+  } else {
+    logger.info('Building LIEF with gcc/g++ using MinGW Makefiles')
+  }
+}
+
+async function configureLiefBuild({ liefBuildDir }) {
+  // Configure LIEF with CMake.
+  logger.info('Configuring LIEF with CMake…')
+  const cmakeArgs = [
+    liefPatchedDir,
+    '-DCMAKE_BUILD_TYPE=Release',
+    '-DLIEF_PYTHON_API=OFF',
+    '-DLIEF_C_API=OFF',
+    '-DLIEF_EXAMPLES=OFF',
+    '-DLIEF_TESTS=OFF',
+    '-DLIEF_DOC=OFF',
+    '-DLIEF_LOGGING=OFF',
+    '-DLIEF_LOGGING_DEBUG=OFF',
+    '-DLIEF_ENABLE_JSON=OFF',
+    // Drop Android-format support — smol-Node only needs ELF (Linux),
+    // PE (Windows), MachO (macOS). DEX/ART are Android bytecode/AOT
+    // formats; the only consumer is the SEA-binject pipeline which
+    // doesn't touch Android. ~30% smaller libLIEF.a.
+    '-DLIEF_DEX=OFF',
+    '-DLIEF_ART=OFF',
+  ]
+
+  // Enable LTO (Link-Time Optimization) for Linux glibc builds.
+  // This produces LTO bytecode in libLIEF.a that consumers can use with
+  // -flto. GCC LTO bytecode is only readable by the SAME GCC major, so the
+  // archive must ALSO carry real machine code (-ffat-lto-objects) for
+  // consumers on a different GCC: a slim-LTO archive hard-fails their link
+  // with "bytecode stream ... generated with GCC compiler older than 10.0"
+  // (ubuntu-24.04 GCC 13 linking binject/binpress against an older-
+  // toolchain artifact) and, being bytecode-only (.text size 0), offers no
+  // -fno-lto fallback. Fat objects keep cross-module LTO for matched-GCC
+  // consumers (the btm-builder gcc-toolset container) and give mismatched
+  // consumers real code to link. Passed via CMAKE_*_FLAGS instead of
+  // -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON because CMake's IPO support
+  // appends -fno-fat-lto-objects AFTER user flags on GCC, which would win
+  // and force a slim archive. Skip for musl (different toolchain) and
+  // other platforms.
+  const isLinuxGlibc =
+    process.platform === 'linux' && !(await isMusl()) && !isWin32()
+  if (isLinuxGlibc) {
+    const ltoFlags = '-flto -ffat-lto-objects'
+    cmakeArgs.push(
+      `-DCMAKE_C_FLAGS=${ltoFlags}`,
+      `-DCMAKE_CXX_FLAGS=${ltoFlags}`,
+    )
+    logger.info('Enabling fat-object LTO for Linux glibc builds')
+  }
+
+  // On macOS, honor TARGET_ARCH for cross-compilation. Without
+  // CMAKE_OSX_ARCHITECTURES, cmake defaults to the host arch and silently
+  // produces a wrong-arch libLIEF.a — depot-macos-15 runners are arm64,
+  // so darwin-x64 builds produced arm64 archives until we caught the
+  // miscompile via downstream link-time errors ("ignoring file ...
+  // found architecture 'arm64', required architecture 'x86_64'").
+  if (process.platform === 'darwin') {
+    const targetArch = process.env['TARGET_ARCH'] || process.arch
+    const osxArch = targetArch === 'x64' ? 'x86_64' : 'arm64'
+    cmakeArgs.push(`-DCMAKE_OSX_ARCHITECTURES=${osxArch}`)
+    logger.info(
+      `Building LIEF for darwin-${targetArch} (CMAKE_OSX_ARCHITECTURES=${osxArch})`,
+    )
+  }
+
+  // On Windows, use gcc/MinGW for consistent ABI (CI and binsuite)
+  // LIEF must use the same compiler/ABI as binject to avoid linker errors
+  if (isWin32()) {
+    configureLiefWindowsCompiler(cmakeArgs)
+  }
+
+  // On musl, disable fortify source to avoid glibc-specific fortify functions.
+  // musl libc does not provide __*_chk functions (e.g., __snprintf_chk, __memcpy_chk).
+  // This prevents linking errors when binject (built on musl) tries to link LIEF.
+  // Use -U to undefine first in case it's set elsewhere, then define as 0.
+  // The -Wp,-U_FORTIFY_SOURCE passes -U directly to the preprocessor (more reliable).
+  const muslLibc = await isMusl()
+  if (muslLibc) {
+    // Use multiple approaches to ensure _FORTIFY_SOURCE is disabled:
+    // 1. -Wp,-U passes to the preprocessor directly, bypassing compiler default flags.
+    // 2. -U_FORTIFY_SOURCE undefines at compiler level
+    // 3. -D_FORTIFY_SOURCE=0 explicitly sets to 0
+    const fortifyDisableFlags =
+      '-Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0'
+    // Set flags for both base and Release configurations.
+    // CMAKE_C_FLAGS is the base, CMAKE_C_FLAGS_RELEASE is appended for Release builds.
+    // We put fortify flags in both to ensure they're always present.
+    cmakeArgs.push(
+      `-DCMAKE_C_FLAGS=${fortifyDisableFlags}`,
+      `-DCMAKE_CXX_FLAGS=${fortifyDisableFlags}`,
+      `-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG ${fortifyDisableFlags}`,
+      `-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG ${fortifyDisableFlags}`,
+    )
+    logger.info('Disabling fortify source for musl libc compatibility')
+  }
+
+  // Use ccache if available.
+  // Use the cached which() function instead of spawning a process.
+  const ccachePath = await which('ccache')
+  if (ccachePath) {
+    cmakeArgs.push('-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+    logger.info('Using ccache for faster compilation')
+  } else {
+    logger.info('ccache not available, building without cache')
+  }
+
+  // Clear compiler flags that may have been set for the main binject build.
+  // LIEF build uses its own compiler settings and shouldn't inherit these.
+  // Exception: For musl, we must set CFLAGS/CXXFLAGS as environment variables
+  // to ensure subdependencies (like mbedtls) also disable fortify source.
+  // Use multiple approaches for reliability (see cmake flags comment above).
+  const muslFortifyFlags = muslLibc
+    ? '-Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0'
+    : undefined
+  // Anonymize absolute build-host paths (DWARF + __FILE__) so libLIEF.a
+  // doesn't leak the dev's home dir or the dev's home dir strings into binsuite/
+  // node-smol binaries that statically link it. LIEF has lots of __FILE__
+  // logging sites — without this, every Mach-O/ELF/PE log site embeds an
+  // absolute build-host path.
+  const cleanEnv = {
+    // Set LIEF version explicitly for CMake (LIEF's CMakeLists.txt reads this).
+    // Required because shallow git clones can't determine version from git tags.
+    LIEF_VERSION_ENV: LIEF_VERSION,
+    CFLAGS: appendCCRemapFlags(muslFortifyFlags),
+    CXXFLAGS: appendCCRemapFlags(muslFortifyFlags),
+    // CPPFLAGS is specifically for the C PreProcessor - belt and suspenders approach.
+    CPPFLAGS: muslLibc ? '-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0' : undefined,
+    LDFLAGS: undefined,
+  }
+  await runCommand('cmake', cmakeArgs, liefBuildDir, cleanEnv)
+  logger.info('')
+
+  return { __proto__: null, cleanEnv, muslLibc }
+}
+
 async function main() {
   try {
     // Use platform-specific build directory for complete isolation.
@@ -935,86 +1176,8 @@ async function main() {
     const isLiefBuild = existsSync(liefCMakeLists)
 
     if (!isLiefBuild) {
-      // Not building LIEF itself - download prebuilt.
-      logger.info('LIEF submodule not initialized, downloading prebuilt…')
-      const downloadDir = await downloadPrebuiltLIEF({ platformArch })
-      if (downloadDir) {
-        // Verify library exists after download.
-        const liefLibPathNew = getLiefLibPathAt(downloadDir)
-
-        if (liefLibPathNew) {
-          // oxlint-disable-next-line socket/prefer-exists-sync -- multiple fs.stat() calls consume stats.size for downloaded-archive / built-library size reporting and minimum-size quick checks.
-          const stats = await fs.stat(liefLibPathNew)
-          const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
-
-          // Extract arch from platformArch for checkpoint (e.g., "darwin-arm64" -> "arm64")
-          const targetArch = process.env['TARGET_ARCH'] || process.arch
-          const targetPlatform = WIN32 ? 'win' : process.platform
-
-          await createCheckpoint(
-            buildDir,
-            CHECKPOINTS.LIEF_BUILT,
-            async () => {
-              // Verify library exists and has reasonable size.
-              // oxlint-disable-next-line socket/prefer-exists-sync -- multiple fs.stat() calls consume stats.size for downloaded-archive / built-library size reporting and minimum-size quick checks.
-              const libStats = await fs.stat(liefLibPathNew)
-              if (libStats.size < 1_000_000) {
-                throw new Error(
-                  `LIEF library too small: ${libStats.size} bytes (expected >1MB)`,
-                )
-              }
-
-              // Verify all required files exist.
-              logger.info(`Verifying LIEF at: ${downloadDir}`)
-              const verification = verifyLiefAt(downloadDir)
-              if (!verification.valid) {
-                logger.error(`LIEF verification failed!`)
-                logger.error(`Checked directory: ${downloadDir}`)
-                logger.error(
-                  `Missing files: ${verification.missing.join(', ')}`,
-                )
-                // List what's actually in the directory
-                try {
-                  const actualContents = readdirSync(downloadDir)
-                  logger.error(`Actual contents: ${actualContents.join(', ')}`)
-                  if (actualContents.includes('include')) {
-                    const includeContents = readdirSync(
-                      path.join(downloadDir, 'include'),
-                    )
-                    logger.error(
-                      `Contents of include/: ${includeContents.join(', ')}`,
-                    )
-                  }
-                } catch (e) {
-                  logger.error(
-                    `Failed to list directory contents: ${errorMessage(e)}`,
-                  )
-                }
-                throw new Error(
-                  `Incomplete LIEF download - missing files:\n  ${verification.missing.join('\n  ')}`,
-                )
-              }
-            },
-            {
-              arch: targetArch,
-              artifactPath: downloadDir,
-              buildDir: path.relative(packageRoot, downloadDir),
-              libPath: path.relative(buildDir, liefLibPathNew),
-              libSize: stats.size,
-              libSizeMB: sizeMB,
-              platform: targetPlatform,
-              platformArch,
-              version: LIEF_VERSION,
-            },
-          )
-          return
-        }
-      }
-
-      // Prebuilt download failed - cannot continue.
-      throw new Error(
-        'Failed to download prebuilt LIEF. Run: node scripts/fleet/git-partial-submodule.mts clone packages/lief-builder/upstream/lief',
-      )
+      await downloadLiefCheckpoint({ platformArch, buildDir })
+      return
     }
 
     logger.info(
@@ -1035,157 +1198,7 @@ async function main() {
     // Create build directory.
     await safeMkdir(liefBuildDir)
 
-    // Configure LIEF with CMake.
-    logger.info('Configuring LIEF with CMake…')
-    const cmakeArgs = [
-      liefPatchedDir,
-      '-DCMAKE_BUILD_TYPE=Release',
-      '-DLIEF_PYTHON_API=OFF',
-      '-DLIEF_C_API=OFF',
-      '-DLIEF_EXAMPLES=OFF',
-      '-DLIEF_TESTS=OFF',
-      '-DLIEF_DOC=OFF',
-      '-DLIEF_LOGGING=OFF',
-      '-DLIEF_LOGGING_DEBUG=OFF',
-      '-DLIEF_ENABLE_JSON=OFF',
-      // Drop Android-format support — smol-Node only needs ELF (Linux),
-      // PE (Windows), MachO (macOS). DEX/ART are Android bytecode/AOT
-      // formats; the only consumer is the SEA-binject pipeline which
-      // doesn't touch Android. ~30% smaller libLIEF.a.
-      '-DLIEF_DEX=OFF',
-      '-DLIEF_ART=OFF',
-    ]
-
-    // Enable LTO (Link-Time Optimization) for Linux glibc builds.
-    // This produces LTO bytecode in libLIEF.a that consumers can use with
-    // -flto. GCC LTO bytecode is only readable by the SAME GCC major, so the
-    // archive must ALSO carry real machine code (-ffat-lto-objects) for
-    // consumers on a different GCC: a slim-LTO archive hard-fails their link
-    // with "bytecode stream ... generated with GCC compiler older than 10.0"
-    // (ubuntu-24.04 GCC 13 linking binject/binpress against an older-
-    // toolchain artifact) and, being bytecode-only (.text size 0), offers no
-    // -fno-lto fallback. Fat objects keep cross-module LTO for matched-GCC
-    // consumers (the btm-builder gcc-toolset container) and give mismatched
-    // consumers real code to link. Passed via CMAKE_*_FLAGS instead of
-    // -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON because CMake's IPO support
-    // appends -fno-fat-lto-objects AFTER user flags on GCC, which would win
-    // and force a slim archive. Skip for musl (different toolchain) and
-    // other platforms.
-    const isLinuxGlibc =
-      process.platform === 'linux' && !(await isMusl()) && !WIN32
-    if (isLinuxGlibc) {
-      const ltoFlags = '-flto -ffat-lto-objects'
-      cmakeArgs.push(
-        `-DCMAKE_C_FLAGS=${ltoFlags}`,
-        `-DCMAKE_CXX_FLAGS=${ltoFlags}`,
-      )
-      logger.info('Enabling fat-object LTO for Linux glibc builds')
-    }
-
-    // On macOS, honor TARGET_ARCH for cross-compilation. Without
-    // CMAKE_OSX_ARCHITECTURES, cmake defaults to the host arch and silently
-    // produces a wrong-arch libLIEF.a — depot-macos-15 runners are arm64,
-    // so darwin-x64 builds produced arm64 archives until we caught the
-    // miscompile via downstream link-time errors ("ignoring file ...
-    // found architecture 'arm64', required architecture 'x86_64'").
-    if (process.platform === 'darwin') {
-      const targetArch = process.env['TARGET_ARCH'] || process.arch
-      const osxArch = targetArch === 'x64' ? 'x86_64' : 'arm64'
-      cmakeArgs.push(`-DCMAKE_OSX_ARCHITECTURES=${osxArch}`)
-      logger.info(
-        `Building LIEF for darwin-${targetArch} (CMAKE_OSX_ARCHITECTURES=${osxArch})`,
-      )
-    }
-
-    // On Windows, use gcc/MinGW for consistent ABI (CI and binsuite)
-    // LIEF must use the same compiler/ABI as binject to avoid linker errors
-    if (WIN32) {
-      // Support cross-compilation via TARGET_ARCH environment variable.
-      const targetArch = process.env['TARGET_ARCH']
-      const isCrossCompileArm64 =
-        targetArch === 'aarch64' || targetArch === 'arm64'
-
-      // Use cross-compiler for ARM64, native gcc for x64.
-      const cc = isCrossCompileArm64 ? 'aarch64-w64-mingw32-gcc' : 'gcc'
-      const cxx = isCrossCompileArm64 ? 'aarch64-w64-mingw32-g++' : 'g++'
-
-      cmakeArgs.push(`-DCMAKE_C_COMPILER=${cc}`, `-DCMAKE_CXX_COMPILER=${cxx}`)
-
-      // Use MinGW Makefiles generator for MinGW toolchain
-      cmakeArgs.push('-G', 'MinGW Makefiles')
-
-      if (isCrossCompileArm64) {
-        // Set target system for CMake cross-compilation.
-        cmakeArgs.push('-DCMAKE_SYSTEM_NAME=Windows')
-        cmakeArgs.push('-DCMAKE_SYSTEM_PROCESSOR=aarch64')
-        logger.info(
-          'Building LIEF with aarch64-w64-mingw32-gcc for ARM64 cross-compilation',
-        )
-      } else {
-        logger.info('Building LIEF with gcc/g++ using MinGW Makefiles')
-      }
-    }
-
-    // On musl, disable fortify source to avoid glibc-specific fortify functions.
-    // musl libc does not provide __*_chk functions (e.g., __snprintf_chk, __memcpy_chk).
-    // This prevents linking errors when binject (built on musl) tries to link LIEF.
-    // Use -U to undefine first in case it's set elsewhere, then define as 0.
-    // The -Wp,-U_FORTIFY_SOURCE passes -U directly to the preprocessor (more reliable).
-    const muslLibc = await isMusl()
-    if (muslLibc) {
-      // Use multiple approaches to ensure _FORTIFY_SOURCE is disabled:
-      // 1. -Wp,-U passes to the preprocessor directly, bypassing compiler default flags.
-      // 2. -U_FORTIFY_SOURCE undefines at compiler level
-      // 3. -D_FORTIFY_SOURCE=0 explicitly sets to 0
-      const fortifyDisableFlags =
-        '-Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0'
-      // Set flags for both base and Release configurations.
-      // CMAKE_C_FLAGS is the base, CMAKE_C_FLAGS_RELEASE is appended for Release builds.
-      // We put fortify flags in both to ensure they're always present.
-      cmakeArgs.push(
-        `-DCMAKE_C_FLAGS=${fortifyDisableFlags}`,
-        `-DCMAKE_CXX_FLAGS=${fortifyDisableFlags}`,
-        `-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG ${fortifyDisableFlags}`,
-        `-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG ${fortifyDisableFlags}`,
-      )
-      logger.info('Disabling fortify source for musl libc compatibility')
-    }
-
-    // Use ccache if available.
-    // Use the cached which() function instead of spawning a process.
-    const ccachePath = await which('ccache')
-    if (ccachePath) {
-      cmakeArgs.push('-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
-      logger.info('Using ccache for faster compilation')
-    } else {
-      logger.info('ccache not available, building without cache')
-    }
-
-    // Clear compiler flags that may have been set for the main binject build.
-    // LIEF build uses its own compiler settings and shouldn't inherit these.
-    // Exception: For musl, we must set CFLAGS/CXXFLAGS as environment variables
-    // to ensure subdependencies (like mbedtls) also disable fortify source.
-    // Use multiple approaches for reliability (see cmake flags comment above).
-    const muslFortifyFlags = muslLibc
-      ? '-Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0'
-      : undefined
-    // Anonymize absolute build-host paths (DWARF + __FILE__) so libLIEF.a
-    // doesn't leak the dev's home dir or the dev's home dir strings into binsuite/
-    // node-smol binaries that statically link it. LIEF has lots of __FILE__
-    // logging sites — without this, every Mach-O/ELF/PE log site embeds an
-    // absolute build-host path.
-    const cleanEnv = {
-      // Set LIEF version explicitly for CMake (LIEF's CMakeLists.txt reads this).
-      // Required because shallow git clones can't determine version from git tags.
-      LIEF_VERSION_ENV: LIEF_VERSION,
-      CFLAGS: appendCCRemapFlags(muslFortifyFlags),
-      CXXFLAGS: appendCCRemapFlags(muslFortifyFlags),
-      // CPPFLAGS is specifically for the C PreProcessor - belt and suspenders approach.
-      CPPFLAGS: muslLibc ? '-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0' : undefined,
-      LDFLAGS: undefined,
-    }
-    await runCommand('cmake', cmakeArgs, liefBuildDir, cleanEnv)
-    logger.info('')
+    const { cleanEnv, muslLibc } = await configureLiefBuild({ liefBuildDir })
 
     // Build LIEF with parallel compilation.
     // Use 90% of available CPUs for faster builds (CI environments can use full resources).
@@ -1227,7 +1240,7 @@ async function main() {
 
     // Multiple fs.stat() calls consume stats.size for downloaded-archive /
     // built-library size reporting and minimum-size quick checks.
-    // oxlint-disable-next-line socket/prefer-exists-sync -- see above
+    // oxlint-disable-next-line socket/prefer-exists-sync -- reads file size
     const stats = await fs.stat(libPath)
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
     logger.info(`LIEF library size: ${sizeMB} MB`)
@@ -1307,13 +1320,13 @@ async function main() {
 
     // Create checkpoint.
     const lbTargetArch = process.env['TARGET_ARCH'] || process.arch
-    const lbTargetPlatform = WIN32 ? 'win' : process.platform
+    const lbTargetPlatform = isWin32() ? 'win' : process.platform
     await createCheckpoint(
       buildDir,
       CHECKPOINTS.LIEF_BUILT,
       async () => {
         // Verify library exists and has reasonable size.
-        // oxlint-disable-next-line socket/prefer-exists-sync -- multiple fs.stat() calls consume stats.size for downloaded-archive / built-library size reporting and minimum-size quick checks.
+        // oxlint-disable-next-line socket/prefer-exists-sync -- reads file size
         const libStats = await fs.stat(libPath)
         if (libStats.size < 1_000_000) {
           throw new Error(
