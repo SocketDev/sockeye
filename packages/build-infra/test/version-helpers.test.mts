@@ -8,7 +8,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import nock from 'nock'
 
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
 
 import {
   fetchNodeChecksum,
@@ -17,7 +16,11 @@ import {
   getSubmoduleVersion,
   verifyNodeChecksum,
 } from '../lib/version-helpers.mts'
-import { REPO_ROOT as monorepoRoot } from '../../../scripts/fleet/paths.mts'
+import { NODE_VERSION_FILE } from '../lib/constants.mts'
+import {
+  NODE_SOURCE_SUBMODULE_PATH,
+  REPOSITORY_GITMODULES,
+} from '../lib/paths.mts'
 import { tolerantTimeout } from '../../../test/fleet/_shared/lib/timing.mts'
 
 // The fleet test setup runs `nock.disableNetConnect()`, so anything reaching
@@ -40,10 +43,7 @@ function mockShasums(version: string, digest: string): void {
 
 // The digest .gitmodules records for the pinned Node submodule.
 function storedNodeDigest(): string {
-  const gitmodules = readFileSync(
-    path.join(monorepoRoot, '.gitmodules'),
-    'utf8',
-  )
+  const gitmodules = readFileSync(REPOSITORY_GITMODULES, 'utf8')
   // Date-tolerant: the fleet pin comment is `# node-v26.7.0 (2026-08-05)
   // sha256:<hex>` — anything may sit between the version and the hash.
   const match = /# node-v?[\d.]+[^\n]*?sha256:(?<digest>[0-9a-f]{64})/.exec(
@@ -70,10 +70,7 @@ describe('version-helpers', () => {
 
     it('should match .node-version file content', () => {
       const version = getNodeVersion()
-      const fileContent = readFileSync(
-        path.join(monorepoRoot, '.node-version'),
-        'utf8',
-      ).trim()
+      const fileContent = readFileSync(NODE_VERSION_FILE, 'utf8').trim()
 
       expect(version).toBe(fileContent)
     })
@@ -81,10 +78,7 @@ describe('version-helpers', () => {
 
   describe(getSubmoduleVersion, () => {
     it('should parse node version from .gitmodules', () => {
-      const version = getSubmoduleVersion(
-        'packages/node-smol-builder/upstream/node',
-        'node',
-      )
+      const version = getSubmoduleVersion(NODE_SOURCE_SUBMODULE_PATH, 'node')
 
       expect(version).toBeDefined()
       expect(version).toMatch(/^\d+\.\d+\.\d+$/)
@@ -100,21 +94,20 @@ describe('version-helpers', () => {
       expect(version).toMatch(/^\d+\.\d+\.\d+$/)
     })
 
-    it('should match .node-version for node submodule', () => {
+    it('should match the pinned source release tag', () => {
       const submoduleVersion = getSubmoduleVersion(
-        'packages/node-smol-builder/upstream/node',
+        NODE_SOURCE_SUBMODULE_PATH,
         'node',
       )
-      const nodeVersion = getNodeVersion()
+      const gitmodules = readFileSync(REPOSITORY_GITMODULES, 'utf8')
+      const sourceTag = /# node-v(?<version>[\d.]+)/.exec(gitmodules)
 
-      expect(submoduleVersion).toBe(nodeVersion)
+      expect(sourceTag?.groups?.['version']).toBeDefined()
+      expect(submoduleVersion).toBe(sourceTag?.groups?.['version'])
     })
 
     it('should not include checksum in version string', () => {
-      const version = getSubmoduleVersion(
-        'packages/node-smol-builder/upstream/node',
-        'node',
-      )
+      const version = getSubmoduleVersion(NODE_SOURCE_SUBMODULE_PATH, 'node')
 
       expect(version).not.toContain('sha256')
       expect(version).not.toContain(':')
@@ -128,18 +121,15 @@ describe('version-helpers', () => {
     })
 
     it('should throw for empty package name', () => {
-      expect(() =>
-        getSubmoduleVersion('packages/node-smol-builder/upstream/node', ''),
-      ).toThrow('Package name cannot be empty')
+      expect(() => getSubmoduleVersion(NODE_SOURCE_SUBMODULE_PATH, '')).toThrow(
+        'Package name cannot be empty',
+      )
     })
   })
 
   describe(getSubmoduleChecksum, () => {
     it('should parse checksum for node submodule', () => {
-      const checksum = getSubmoduleChecksum(
-        'packages/node-smol-builder/upstream/node',
-        'node',
-      )
+      const checksum = getSubmoduleChecksum(NODE_SOURCE_SUBMODULE_PATH, 'node')
 
       expect(checksum).toBeDefined()
       expect(checksum!.algorithm).toBe('sha256')
@@ -156,7 +146,7 @@ describe('version-helpers', () => {
 
     it('should throw for empty package name', () => {
       expect(() =>
-        getSubmoduleChecksum('packages/node-smol-builder/upstream/node', ''),
+        getSubmoduleChecksum(NODE_SOURCE_SUBMODULE_PATH, ''),
       ).toThrow('Package name cannot be empty')
     })
   })
@@ -193,11 +183,15 @@ describe('version-helpers', () => {
     it(
       'should verify checksum against nodejs.org',
       async () => {
-        mockShasums(getNodeVersion(), storedNodeDigest())
+        const sourceVersion = getSubmoduleVersion(
+          NODE_SOURCE_SUBMODULE_PATH,
+          'node',
+        )
+        mockShasums(sourceVersion, storedNodeDigest())
         const result = await verifyNodeChecksum({ timeout: 15_000 })
 
         // Should succeed (stored checksum matches upstream)
-        expect(result.version).toMatch(/^\d+\.\d+\.\d+$/)
+        expect(result.version).toBe(sourceVersion)
         expect(result.valid).toBe(true)
         expect(result.expected).toMatch(/^[0-9a-f]{64}$/)
         expect(result.actual).toMatch(/^[0-9a-f]{64}$/)

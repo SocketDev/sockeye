@@ -1,3 +1,4 @@
+import { NODE_SOURCE_SUBMODULE_PATH } from './paths.mts'
 /**
  * Node.js tarball checksum fetch and verification.
  *
@@ -9,8 +10,10 @@
 import { httpText } from '@socketsecurity/lib-stable/http-request'
 
 import { errorMessage } from './error-utils.mts'
-import { getSubmoduleChecksum } from './submodule-version.mts'
-import { getNodeVersion } from './tool-version-reader.mts'
+import {
+  getSubmoduleChecksum,
+  getSubmoduleVersion,
+} from './submodule-version.mts'
 
 /**
  * Fetch the SHA-256 checksum for the `node-vX.Y.Z.tar.gz` source tarball
@@ -114,7 +117,7 @@ export function parseShasums(text: string): Record<string, string> {
  *
  * @param {object} [options]
  * @param {string} [options.version] - Version to verify, default from
- *   .node-version.
+ *   the Node source release tag in .gitmodules.
  * @param {number} [options.timeout=10_000] - Fetch timeout in milliseconds.
  *
  *   Full discussion: docs/agents.md/repo/build-toolchain.md.
@@ -141,12 +144,10 @@ export async function verifyNodeChecksum(
     version: string
     error?: string | undefined
   }
-  const version = options?.version ?? getNodeVersion()
+  const version =
+    options?.version ?? getSubmoduleVersion(NODE_SOURCE_SUBMODULE_PATH, 'node')
 
-  const stored = getSubmoduleChecksum(
-    'packages/node-smol-builder/upstream/node',
-    'node',
-  )
+  const stored = getSubmoduleChecksum(NODE_SOURCE_SUBMODULE_PATH, 'node')
 
   if (!stored) {
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
