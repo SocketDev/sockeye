@@ -17,6 +17,14 @@ import {
   MONOREPO_ROOT,
 } from '../scripts/paths.mts'
 
+export const MARKDOWN_EXAMPLE_URL = new URL(
+  '../examples/smol-markdown-render.mts',
+  import.meta.url,
+).href
+export const MARKDOWN_RUNTIME_PATH = fileURLToPath(
+  new URL('./helpers/markdown-runtime.mts', import.meta.url),
+)
+
 export const NODE_SMOL_BUILD_FLAGS_DOC_PATH = path.join(
   MONOREPO_ROOT,
   'docs/repo/agents.md/node-smol-build-flags.md',

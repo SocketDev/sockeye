@@ -104,7 +104,10 @@ test('cleans the requested stage while retaining earlier checkpoints', async () 
   const archive = getCheckpointArchiveFile(directory, 'source-patched')
   const lock = getCheckpointLockPath(archive)
   const files = [earlier, metadata, archive, lock]
-  await Promise.all(files.map(file => writeFile(file, 'fixture')))
+  const writes = await Promise.allSettled(
+    files.map(file => writeFile(file, 'fixture')),
+  )
+  expect(writes.every(result => result.status === 'fulfilled')).toBe(true)
   await runPipeline(config, parseFlags(['--clean-stage=source-patched']))
   expect(files.map(file => existsSync(file))).toEqual([
     true,

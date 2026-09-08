@@ -99,82 +99,102 @@ export function processEvents(
     lineAttrs = 0
   }
 
+  function enterBlock(val: number, payload: undefined | string | number): void {
+    if (val === blockType.H) {
+      flushLine()
+      state.inHeading = true
+      state.headingLevel = typeof payload === 'number' ? payload : 1
+      state.fgR = state.headingLevel === 1 ? 255 : 200
+      state.fgG = state.headingLevel === 1 ? 200 : 220
+      state.fgB = 100
+      lineAttrs = TextAttributes.BOLD
+    } else if (val === blockType.CODE) {
+      flushLine()
+      state.fgR = 150
+      state.fgG = 255
+      state.fgB = 150
+    } else if (val === blockType.LI) {
+      flushLine()
+      line = '  • '
+    }
+  }
+
+  function leaveBlock(val: number): void {
+    flushLine()
+    if (val === blockType.H) {
+      state.inHeading = false
+      state.fgR = 220
+      state.fgG = 220
+      state.fgB = 220
+      state.y += 1 // blank line after heading
+    } else if (val === blockType.CODE) {
+      state.fgR = 220
+      state.fgG = 220
+      state.fgB = 220
+      state.y += 1
+    } else if (val === blockType.P) {
+      state.y += 1
+    }
+  }
+
+  function enterSpan(val: number): void {
+    if (val === spanType.STRONG) {
+      lineAttrs |= TextAttributes.BOLD
+    } else if (val === spanType.EM) {
+      lineAttrs |= TextAttributes.ITALIC
+    } else if (val === spanType.CODE) {
+      // Inline code: tint and keep going inline.
+      state.fgR = 150
+      state.fgG = 255
+      state.fgB = 150
+    }
+  }
+
+  function leaveSpan(val: number): void {
+    if (val === spanType.STRONG) {
+      lineAttrs &= ~TextAttributes.BOLD
+    } else if (val === spanType.EM) {
+      lineAttrs &= ~TextAttributes.ITALIC
+    } else if (val === spanType.CODE) {
+      state.fgR = state.inHeading ? 255 : 220
+      state.fgG = state.inHeading ? 200 : 220
+      state.fgB = state.inHeading ? 100 : 220
+    }
+  }
+
+  function appendText(val: number, payload: undefined | string | number): void {
+    if (typeof payload !== 'string') {
+      return
+    }
+    // Handle newlines inside text payloads (e.g. code blocks).
+    if (val === textType.CODE && payload.includes('\n')) {
+      const lines = payload.split(/\r?\n/)
+      for (let j = 0, { length: ll } = lines; j < ll; j += 1) {
+        line += lines[j]
+        if (j < ll - 1) {
+          flushLine()
+        }
+      }
+    } else {
+      line += payload
+    }
+  }
+
   for (let i = 0, { length } = events; i < length; i += 1) {
     const { 0: code, 1: payload } = events[i]
     const cat = code & CATEGORY_MASK
     const val = code & VALUE_MASK
 
     if (cat === eventCategory.BLOCK_ENTER) {
-      if (val === blockType.H) {
-        flushLine()
-        state.inHeading = true
-        state.headingLevel = typeof payload === 'number' ? payload : 1
-        state.fgR = state.headingLevel === 1 ? 255 : 200
-        state.fgG = state.headingLevel === 1 ? 200 : 220
-        state.fgB = 100
-        lineAttrs = TextAttributes.BOLD
-      } else if (val === blockType.CODE) {
-        flushLine()
-        state.fgR = 150
-        state.fgG = 255
-        state.fgB = 150
-      } else if (val === blockType.LI) {
-        flushLine()
-        line = '  • '
-      }
+      enterBlock(val, payload)
     } else if (cat === eventCategory.BLOCK_LEAVE) {
-      flushLine()
-      if (val === blockType.H) {
-        state.inHeading = false
-        state.fgR = 220
-        state.fgG = 220
-        state.fgB = 220
-        state.y += 1 // blank line after heading
-      } else if (val === blockType.CODE) {
-        state.fgR = 220
-        state.fgG = 220
-        state.fgB = 220
-        state.y += 1
-      } else if (val === blockType.P) {
-        state.y += 1
-      }
+      leaveBlock(val)
     } else if (cat === eventCategory.SPAN_ENTER) {
-      if (val === spanType.STRONG) {
-        lineAttrs |= TextAttributes.BOLD
-      } else if (val === spanType.EM) {
-        lineAttrs |= TextAttributes.ITALIC
-      } else if (val === spanType.CODE) {
-        // Inline code: tint and keep going inline.
-        state.fgR = 150
-        state.fgG = 255
-        state.fgB = 150
-      }
+      enterSpan(val)
     } else if (cat === eventCategory.SPAN_LEAVE) {
-      if (val === spanType.STRONG) {
-        lineAttrs &= ~TextAttributes.BOLD
-      } else if (val === spanType.EM) {
-        lineAttrs &= ~TextAttributes.ITALIC
-      } else if (val === spanType.CODE) {
-        state.fgR = state.inHeading ? 255 : 220
-        state.fgG = state.inHeading ? 200 : 220
-        state.fgB = state.inHeading ? 100 : 220
-      }
+      leaveSpan(val)
     } else if (cat === eventCategory.TEXT) {
-      if (typeof payload !== 'string') {
-        continue
-      }
-      // Handle newlines inside text payloads (e.g. code blocks).
-      if (val === textType.CODE && payload.includes('\n')) {
-        const lines = payload.split(/\r?\n/)
-        for (let j = 0, { length: ll } = lines; j < ll; j += 1) {
-          line += lines[j]
-          if (j < ll - 1) {
-            flushLine()
-          }
-        }
-      } else {
-        line += payload
-      }
+      appendText(val, payload)
     }
   }
   flushLine()
