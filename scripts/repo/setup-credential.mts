@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @file Human-only credential setup with Socket Lib prompts.
- *   Usage: pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY
+ *   Usage: `pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY`
  *   This process handles names and a non-secret 1Password reference only. The
  *   native Sockeye executable reads either terminal input or 1Password stdout,
  *   then puts the secret directly into Touch-ID-protected Keychain storage.
@@ -16,10 +16,11 @@ import {
   input,
   select,
 } from '@socketsecurity/lib-stable/stdio/prompts'
-import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { getBinaryPath, getBuildMode } from './paths.mts'
 import {
   credentialSourceChoices,
@@ -27,9 +28,21 @@ import {
   isOnePasswordReference,
 } from './setup-credential-contract.mts'
 
+import {
+  onePasswordEnvironment,
+  selectOnePasswordReference,
+} from './one-password-metadata.mts'
+import type { OnePasswordSelection } from './one-password-metadata.mts'
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
+  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME>\nRequires a foreground terminal and Touch ID. Guided import lists account, vault, and item metadata before requesting the field reference.',
+}
+
 const ONE_PASSWORD_PATHS = ['/opt/homebrew/bin/op', '/usr/local/bin/op']
 
-async function hasOnePassword(): Promise<boolean> {
+async function findOnePassword(): Promise<string | undefined> {
   for (
     let index = 0, { length } = ONE_PASSWORD_PATHS;
     index < length;
@@ -38,12 +51,12 @@ async function hasOnePassword(): Promise<boolean> {
     const candidate = ONE_PASSWORD_PATHS[index]!
     try {
       await access(candidate, constants.X_OK)
-      return true
+      return candidate
     } catch {
       // Try the other supported, fixed installation location.
     }
   }
-  return false
+  return undefined
 }
 
 function usage(): never {
@@ -52,7 +65,12 @@ function usage(): never {
   )
 }
 
-async function runNative(args: string[]): Promise<void> {
+async function runNative(
+  args: string[],
+  options?: { account?: string | undefined } | undefined,
+): Promise<void> {
+  const opts = { __proto__: null, ...options } as NonNullable<typeof options>
+  const account = opts.account
   const binary = getBinaryPath(
     getBuildMode(),
     `${process.platform}-${process.arch}`,
@@ -62,11 +80,67 @@ async function runNative(args: string[]): Promise<void> {
       `Sockeye is not built. Run "pnpm run build" first (${binary}).`,
     )
   }
-  const result = await spawn(binary, args, { stdio: 'inherit' })
+  const result = await spawn(binary, args, {
+    stdio: 'inherit',
+    ...(account ? { env: onePasswordEnvironment({ account }) } : {}),
+  })
   if (result.code !== 0) {
     throw new Error(
       `Sockeye credential setup failed with exit code ${result.code}`,
     )
+  }
+}
+
+async function manualOnePasswordReference(): Promise<
+  OnePasswordSelection | undefined
+> {
+  const account = await input({
+    message: '1Password account sign-in address or user ID:',
+  })
+  if (typeof account !== 'string' || !/^[a-zA-Z0-9.-]{1,512}$/.test(account)) {
+    return undefined
+  }
+  const reference = await input({
+    message:
+      'Full 1Password reference (op://Vault/item/field), not its secret value:',
+  })
+  if (typeof reference !== 'string' || !isOnePasswordReference(reference)) {
+    return undefined
+  }
+  return { account, reference }
+}
+
+async function chooseOnePasswordReference(
+  executable: string,
+): Promise<OnePasswordSelection | undefined> {
+  const method = await select({
+    message: 'How should Sockeye locate the 1Password field?',
+    choices: [
+      {
+        name: 'Choose account, vault, and item (recommended)',
+        value: 'guided',
+      },
+      { name: 'Enter account and full reference', value: 'reference' },
+    ],
+  })
+  if (method === 'reference') {
+    return await manualOnePasswordReference()
+  }
+  if (method !== 'guided') {
+    return undefined
+  }
+  try {
+    return await selectOnePasswordReference(executable, {
+      choose: async (message, choices) => await select({ message, choices }),
+      field: async message => await input({ message }),
+    })
+  } catch {
+    const manual = await confirm({
+      message:
+        '1Password metadata listing is unavailable. Enter the account and full reference instead?',
+      default: false,
+    })
+    return manual === true ? await manualOnePasswordReference() : undefined
   }
 }
 
@@ -80,9 +154,13 @@ async function main(): Promise<void> {
     usage()
   }
 
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error('Credential setup requires a foreground terminal.')
+  }
+  const executable = await findOnePassword()
   const source = await select({
     message: `How should Sockeye set ${identifier}?`,
-    choices: credentialSourceChoices(await hasOnePassword()),
+    choices: credentialSourceChoices(Boolean(executable)),
   })
   if (!isCredentialSource(source)) {
     return
@@ -92,31 +170,25 @@ async function main(): Promise<void> {
     return
   }
 
-  const reference = await input({
-    message: '1Password reference (for example, op://Vault/item/field):',
-    validate(value: string) {
-      return (
-        isOnePasswordReference(value) ||
-        'Enter a printable op:// reference of at most 2048 characters.'
-      )
-    },
-  })
-  if (typeof reference !== 'string' || !isOnePasswordReference(reference)) {
+  if (!executable) {
+    return
+  }
+  const selected = await chooseOnePasswordReference(executable)
+  if (!selected) {
     return
   }
   const approved = await confirm({
-    message: `Import ${identifier} from this 1Password reference into Touch-ID-protected Keychain?`,
+    message: `Import ${identifier} from ${selected.reference} in account ${selected.account} into Touch-ID-protected Keychain?`,
     default: false,
   })
   if (approved !== true) {
     return
   }
-  await runNative(['import-1password', identifier, reference])
+  await runNative(['import-1password', identifier, selected.reference], {
+    account: selected.account,
+  })
 }
 
 if (isMainModule(import.meta.url)) {
-  main().catch((error: unknown) => {
-    process.stderr.write(`${errorMessage(error)}\n`)
-    process.exitCode = 1
-  })
+  runMain(main, SCRIPT_META)
 }

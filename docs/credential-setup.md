@@ -11,9 +11,17 @@ pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY
 ```
 
 If the 1Password CLI is installed in a supported location, setup recommends
-**Import once from 1Password**. It asks for one `op://Vault/item/field`
-reference, shows a confirmation, then asks 1Password for that value. Sockeye
-stores the result in Keychain and clears its native buffer.
+**Import once from 1Password**. Guided selection lists your accounts, vaults,
+and items through the 1Password CLI. Account access can trigger 1Password's
+approval prompt for your terminal. Select an item, then enter its field name
+or section/field path. You can also enter an account and an explicit
+`op://Vault/item/field` reference.
+
+Setup shows the account, reference, and destination credential before import.
+The native Sockeye process reads the selected value and stores it in Keychain.
+The setup process lists metadata only; it does not read secret fields.
+The selected account remains pinned during import. Service-account and Connect
+environment settings cannot silently select another credential source.
 
 When 1Password is unavailable, or when the credential is not stored there,
 setup offers **macOS Keychain** entry instead. Choose it to type or paste a

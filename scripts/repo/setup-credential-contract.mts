@@ -50,7 +50,7 @@ export function isOnePasswordReference(value: string): boolean {
   return (
     value.startsWith('op://') &&
     value.length > 'op://'.length &&
-    value.length <= 2048 &&
+    Buffer.byteLength(value) <= 2048 &&
     !/[\u0000-\u001f\u007f]/u.test(value)
   )
 }
