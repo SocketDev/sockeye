@@ -75,8 +75,9 @@ test('resolves the target repository current Local CI package and binds its Java
   await writeFile(path.join(root, 'package.json'), '{"private":true}')
   await writeFile(
     path.join(packageRoot, 'package.json'),
-    '{"name":"run-local-ci","version":"0.18.1"}',
+    '{"name":"run-local-ci","version":"0.18.1","exports":{"./native-launcher":"./dist/native-launcher.js"}}',
   )
+  await writeFile(path.join(packageRoot, 'dist/native-launcher.js'), '')
   await writeFile(path.join(packageRoot, 'dist/cli.js'), '')
   await writeFile(path.join(packageRoot, 'dist/commands/run.js'), '')
   const result = agentCiFiles(root)
@@ -85,6 +86,7 @@ test('resolves the target repository current Local CI package and binds its Java
     expect.arrayContaining([
       path.join(packageRoot, 'package.json'),
       result.entry,
+      path.join(packageRoot, 'dist/native-launcher.js'),
       path.join(packageRoot, 'dist/commands/run.js'),
     ]),
   )

@@ -2,10 +2,15 @@
  * @file Canonical paths for Sockeye build outputs.
  */
 
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
-import { REPO_ROOT, segregatedConfigPath } from '../fleet/paths.mts'
+import {
+  REPO_ROOT,
+  resolvePackageJsonPath,
+  segregatedConfigPath,
+} from '../fleet/paths.mts'
 
 export const BINARY_NAME = 'sockeye'
 
@@ -55,4 +60,24 @@ export function getNativeTestBinaryPath(name: string): string {
     getOutputDir(getBuildMode(), `${process.platform}-${process.arch}`),
     name,
   )
+}
+
+export function getAgentCiDistFile(dist: string, filename: string): string {
+  return path.join(dist, filename)
+}
+
+export function getAgentCiPackagePaths(repository: string): {
+  dist: string
+  entry: string
+  packageJson: string
+} {
+  const require = createRequire(resolvePackageJsonPath(repository))
+  const launcher = require.resolve('run-local-ci/native-launcher')
+  const dist = path.dirname(launcher)
+  return {
+    __proto__: null,
+    dist,
+    entry: getAgentCiDistFile(dist, 'cli.js'),
+    packageJson: resolvePackageJsonPath(path.dirname(dist)),
+  } as { dist: string; entry: string; packageJson: string }
 }

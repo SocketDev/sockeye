@@ -13,7 +13,6 @@ import {
   readFileSync,
   realpathSync,
 } from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -30,7 +29,12 @@ import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
-import { getBinaryPath, getBuildMode } from './paths.mts'
+import {
+  getAgentCiDistFile,
+  getAgentCiPackagePaths,
+  getBinaryPath,
+  getBuildMode,
+} from './paths.mts'
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
@@ -84,15 +88,12 @@ export function agentCiFiles(repository: string): {
   entry: string
   files: string[]
 } {
-  const require = createRequire(path.join(repository, 'package.json'))
-  const packageJson = require.resolve('run-local-ci/package.json')
-  const packageRoot = path.dirname(packageJson)
-  const dist = path.join(packageRoot, 'dist')
+  const { dist, entry, packageJson } = getAgentCiPackagePaths(repository)
   const files = readdirSync(dist, { recursive: true })
     .filter(value => typeof value === 'string' && value.endsWith('.js'))
-    .map(value => path.join(dist, String(value)))
+    .map(value => getAgentCiDistFile(dist, String(value)))
   return {
-    entry: path.join(dist, 'cli.js'),
+    entry,
     files: [packageJson, ...files],
   }
 }
