@@ -16,6 +16,7 @@
 export * from '../../../scripts/fleet/paths.mts'
 
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -61,5 +62,42 @@ export function getBuildPaths(
     outputDir,
     outputLibFile: path.join(outputDir, 'lib', 'libwebgpu_dawn.a'),
     outputIncludeDir: path.join(outputDir, 'include'),
+  }
+}
+
+export const UPSTREAM_DAWN_DEPS = path.join(UPSTREAM_DAWN_DIR, 'DEPS')
+export const UPSTREAM_DAWN_GIT = path.join(UPSTREAM_DAWN_DIR, '.git')
+export const UPSTREAM_DAWN_MOVED_GIT = path.join(
+  UPSTREAM_DAWN_DIR,
+  '.git.moved-for-tint-gen',
+)
+const UPSTREAM_DAWN_INCLUDE_DIR = path.join(UPSTREAM_DAWN_DIR, 'include')
+
+export function getDawnBuiltLibraryPath(cmakeDir: string): string {
+  return path.join(cmakeDir, 'src', 'dawn', 'native', 'libwebgpu_dawn.a')
+}
+
+export function getDawnHeaderPaths(
+  outputIncludeDir: string,
+): Array<{ src: string; dst: string }> {
+  return ['dawn', 'webgpu'].map(name => ({
+    __proto__: null,
+    src: path.join(UPSTREAM_DAWN_INCLUDE_DIR, name),
+    dst: path.join(outputIncludeDir, name),
+  }))
+}
+
+export function getTintGenerationPaths(cmakeDir: string) {
+  const genOutDir = path.join(cmakeDir, 'gen')
+  const genBinDir = path.join(cmakeDir, '.gen-bin')
+  return {
+    __proto__: null,
+    genOutDir,
+    genBinDir,
+    genBin: path.join(
+      genBinDir,
+      process.platform === 'win32' ? 'gen.exe' : 'gen',
+    ),
+    enumsCc: path.join(genOutDir, 'src', 'tint', 'lang', 'core', 'enums.cc'),
   }
 }
