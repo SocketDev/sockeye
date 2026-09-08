@@ -7,8 +7,10 @@ import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { LOGOMARK_SVG_PATHS } from './paths.mts'
 
-async function main(): Promise<void> {
-  for (const target of LOGOMARK_SVG_PATHS) {
+export async function optimizeSvgAssets(
+  targets: readonly string[] = LOGOMARK_SVG_PATHS,
+): Promise<void> {
+  for (const target of targets) {
     const source = await readFile(target, 'utf8')
     const optimized = optimiseSvg(source)
     if (optimized.trimEnd() !== source.trimEnd()) {
@@ -24,5 +26,5 @@ const SCRIPT_META: ScriptMeta = {
 }
 
 if (isMainModule(import.meta.url)) {
-  runMain(main, SCRIPT_META)
+  runMain(optimizeSvgAssets, SCRIPT_META)
 }
