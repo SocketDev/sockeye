@@ -216,6 +216,20 @@ export function shouldSkipTest(testPath, compiledPatterns) {
 /**
  * Main test runner.
  */
+function reportSkippedNodeTests(skipped: string[]): void {
+  if (values['verbose'] && skipped.length > 0) {
+    logger.log('Skipped tests (first 10):')
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    for (const test of skipped.slice(0, 10)) {
+      logger.log(`  - ${path.basename(test)}`)
+    }
+    if (skipped.length > 10) {
+      logger.log(`  ... and ${skipped.length - 10} more`)
+    }
+    logger.log('')
+  }
+}
+
 async function main() {
   logger.log('')
   logger.log('🧪 Node.js Test Suite Runner for node-smol')
@@ -288,17 +302,7 @@ async function main() {
   logger.log(`Skipped (excluded): ${stats.skipped}`)
   logger.log('')
 
-  if (values['verbose'] && skipped.length > 0) {
-    logger.log('Skipped tests (first 10):')
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-    for (const test of skipped.slice(0, 10)) {
-      logger.log(`  - ${path.basename(test)}`)
-    }
-    if (skipped.length > 10) {
-      logger.log(`  ... and ${skipped.length - 10} more`)
-    }
-    logger.log('')
-  }
+  reportSkippedNodeTests(skipped)
 
   if (filtered.length === 0) {
     logger.fail('No tests to run after filtering')

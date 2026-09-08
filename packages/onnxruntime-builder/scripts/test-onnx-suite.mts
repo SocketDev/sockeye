@@ -45,76 +45,7 @@ const BUILD_MODE = values['prod'] ? 'prod' : 'dev'
 /**
  * Main test runner.
  */
-async function main() {
-  logger.log('')
-  logger.log('🧪 ONNX Runtime Test Suite Runner')
-  logger.log('')
-
-  // Verify ONNX Runtime source upstream.
-  const onnxSourcePath = UPSTREAM_PATH
-  if (!existsSync(onnxSourcePath)) {
-    logger.fail('ONNX Runtime source upstream not found')
-    logger.log('')
-    logger.log('Initialize upstream:')
-    logger.log(
-      '  node scripts/fleet/git-partial-submodule.mts clone packages/onnxruntime-builder/upstream/onnxruntime',
-    )
-    logger.log('')
-    process.exitCode = 1
-    return
-  }
-
-  logger.log(`Source directory: ${onnxSourcePath}`)
-  logger.log('')
-
-  // Check for CMake build system.
-  const cmakeListsPath = path.join(onnxSourcePath, 'CMakeLists.txt')
-  if (!existsSync(cmakeListsPath)) {
-    logger.fail(`CMakeLists.txt not found: ${cmakeListsPath}`)
-    process.exitCode = 1
-    return
-  }
-
-  // Verify our WASM build exists.
-  const platformArch = await getCurrentPlatform()
-  const { outputFinalDir } = getBuildPaths(BUILD_MODE, platformArch)
-  const wasmPath = path.join(outputFinalDir, 'ort.wasm')
-  const mjsPath = path.join(outputFinalDir, 'ort.mjs')
-
-  if (!existsSync(wasmPath) || !existsSync(mjsPath)) {
-    logger.fail('ONNX Runtime WASM build not found')
-    logger.log('')
-    logger.log('Build ONNX Runtime WASM first:')
-    logger.log('  pnpm --filter onnxruntime-builder build')
-    logger.log('')
-    process.exitCode = 1
-    return
-  }
-
-  logger.log(`WASM module: ${wasmPath}`)
-  logger.log(`MJS wrapper: ${mjsPath}`)
-  logger.log('')
-
-  // Ensure CMake is installed.
-  logger.step('Checking build dependencies…')
-  logger.substep('Checking for CMake…')
-
-  const cmakeResult = await ensureToolInstalled('cmake', { autoInstall: true })
-
-  if (!cmakeResult.available) {
-    logger.fail('CMake is required but not found')
-    logger.log('Install CMake from: https://cmake.org/download/')
-    process.exitCode = 1
-    return
-  }
-
-  if (cmakeResult.installed) {
-    logger.success('Installed CMake')
-  } else {
-    logger.success('CMake found')
-  }
-  logger.log('')
-
+async function runOnnxCmakeTests(onnxSourcePath: string): Promise<void> {
   // Build and run tests using CMake/CTest.
   const buildDir = path.join(onnxSourcePath, 'build-test')
 
@@ -203,6 +134,79 @@ async function main() {
     logger.log('')
     process.exitCode = result.code
   }
+}
+
+async function main() {
+  logger.log('')
+  logger.log('🧪 ONNX Runtime Test Suite Runner')
+  logger.log('')
+
+  // Verify ONNX Runtime source upstream.
+  const onnxSourcePath = UPSTREAM_PATH
+  if (!existsSync(onnxSourcePath)) {
+    logger.fail('ONNX Runtime source upstream not found')
+    logger.log('')
+    logger.log('Initialize upstream:')
+    logger.log(
+      '  node scripts/fleet/git-partial-submodule.mts clone packages/onnxruntime-builder/upstream/onnxruntime',
+    )
+    logger.log('')
+    process.exitCode = 1
+    return
+  }
+
+  logger.log(`Source directory: ${onnxSourcePath}`)
+  logger.log('')
+
+  // Check for CMake build system.
+  const cmakeListsPath = path.join(onnxSourcePath, 'CMakeLists.txt')
+  if (!existsSync(cmakeListsPath)) {
+    logger.fail(`CMakeLists.txt not found: ${cmakeListsPath}`)
+    process.exitCode = 1
+    return
+  }
+
+  // Verify our WASM build exists.
+  const platformArch = await getCurrentPlatform()
+  const { outputFinalDir } = getBuildPaths(BUILD_MODE, platformArch)
+  const wasmPath = path.join(outputFinalDir, 'ort.wasm')
+  const mjsPath = path.join(outputFinalDir, 'ort.mjs')
+
+  if (!existsSync(wasmPath) || !existsSync(mjsPath)) {
+    logger.fail('ONNX Runtime WASM build not found')
+    logger.log('')
+    logger.log('Build ONNX Runtime WASM first:')
+    logger.log('  pnpm --filter onnxruntime-builder build')
+    logger.log('')
+    process.exitCode = 1
+    return
+  }
+
+  logger.log(`WASM module: ${wasmPath}`)
+  logger.log(`MJS wrapper: ${mjsPath}`)
+  logger.log('')
+
+  // Ensure CMake is installed.
+  logger.step('Checking build dependencies…')
+  logger.substep('Checking for CMake…')
+
+  const cmakeResult = await ensureToolInstalled('cmake', { autoInstall: true })
+
+  if (!cmakeResult.available) {
+    logger.fail('CMake is required but not found')
+    logger.log('Install CMake from: https://cmake.org/download/')
+    process.exitCode = 1
+    return
+  }
+
+  if (cmakeResult.installed) {
+    logger.success('Installed CMake')
+  } else {
+    logger.success('CMake found')
+  }
+  logger.log('')
+
+  await runOnnxCmakeTests(onnxSourcePath)
 }
 
 main().catch(error => {

@@ -45,82 +45,7 @@ const BUILD_MODE = values['prod'] ? 'prod' : 'dev'
 /**
  * Main test runner.
  */
-async function main() {
-  logger.log('')
-  logger.log('🧪 Yoga Layout Test Suite Runner')
-  logger.log('')
-
-  // Verify Yoga source upstream.
-  const yogaSourcePath = UPSTREAM_PATH
-  if (!existsSync(yogaSourcePath)) {
-    logger.fail('Yoga Layout source upstream not found')
-    logger.log('')
-    logger.log('Initialize upstream:')
-    logger.log(
-      '  node scripts/fleet/git-partial-submodule.mts clone packages/yoga-layout-builder/upstream/yoga',
-    )
-    logger.log('')
-    process.exitCode = 1
-    return
-  }
-
-  logger.log(`Source directory: ${yogaSourcePath}`)
-  logger.log('')
-
-  // Check for CMake build system.
-  const cmakeListsPath = path.join(yogaSourcePath, 'CMakeLists.txt')
-  if (!existsSync(cmakeListsPath)) {
-    logger.fail(`CMakeLists.txt not found: ${cmakeListsPath}`)
-    process.exitCode = 1
-    return
-  }
-
-  // Verify our WASM build exists.
-  const platformArch = await getCurrentPlatform()
-  const { outputFinalDir } = getBuildPaths(BUILD_MODE, platformArch)
-  const wasmPath = path.join(outputFinalDir, 'yoga.wasm')
-  const jsPath = path.join(outputFinalDir, 'yoga.js')
-
-  if (!existsSync(wasmPath) || !existsSync(jsPath)) {
-    logger.fail('Yoga WASM build not found')
-    logger.log('')
-    logger.log('Build Yoga WASM first:')
-    logger.log('  pnpm --filter yoga-layout-builder build')
-    logger.log('')
-    process.exitCode = 1
-    return
-  }
-
-  logger.log(`WASM module: ${wasmPath}`)
-  logger.log(`JS wrapper: ${jsPath}`)
-  logger.log('')
-
-  // Check if gentest exists (generated test files).
-  const gentestDir = path.join(yogaSourcePath, 'gentest')
-  if (!existsSync(gentestDir)) {
-    logger.warn('gentest directory not found - some tests may be unavailable')
-  }
-
-  // Ensure CMake is installed.
-  logger.step('Checking build dependencies…')
-  logger.substep('Checking for CMake…')
-
-  const cmakeResult = await ensureToolInstalled('cmake', { autoInstall: true })
-
-  if (!cmakeResult.available) {
-    logger.fail('CMake is required but not found')
-    logger.log('Install CMake from: https://cmake.org/download/')
-    process.exitCode = 1
-    return
-  }
-
-  if (cmakeResult.installed) {
-    logger.success('Installed CMake')
-  } else {
-    logger.success('CMake found')
-  }
-  logger.log('')
-
+async function runYogaCmakeTests(yogaSourcePath: string): Promise<void> {
   // Build and run tests using CMake/CTest.
   const buildDir = path.join(yogaSourcePath, 'build-test')
 
@@ -200,6 +125,85 @@ async function main() {
     logger.log('')
     process.exitCode = result.code
   }
+}
+
+async function main() {
+  logger.log('')
+  logger.log('🧪 Yoga Layout Test Suite Runner')
+  logger.log('')
+
+  // Verify Yoga source upstream.
+  const yogaSourcePath = UPSTREAM_PATH
+  if (!existsSync(yogaSourcePath)) {
+    logger.fail('Yoga Layout source upstream not found')
+    logger.log('')
+    logger.log('Initialize upstream:')
+    logger.log(
+      '  node scripts/fleet/git-partial-submodule.mts clone packages/yoga-layout-builder/upstream/yoga',
+    )
+    logger.log('')
+    process.exitCode = 1
+    return
+  }
+
+  logger.log(`Source directory: ${yogaSourcePath}`)
+  logger.log('')
+
+  // Check for CMake build system.
+  const cmakeListsPath = path.join(yogaSourcePath, 'CMakeLists.txt')
+  if (!existsSync(cmakeListsPath)) {
+    logger.fail(`CMakeLists.txt not found: ${cmakeListsPath}`)
+    process.exitCode = 1
+    return
+  }
+
+  // Verify our WASM build exists.
+  const platformArch = await getCurrentPlatform()
+  const { outputFinalDir } = getBuildPaths(BUILD_MODE, platformArch)
+  const wasmPath = path.join(outputFinalDir, 'yoga.wasm')
+  const jsPath = path.join(outputFinalDir, 'yoga.js')
+
+  if (!existsSync(wasmPath) || !existsSync(jsPath)) {
+    logger.fail('Yoga WASM build not found')
+    logger.log('')
+    logger.log('Build Yoga WASM first:')
+    logger.log('  pnpm --filter yoga-layout-builder build')
+    logger.log('')
+    process.exitCode = 1
+    return
+  }
+
+  logger.log(`WASM module: ${wasmPath}`)
+  logger.log(`JS wrapper: ${jsPath}`)
+  logger.log('')
+
+  // Check if gentest exists (generated test files).
+  const gentestDir = path.join(yogaSourcePath, 'gentest')
+  if (!existsSync(gentestDir)) {
+    logger.warn('gentest directory not found - some tests may be unavailable')
+  }
+
+  // Ensure CMake is installed.
+  logger.step('Checking build dependencies…')
+  logger.substep('Checking for CMake…')
+
+  const cmakeResult = await ensureToolInstalled('cmake', { autoInstall: true })
+
+  if (!cmakeResult.available) {
+    logger.fail('CMake is required but not found')
+    logger.log('Install CMake from: https://cmake.org/download/')
+    process.exitCode = 1
+    return
+  }
+
+  if (cmakeResult.installed) {
+    logger.success('Installed CMake')
+  } else {
+    logger.success('CMake found')
+  }
+  logger.log('')
+
+  await runYogaCmakeTests(yogaSourcePath)
 }
 
 main().catch(error => {

@@ -20,7 +20,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
@@ -77,7 +77,7 @@ export async function runCommand(command, args, cwd) {
 
   const result = await spawn(command, args, {
     cwd,
-    shell: WIN32,
+    shell: isWin32(),
     stdio: 'inherit',
   })
 
@@ -101,6 +101,33 @@ export async function runVitestCoverage() {
     logger.error(`vitest coverage failed: ${errorMessage(e)}`)
     return false
   }
+}
+
+function reportCoverageResults(results: {
+  failed: string[]
+  passed: string[]
+}): void {
+  logger.log('')
+  logger.step('Coverage Summary')
+  logger.success(`Passed: ${results.passed.length}`)
+  if (results.passed.length > 0) {
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    for (const name of results.passed) {
+      logger.substep(String(name))
+    }
+  }
+  if (results.failed.length > 0) {
+    logger.error(`Failed: ${results.failed.length}`)
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
+    for (const name of results.failed) {
+      logger.substep(String(name))
+    }
+    throw new Error(`Coverage failed for ${results.failed.length} run(s)`)
+  }
+
+  logger.log('')
+  logger.success('All coverage runs completed successfully!')
+  logger.log('')
 }
 
 async function main() {
@@ -160,27 +187,7 @@ async function main() {
     }
   }
 
-  logger.log('')
-  logger.step('Coverage Summary')
-  logger.success(`Passed: ${results.passed.length}`)
-  if (results.passed.length > 0) {
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-    for (const name of results.passed) {
-      logger.substep(String(name))
-    }
-  }
-  if (results.failed.length > 0) {
-    logger.error(`Failed: ${results.failed.length}`)
-    // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is not a bare identifier (could be Map/Set/Generator/expression)
-    for (const name of results.failed) {
-      logger.substep(String(name))
-    }
-    throw new Error(`Coverage failed for ${results.failed.length} run(s)`)
-  }
-
-  logger.log('')
-  logger.success('All coverage runs completed successfully!')
-  logger.log('')
+  reportCoverageResults(results)
 }
 
 main().catch(error => {
