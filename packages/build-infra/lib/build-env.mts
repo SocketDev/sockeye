@@ -150,38 +150,35 @@ export async function setupBuildEnvironment(
   }
 
   if (python) {
-    const pythonCheck = await checkPython()
+    await setupPythonEnvironment(results, { autoSetup })
+  }
 
-    if (pythonCheck.available) {
-      if (pythonCheck.meetsRequirement) {
-        // Emoji are pushed into result.messages/result.errors arrays that
-        // callers may render anywhere (JSON, file, stderr); there is no single
-        // logger.success/fail call to migrate to.
-        // oxlint-disable-next-line socket/no-status-emoji -- see above
-        results.messages.push(`✓ Python ${pythonCheck.version}`)
-      } else {
-        results.success = false
-        results.errors.push(
-          // Emoji are pushed into result.messages/result.errors arrays that
-          // callers may render anywhere (JSON, file, stderr); there is no
-          // single logger.success/fail call to migrate to.
-          // oxlint-disable-next-line socket/no-status-emoji -- see above
-          `✗ Python ${pythonCheck.version} is too old (need ${getMinPythonVersion()}+)`,
-        )
+  return results
+}
 
-        if (autoSetup) {
-          results.errors.push(
-            '  Run: node scripts/setup-build-toolchain.mts --python',
-          )
-        }
-      }
-    } else {
-      results.success = false
-      // Emoji are pushed into result.messages/result.errors arrays that callers
-      // may render anywhere (JSON, file, stderr); there is no single
+export async function setupPythonEnvironment(
+  results: { errors: string[]; messages: string[]; success: boolean },
+  config: { autoSetup: boolean },
+): Promise<void> {
+  const { autoSetup } = { __proto__: null, ...config } as typeof config
+  const pythonCheck = await checkPython()
+
+  if (pythonCheck.available) {
+    if (pythonCheck.meetsRequirement) {
+      // Emoji are pushed into result.messages/result.errors arrays that
+      // callers may render anywhere (JSON, file, stderr); there is no single
       // logger.success/fail call to migrate to.
       // oxlint-disable-next-line socket/no-status-emoji -- see above
-      results.errors.push(`✗ Python ${getMinPythonVersion()}+ not found`)
+      results.messages.push(`✓ Python ${pythonCheck.version}`)
+    } else {
+      results.success = false
+      results.errors.push(
+        // Emoji are pushed into result.messages/result.errors arrays that
+        // callers may render anywhere (JSON, file, stderr); there is no
+        // single logger.success/fail call to migrate to.
+        // oxlint-disable-next-line socket/no-status-emoji -- see above
+        `✗ Python ${pythonCheck.version} is too old (need ${getMinPythonVersion()}+)`,
+      )
 
       if (autoSetup) {
         results.errors.push(
@@ -189,7 +186,18 @@ export async function setupBuildEnvironment(
         )
       }
     }
-  }
+  } else {
+    results.success = false
+    // Emoji are pushed into result.messages/result.errors arrays that callers
+    // may render anywhere (JSON, file, stderr); there is no single
+    // logger.success/fail call to migrate to.
+    // oxlint-disable-next-line socket/no-status-emoji -- see above
+    results.errors.push(`✗ Python ${getMinPythonVersion()}+ not found`)
 
-  return results
+    if (autoSetup) {
+      results.errors.push(
+        '  Run: node scripts/setup-build-toolchain.mts --python',
+      )
+    }
+  }
 }

@@ -21,6 +21,32 @@ import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
 const WIN32 = isWin32()
 
+export async function addTarExtractionOptions(
+  tarArgs: string[],
+  config: { stripComponents: number; overwrite: boolean },
+): Promise<void> {
+  const { stripComponents, overwrite } = {
+    __proto__: null,
+    ...config,
+  } as typeof config
+  // Strip leading path components if requested.
+  if (stripComponents > 0) {
+    tarArgs.push(`--strip-components=${stripComponents}`)
+  }
+
+  // Add --no-absolute-names on platforms that support it (defense in depth).
+  if (await tarSupportsNoAbsoluteNames()) {
+    tarArgs.push('--no-absolute-names')
+  }
+
+  // Add --overwrite to handle extraction over existing directories.
+  // This prevents ENOTEMPTY errors when re-extracting to the same location.
+  // Note: macOS BSD tar doesn't support --overwrite, only GNU tar does.
+  if (overwrite && (await tarSupportsOverwrite())) {
+    tarArgs.push('--overwrite')
+  }
+}
+
 /**
  * Securely extract a tarball to a directory. Archive paths are validated
  * against traversal before extraction, and --no-absolute-names is added on
@@ -55,7 +81,7 @@ export async function extractTarball(
     stdio = 'ignore',
     stripComponents = 0,
     validate = true,
-  } = options
+  } = { __proto__: null, ...options } as typeof options
 
   // Create extraction directory if needed.
   if (createDir) {
@@ -75,22 +101,7 @@ export async function extractTarball(
   // Build extraction arguments.
   const tarArgs = ['-xzf', unixTarballPath, '-C', unixExtractDir]
 
-  // Strip leading path components if requested.
-  if (stripComponents > 0) {
-    tarArgs.push(`--strip-components=${stripComponents}`)
-  }
-
-  // Add --no-absolute-names on platforms that support it (defense in depth).
-  if (await tarSupportsNoAbsoluteNames()) {
-    tarArgs.push('--no-absolute-names')
-  }
-
-  // Add --overwrite to handle extraction over existing directories.
-  // This prevents ENOTEMPTY errors when re-extracting to the same location.
-  // Note: macOS BSD tar doesn't support --overwrite, only GNU tar does.
-  if (overwrite && (await tarSupportsOverwrite())) {
-    tarArgs.push('--overwrite')
-  }
+  await addTarExtractionOptions(tarArgs, { stripComponents, overwrite })
 
   // Extract.
   const result = await spawn(tarBin, tarArgs, { stdio })
@@ -121,6 +132,12 @@ export async function validateTarballPaths(
   const listResult = await spawn(tarBin, ['-tzf', unixTarballPath], {
     stdio: 'pipe',
   })
+
+  if (listResult.code !== 0) {
+    throw new Error(
+      `Tarball validation failed for ${tarballPath}: tar listing exited ${listResult.code}; expected 0. Check the archive before extracting.`,
+    )
+  }
 
   const files = (listResult.stdout || '')
     .split(/\r?\n/)
