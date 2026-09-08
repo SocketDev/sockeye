@@ -43,3 +43,15 @@ export const LSQUIC_PATCHED_DIR = path.join(
   'deps',
   'lsquic',
 )
+
+export function getReleaseCheckpointPaths(
+  buildDir: string,
+  checkpointName: string,
+) {
+  const checkpointDir = path.join(buildDir, 'checkpoints')
+  return {
+    __proto__: null,
+    archive: path.join(checkpointDir, `${checkpointName}.tar.gz`),
+    metadata: path.join(checkpointDir, `${checkpointName}.json`),
+  }
+}
