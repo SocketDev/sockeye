@@ -101,17 +101,19 @@ loading the runner. It is not yet a generic environment-variable solution for
 arbitrary native children. The design needs a separate threat review before it
 replaces the current path-based launch.
 
-## Agent-CI boundary
+## Local CI boundary
 
 `pnpm run ci:sockeye -- run --workflow <path>` reads one workflow before Touch
 ID and extracts only its static `secrets.NAME` and `vars.NAME` references. It
-does not read Keychain. Public variables must already be in the parent
-environment; Agent-CI receives them through `--var NAME=value`. Secret values
+does not read Keychain. Public variables come from explicit `--var NAME=value`
+arguments and must match the workflow's declared variable names. The bridge
+does not use arbitrary parent environment values as public configuration. Secret values
 are fetched later inside Sockeye and exist only in the approved child's minimal
 environment.
 
-The bridge binds the selected workflow plus Agent-CI's installed JavaScript
-files into the approval manifest. Sockeye hashes and rechecks them before
+The bridge binds the selected workflow plus Local CI's installed JavaScript
+files into the approval manifest. It launches the JavaScript CLI directly.
+Sockeye hashes and rechecks the bound files before
 launch. This is stronger than launching the mutable `.bin` shell shim, but it
 does not close the same-user path replacement race described above: Node still
 opens its module files by path. Independent review of that limitation remains

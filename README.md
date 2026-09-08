@@ -79,23 +79,30 @@ storage for values that are safe to display.
 
 </details>
 
-### Agent-CI
+### Local CI
 
 The repository bridge derives the exact `secrets.NAME` and `vars.NAME`
 references from one selected workflow. It asks Sockeye for only those secret
-names and converts public variables into Agent-CI's `--var` arguments:
+names. Pass each public variable explicitly with `--var NAME=value`:
 
 ```sh
-SOCKET_RELEASE_CLIENT_ID=<public-id> pnpm run ci:sockeye -- \
+pnpm run ci:sockeye -- \
   run --workflow .github/workflows/github-release.yml \
+  --var SOCKET_RELEASE_CLIENT_ID=example-release-client-id \
+  --var SOCKET_PAYLOAD_CLIENT_ID=example-payload-client-id \
   --quiet --pause-on-failure --github-token
 ```
 
+Add `--repository /absolute/path/to/repository` to run a workflow in another
+checkout. The bridge resolves that checkout's installed `run-local-ci` package.
+It rejects duplicate workflow selectors, environment files, and secret override
+flags. Public variable names must match the selected workflow.
+
 The bridge refuses `--all` because a multi-workflow run would widen the
 credential request. It also refuses generated gh-aw `.lock.yml` files, which
-Agent-CI cannot execute. The bridge process never reads a secret value; it sees
+Local CI cannot execute. The bridge process never reads a secret value; it sees
 only secret names and public variable values. The Touch ID approval still
-happens once, immediately before the exact Agent-CI child launch.
+happens once, immediately before the exact Local CI child launch.
 
 ## Development
 
