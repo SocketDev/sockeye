@@ -19,7 +19,7 @@
  */
 
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { CURL_PACKAGE_ROOT } from '../scripts/paths.mts'
 
 import { createPrebuiltApi } from 'local-build-infra/lib/ensure-prebuilt'
 import {
@@ -33,11 +33,7 @@ import { detectLibc } from '@socketsecurity/lib-stable/releases/socket-btm'
 
 import { CURL_REQUIRED_FILES } from './required-files.mts'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-// curl-builder doesn't ship a scripts/paths.mts (unlike dawn/yoga/
-// opentui), so compute PACKAGE_ROOT locally — matches the pattern in
-// scripts/build.mts.
-const PACKAGE_ROOT = path.resolve(__dirname, '..')
+const PACKAGE_ROOT = CURL_PACKAGE_ROOT
 
 // curl-builder has no upstream dependencies on other socket-btm
 // packages, so the checkpoint chain is a single FINALIZED checkpoint.

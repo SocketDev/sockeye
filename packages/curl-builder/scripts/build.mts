@@ -1,3 +1,14 @@
+import {
+  validateCurlArchiveHeader,
+  validateCurlChecksum,
+} from './download-validation.mts'
+import {
+  CURL_PACKAGE_ROOT,
+  getCurlDownloadPaths,
+  getCurlExtractPaths,
+  getCurlLibraryPath,
+} from './paths.mts'
+import { CURL_REQUIRED_FILES } from '../lib/required-files.mts'
 import { getBuildTempDir } from 'local-build-infra/lib/paths'
 // max-file-lines: builder-pipeline -- single builder pipeline (fetch → patch → build → package); phases share local state and early-return across the full sequence — splitting would fracture control flow
 /**
@@ -56,7 +67,6 @@ import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 const logger = getDefaultLogger()
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 /**
  * Get checkpoint chain for CI workflows.
@@ -71,7 +81,7 @@ export function getCheckpointChain() {
 
 // curl and mbedTLS are built in curl-builder.
 // The bin-stub-builder Makefiles reference curl-builder's build output.
-const packageRoot = path.join(__dirname, '..')
+const packageRoot = CURL_PACKAGE_ROOT
 
 const curlUpstream = path.join(packageRoot, 'upstream', 'curl')
 const mbedtlsUpstream = path.join(packageRoot, 'upstream', 'mbedtls')
@@ -107,16 +117,6 @@ export function getBuildDirs(platformArch) {
 }
 
 /**
- * Required curl library files.
- */
-const CURL_REQUIRED_FILES = [
-  'libcurl.a',
-  'libmbedtls.a',
-  'libmbedx509.a',
-  'libmbedcrypto.a',
-]
-
-/**
  * Check if curl libraries exist at a given directory.
  *
  * @param {string} dir - Directory to check.
@@ -128,7 +128,9 @@ const CURL_REQUIRED_FILES = [
 // phases would scatter the flow and break the checkpoint reading order.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function curlExistsAt(dir) {
-  return CURL_REQUIRED_FILES.every(file => existsSync(path.join(dir, file)))
+  return CURL_REQUIRED_FILES.every(file =>
+    existsSync(getCurlLibraryPath({ directory: dir, filename: file })),
+  )
 }
 
 /**
@@ -176,14 +178,7 @@ export async function downloadCurl(options = {}) {
     buildCommand: 'node scripts/build.mts',
   })
 
-  const targetDir = path.join(
-    packageRoot,
-    'build',
-    'downloaded',
-    'curl',
-    resolvedPlatformArch,
-  )
-  const versionFile = path.join(targetDir, '.version')
+  const { targetDir, versionFile } = getCurlDownloadPaths(resolvedPlatformArch)
   const assetName = `curl-${resolvedPlatformArch}.tar.gz`
 
   // Check if already downloaded (unless force).
@@ -212,42 +207,10 @@ export async function downloadCurl(options = {}) {
   const extractDir = path.dirname(downloadedArchive)
   logger.info('Extracting curl archive…')
 
-  // Verify archive exists before extraction.
-  if (!existsSync(downloadedArchive)) {
-    throw new Error(
-      `Downloaded archive not found at expected path: ${downloadedArchive}`,
-    )
-  }
-
-  // Verify tarball integrity before extraction (detect corrupted/truncated downloads).
-  // Multiple fs.stat() calls consume stats.size for downloaded-archive /
-  // built-library size reporting and minimum-size quick checks.
-  // oxlint-disable-next-line socket/prefer-exists-sync -- stat fields consumed
-  const archiveStats = await fs.stat(downloadedArchive)
-  logger.info(
-    `Archive size: ${(archiveStats.size / 1024 / 1024).toFixed(2)} MB`,
-  )
-
-  // Check gzip magic bytes (0x1f 0x8b) to verify it's a valid gzip file.
-  const gzipMagic = Buffer.alloc(2)
-  const fd = await fs.open(downloadedArchive, 'r')
-  try {
-    await fd.read(gzipMagic, 0, 2, 0)
-  } finally {
-    await fd.close()
-  }
-
-  if (gzipMagic[0] !== 0x1f || gzipMagic[1] !== 0x8b) {
-    // Delete corrupted archive and version file so next run will re-download.
-    await safeDelete(downloadedArchive)
-    if (existsSync(versionFile)) {
-      await safeDelete(versionFile)
-    }
-    throw new Error(
-      'Downloaded archive is not a valid gzip file (missing magic bytes). ' +
-        `File may be corrupted or truncated. Deleted ${downloadedArchive} to force re-download.`,
-    )
-  }
+  await validateCurlArchiveHeader({
+    archivePath: downloadedArchive,
+    versionFile,
+  })
 
   // Verify SHA256 checksum to detect corrupt/truncated downloads.
   logger.info('Verifying archive checksum…')
@@ -255,30 +218,19 @@ export async function downloadCurl(options = {}) {
     downloadedArchive,
     assetName,
   )
-  if (!checksumResult.valid) {
-    await safeDelete(downloadedArchive)
-    if (existsSync(versionFile)) {
-      await safeDelete(versionFile)
-    }
-    throw new Error(
-      'Archive checksum mismatch - file is corrupted.\n' +
-        `  Expected: ${checksumResult.expected}\n` +
-        `  Actual:   ${checksumResult.actual}\n` +
-        `Deleted ${downloadedArchive} to force re-download.`,
-    )
-  }
-  // Only log checksum if it was actually verified (not skipped due to missing expected checksum).
-  if (checksumResult.actual) {
-    logger.info(
-      `Checksum verified: ${checksumResult.actual.slice(0, 16)}...${checksumResult.actual.slice(-8)}`,
-    )
-  }
+  await validateCurlChecksum({
+    archivePath: downloadedArchive,
+    versionFile,
+    result: checksumResult,
+  })
 
   // Clean extraction directory to prevent "File exists" errors from cached layers.
   // This handles cases where Docker cached a partial extraction before failure.
-  const curlIncludeDir = path.join(extractDir, 'include')
-  const curlLibDir = path.join(extractDir, 'lib')
-  const curlBinDir = path.join(extractDir, 'bin')
+  const {
+    include: curlIncludeDir,
+    lib: curlLibDir,
+    bin: curlBinDir,
+  } = getCurlExtractPaths(extractDir)
   if (existsSync(curlIncludeDir)) {
     await safeDelete(curlIncludeDir)
   }
@@ -313,7 +265,9 @@ export async function downloadCurl(options = {}) {
   // Verify expected files exist after extraction.
   for (let i = 0, { length } = CURL_REQUIRED_FILES; i < length; i += 1) {
     const file = CURL_REQUIRED_FILES[i]
-    if (!existsSync(path.join(extractDir, file))) {
+    if (
+      !existsSync(getCurlLibraryPath({ directory: extractDir, filename: file }))
+    ) {
       throw new Error(`Expected file not found after extraction: ${file}`)
     }
   }
@@ -324,7 +278,9 @@ export async function downloadCurl(options = {}) {
   // Multiple fs.stat() calls consume stats.size for downloaded-archive /
   // built-library size reporting and minimum-size quick checks.
   // oxlint-disable-next-line socket/prefer-exists-sync -- stat fields consumed
-  const stats = await fs.stat(path.join(extractDir, 'libcurl.a'))
+  const stats = await fs.stat(
+    getCurlLibraryPath({ directory: extractDir, filename: 'libcurl.a' }),
+  )
   const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
   logger.success(`Downloaded curl (${sizeMB} MB) to ${extractDir}`)
 
