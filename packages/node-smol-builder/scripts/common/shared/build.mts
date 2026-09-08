@@ -8,6 +8,11 @@
  */
 
 import { existsSync } from 'node:fs'
+import {
+  getBuildResumePlan,
+  reportBuildStop,
+  validateBuildResume,
+} from './build-decisions.mts'
 import path from 'node:path'
 
 import {
@@ -143,40 +148,16 @@ async function main() {
   // Skip to specific checkpoint if requested.
   // --from-checkpoint=binary-released means "I have the release binary, skip to stripped phase".
   // --from-checkpoint=binary-stripped means "I have the stripped binary, skip to compressed phase".
-  const skipReleasePhase =
-    FROM_CHECKPOINT === CHECKPOINTS.BINARY_RELEASED ||
-    FROM_CHECKPOINT === CHECKPOINTS.BINARY_STRIPPED ||
-    FROM_CHECKPOINT === CHECKPOINTS.BINARY_COMPRESSED ||
-    FROM_CHECKPOINT === CHECKPOINTS.FINALIZED
-  const skipToCompressed =
-    FROM_CHECKPOINT === CHECKPOINTS.BINARY_COMPRESSED ||
-    FROM_CHECKPOINT === CHECKPOINTS.FINALIZED
-  const skipToFinalized = FROM_CHECKPOINT === CHECKPOINTS.FINALIZED
+  const { skipReleasePhase, skipToCompressed, skipToFinalized } =
+    getBuildResumePlan(FROM_CHECKPOINT)
 
   let releaseResult = { cached: false, isCrossCompiling: false }
 
   if (skipReleasePhase) {
-    // Verify required artifact exists based on checkpoint
-    if (FROM_CHECKPOINT === CHECKPOINTS.BINARY_RELEASED) {
-      // When resuming from binary-released, only need the Release binary (no checkpoint file needed)
-      if (!existsSync(outputReleaseBinary)) {
-        throw new Error(
-          `Cannot resume from ${FROM_CHECKPOINT}: Release binary not found at ${outputReleaseBinary}`,
-        )
-      }
-    } else {
-      // For later checkpoints, verify the checkpoint file exists
-      const checkpointFile = path.join(
-        BUILD_DIR,
-        'checkpoints',
-        `${FROM_CHECKPOINT}.json`,
-      )
-      if (!existsSync(checkpointFile)) {
-        throw new Error(
-          `Cannot skip to ${FROM_CHECKPOINT}: checkpoint not found at ${checkpointFile}`,
-        )
-      }
-    }
+    validateBuildResume(FROM_CHECKPOINT, {
+      buildDir: BUILD_DIR,
+      outputReleaseBinary,
+    })
     logger.log('')
     logger.log(
       `Skipping to ${FROM_CHECKPOINT} phase (--from-checkpoint=${FROM_CHECKPOINT})`,
@@ -235,23 +216,14 @@ async function main() {
   // - Only rebuild what's needed based on cache validation
   const { isCrossCompiling } = releaseResult
 
-  // Stop early if --stop-at=binary-released or --build-only=binary-released was specified
   if (
-    STOP_AT === CHECKPOINTS.BINARY_RELEASED ||
-    BUILD_ONLY === CHECKPOINTS.BINARY_RELEASED
+    reportBuildStop(CHECKPOINTS.BINARY_RELEASED, {
+      binaryLabel: 'Released',
+      binaryPath: outputReleaseBinary,
+      buildOnly: BUILD_ONLY,
+      stopAt: STOP_AT,
+    })
   ) {
-    logger.log('')
-    if (BUILD_ONLY) {
-      logger.skip(
-        'Build completed at binary-released (--build-only=binary-released, checkpoint skipped)',
-      )
-    } else {
-      logger.success(
-        'Build stopped at binary-released (--stop-at=binary-released)',
-      )
-    }
-    logger.log(`Released binary: ${outputReleaseBinary}`)
-    logger.log('')
     return
   }
 
@@ -352,23 +324,14 @@ async function main() {
     )
   }
 
-  // Stop early if --stop-at=binary-stripped or --build-only=binary-stripped was specified
   if (
-    STOP_AT === CHECKPOINTS.BINARY_STRIPPED ||
-    BUILD_ONLY === CHECKPOINTS.BINARY_STRIPPED
+    reportBuildStop(CHECKPOINTS.BINARY_STRIPPED, {
+      binaryLabel: 'Stripped',
+      binaryPath: outputStrippedBinary,
+      buildOnly: BUILD_ONLY,
+      stopAt: STOP_AT,
+    })
   ) {
-    logger.log('')
-    if (BUILD_ONLY) {
-      logger.skip(
-        'Build completed at binary-stripped (--build-only=binary-stripped, checkpoint skipped)',
-      )
-    } else {
-      logger.success(
-        'Build stopped at binary-stripped (--stop-at=binary-stripped)',
-      )
-    }
-    logger.log(`Stripped binary: ${outputStrippedBinary}`)
-    logger.log('')
     return
   }
 
@@ -411,23 +374,14 @@ async function main() {
     compressed = result.compressed
   }
 
-  // Stop early if --stop-at=binary-compressed or --build-only=binary-compressed was specified
   if (
-    STOP_AT === CHECKPOINTS.BINARY_COMPRESSED ||
-    BUILD_ONLY === CHECKPOINTS.BINARY_COMPRESSED
+    reportBuildStop(CHECKPOINTS.BINARY_COMPRESSED, {
+      binaryLabel: 'Compressed',
+      binaryPath: outputCompressedBinary,
+      buildOnly: BUILD_ONLY,
+      stopAt: STOP_AT,
+    })
   ) {
-    logger.log('')
-    if (BUILD_ONLY) {
-      logger.skip(
-        'Build completed at binary-compressed (--build-only=binary-compressed, checkpoint skipped)',
-      )
-    } else {
-      logger.success(
-        'Build stopped at binary-compressed (--stop-at=binary-compressed)',
-      )
-    }
-    logger.log(`Compressed binary: ${outputCompressedBinary}`)
-    logger.log('')
     return
   }
 

@@ -14,3 +14,5 @@ export {
   getBuildSourcePaths,
   getExistingPaths,
 } from '../../paths.mts'
+
+export { getReleaseCheckpointPaths } from '../../binary-released/shared/paths.mts'
