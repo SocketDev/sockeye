@@ -6,11 +6,18 @@ import {
 } from '../../scripts/wpt-streams/report.mts'
 
 const logger = getDefaultLogger()
+const loggerCalls = {
+  error: vi.fn(),
+  fail: vi.fn(),
+  log: vi.fn(),
+  substep: vi.fn(),
+}
 beforeEach(() => {
-  vi.spyOn(logger, 'log').mockImplementation(() => undefined)
-  vi.spyOn(logger, 'substep').mockImplementation(() => undefined)
-  vi.spyOn(logger, 'error').mockImplementation(() => undefined)
-  vi.spyOn(logger, 'fail').mockImplementation(() => undefined)
+  vi.clearAllMocks()
+  vi.spyOn(logger, 'log').mockImplementation(loggerCalls.log)
+  vi.spyOn(logger, 'substep').mockImplementation(loggerCalls.substep)
+  vi.spyOn(logger, 'error').mockImplementation(loggerCalls.error)
+  vi.spyOn(logger, 'fail').mockImplementation(loggerCalls.fail)
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -24,8 +31,8 @@ test('reports passing files without error details', () => {
     },
     verbose: false,
   })
-  expect(logger.log).toHaveBeenCalledTimes(1)
-  expect(logger.substep).not.toHaveBeenCalled()
+  expect(loggerCalls.log).toHaveBeenCalledTimes(1)
+  expect(loggerCalls.substep).not.toHaveBeenCalled()
 })
 
 test.each([
@@ -47,7 +54,7 @@ test.each([
     },
     verbose,
   })
-  expect(logger.substep).toHaveBeenCalledTimes(count)
+  expect(loggerCalls.substep).toHaveBeenCalledTimes(count)
 })
 
 function summaryConfig() {
@@ -66,7 +73,7 @@ function summaryConfig() {
 
 test('returns success for an empty run without a nonfinite pass rate', () => {
   expect(reportWptSummary(summaryConfig())).toBe(0)
-  expect(logger.substep).toHaveBeenCalledWith('Pass rate: 0%')
+  expect(loggerCalls.substep).toHaveBeenCalledWith('Pass rate: 0%')
 })
 
 test('retains success when every observed failure is expected', () => {
@@ -80,7 +87,7 @@ test('retains success when every observed failure is expected', () => {
       filesWithFailures: 1,
     }),
   ).toBe(0)
-  expect(logger.fail).not.toHaveBeenCalled()
+  expect(loggerCalls.fail).not.toHaveBeenCalled()
 })
 
 test('returns failure and bounds the displayed unexpected failures', () => {
@@ -97,6 +104,6 @@ test('returns failure and bounds the displayed unexpected failures', () => {
       totalTests: 11,
     }),
   ).toBe(1)
-  expect(logger.fail).toHaveBeenCalledTimes(1)
-  expect(logger.substep).toHaveBeenLastCalledWith('... and 1 more')
+  expect(loggerCalls.fail).toHaveBeenCalledTimes(1)
+  expect(loggerCalls.substep).toHaveBeenLastCalledWith('... and 1 more')
 })

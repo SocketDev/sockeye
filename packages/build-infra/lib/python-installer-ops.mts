@@ -399,4 +399,5 @@ export async function retryPythonVersionMismatch(config) {
   } catch {
     // Could not check version, proceed with reinstall if autoInstall
   }
+  return undefined
 }
