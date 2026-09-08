@@ -9,7 +9,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { execBuildStep } from 'local-build-infra/lib/build-helpers'
+import { execBuildStep } from 'local-build-infra/lib/build-operations'
 import { errorMessage } from 'local-build-infra/lib/error-utils'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'

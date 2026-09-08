@@ -11,22 +11,24 @@ import {
   checkDiskSpace,
   checkPythonVersion,
   freeDiskSpace,
-} from './build-helpers.mts'
+} from './build-operations.mts'
 import { printError } from './build-output.mts'
 import { loadAllTools } from './pinned-versions.mts'
 import { ensureAllPythonPackages } from './python-installer-ops.mts'
 import { ensureToolInstalled } from './tool-installer.mts'
-import { getMinPythonVersion } from './version-helpers.mts'
+import { getMinPythonVersion } from './version-metadata.mts'
 
 const logger = getDefaultLogger()
 
 /**
- * Run preflight checks for model builds: free and check disk space, install
- * and verify Python at the minimum version, and install the Python packages
- * required by build-requirements.json. Throws when a prerequisite cannot be met.
+ * Run preflight checks for model builds: free and check disk space, install and
+ * verify Python at the minimum version, and install the Python packages
+ * required by build-requirements.json. Throws when a prerequisite cannot be
+ * met.
  *
  * @param {object} options - Check options.
- * @param {string} options.packageRoot - Root for loading build-requirements.json.
+ * @param {string} options.packageRoot - Root for loading
+ *   build-requirements.json.
  * @param {string} options.packageJsonPath - Package.json for pip context.
  * @param {string} [options.buildDir] - Build directory for disk space check.
  * @param {number} [options.requiredDiskGB=1] - Required disk space in GB.
@@ -61,31 +63,7 @@ export async function checkModelBuildPrerequisites(config) {
     }
   }
 
-  // Ensure Python 3 is installed.
-  const requiredPythonVersion = getMinPythonVersion()
-  const pythonResult = await ensureToolInstalled('python3', {
-    autoInstall: true,
-  })
-
-  if (!pythonResult.available) {
-    printError(`Python ${requiredPythonVersion}+ is required but not found`)
-    printError('Install Python from: https://www.python.org/downloads/')
-    throw new Error(`Python ${requiredPythonVersion}+ required`)
-  }
-
-  if (pythonResult.installed && !quiet) {
-    logger.success('Installed Python 3')
-  }
-
-  // Check Python version.
-  const pythonOk = await checkPythonVersion(requiredPythonVersion)
-  if (!pythonOk) {
-    printError(
-      `Python ${requiredPythonVersion}+ required (found older version)`,
-    )
-    printError('Install Python from: https://www.python.org/downloads/')
-    throw new Error(`Python ${requiredPythonVersion}+ required`)
-  }
+  await ensureModelPython(quiet)
 
   // Load Python packages from build-requirements.json (with extends support).
   const externalTools = loadAllTools({ packageRoot })
@@ -129,6 +107,34 @@ export async function checkModelBuildPrerequisites(config) {
   }
 
   return { __proto__: null, externalTools, pythonPackages }
+}
+
+export async function ensureModelPython(quiet: boolean): Promise<void> {
+  // Ensure Python 3 is installed.
+  const requiredPythonVersion = getMinPythonVersion()
+  const pythonResult = await ensureToolInstalled('python3', {
+    autoInstall: true,
+  })
+
+  if (!pythonResult.available) {
+    printError(`Python ${requiredPythonVersion}+ is required but not found`)
+    printError('Install Python from: https://www.python.org/downloads/')
+    throw new Error(`Python ${requiredPythonVersion}+ required`)
+  }
+
+  if (pythonResult.installed && !quiet) {
+    logger.success('Installed Python 3')
+  }
+
+  // Check Python version.
+  const pythonOk = await checkPythonVersion(requiredPythonVersion)
+  if (!pythonOk) {
+    printError(
+      `Python ${requiredPythonVersion}+ required (found older version)`,
+    )
+    printError('Install Python from: https://www.python.org/downloads/')
+    throw new Error(`Python ${requiredPythonVersion}+ required`)
+  }
 }
 
 /**

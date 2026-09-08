@@ -9,9 +9,9 @@ import {
   checkCompiler,
   checkDiskSpace,
   checkPythonVersion,
-} from './build-helpers.mts'
+} from './build-operations.mts'
 import { printError } from './build-output.mts'
-import { getMinPythonVersion } from './version-helpers.mts'
+import { getMinPythonVersion } from './version-metadata.mts'
 
 const logger = getDefaultLogger()
 

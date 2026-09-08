@@ -19,7 +19,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 import { BUILD_STAGES, getBuildMode } from 'local-build-infra/lib/constants'
-import { makeExecutable } from 'local-build-infra/lib/build-helpers'
+import { makeExecutable } from 'local-build-infra/lib/build-operations'
 
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'

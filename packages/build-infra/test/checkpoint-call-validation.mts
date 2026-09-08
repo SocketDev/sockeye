@@ -85,29 +85,7 @@ export function validateCreateCheckpointCall(
         continue
       }
 
-      const paramLines: string[] = []
-      let braceCount = 0
-      let foundStart = false
-
-      for (let j = i; j < Math.min(i + 15, lines.length); j += 1) {
-        const paramLine = lines[j]
-        if (paramLine === undefined) {
-          continue
-        }
-        if (paramLine.includes('createCheckpoint(')) {
-          foundStart = true
-        }
-        if (foundStart) {
-          paramLines.push(paramLine)
-          braceCount += (paramLine.match(/\(/g) || []).length
-          braceCount -= (paramLine.match(/\)/g) || []).length
-          if (braceCount === 0) {
-            break
-          }
-        }
-      }
-
-      const fullCall = paramLines.join('\n')
+      const fullCall = collectCheckpointCall(lines, i)
       if (/createCheckpoint\([^,]+,\s*packageName\s*,/.test(fullCall)) {
         errors.push({
           context: fullCall.substring(0, 200),
@@ -130,4 +108,30 @@ export function validateCreateCheckpointCall(
   }
 
   return errors
+}
+
+export function collectCheckpointCall(lines: string[], i: number): string {
+  const paramLines: string[] = []
+  let braceCount = 0
+  let foundStart = false
+
+  for (let j = i; j < Math.min(i + 15, lines.length); j += 1) {
+    const paramLine = lines[j]
+    if (paramLine === undefined) {
+      continue
+    }
+    if (paramLine.includes('createCheckpoint(')) {
+      foundStart = true
+    }
+    if (foundStart) {
+      paramLines.push(paramLine)
+      braceCount += (paramLine.match(/\(/g) || []).length
+      braceCount -= (paramLine.match(/\)/g) || []).length
+      if (braceCount === 0) {
+        break
+      }
+    }
+  }
+
+  return paramLines.join('\n')
 }

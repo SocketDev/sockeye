@@ -1,5 +1,5 @@
 /**
- * @file Tests for version-helpers utilities.
+ * @file Tests for version-metadata utilities.
  *   Validates .gitmodules version and checksum parsing.
  */
 
@@ -15,7 +15,7 @@ import {
   getSubmoduleChecksum,
   getSubmoduleVersion,
   verifyNodeChecksum,
-} from '../lib/version-helpers.mts'
+} from '../lib/version-metadata.mts'
 import { NODE_VERSION_FILE } from '../lib/constants.mts'
 import {
   NODE_SOURCE_SUBMODULE_PATH,
@@ -59,7 +59,7 @@ afterEach(() => {
   nock.cleanAll()
 })
 
-describe('version-helpers', () => {
+describe('version-metadata', () => {
   describe(getNodeVersion, () => {
     it('should return a valid semver-like version string', () => {
       const version = getNodeVersion()

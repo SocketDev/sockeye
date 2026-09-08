@@ -10,7 +10,7 @@
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
-import { getMinPythonVersion } from './version-helpers.mts'
+import { getMinPythonVersion } from './version-metadata.mts'
 import {
   activateEmscriptenSDK,
   getEmscriptenVersion,

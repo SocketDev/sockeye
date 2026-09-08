@@ -12,7 +12,7 @@ import process from 'node:process'
 import {
   formatDuration,
   getFileSize,
-} from 'local-build-infra/lib/build-helpers'
+} from 'local-build-infra/lib/build-operations'
 import { printError } from 'local-build-infra/lib/build-output'
 import { ensureEmscripten } from 'local-build-infra/lib/emscripten-installer'
 import {

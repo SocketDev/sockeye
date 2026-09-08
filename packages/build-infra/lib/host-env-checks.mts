@@ -19,7 +19,7 @@ import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getCleanupPaths } from './ci-cleanup-paths.mts'
 import { BYTES } from './constants.mts'
 import { errorMessage } from './error-utils.mts'
-import { getMinPythonVersion } from './version-helpers.mts'
+import { getMinPythonVersion } from './version-metadata.mts'
 import { whichRequired } from './which-required.mts'
 
 const WIN32 = isWin32()

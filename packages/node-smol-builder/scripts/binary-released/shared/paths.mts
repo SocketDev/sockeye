@@ -55,3 +55,33 @@ export function getReleaseCheckpointPaths(
     metadata: path.join(checkpointDir, `${checkpointName}.json`),
   }
 }
+
+export function getReleaseNinjaPaths(modeSourceDir: string) {
+  return {
+    __proto__: null,
+    gypPath: path.join(modeSourceDir, 'node.gyp'),
+    ninjaPath: path.join(modeSourceDir, 'out/Release/build.ninja'),
+  }
+}
+
+export function getReleaseWindowsConfigurationPath(
+  modeSourceDir: string,
+  configDir: string,
+): string {
+  return path.join(modeSourceDir, configDir)
+}
+
+export function getReleaseOutputEntryPath(
+  directory: string,
+  filename: string,
+): string {
+  return path.join(directory, filename)
+}
+
+export function getReleaseOutputPaths(binaryPath: string) {
+  return {
+    __proto__: null,
+    basename: path.basename(binaryPath),
+    directory: path.dirname(binaryPath),
+  }
+}

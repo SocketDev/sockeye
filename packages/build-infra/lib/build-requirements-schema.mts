@@ -1,4 +1,6 @@
-/** TypeBox schema for Sockeye builder requirements. */
+/**
+ * TypeBox schema for Sockeye builder requirements.
+ */
 
 import { Type } from '@sinclair/typebox'
 

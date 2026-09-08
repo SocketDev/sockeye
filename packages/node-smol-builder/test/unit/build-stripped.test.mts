@@ -3,7 +3,7 @@ import { stripPlatformBinary } from '../../scripts/binary-stripped/shared/build-
 
 const io = vi.hoisted(() => ({ exec: vi.fn(), tool: vi.fn(), which: vi.fn() }))
 vi.mock(
-  import('local-build-infra/lib/build-helpers'),
+  import('local-build-infra/lib/build-operations'),
   async importOriginal => ({
     ...(await importOriginal()),
     exec: io.exec,

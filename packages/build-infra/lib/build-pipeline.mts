@@ -45,7 +45,7 @@ import {
   getCurrentPlatformArch,
   parsePlatformArch,
 } from './platform-mappings.mts'
-import { getNodeVersion } from './version-helpers.mts'
+import { getNodeVersion } from './version-metadata.mts'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 
 import type { BuildRequirementsFile } from './build-requirements-schema.mts'
