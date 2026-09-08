@@ -24,22 +24,42 @@ afterEach(() => vi.unstubAllEnvs())
 test('prefers an existing explicitly configured SDK', async () => {
   vi.stubEnv('EMSDK', '/example/sdk')
   vi.mocked(existsSync).mockReturnValue(true)
-  expect(await findEmscriptenSDK()).toEqual({ path: '/example/sdk', type: 'emsdk' })
+  expect(await findEmscriptenSDK()).toEqual({
+    path: '/example/sdk',
+    type: 'emsdk',
+  })
   expect(commandExists).not.toHaveBeenCalled()
 })
 
 test('resolves an SDK from its compiler executable', async () => {
   vi.mocked(commandExists).mockResolvedValue(true)
-  vi.mocked(getCommandOutput).mockResolvedValue('/example/sdk/upstream/emscripten/emcc')
-  vi.mocked(existsSync).mockImplementation(value => String(value).endsWith('/emcc') || String(value).endsWith('/emsdk'))
-  expect(await findEmscriptenSDK()).toEqual({ path: '/example/sdk', type: 'emsdk' })
+  vi.mocked(getCommandOutput).mockResolvedValue(
+    '/example/sdk/upstream/emscripten/emcc',
+  )
+  vi.mocked(existsSync).mockImplementation(
+    value =>
+      String(value).endsWith('/emcc') || String(value).endsWith('/emsdk'),
+  )
+  expect(await findEmscriptenSDK()).toEqual({
+    path: '/example/sdk',
+    type: 'emsdk',
+  })
 })
 
 test('recognizes a Homebrew compiler with its CMake configuration', async () => {
   vi.mocked(commandExists).mockResolvedValue(true)
-  vi.mocked(getCommandOutput).mockResolvedValue('/example/Cellar/emscripten/3.1.0/bin/emcc')
-  vi.mocked(existsSync).mockImplementation(value => String(value).endsWith('/emcc') || String(value).endsWith('/Emscripten.cmake'))
-  expect(await findEmscriptenSDK()).toEqual({ path: '/example/Cellar/emscripten/3.1.0', type: 'homebrew' })
+  vi.mocked(getCommandOutput).mockResolvedValue(
+    '/example/Cellar/emscripten/3.1.0/bin/emcc',
+  )
+  vi.mocked(existsSync).mockImplementation(
+    value =>
+      String(value).endsWith('/emcc') ||
+      String(value).endsWith('/Emscripten.cmake'),
+  )
+  expect(await findEmscriptenSDK()).toEqual({
+    path: '/example/Cellar/emscripten/3.1.0',
+    type: 'homebrew',
+  })
 })
 
 test('returns no SDK when no candidate exists', async () => {
