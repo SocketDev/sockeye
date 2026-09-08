@@ -3,7 +3,7 @@ import { REPOSITORY_GITMODULES } from './paths.mts'
  * Submodule version and checksum readers for .gitmodules.
  *
  * Reads the fleet pin format through the fleet's OWN parser
- * (scripts/fleet/_shared/gitmodules.mts — the same module family that WRITES
+ * (scripts/fleet/git/modules.mts — the same module family that WRITES
  * the pins via gen/gitmodules-hash), so this reader can never drift from the
  * writer: `branch =` carries the release-tag pin the version derives from,
  * and the `# <slug>-<version> (<date>) sha256:<hex>` header comment carries
@@ -15,9 +15,9 @@ import { readFileSync } from 'node:fs'
 import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 import { coerceVersion } from '@socketsecurity/lib-stable/versions/parse'
 
-import { parseGitmodules } from '../../../scripts/fleet/_shared/gitmodules.mts'
+import { parseGitmodules } from '../../../scripts/fleet/git/modules.mts'
 
-import type { GitmodulesEntry } from '../../../scripts/fleet/_shared/gitmodules.mts'
+import type { GitmodulesEntry } from '../../../scripts/fleet/git/modules.mts'
 
 /**
  * Extract submodule checksum from the .gitmodules header comment.

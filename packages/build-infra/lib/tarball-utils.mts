@@ -7,7 +7,7 @@
 
 import path from 'node:path'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { safeMkdir } from '@socketsecurity/lib-stable/fs/safe'
 import { toUnixPath } from '@socketsecurity/lib-stable/paths/normalize'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -18,6 +18,8 @@ import {
 } from './platform-mappings.mts'
 import { whichRequired } from './which-required.mts'
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
+
+const WIN32 = isWin32()
 
 /**
  * Securely extract a tarball to a directory. Archive paths are validated

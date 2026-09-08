@@ -6,7 +6,7 @@
  * and image-tag mappings live in local-build-setup.mts.
  */
 
-import { getArch, WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { getArch, isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { printError, printInfo, printSuccess } from './build-output.mts'
@@ -20,6 +20,8 @@ import {
   LINUX_TARGETS,
   verifyBuilderImage,
 } from './local-build-setup.mts'
+
+const WIN32 = isWin32()
 
 /**
  * Build a specific builder image.

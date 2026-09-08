@@ -10,11 +10,13 @@ import { writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { safeDelete, safeMkdirSync } from '@socketsecurity/lib-stable/fs/safe'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { validateCheckpoints } from './validate-checkpoints.mts'
+
+const WIN32 = isWin32()
 
 // Test environment setup.
 let testDir: string

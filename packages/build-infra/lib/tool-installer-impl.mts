@@ -11,8 +11,8 @@ import process from 'node:process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
-import binPkg, { which } from '@socketsecurity/lib-stable/bin/which'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
+import { which, whichSync } from '@socketsecurity/lib-stable/exe/path/which'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
@@ -24,7 +24,8 @@ import {
   PACKAGE_MANAGER_CONFIGS,
 } from './tool-installer-config.mts'
 
-const { whichSync } = binPkg
+const WIN32 = isWin32()
+
 const logger = getDefaultLogger()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

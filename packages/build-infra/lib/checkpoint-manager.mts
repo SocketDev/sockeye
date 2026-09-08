@@ -22,8 +22,11 @@ import {
 import path from 'node:path'
 import process from 'node:process'
 
-import { DARWIN, WIN32 } from '@socketsecurity/lib-stable/constants/platform'
-import { getCI } from '@socketsecurity/lib-stable/env/ci'
+import {
+  isDarwin,
+  isWin32,
+} from '@socketsecurity/lib-stable/constants/platform'
+import { isCI } from '@socketsecurity/lib-stable/env/ci'
 import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 import {
   safeDelete,
@@ -50,6 +53,9 @@ import {
 import { adHocSign } from './sign.mts'
 import { extractTarball } from './tarball-utils.mts'
 import { whichRequired } from './which-required.mts'
+
+const WIN32 = isWin32()
+const DARWIN = isDarwin()
 
 const logger = getDefaultLogger()
 
@@ -692,13 +698,9 @@ export async function createCheckpoint(
   // may not be available for recovery. If a build needs to restart from an earlier stage
   // (e.g., source-copied), it will need to rebuild from scratch rather than restoring
   // from checkpoint. This is intentional to optimize CI storage usage.
-  // @socketsecurity/lib-stable's getCI() already checks GITHUB_ACTIONS,
-  // GITLAB_CI, CIRCLECI, TRAVIS, and ~25 other CI env vars — keep
-  // the fleet's single source of truth so cleanup semantics stay
-  // consistent with the rest of the build pipeline.
-  const isCI = getCI()
+  const runningInCI = isCI()
 
-  if (isCI && checkpointChain && data.artifactPath) {
+  if (runningInCI && checkpointChain && data.artifactPath) {
     try {
       // Find current checkpoint's position in chain
       const currentIndex = checkpointChain.indexOf(checkpointName)

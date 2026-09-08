@@ -10,7 +10,10 @@ import { existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-import { DARWIN, WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import {
+  isDarwin,
+  isWin32,
+} from '@socketsecurity/lib-stable/constants/platform'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
@@ -22,6 +25,9 @@ import {
   LINUX_TARGETS,
 } from './local-build-setup.mts'
 import { REPO_ROOT as WORKSPACE_ROOT } from '../../../scripts/fleet/paths.mts'
+
+const WIN32 = isWin32()
+const DARWIN = isDarwin()
 
 const logger = getDefaultLogger()
 

@@ -8,14 +8,12 @@
 
 import { promises as fs } from 'node:fs'
 
-import spawnPkg from '@socketsecurity/lib-stable/process/spawn/child'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { BYTES } from './constants.mts'
 
 import type { FileHandle } from 'node:fs/promises'
 import type { SpawnOptions } from '@socketsecurity/lib-stable/process/spawn/types'
-
-const { spawn } = spawnPkg
 
 export * from './binary-smoke-test.mts'
 export * from './binary-verify.mts'

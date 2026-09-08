@@ -12,10 +12,12 @@ import { fileURLToPath } from 'node:url'
 
 import {
   getArch,
-  getPlatform,
-  WIN32,
+  getOs,
+  isWin32,
 } from '@socketsecurity/lib-stable/constants/platform'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
+
+const WIN32 = isWin32()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const DOCKER_DIR = path.join(__dirname, '..', 'docker')
@@ -167,7 +169,7 @@ export function getComposeServiceName(target) {
  * @returns {{ platform: string; arch: string; target: string | undefined }}
  */
 export function getHostInfo() {
-  const platform = getPlatform()
+  const platform = getOs()
   const arch = getArch()
 
   // Determine the native target for this host

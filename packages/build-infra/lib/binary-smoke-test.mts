@@ -12,9 +12,9 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import platformPkg from '@socketsecurity/lib-stable/constants/platform'
+import { getArch, isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
-import spawnPkg from '@socketsecurity/lib-stable/process/spawn/child'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { isSpawnError } from '@socketsecurity/lib-stable/process/spawn/errors'
 import { detectLibc } from '@socketsecurity/lib-stable/releases/socket-btm'
 
@@ -32,8 +32,7 @@ import {
   selectCrossCompileSmokeTestStrategy,
 } from './smoke-test-strategy.mts'
 
-const { WIN32, getArch } = platformPkg
-const { spawn } = spawnPkg
+const WIN32 = isWin32()
 
 const logger = getDefaultLogger()
 

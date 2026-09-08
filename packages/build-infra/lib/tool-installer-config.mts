@@ -6,12 +6,10 @@
  * 500-line soft cap.
  */
 
-import binPkg from '@socketsecurity/lib-stable/bin/which'
+import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
 
 import { getPlatform } from './build-env.mts'
 import { getToolConfig } from './pinned-versions.mts'
-
-const { whichSync } = binPkg
 
 /**
  * Homebrew "keg-only" formulas — brew installs them without symlinking

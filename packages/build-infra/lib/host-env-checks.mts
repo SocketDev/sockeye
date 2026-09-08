@@ -10,11 +10,11 @@ import { existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-import binPkg from '@socketsecurity/lib-stable/bin/which'
-import platformPkg from '@socketsecurity/lib-stable/constants/platform'
-import { getCI } from '@socketsecurity/lib-stable/env/ci'
+import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isCI } from '@socketsecurity/lib-stable/env/ci'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
-import spawnPkg from '@socketsecurity/lib-stable/process/spawn/child'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { getCleanupPaths } from './ci-cleanup-paths.mts'
 import { BYTES } from './constants.mts'
@@ -22,9 +22,7 @@ import { errorMessage } from './error-utils.mts'
 import { getMinPythonVersion } from './version-helpers.mts'
 import { whichRequired } from './which-required.mts'
 
-const { whichSync } = binPkg
-const { WIN32 } = platformPkg
-const { spawn } = spawnPkg
+const WIN32 = isWin32()
 
 const logger = getDefaultLogger()
 
@@ -102,7 +100,7 @@ export async function checkNetworkConnectivity(): Promise<{
   try {
     // In CI, assume network connectivity is available.
     // The build will fail later if it's actually not available.
-    if (getCI()) {
+    if (isCI()) {
       return { connected: true, statusCode: 'skipped-in-ci' }
     }
 
@@ -245,7 +243,7 @@ export async function checkPythonVersion(
  */
 export async function freeDiskSpace(): Promise<void> {
   // Only run in CI environments (GitHub Actions, GitLab CI, etc.)
-  if (!getCI()) {
+  if (!isCI()) {
     logger.substep('Skipping disk space cleanup (not running in CI)')
     return
   }

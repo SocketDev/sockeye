@@ -253,7 +253,7 @@ export function getPlatformBuildDir(
 // declarations across sections.
 // oxlint-disable-next-line socket/sort-source-methods -- intentional ordering
 export function getEmsdkSearchPaths(
-  platform: string = process.platform,
+  platform: NodeJS.Platform = process.platform,
 ): string[] {
   return (
     (EMSDK_SEARCH_PATHS as Partial<Record<NodeJS.Platform, string[]>>)[

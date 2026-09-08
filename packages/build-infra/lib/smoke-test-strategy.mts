@@ -7,11 +7,10 @@
  * binary-smoke-test.mts / binary-verify.mts.
  */
 
-import platformPkg from '@socketsecurity/lib-stable/constants/platform'
-import spawnPkg from '@socketsecurity/lib-stable/process/spawn/child'
+import { getArch, isWin32 } from '@socketsecurity/lib-stable/constants/platform'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
-const { WIN32, getArch } = platformPkg
-const { spawn } = spawnPkg
+const WIN32 = isWin32()
 
 // Windows Node.js v24 bug: exit code 3221226505 (0xC0000409 STATUS_STACK_BUFFER_OVERRUN)
 // See: https://github.com/nodejs/corepack/issues/715

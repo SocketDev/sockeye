@@ -9,8 +9,10 @@
 import { accessSync, constants, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 
-import { WIN32 } from '@socketsecurity/lib-stable/constants/platform'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
+
+const WIN32 = isWin32()
 
 /**
  * Supported tar archive formats.

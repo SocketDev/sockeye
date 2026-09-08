@@ -17,8 +17,7 @@ import { isErrnoException } from '@socketsecurity/lib-stable/errors/predicates'
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
 import { safeMkdirSync } from '@socketsecurity/lib-stable/fs/safe'
-import loggerPkg from '@socketsecurity/lib-stable/logger/default'
-const { getDefaultLogger } = loggerPkg
+import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 const logger = getDefaultLogger()
 

@@ -13,7 +13,7 @@ import process from 'node:process'
 
 import { errorMessage } from './error-utils.mts'
 
-import { getCI } from '@socketsecurity/lib-stable/env/ci'
+import { isCI } from '@socketsecurity/lib-stable/env/ci'
 
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
@@ -60,14 +60,7 @@ export function createSetupToolchain(config) {
   }
 }
 
-/**
- * Check if running in CI environment.
- * Thin re-export of @socketsecurity/lib-stable's getCI() so the 6 packages that
- * already import isCI from here keep working without churn.
- */
-export function isCI() {
-  return getCI()
-}
+export { isCI } from '@socketsecurity/lib-stable/env/ci'
 
 /**
  * Run a package's setup-build-toolchain entry-point end-to-end.
