@@ -167,7 +167,7 @@ export function getBuildPaths(
  * @param {string} arch - 'arm64' | 'x64'
  *
  * @returns {object} Object with scripts, patches, and additions paths.
- *   Full discussion: docs/agents.md/repo/node-smol-build-flags.md.
+ *   Full discussion: docs/repo/agents.md/node-smol-build-flags.md.
  */
 export function getBuildSourcePaths(
   phase: string,
@@ -263,7 +263,7 @@ export function getCumulativeBuildSourcePaths(
  * @param {string} arch - 'arm64' | 'x64'
  *
  * @returns {string[]} Array of all paths for all phases.
- *   Full discussion: docs/agents.md/repo/node-smol-build-flags.md.
+ *   Full discussion: docs/repo/agents.md/node-smol-build-flags.md.
  */
 export function getCumulativeHierarchicalPaths(
   category: string,
@@ -320,7 +320,7 @@ export function getDefaultPlatformArch(
  * @param {string[]} paths - Array of paths to filter.
  *
  * @returns {string[]} Array of paths that exist on the filesystem.
- *   Full discussion: docs/agents.md/repo/node-smol-build-flags.md.
+ *   Full discussion: docs/repo/agents.md/node-smol-build-flags.md.
  */
 export function getExistingPaths(paths: string[]): string[] {
   return paths.filter(p => existsSync(p))
@@ -340,7 +340,7 @@ export function getExistingPaths(paths: string[]): string[] {
  * @param {string} arch - 'arm64' | 'x64'
  *
  * @returns {string[]} Array of paths in priority order, general to specific.
- *   Full discussion: docs/agents.md/repo/node-smol-build-flags.md.
+ *   Full discussion: docs/repo/agents.md/node-smol-build-flags.md.
  */
 export function getHierarchicalPaths(
   category: string,

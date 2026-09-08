@@ -12,6 +12,8 @@ import { readPackageJson } from '@socketsecurity/lib-stable/packages/read'
 
 import { PACKAGE_ROOT as nodeSmolBuilderDir } from '../../scripts/paths.mts'
 
+import { NODE_SMOL_BUILD_FLAGS_DOC_PATH } from '../paths.mts'
+
 const scriptsDir = path.join(nodeSmolBuilderDir, 'scripts')
 const buildDir = path.join(nodeSmolBuilderDir, 'build')
 
@@ -64,16 +66,13 @@ describe('node-smol package', () => {
   })
 
   describe('build script documentation', () => {
-    const buildFlagsDocPath = path.join(
-      nodeSmolBuilderDir,
-      '../../docs/agents.md/repo/node-smol-build-flags.md',
-    )
+    const buildFlagsDocPath = NODE_SMOL_BUILD_FLAGS_DOC_PATH
 
     it('build.mts should point at the canonical build-flags doc', async () => {
       const buildPath = path.join(scriptsDir, 'common/shared/build.mts')
       const content = await fs.readFile(buildPath, 'utf8')
 
-      expect(content).toContain('docs/agents.md/repo/node-smol-build-flags.md')
+      expect(content).toContain('docs/repo/agents.md/node-smol-build-flags.md')
       expect(existsSync(buildFlagsDocPath)).toBeTruthy()
     })
 
@@ -95,7 +94,7 @@ describe('node-smol package', () => {
       const content = await fs.readFile(buildFlagsDocPath, 'utf8')
 
       expect(content).toContain('compression strategy')
-      expect(content).toContain('Brotli')
+      expect(content).toContain('Zstandard')
     })
 
     it('the build-flags doc should document performance impact', async () => {

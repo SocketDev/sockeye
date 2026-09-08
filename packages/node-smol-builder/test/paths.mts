@@ -17,6 +17,11 @@ import {
   MONOREPO_ROOT,
 } from '../scripts/paths.mts'
 
+export const NODE_SMOL_BUILD_FLAGS_DOC_PATH = path.join(
+  MONOREPO_ROOT,
+  'docs/repo/agents.md/node-smol-build-flags.md',
+)
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const packageDir = path.resolve(__dirname, '..')
 

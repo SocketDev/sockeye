@@ -4,7 +4,7 @@
  *   configure/compile (binary-released) → strip (binary-stripped) → compress
  *   (binary-compressed) → copy to Final (finalized). CLI flags, the dual
  *   compression strategy, and the binary-size budget are documented at
- *   docs/agents.md/repo/node-smol-build-flags.md.
+ *   docs/repo/agents.md/node-smol-build-flags.md.
  */
 
 import { existsSync } from 'node:fs'
@@ -100,7 +100,7 @@ const { buildDir: SHARED_BUILD_DIR, nodeSourceDir: SHARED_SOURCE_DIR } =
   getSharedBuildPaths()
 
 // Directory structure (fully isolated by mode + platform-arch for concurrent
-// builds) is documented at docs/agents.md/repo/node-smol-build-flags.md.
+// builds) is documented at docs/repo/agents.md/node-smol-build-flags.md.
 
 /**
  * Main build orchestrator.

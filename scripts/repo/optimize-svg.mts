@@ -8,8 +8,9 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { LOGOMARK_SVG_PATHS } from './paths.mts'
 
 export async function optimizeSvgAssets(
-  targets: readonly string[] = LOGOMARK_SVG_PATHS,
+  options: { targets?: readonly string[] | undefined } = {},
 ): Promise<void> {
+  const { targets = LOGOMARK_SVG_PATHS } = options
   for (const target of targets) {
     const source = await readFile(target, 'utf8')
     const optimized = optimiseSvg(source)

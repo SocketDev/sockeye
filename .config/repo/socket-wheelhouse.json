@@ -6,8 +6,8 @@
   "schemaVersion": 1,
   "repoName": "sockeye",
   "bundle": {
-    "ref": "fleet-pack-3c2a4bcf29ddcb107b6810c62abc24f160f75a9d",
-    "cascadeSha": "3c2a4bcf29ddcb107b6810c62abc24f160f75a9d"
+    "ref": "fleet-pack-040091704ea597586fcb204cbb618c2602b38dd7",
+    "cascadeSha": "040091704ea597586fcb204cbb618c2602b38dd7"
   },
   "repo": {
     "type": "mono"

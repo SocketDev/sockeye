@@ -1,7 +1,7 @@
 /**
  * CLI argument parsing + derived build configuration for build.mts, split
  * out to keep the orchestrator under the file-size soft cap. Flags are
- * documented at docs/agents.md/repo/node-smol-build-flags.md.
+ * documented at docs/repo/agents.md/node-smol-build-flags.md.
  */
 
 import os from 'node:os'

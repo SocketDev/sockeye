@@ -43,7 +43,7 @@ test('optimizes changed assets and preserves already optimized bytes', async () 
   await writeFile(changed, source)
   await writeFile(unchanged, preserved)
 
-  await optimizeSvgAssets([changed, unchanged])
+  await optimizeSvgAssets({ targets: [changed, unchanged] })
 
   expect(await readFile(changed, 'utf8')).toBe(optimized)
   expect(await readFile(changed, 'utf8')).not.toContain('removable')
@@ -54,6 +54,6 @@ test('rejects missing asset inputs', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sockeye-svg-missing-'))
   temporaryRoots.push(root)
   await expect(
-    optimizeSvgAssets([path.join(root, 'missing.svg')]),
+    optimizeSvgAssets({ targets: [path.join(root, 'missing.svg')] }),
   ).rejects.toMatchObject({ code: 'ENOENT' })
 })
