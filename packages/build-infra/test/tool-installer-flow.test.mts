@@ -29,6 +29,15 @@ vi.mock(import('../lib/tool-installer-impl.mts'), () => ({
   verifyToolWorks: vi.fn(),
 }))
 
+function createDependencyToolConfig(): NonNullable<
+  ReturnType<typeof getToolConfig>
+> & { dependencies: string[] } {
+  return {
+    description: 'Example tool with one prerequisite',
+    dependencies: ['example-dependency'],
+  }
+}
+
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(detectPackageManagers).mockReturnValue(['brew'])
@@ -57,9 +66,7 @@ describe('tool installation phases', () => {
   })
 
   test('stops when a required dependency cannot be installed', async () => {
-    vi.mocked(getToolConfig).mockReturnValueOnce({
-      dependencies: ['example-dependency'],
-    } as ReturnType<typeof getToolConfig>)
+    vi.mocked(getToolConfig).mockReturnValueOnce(createDependencyToolConfig())
     vi.mocked(installTool).mockResolvedValue(false)
     expect(await ensureToolInstalled('example-tool')).toMatchObject({
       available: false,
@@ -113,9 +120,7 @@ describe('tool installation phases', () => {
 
   test('repairs dependencies before retrying an existing binary', async () => {
     vi.mocked(whichSync).mockReturnValue('/example/tool')
-    vi.mocked(getToolConfig).mockReturnValueOnce({
-      dependencies: ['example-dependency'],
-    } as ReturnType<typeof getToolConfig>)
+    vi.mocked(getToolConfig).mockReturnValueOnce(createDependencyToolConfig())
     vi.mocked(verifyToolWorks)
       .mockResolvedValueOnce(false)
       .mockResolvedValue(true)

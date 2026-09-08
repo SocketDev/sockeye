@@ -1,3 +1,4 @@
+import { createPinnedToolInstallCommand } from './tool-install-command.mts'
 /**
  * Tool installer primitives — install/verify operations.
  *
@@ -196,86 +197,17 @@ export async function installTool(
   logger.info(`Installing ${tool}${versionInfo} via ${packageManager}...`)
 
   try {
-    let command
-    let args
-    const needsSudo =
-      platform !== 'win32' &&
-      ['apt', 'apk', 'yum', 'dnf'].includes(packageManager)
-
-    switch (packageManager) {
-      case 'brew': {
-        // Homebrew doesn't support version pinning for most formulas
-        command = 'brew'
-        args = ['install', packageName]
-        if (version) {
-          logger.warn('Homebrew may not support version pinning for this tool')
-        }
-        break
-      }
-
-      case 'apt': {
-        // APT version pinning: package=version
-        command = needsSudo ? 'sudo' : 'apt-get'
-        const aptPackage = version ? `${packageName}=${version}*` : packageName
-        args = needsSudo
-          ? ['apt-get', 'install', '-y', aptPackage]
-          : ['install', '-y', aptPackage]
-        break
-      }
-
-      case 'apk': {
-        // APK version pinning: package=version
-        command = needsSudo ? 'sudo' : 'apk'
-        const apkPackage = version ? `${packageName}=${version}` : packageName
-        args = needsSudo
-          ? ['apk', 'add', '--no-cache', apkPackage]
-          : ['add', '--no-cache', apkPackage]
-        break
-      }
-
-      case 'yum': {
-        // YUM version pinning: package-version
-        command = needsSudo ? 'sudo' : 'yum'
-        const yumPackage = version ? `${packageName}-${version}` : packageName
-        args = needsSudo
-          ? ['yum', 'install', '-y', yumPackage]
-          : ['install', '-y', yumPackage]
-        break
-      }
-
-      case 'dnf': {
-        // DNF version pinning: package-version
-        command = needsSudo ? 'sudo' : 'dnf'
-        const dnfPackage = version ? `${packageName}-${version}` : packageName
-        args = needsSudo
-          ? ['dnf', 'install', '-y', dnfPackage]
-          : ['install', '-y', dnfPackage]
-        break
-      }
-
-      case 'choco': {
-        // Chocolatey version pinning: --version flag
-        command = 'choco'
-        args = version
-          ? ['install', packageName, '--version', version, autoYes ? '-y' : '']
-          : ['install', packageName, autoYes ? '-y' : '']
-        args = args.filter(Boolean)
-        break
-      }
-
-      case 'scoop': {
-        // Scoop version pinning: package@version
-        command = 'scoop'
-        const scoopPackage = version ? `${packageName}@${version}` : packageName
-        args = ['install', scoopPackage]
-        break
-      }
-
-      default: {
-        printError(`Unsupported package manager: ${packageManager}`)
-        return false
-      }
+    const installCommand = createPinnedToolInstallCommand({
+      packageManager,
+      packageName,
+      version,
+      platform,
+      autoYes,
+    })
+    if (!installCommand) {
+      return false
     }
+    const { command, args } = installCommand
 
     // Resolve command path
     const commandPath = await which(command, { nothrow: true })
@@ -295,30 +227,7 @@ export async function installTool(
       return false
     }
 
-    // Brew "keg-only" formulas (openssl@3, libpq, libffi, etc.) install
-    // without symlinking into /opt/homebrew/lib so they don't conflict
-    // with the system equivalent. That leaves consumers like rustc /
-    // cargo unable to load `libssl.3.dylib` at runtime even though the
-    // file exists in the cellar. `brew install` is silent on this state
-    // — it just prints "already installed, it's just not linked" and
-    // exits 0. Force-link after install so dependent tools can dlopen
-    // the homebrew copy. Only on macOS, only for brew, only for the
-    // formulas where it's load-bearing.
-    if (packageManager === 'brew' && KEG_ONLY_FORMULAS.has(packageName)) {
-      const linkResult = await spawn(
-        commandPath,
-        ['link', '--overwrite', '--force', packageName],
-        {
-          env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
-          stdio: 'inherit',
-        },
-      )
-      if ((linkResult.code ?? 0) !== 0) {
-        logger.warn(
-          `${packageName} installed but \`brew link --overwrite --force\` failed; dependent tools may fail to load it`,
-        )
-      }
-    }
+    await linkInstalledTool({ packageManager, packageName, commandPath })
 
     // Verify installation.
     const installed = whichSync(tool, { nothrow: true })
@@ -332,6 +241,37 @@ export async function installTool(
   } catch (e) {
     printError(`Error installing ${tool}`, e)
     return false
+  }
+}
+
+export async function linkInstalledTool(config) {
+  const { packageManager, packageName, commandPath } = {
+    __proto__: null,
+    ...config,
+  }
+  // Brew "keg-only" formulas (openssl@3, libpq, libffi, etc.) install
+  // without symlinking into /opt/homebrew/lib so they don't conflict
+  // with the system equivalent. That leaves consumers like rustc /
+  // cargo unable to load `libssl.3.dylib` at runtime even though the
+  // file exists in the cellar. `brew install` is silent on this state
+  // — it just prints "already installed, it's just not linked" and
+  // exits 0. Force-link after install so dependent tools can dlopen
+  // the homebrew copy. Only on macOS, only for brew, only for the
+  // formulas where it's load-bearing.
+  if (packageManager === 'brew' && KEG_ONLY_FORMULAS.has(packageName)) {
+    const linkResult = await spawn(
+      commandPath,
+      ['link', '--overwrite', '--force', packageName],
+      {
+        env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
+        stdio: 'inherit',
+      },
+    )
+    if ((linkResult.code ?? 0) !== 0) {
+      logger.warn(
+        `${packageName} installed but \`brew link --overwrite --force\` failed; dependent tools may fail to load it`,
+      )
+    }
   }
 }
 
