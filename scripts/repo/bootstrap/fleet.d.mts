@@ -156,7 +156,10 @@ export declare function stripLegacyUntrackEntriesFromFleetBlock(target: string):
  * effect on tracked paths). The index-mutating half lives in
  * untrackFleetPackPaths and stays behind an explicit `--thin`.
  */
-export declare function refreshFleetPackIgnores(config: UntrackFleetPackConfig): void;
+export declare function refreshFleetPackIgnores(config: {
+  dest: string;
+  manifest: FleetFileManifest;
+}): void;
 /**
  * Apply thin mode: refresh the gitignore block (refreshFleetPackIgnores), then
  * untrack those paths from git so the fetch action repopulates them going

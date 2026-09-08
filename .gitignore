@@ -3209,6 +3209,7 @@ scripts/fleet/constants/socket-scopes.mts
 scripts/fleet/constants/source-extensions.mts
 scripts/fleet/constants/taze-passes.mts
 scripts/fleet/constants/test-budget.mts
+scripts/fleet/constants/test-isolation.mts
 scripts/fleet/context-cost.mts
 scripts/fleet/coordination/claim-tools.mts
 scripts/fleet/coordination/claim.mts
@@ -3220,13 +3221,16 @@ scripts/fleet/cover/command.mts
 scripts/fleet/cover/cpp-lane.mts
 scripts/fleet/cover/discovery.mts
 scripts/fleet/cover/go-lane.mts
+scripts/fleet/cover/lane-budget.mts
 scripts/fleet/cover/lane-contract.mts
 scripts/fleet/cover/lane-paths.mts
 scripts/fleet/cover/lanes.mts
 scripts/fleet/cover/native-lanes.mts
+scripts/fleet/cover/native-phases.mts
 scripts/fleet/cover/phases.mts
 scripts/fleet/cover/run.mts
 scripts/fleet/cover/rust-lane.mts
+scripts/fleet/cover/scope.mts
 scripts/fleet/cover/scratch-isolation.mts
 scripts/fleet/crate-release-sha.mts
 scripts/fleet/create-release.mts
