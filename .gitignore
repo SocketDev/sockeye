@@ -2446,6 +2446,8 @@ opencode.json
 .config/fleet/pnpm-workspace.fleet.yaml
 .config/fleet/rolldown/bundle-regions.mts
 .config/fleet/rolldown/bundle-stub.mts
+.config/fleet/rolldown/engine-gate-fold.mts
+.config/fleet/rolldown/factory-collision.mts
 .config/fleet/rolldown/hook-bundle-excluded.config.mts
 .config/fleet/rolldown/hook-bundle-snapshot.config.mts
 .config/fleet/rolldown/hook-bundle.config.mts
@@ -2644,7 +2646,6 @@ docs/fleet/agents.md/worktree-hygiene.md
 docs/fleet/agents.md/writing-skills-well.md
 docs/fleet/ai-balancer.md
 docs/references/fleet/sfw-local-install.md
-opencode.json
 patches/brace-expansion@5.0.9.patch
 patches/minimatch@10.2.6.patch
 scripts/fleet/agent-orphan-sweep.mts
@@ -2733,6 +2734,7 @@ scripts/fleet/ai/fireworks-store.mts
 scripts/fleet/ai/infra.mts
 scripts/fleet/ai/model-catalog.mts
 scripts/fleet/ai/model-choices.mts
+scripts/fleet/ai/model-fallback-tiers.mts
 scripts/fleet/ai/model-list-cache.mts
 scripts/fleet/ai/model-target-ids.mts
 scripts/fleet/ai/model-targets.mts
@@ -3393,6 +3395,7 @@ scripts/fleet/lib/npm-version-policy.mts
 scripts/fleet/lib/opaque-dirs.mts
 scripts/fleet/lib/oxlint-plugin-loads.mts
 scripts/fleet/lib/package-manager.mts
+scripts/fleet/lib/percent-badge.mts
 scripts/fleet/lib/release-anchor.mts
 scripts/fleet/lib/release-cascade.mts
 scripts/fleet/lib/security-report.mts
