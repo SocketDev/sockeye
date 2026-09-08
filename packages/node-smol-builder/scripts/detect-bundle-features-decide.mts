@@ -11,12 +11,13 @@ export function decideFeature(
   const hasMember = acc.memberHits.has(f.name)
   const guarded = acc.guardedByIsBuiltin.has(f.name)
   const used = hasString || hasMember
+  const overrideUse = used ? (guarded ? 'soft' : 'hard') : 'none'
 
   // Explicit overrides win.
   if (keepSet.has(f.name)) {
     return {
       __proto__: null,
-      use: used ? (guarded ? 'soft' : 'hard') : 'none',
+      use: overrideUse,
       drop: false,
       reason: 'kept by package.json smol.keep override',
     }
@@ -24,7 +25,7 @@ export function decideFeature(
   if (dropSet.has(f.name)) {
     return {
       __proto__: null,
-      use: used ? (guarded ? 'soft' : 'hard') : 'none',
+      use: overrideUse,
       drop: true,
       reason: 'dropped by package.json smol.drop override',
     }

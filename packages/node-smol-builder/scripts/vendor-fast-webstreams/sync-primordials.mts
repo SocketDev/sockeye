@@ -74,16 +74,10 @@ export function addPrimordialsProtection(content: string, filename: string) {
       content.slice(insertPoint)
   }
 
-  // Replace Promise patterns with primordials
-  if (usesPromiseResolve) {
-    content = content.replace(/Promise\.resolve\s*\(/g, 'PromiseResolve(')
-  }
-  if (usesPromiseReject) {
-    content = content.replace(/Promise\.reject\s*\(/g, 'PromiseReject(')
-  }
-  if (usesNewPromise) {
-    content = content.replace(/new\s+Promise\s*\(/g, 'new SafePromise(')
-  }
+  content = content
+    .replace(/Promise\.resolve\s*\(/g, 'PromiseResolve(')
+    .replace(/Promise\.reject\s*\(/g, 'PromiseReject(')
+    .replace(/new\s+Promise\s*\(/g, 'new SafePromise(')
   if (injectSettleAll) {
     // Only pipe-to.js currently discards Promise.all's resolved array (the
     // pipeline awaits side effects, not values). For any other vendored

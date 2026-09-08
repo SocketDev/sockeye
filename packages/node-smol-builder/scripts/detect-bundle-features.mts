@@ -339,6 +339,38 @@ export function hashSource(source: string): string {
   return `sha256:${crypto.createHash('sha256').update(source).digest('hex')}`
 }
 
+function resolveBundleFeatureFlags(
+  features: FeatureManifest['features'],
+  ambiguous: string[],
+  dropSet: Set<string>,
+): string[] {
+  const configureFlags: string[] = []
+  // Re-resolve drops after ambiguity: anything ambiguous becomes keep unless the
+  // operator explicitly listed it in `drop`.
+  for (let i = 0, { length } = ambiguous; i < length; i += 1) {
+    const name = ambiguous[i]!
+    const v = features[name]!
+    if (!dropSet.has(name)) {
+      v.drop = false
+      v.note =
+        (v.note ? `${v.note}; ` : '') +
+        'computed require() present — kept conservatively (override with smol.drop)'
+    }
+  }
+
+  // Derive configure flags from final drop decisions.
+  for (const f of SMOL_FEATURES) {
+    const v = features[f.name]!
+    if (v.drop && f.configureFlagWhenDropped) {
+      configureFlags.push(f.configureFlagWhenDropped)
+    }
+    // Opt-in features (postgres/dawn/iouring): dropping means simply not adding
+    // the optInFlag, which is the default — nothing to emit.
+  }
+
+  return dedupe(configureFlags)
+}
+
 export async function detectBundleFeatures(config: {
   bundlePath: string
   vfsPath?: string | undefined
@@ -383,7 +415,6 @@ export async function detectBundleFeatures(config: {
 
   const features: { [name: string]: FeatureVerdict } = { __proto__: null }
   const ambiguous: string[] = []
-  const configureFlags: string[] = []
 
   for (const f of SMOL_FEATURES) {
     const verdict = decideFeature(f, acc, { keepSet, dropSet })
@@ -400,28 +431,7 @@ export async function detectBundleFeatures(config: {
     }
   }
 
-  // Re-resolve drops after ambiguity: anything ambiguous becomes keep unless the
-  // operator explicitly listed it in `drop`.
-  for (let i = 0, { length } = ambiguous; i < length; i += 1) {
-    const name = ambiguous[i]!
-    const v = features[name]!
-    if (!dropSet.has(name)) {
-      v.drop = false
-      v.note =
-        (v.note ? `${v.note}; ` : '') +
-        'computed require() present — kept conservatively (override with smol.drop)'
-    }
-  }
-
-  // Derive configure flags from final drop decisions.
-  for (const f of SMOL_FEATURES) {
-    const v = features[f.name]!
-    if (v.drop && f.configureFlagWhenDropped) {
-      configureFlags.push(f.configureFlagWhenDropped)
-    }
-    // Opt-in features (postgres/dawn/iouring): dropping means simply not adding
-    // the optInFlag, which is the default — nothing to emit.
-  }
+  const finalFlags = resolveBundleFeatureFlags(features, ambiguous, dropSet)
 
   const v8Lite = v8LiteRecommendation(acc.compute)
   // The heuristic is advisory: surfaced in the manifest, but only added to the
@@ -435,6 +445,6 @@ export async function detectBundleFeatures(config: {
     features,
     ambiguous,
     v8Lite,
-    configureFlags: dedupe(configureFlags),
+    configureFlags: finalFlags,
   }
 }

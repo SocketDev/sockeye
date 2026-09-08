@@ -1,4 +1,4 @@
-import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
+import { splitPath } from '@socketsecurity/lib-stable/paths/normalize'
 /**
  * @file Tests for SEA path handling (/sea/* path prefix).
  *   These tests verify the path parsing and normalization logic for SEA paths.
@@ -61,7 +61,9 @@ export function isSeaPath(filepath: string | undefined): boolean {
   )
 }
 
-export { normalizePath }
+export function normalizePath(filepath: string): string {
+  return splitPath(filepath).join('/')
+}
 
 describe('sEA Path Handling', () => {
   describe('isSeaPath', () => {

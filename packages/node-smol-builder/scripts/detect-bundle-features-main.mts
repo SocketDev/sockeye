@@ -38,6 +38,42 @@ export function pathToFileURLString(p: string | undefined): string {
   return pathToFileURL(path.resolve(p)).href
 }
 
+function reportBundleFeatures(
+  bundlePath: string,
+  manifest: Awaited<ReturnType<typeof detectBundleFeatures>>,
+): void {
+  // Human report.
+  logger.log(`Bundle: ${bundlePath}`)
+  logger.log(`Hash:   ${manifest.bundleHash}`)
+  logger.log('')
+  logger.log('Feature          Use    Drop  Reason')
+  logger.log('───────────────  ─────  ────  ──────')
+  for (const f of SMOL_FEATURES) {
+    const v = manifest.features[f.name]!
+    logger.log(
+      `${f.name.padEnd(15)}  ${v.use.padEnd(5)}  ${(v.drop ? 'yes' : 'no').padEnd(4)}  ${v.reason}`,
+    )
+  }
+  logger.log('')
+  const dropped = SMOL_FEATURES.filter(f => manifest.features[f.name]!.drop)
+  const savedMb = dropped.reduce((s, f) => s + f.approxBinaryMb, 0)
+  logger.log(
+    `Dropping ${dropped.length} feature(s) — est. ~${savedMb.toFixed(1)}MB binary reduction`,
+  )
+  logger.log(
+    `V8-lite: ${manifest.v8Lite.recommended ? 'RECOMMENDED' : 'no'} — ${manifest.v8Lite.reason}`,
+  )
+  if (manifest.ambiguous.length) {
+    logger.warn(
+      `Ambiguous (kept conservatively): ${manifest.ambiguous.join(', ')}`,
+    )
+  }
+  logger.log('')
+  logger.log(
+    `Configure flags: ${manifest.configureFlags.join(' ') || '(none)'}`,
+  )
+}
+
 async function main(): Promise<void> {
   // pnpm forwards a caller's bare `--` separator into argv, and parseArgs
   // treats it as end-of-options. Drop a leading `--` so both the direct
@@ -104,36 +140,7 @@ async function main(): Promise<void> {
     return
   }
 
-  // Human report.
-  logger.log(`Bundle: ${bundlePath}`)
-  logger.log(`Hash:   ${manifest.bundleHash}`)
-  logger.log('')
-  logger.log('Feature          Use    Drop  Reason')
-  logger.log('───────────────  ─────  ────  ──────')
-  for (const f of SMOL_FEATURES) {
-    const v = manifest.features[f.name]!
-    logger.log(
-      `${f.name.padEnd(15)}  ${v.use.padEnd(5)}  ${(v.drop ? 'yes' : 'no').padEnd(4)}  ${v.reason}`,
-    )
-  }
-  logger.log('')
-  const dropped = SMOL_FEATURES.filter(f => manifest.features[f.name]!.drop)
-  const savedMb = dropped.reduce((s, f) => s + f.approxBinaryMb, 0)
-  logger.log(
-    `Dropping ${dropped.length} feature(s) — est. ~${savedMb.toFixed(1)}MB binary reduction`,
-  )
-  logger.log(
-    `V8-lite: ${manifest.v8Lite.recommended ? 'RECOMMENDED' : 'no'} — ${manifest.v8Lite.reason}`,
-  )
-  if (manifest.ambiguous.length) {
-    logger.warn(
-      `Ambiguous (kept conservatively): ${manifest.ambiguous.join(', ')}`,
-    )
-  }
-  logger.log('')
-  logger.log(
-    `Configure flags: ${manifest.configureFlags.join(' ') || '(none)'}`,
-  )
+  reportBundleFeatures(bundlePath, manifest)
 }
 
 // Run as a script (not when imported by tests).

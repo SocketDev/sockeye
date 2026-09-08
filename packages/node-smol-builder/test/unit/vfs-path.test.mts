@@ -1,7 +1,6 @@
-import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 import { describe, expect, it } from 'vitest'
 
-import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
+import { splitPath } from '@socketsecurity/lib-stable/paths/normalize'
 /**
  * @file Tests for VFS path handling (/snapshot/* path prefix).
  *   These tests verify the path parsing and normalization logic for VFS paths.
@@ -88,7 +87,9 @@ export function isValidVFSPrefix(prefix: string): {
   return { valid: true }
 }
 
-export { normalizePath }
+export function normalizePath(filepath: string): string {
+  return splitPath(filepath).join('/')
+}
 
 /**
  * Simulate toVFSPath logic (extract relative path from VFS prefix path)
