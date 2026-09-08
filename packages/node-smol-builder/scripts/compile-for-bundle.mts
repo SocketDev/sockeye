@@ -39,6 +39,7 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { parseArgs } from 'node:util'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { readBundleOverrides } from './lib/bundle-overrides.mts'
 import { detectBundleFeatures } from './detect-bundle-features.mts'
 import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
 
@@ -132,21 +133,7 @@ async function main(): Promise<void> {
   }
   const vfsPath = stringArg(values['vfs'])
 
-  let overrides:
-    | { keep?: string[] | undefined; drop?: string[] | undefined }
-    | undefined
-  const overridesPath = stringArg(values['overrides'])
-  if (overridesPath) {
-    try {
-      const { promises: fs } = await import('node:fs')
-      const pkg = JSON.parse(await fs.readFile(overridesPath, 'utf8'))
-      overrides = pkg?.smol
-        ? { keep: pkg.smol.keep, drop: pkg.smol.drop }
-        : undefined
-    } catch (e) {
-      logger.warn(`could not read overrides: ${errorMessage(e)}`)
-    }
-  }
+  const overrides = await readBundleOverrides(stringArg(values['overrides']))
 
   // 1. Detect.
   const manifest = await detectBundleFeatures({
@@ -182,20 +169,23 @@ async function main(): Promise<void> {
     flags: allFlags,
   })
 
-  const dropped = Object.entries(manifest.features)
-    .filter(([, v]) => v.drop)
-    .map(([k]) => k)
+  function reportCompilationPlan(): void {
+    const dropped = Object.entries(manifest.features)
+      .filter(([, v]) => v.drop)
+      .map(([k]) => k)
 
-  logger.log(`Bundle:      ${bundlePath}`)
-  logger.log(`Hash:        ${manifest.bundleHash}`)
-  logger.log(`Platform:    ${platformArch} (${buildMode})`)
-  logger.log(`Dropping:    ${dropped.join(', ') || '(none)'}`)
-  logger.log(
-    `V8-lite:     ${v8Lite ? 'yes' : `no${manifest.v8Lite.recommended ? ' (recommended; pass --v8-lite to apply)' : ''}`}`,
-  )
-  logger.log(`Flags:       ${allFlags.join(' ') || '(none)'}`)
-  logger.log(`Cache key:   ${cacheKey}`)
-  logger.log(`Build cmd:   node ${buildArgs.join(' ')}`)
+    logger.log(`Bundle:      ${bundlePath}`)
+    logger.log(`Hash:        ${manifest.bundleHash}`)
+    logger.log(`Platform:    ${platformArch} (${buildMode})`)
+    logger.log(`Dropping:    ${dropped.join(', ') || '(none)'}`)
+    logger.log(
+      `V8-lite:     ${v8Lite ? 'yes' : `no${manifest.v8Lite.recommended ? ' (recommended; pass --v8-lite to apply)' : ''}`}`,
+    )
+    logger.log(`Flags:       ${allFlags.join(' ') || '(none)'}`)
+    logger.log(`Cache key:   ${cacheKey}`)
+    logger.log(`Build cmd:   node ${buildArgs.join(' ')}`)
+  }
+  reportCompilationPlan()
 
   if (values['dry-run']) {
     logger.log('')

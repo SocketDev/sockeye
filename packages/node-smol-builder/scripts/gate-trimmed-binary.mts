@@ -40,6 +40,7 @@ import {
   spawnSync,
 } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { readBundleOverrides } from './lib/bundle-overrides.mts'
 import { detectBundleFeatures } from './detect-bundle-features.mts'
 import { featureBuiltinSpecifier, SMOL_FEATURES } from './lib/smol-features.mts'
 
@@ -134,6 +135,24 @@ export function spawnProbe(binary: string, specifier: string): boolean {
   }
 }
 
+function reportBinaryFindings(
+  findings: ReturnType<typeof checkBinaryFeatures>,
+): boolean {
+  let failed = false
+  logger.log('Feature probes (expected vs actual presence):')
+  for (const f of findings) {
+    const tag = f.ok ? 'ok' : 'FAIL'
+    logger.log(
+      `  [${tag}] ${f.feature.padEnd(12)} expect ${f.expectedPresent ? 'present' : 'absent '} → ${f.actualPresent ? 'present' : 'absent'}`,
+    )
+    if (!f.ok) {
+      failed = true
+    }
+  }
+
+  return failed
+}
+
 async function main(): Promise<void> {
   const { values } = parseArgs({
     args:
@@ -167,21 +186,7 @@ async function main(): Promise<void> {
     return
   }
 
-  let overrides:
-    | { keep?: string[] | undefined; drop?: string[] | undefined }
-    | undefined
-  const overridesPath = stringArg(values['overrides'])
-  if (overridesPath) {
-    try {
-      const { promises: fs } = await import('node:fs')
-      const pkg = JSON.parse(await fs.readFile(overridesPath, 'utf8'))
-      overrides = pkg?.smol
-        ? { keep: pkg.smol.keep, drop: pkg.smol.drop }
-        : undefined
-    } catch (e) {
-      logger.warn(`could not read overrides: ${errorMessage(e)}`)
-    }
-  }
+  const overrides = await readBundleOverrides(stringArg(values['overrides']))
 
   // Re-derive the manifest the trimmed binary was built from (same inputs).
   const manifest = await detectBundleFeatures({
@@ -197,20 +202,9 @@ async function main(): Promise<void> {
     expectDropped: manifest.features[f.name]?.drop,
   }))
 
-  let failed = false
-
   // 1 + 2. Absence / presence probes.
   const findings = checkBinaryFeatures(binary, expectations, spawnProbe)
-  logger.log('Feature probes (expected vs actual presence):')
-  for (const f of findings) {
-    const tag = f.ok ? 'ok' : 'FAIL'
-    logger.log(
-      `  [${tag}] ${f.feature.padEnd(12)} expect ${f.expectedPresent ? 'present' : 'absent '} → ${f.actualPresent ? 'present' : 'absent'}`,
-    )
-    if (!f.ok) {
-      failed = true
-    }
-  }
+  let failed = reportBinaryFindings(findings)
 
   // 3. Soft-use features that were dropped — flag for the operator; the app suite
   // is what actually exercises the fallback path.
