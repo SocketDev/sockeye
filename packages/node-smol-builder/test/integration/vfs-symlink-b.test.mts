@@ -27,24 +27,27 @@ const finalBinaryPath = getLatestFinalBinary()
 const skipTests = !finalBinaryPath || !existsSync(finalBinaryPath)
 const testTmpDir = path.join(os.tmpdir(), 'socket-btm-vfs-symlink-b-tests')
 
-describe.sequential.skipIf(skipTests)('vFS — symlink support (B)', () => {
-  beforeAll(async () => {
-    await safeMkdir(testTmpDir)
-  })
+describe.skipIf(skipTests)(
+  'vFS — symlink support (B)',
+  { concurrent: false },
+  () => {
+    beforeAll(async () => {
+      await safeMkdir(testTmpDir)
+    })
 
-  afterAll(async () => {
-    await safeDelete(testTmpDir)
-  })
+    afterAll(async () => {
+      await safeDelete(testTmpDir)
+    })
 
-  describe('vFS symlink support', () => {
-    it('should support fs.promises.readlink()', async () => {
-      const testDir = path.join(testTmpDir, 'vfs-promise-readlink')
-      await safeMkdir(testDir)
+    describe('vFS symlink support', () => {
+      it('should support fs.promises.readlink()', async () => {
+        const testDir = path.join(testTmpDir, 'vfs-promise-readlink')
+        await safeMkdir(testDir)
 
-      const appJs = path.join(testDir, 'app.js')
-      await fs.writeFile(
-        appJs,
-        `
+        const appJs = path.join(testDir, 'app.js')
+        await fs.writeFile(
+          appJs,
+          `
 const fs = require('fs').promises
 
 async function test() {
@@ -76,58 +79,60 @@ async function test() {
 
 test()
 `,
-      )
+        )
 
-      const vfsDir = path.join(testDir, 'vfs-content')
-      await safeMkdir(vfsDir)
-      await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
-      await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
+        const vfsDir = path.join(testDir, 'vfs-content')
+        await safeMkdir(vfsDir)
+        await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
+        await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
 
-      const vfsTar = path.join(testDir, 'vfs.tar')
-      await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
-        env: { ...process.env, COPYFILE_DISABLE: '1' },
+        const vfsTar = path.join(testDir, 'vfs.tar')
+        await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
+          env: { ...process.env, COPYFILE_DISABLE: '1' },
+        })
+
+        const seaConfig = path.join(testDir, 'sea-config.json')
+        await fs.writeFile(
+          seaConfig,
+          JSON.stringify({
+            disableExperimentalSEAWarning: true,
+            main: 'app.js',
+            output: 'app.blob',
+          }),
+        )
+
+        const seaBinary = path.join(testDir, 'app')
+        await fs.copyFile(finalBinaryPath, seaBinary)
+        await makeExecutable(seaBinary)
+
+        await runBinject(
+          seaBinary,
+          'BOTH',
+          { sea: 'sea-config.json', vfs: vfsTar },
+          {
+            machoSegmentName: MACHO_SEGMENT_NODE_SEA,
+            sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+            testDir,
+          },
+        )
+
+        const execResult = await spawn(seaBinary, [])
+        expect(execResult.code).toBe(0)
+        expect(execResult.stdout).toContain(
+          'PROMISE_READLINK_TARGET=regular.txt',
+        )
+        expect(execResult.stdout).toContain('PROMISE_READLINK_EINVAL=EINVAL')
+        expect(execResult.stdout).toContain('PROMISE_READLINK_ENOENT=ENOENT')
       })
 
-      const seaConfig = path.join(testDir, 'sea-config.json')
-      await fs.writeFile(
-        seaConfig,
-        JSON.stringify({
-          disableExperimentalSEAWarning: true,
-          main: 'app.js',
-          output: 'app.blob',
-        }),
-      )
+      it('should support fs.readdirSync() with withFileTypes detecting symlinks', async () => {
+        const testDir = path.join(testTmpDir, 'vfs-readdir-symlinks')
+        await safeMkdir(testDir)
 
-      const seaBinary = path.join(testDir, 'app')
-      await fs.copyFile(finalBinaryPath, seaBinary)
-      await makeExecutable(seaBinary)
-
-      await runBinject(
-        seaBinary,
-        'BOTH',
-        { sea: 'sea-config.json', vfs: vfsTar },
-        {
-          machoSegmentName: MACHO_SEGMENT_NODE_SEA,
-          sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
-          testDir,
-        },
-      )
-
-      const execResult = await spawn(seaBinary, [])
-      expect(execResult.code).toBe(0)
-      expect(execResult.stdout).toContain('PROMISE_READLINK_TARGET=regular.txt')
-      expect(execResult.stdout).toContain('PROMISE_READLINK_EINVAL=EINVAL')
-      expect(execResult.stdout).toContain('PROMISE_READLINK_ENOENT=ENOENT')
-    })
-
-    it('should support fs.readdirSync() with withFileTypes detecting symlinks', async () => {
-      const testDir = path.join(testTmpDir, 'vfs-readdir-symlinks')
-      await safeMkdir(testDir)
-
-      const appJs = path.join(testDir, 'app.js')
-      await fs.writeFile(
-        appJs,
-        `
+        const appJs = path.join(testDir, 'app.js')
+        await fs.writeFile(
+          appJs,
+          `
 const fs = require('fs')
 
 const results = []
@@ -147,61 +152,61 @@ fs.lstat('/snapshot/link.txt', (err, stats) => {
   console.log(results.join('\\n'))
 })
 `,
-      )
+        )
 
-      const vfsDir = path.join(testDir, 'vfs-content')
-      await safeMkdir(vfsDir)
-      await safeMkdir(path.join(vfsDir, 'subdir'))
-      await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
-      await fs.writeFile(path.join(vfsDir, 'subdir', 'nested.txt'), 'nested')
-      await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
+        const vfsDir = path.join(testDir, 'vfs-content')
+        await safeMkdir(vfsDir)
+        await safeMkdir(path.join(vfsDir, 'subdir'))
+        await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
+        await fs.writeFile(path.join(vfsDir, 'subdir', 'nested.txt'), 'nested')
+        await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
 
-      const vfsTar = path.join(testDir, 'vfs.tar')
-      await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
-        env: { ...process.env, COPYFILE_DISABLE: '1' },
+        const vfsTar = path.join(testDir, 'vfs.tar')
+        await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
+          env: { ...process.env, COPYFILE_DISABLE: '1' },
+        })
+
+        const seaConfig = path.join(testDir, 'sea-config.json')
+        await fs.writeFile(
+          seaConfig,
+          JSON.stringify({
+            disableExperimentalSEAWarning: true,
+            main: 'app.js',
+            output: 'app.blob',
+          }),
+        )
+
+        const seaBinary = path.join(testDir, 'app')
+        await fs.copyFile(finalBinaryPath, seaBinary)
+        await makeExecutable(seaBinary)
+
+        await runBinject(
+          seaBinary,
+          'BOTH',
+          { sea: 'sea-config.json', vfs: vfsTar },
+          {
+            machoSegmentName: MACHO_SEGMENT_NODE_SEA,
+            sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+            testDir,
+          },
+        )
+
+        const execResult = await spawn(seaBinary, [])
+        expect(execResult.code).toBe(0)
+        expect(execResult.stdout).toMatch(/ENTRY=link\.txt:type=symlink/)
+        expect(execResult.stdout).toMatch(/ENTRY=regular\.txt:type=file/)
+        expect(execResult.stdout).toMatch(/ENTRY=subdir:type=dir/)
+        expect(execResult.stdout).toContain('ASYNC_LSTAT_IS_SYMLINK=true')
       })
 
-      const seaConfig = path.join(testDir, 'sea-config.json')
-      await fs.writeFile(
-        seaConfig,
-        JSON.stringify({
-          disableExperimentalSEAWarning: true,
-          main: 'app.js',
-          output: 'app.blob',
-        }),
-      )
+      it('should support fs.promises.lstat() on symlinks', async () => {
+        const testDir = path.join(testTmpDir, 'vfs-promise-lstat')
+        await safeMkdir(testDir)
 
-      const seaBinary = path.join(testDir, 'app')
-      await fs.copyFile(finalBinaryPath, seaBinary)
-      await makeExecutable(seaBinary)
-
-      await runBinject(
-        seaBinary,
-        'BOTH',
-        { sea: 'sea-config.json', vfs: vfsTar },
-        {
-          machoSegmentName: MACHO_SEGMENT_NODE_SEA,
-          sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
-          testDir,
-        },
-      )
-
-      const execResult = await spawn(seaBinary, [])
-      expect(execResult.code).toBe(0)
-      expect(execResult.stdout).toMatch(/ENTRY=link\.txt:type=symlink/)
-      expect(execResult.stdout).toMatch(/ENTRY=regular\.txt:type=file/)
-      expect(execResult.stdout).toMatch(/ENTRY=subdir:type=dir/)
-      expect(execResult.stdout).toContain('ASYNC_LSTAT_IS_SYMLINK=true')
-    })
-
-    it('should support fs.promises.lstat() on symlinks', async () => {
-      const testDir = path.join(testTmpDir, 'vfs-promise-lstat')
-      await safeMkdir(testDir)
-
-      const appJs = path.join(testDir, 'app.js')
-      await fs.writeFile(
-        appJs,
-        `
+        const appJs = path.join(testDir, 'app.js')
+        await fs.writeFile(
+          appJs,
+          `
 const fs = require('fs').promises
 
 async function test() {
@@ -228,49 +233,52 @@ async function test() {
 
 test()
 `,
-      )
+        )
 
-      const vfsDir = path.join(testDir, 'vfs-content')
-      await safeMkdir(vfsDir)
-      await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
-      await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
+        const vfsDir = path.join(testDir, 'vfs-content')
+        await safeMkdir(vfsDir)
+        await fs.writeFile(path.join(vfsDir, 'regular.txt'), 'content')
+        await fs.symlink('regular.txt', path.join(vfsDir, 'link.txt'))
 
-      const vfsTar = path.join(testDir, 'vfs.tar')
-      await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
-        env: { ...process.env, COPYFILE_DISABLE: '1' },
+        const vfsTar = path.join(testDir, 'vfs.tar')
+        await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
+          env: { ...process.env, COPYFILE_DISABLE: '1' },
+        })
+
+        const seaConfig = path.join(testDir, 'sea-config.json')
+        await fs.writeFile(
+          seaConfig,
+          JSON.stringify({
+            disableExperimentalSEAWarning: true,
+            main: 'app.js',
+            output: 'app.blob',
+          }),
+        )
+
+        const seaBinary = path.join(testDir, 'app')
+        await fs.copyFile(finalBinaryPath, seaBinary)
+        await makeExecutable(seaBinary)
+
+        await runBinject(
+          seaBinary,
+          'BOTH',
+          { sea: 'sea-config.json', vfs: vfsTar },
+          {
+            machoSegmentName: MACHO_SEGMENT_NODE_SEA,
+            sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+            testDir,
+          },
+        )
+
+        const execResult = await spawn(seaBinary, [])
+        expect(execResult.code).toBe(0)
+        expect(execResult.stdout).toContain('PROMISE_LSTAT_IS_SYMLINK=true')
+        expect(execResult.stdout).toContain('PROMISE_LSTAT_IS_FILE=false')
+        expect(execResult.stdout).toContain(
+          'PROMISE_FILE_LSTAT_IS_SYMLINK=false',
+        )
+        expect(execResult.stdout).toContain('PROMISE_FILE_LSTAT_IS_FILE=true')
       })
-
-      const seaConfig = path.join(testDir, 'sea-config.json')
-      await fs.writeFile(
-        seaConfig,
-        JSON.stringify({
-          disableExperimentalSEAWarning: true,
-          main: 'app.js',
-          output: 'app.blob',
-        }),
-      )
-
-      const seaBinary = path.join(testDir, 'app')
-      await fs.copyFile(finalBinaryPath, seaBinary)
-      await makeExecutable(seaBinary)
-
-      await runBinject(
-        seaBinary,
-        'BOTH',
-        { sea: 'sea-config.json', vfs: vfsTar },
-        {
-          machoSegmentName: MACHO_SEGMENT_NODE_SEA,
-          sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
-          testDir,
-        },
-      )
-
-      const execResult = await spawn(seaBinary, [])
-      expect(execResult.code).toBe(0)
-      expect(execResult.stdout).toContain('PROMISE_LSTAT_IS_SYMLINK=true')
-      expect(execResult.stdout).toContain('PROMISE_LSTAT_IS_FILE=false')
-      expect(execResult.stdout).toContain('PROMISE_FILE_LSTAT_IS_SYMLINK=false')
-      expect(execResult.stdout).toContain('PROMISE_FILE_LSTAT_IS_FILE=true')
     })
-  })
-})
+  },
+)

@@ -25,6 +25,7 @@ describe('cache-key', () => {
       const parsed = parseCacheKey(key)
 
       expect(parsed).toStrictEqual({
+        __proto__: null,
         arch: 'arm64',
         contentHash: 'b71671ba01234567',
         nodeVersion: nodeVersionRaw,

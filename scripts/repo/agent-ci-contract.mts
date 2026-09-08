@@ -52,16 +52,18 @@ function parseAgentCiVariables(
   return variables
 }
 
-export function parseAgentCiRequest(argv: readonly string[]): AgentCiRequest {
-  let parsed: ReturnType<typeof parseAgentCiOptions>
+function parseSafeAgentCiOptions(argv: readonly string[]) {
   try {
-    parsed = parseAgentCiOptions(argv)
+    return parseAgentCiOptions(argv)
   } catch {
     throw new Error(
       'Unsupported Local CI argument; use one workflow and explicit safe run flags',
     )
   }
-  const { values, positionals } = parsed
+}
+
+export function parseAgentCiRequest(argv: readonly string[]): AgentCiRequest {
+  const { values, positionals } = parseSafeAgentCiOptions(argv)
   if (positionals.length !== 1 || positionals[0] !== 'run') {
     throw new Error('Sockeye supports only local-ci run')
   }

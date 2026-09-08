@@ -24,24 +24,27 @@ const finalBinaryPath = getLatestFinalBinary()
 const skipTests = !finalBinaryPath || !existsSync(finalBinaryPath)
 const testTmpDir = path.join(os.tmpdir(), 'socket-btm-vfs-traversal-tests')
 
-describe.sequential.skipIf(skipTests)('vFS — path traversal protection', () => {
-  beforeAll(async () => {
-    await safeMkdir(testTmpDir)
-  })
+describe.skipIf(skipTests)(
+  'vFS — path traversal protection',
+  { concurrent: false },
+  () => {
+    beforeAll(async () => {
+      await safeMkdir(testTmpDir)
+    })
 
-  afterAll(async () => {
-    await safeDelete(testTmpDir)
-  })
+    afterAll(async () => {
+      await safeDelete(testTmpDir)
+    })
 
-  describe('vFS path traversal protection', () => {
-    it('should throw ENOENT for path traversal leaks via fs.readFileSync', async () => {
-      const testDir = path.join(testTmpDir, 'vfs-traversal')
-      await safeMkdir(testDir)
+    describe('vFS path traversal protection', () => {
+      it('should throw ENOENT for path traversal leaks via fs.readFileSync', async () => {
+        const testDir = path.join(testTmpDir, 'vfs-traversal')
+        await safeMkdir(testDir)
 
-      const appJs = path.join(testDir, 'app.js')
-      await fs.writeFile(
-        appJs,
-        `
+        const appJs = path.join(testDir, 'app.js')
+        await fs.writeFile(
+          appJs,
+          `
 const fs = require('fs')
 
 const leakPaths = [
@@ -93,61 +96,61 @@ if (smolVfs.hasVFS()) {
 
 console.log('TRAVERSAL_TEST_COMPLETE')
 `,
-      )
+        )
 
-      const seaConfig = path.join(testDir, 'sea-config.json')
-      await fs.writeFile(
-        seaConfig,
-        JSON.stringify({
-          disableExperimentalSEAWarning: true,
-          main: 'app.js',
-          output: 'app.blob',
-        }),
-      )
+        const seaConfig = path.join(testDir, 'sea-config.json')
+        await fs.writeFile(
+          seaConfig,
+          JSON.stringify({
+            disableExperimentalSEAWarning: true,
+            main: 'app.js',
+            output: 'app.blob',
+          }),
+        )
 
-      const vfsDir = path.join(testDir, 'vfs-content')
-      await safeMkdir(vfsDir)
-      await fs.writeFile(path.join(vfsDir, 'test.txt'), 'safe-content')
+        const vfsDir = path.join(testDir, 'vfs-content')
+        await safeMkdir(vfsDir)
+        await fs.writeFile(path.join(vfsDir, 'test.txt'), 'safe-content')
 
-      const vfsTar = path.join(testDir, 'vfs.tar')
-      await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
-        env: { ...process.env, COPYFILE_DISABLE: '1' },
+        const vfsTar = path.join(testDir, 'vfs.tar')
+        await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
+          env: { ...process.env, COPYFILE_DISABLE: '1' },
+        })
+
+        const seaBinary = path.join(testDir, 'app')
+        await fs.copyFile(finalBinaryPath, seaBinary)
+        await makeExecutable(seaBinary)
+
+        const injectResult = await runBinject(
+          seaBinary,
+          'BOTH',
+          { sea: 'sea-config.json', vfs: vfsTar },
+          {
+            machoSegmentName: MACHO_SEGMENT_NODE_SEA,
+            sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+            testDir,
+          },
+        )
+        expect(injectResult.code).toBe(0)
+
+        const execResult = await spawn(seaBinary, [])
+
+        expect(execResult.stdout).toContain('TRAVERSAL_TEST_COMPLETE')
+        expect(execResult.stdout).toContain('LEAKED=0')
+        expect(execResult.stdout).not.toContain('LEAKED:')
+        expect(execResult.stdout).not.toContain('EXISTS_LEAKED:')
+        expect(execResult.stdout).not.toContain('UNEXPECTED_ERROR:')
+        expect(execResult.stdout).toContain('VFS_READ_OK=safe-content')
       })
 
-      const seaBinary = path.join(testDir, 'app')
-      await fs.copyFile(finalBinaryPath, seaBinary)
-      await makeExecutable(seaBinary)
+      it('should block statSync traversal leaks', async () => {
+        const testDir = path.join(testTmpDir, 'vfs-traversal-stat')
+        await safeMkdir(testDir)
 
-      const injectResult = await runBinject(
-        seaBinary,
-        'BOTH',
-        { sea: 'sea-config.json', vfs: vfsTar },
-        {
-          machoSegmentName: MACHO_SEGMENT_NODE_SEA,
-          sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
-          testDir,
-        },
-      )
-      expect(injectResult.code).toBe(0)
-
-      const execResult = await spawn(seaBinary, [])
-
-      expect(execResult.stdout).toContain('TRAVERSAL_TEST_COMPLETE')
-      expect(execResult.stdout).toContain('LEAKED=0')
-      expect(execResult.stdout).not.toContain('LEAKED:')
-      expect(execResult.stdout).not.toContain('EXISTS_LEAKED:')
-      expect(execResult.stdout).not.toContain('UNEXPECTED_ERROR:')
-      expect(execResult.stdout).toContain('VFS_READ_OK=safe-content')
-    })
-
-    it('should block statSync traversal leaks', async () => {
-      const testDir = path.join(testTmpDir, 'vfs-traversal-stat')
-      await safeMkdir(testDir)
-
-      const appJs = path.join(testDir, 'app.js')
-      await fs.writeFile(
-        appJs,
-        `
+        const appJs = path.join(testDir, 'app.js')
+        await fs.writeFile(
+          appJs,
+          `
 const fs = require('fs')
 
 const leakPaths = [
@@ -182,48 +185,49 @@ for (const attack of leakPaths) {
 console.log('STAT_BLOCKED=' + blocked)
 console.log('STAT_TEST_COMPLETE')
 `,
-      )
+        )
 
-      const seaConfig = path.join(testDir, 'sea-config.json')
-      await fs.writeFile(
-        seaConfig,
-        JSON.stringify({
-          disableExperimentalSEAWarning: true,
-          main: 'app.js',
-          output: 'app.blob',
-        }),
-      )
+        const seaConfig = path.join(testDir, 'sea-config.json')
+        await fs.writeFile(
+          seaConfig,
+          JSON.stringify({
+            disableExperimentalSEAWarning: true,
+            main: 'app.js',
+            output: 'app.blob',
+          }),
+        )
 
-      const vfsDir = path.join(testDir, 'vfs-content')
-      await safeMkdir(vfsDir)
-      await fs.writeFile(path.join(vfsDir, 'test.txt'), 'content')
+        const vfsDir = path.join(testDir, 'vfs-content')
+        await safeMkdir(vfsDir)
+        await fs.writeFile(path.join(vfsDir, 'test.txt'), 'content')
 
-      const vfsTar = path.join(testDir, 'vfs.tar')
-      await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
-        env: { ...process.env, COPYFILE_DISABLE: '1' },
+        const vfsTar = path.join(testDir, 'vfs.tar')
+        await spawn('tar', ['cf', vfsTar, '-C', vfsDir, '.'], {
+          env: { ...process.env, COPYFILE_DISABLE: '1' },
+        })
+
+        const seaBinary = path.join(testDir, 'app')
+        await fs.copyFile(finalBinaryPath, seaBinary)
+        await makeExecutable(seaBinary)
+
+        const injectResult = await runBinject(
+          seaBinary,
+          'BOTH',
+          { sea: 'sea-config.json', vfs: vfsTar },
+          {
+            machoSegmentName: MACHO_SEGMENT_NODE_SEA,
+            sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+            testDir,
+          },
+        )
+        expect(injectResult.code).toBe(0)
+
+        const execResult = await spawn(seaBinary, [])
+
+        expect(execResult.stdout).toContain('STAT_TEST_COMPLETE')
+        expect(execResult.stdout).not.toContain('STAT_LEAKED:')
+        expect(execResult.stdout).not.toContain('LSTAT_LEAKED:')
       })
-
-      const seaBinary = path.join(testDir, 'app')
-      await fs.copyFile(finalBinaryPath, seaBinary)
-      await makeExecutable(seaBinary)
-
-      const injectResult = await runBinject(
-        seaBinary,
-        'BOTH',
-        { sea: 'sea-config.json', vfs: vfsTar },
-        {
-          machoSegmentName: MACHO_SEGMENT_NODE_SEA,
-          sentinelFuse: 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
-          testDir,
-        },
-      )
-      expect(injectResult.code).toBe(0)
-
-      const execResult = await spawn(seaBinary, [])
-
-      expect(execResult.stdout).toContain('STAT_TEST_COMPLETE')
-      expect(execResult.stdout).not.toContain('STAT_LEAKED:')
-      expect(execResult.stdout).not.toContain('LSTAT_LEAKED:')
     })
-  })
-})
+  },
+)

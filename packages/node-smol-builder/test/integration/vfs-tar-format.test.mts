@@ -25,8 +25,9 @@ const finalBinaryPath = getLatestFinalBinary()
 const skipTests = !finalBinaryPath || !existsSync(finalBinaryPath)
 const testTmpDir = path.join(os.tmpdir(), 'socket-btm-vfs-tar-format-tests')
 
-describe.sequential.skipIf(skipTests)(
+describe.skipIf(skipTests)(
   'vFS — TAR format, path validation, mountSync, permissions',
+  { concurrent: false },
   () => {
     beforeAll(async () => {
       await safeMkdir(testTmpDir)
