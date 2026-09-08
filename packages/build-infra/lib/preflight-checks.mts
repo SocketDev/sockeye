@@ -15,6 +15,51 @@ import { getMinPythonVersion } from './version-metadata.mts'
 
 const logger = getDefaultLogger()
 
+export async function checkPreflightCompiler(
+  compilers: string | string[] | undefined,
+): Promise<string | undefined> {
+  const compilerCheck = await checkCompiler(compilers)
+  if (!compilerCheck.available) {
+    return compilers
+      ? `No C++ compiler found (tried: ${Array.isArray(compilers) ? compilers.join(', ') : compilers})`
+      : 'No C++ compiler found'
+  }
+  return undefined
+}
+
+export async function checkPreflightDisk(
+  diskGB: number,
+): Promise<string | undefined> {
+  const diskCheck = await checkDiskSpace('.', diskGB)
+  if (!diskCheck.sufficient) {
+    return `Insufficient disk space: ${diskCheck.availableGB}GB available, ${diskGB}GB required`
+  }
+  return undefined
+}
+
+export async function checkPreflightPython(
+  version: string,
+): Promise<string | undefined> {
+  const pythonCheck = await checkPythonVersion(version)
+  return pythonCheck.available ? undefined : `Python ${version}+ not found`
+}
+
+export function reportPreflightSummary(config: {
+  failures: string[]
+  quiet: boolean
+}): void {
+  const { failures, quiet } = { __proto__: null, ...config } as typeof config
+  if (!quiet) {
+    if (!failures.length) {
+      logger.success('All preflight checks passed')
+      logger.log('')
+    } else {
+      printError(`${failures.length} preflight check(s) failed`)
+      logger.log('')
+    }
+  }
+}
+
 /**
  * Run preflight checks for build scripts.
  *
@@ -54,14 +99,24 @@ export async function runPreflightChecks(options = {}) {
     logger.log('')
   }
 
-  // Check disk space.
-  if (disk) {
-    const diskCheck = await checkDiskSpace('.', diskGB)
-    if (!diskCheck.sufficient) {
-      const msg = `Insufficient disk space: ${diskCheck.availableGB}GB available, ${diskGB}GB required`
-      failures.push(msg)
+  const checks = [
+    { enabled: disk, run: () => checkPreflightDisk(diskGB) },
+    { enabled: compiler, run: () => checkPreflightCompiler(compilers) },
+    {
+      enabled: python,
+      run: () => checkPreflightPython(effectivePythonVersion),
+    },
+  ]
+  for (let index = 0, { length } = checks; index < length; index += 1) {
+    const check = checks[index]!
+    if (!check.enabled) {
+      continue
+    }
+    const failure = await check.run()
+    if (failure) {
+      failures.push(failure)
       if (!quiet) {
-        printError(msg)
+        printError(failure)
       }
       if (failFast) {
         return { __proto__: null, failures, passed: false }
@@ -69,47 +124,7 @@ export async function runPreflightChecks(options = {}) {
     }
   }
 
-  // Check compiler.
-  if (compiler) {
-    const compilerCheck = await checkCompiler(compilers)
-    if (!compilerCheck.available) {
-      const msg = compilers
-        ? `No C++ compiler found (tried: ${Array.isArray(compilers) ? compilers.join(', ') : compilers})`
-        : 'No C++ compiler found'
-      failures.push(msg)
-      if (!quiet) {
-        printError(msg)
-      }
-      if (failFast) {
-        return { __proto__: null, failures, passed: false }
-      }
-    }
-  }
-
-  // Check Python.
-  if (python) {
-    const pythonCheck = await checkPythonVersion(effectivePythonVersion)
-    if (!pythonCheck.available) {
-      const msg = `Python ${effectivePythonVersion}+ not found`
-      failures.push(msg)
-      if (!quiet) {
-        printError(msg)
-      }
-      if (failFast) {
-        return { __proto__: null, failures, passed: false }
-      }
-    }
-  }
-
-  if (!quiet) {
-    if (!failures.length) {
-      logger.success('All preflight checks passed')
-      logger.log('')
-    } else {
-      printError(`${failures.length} preflight check(s) failed`)
-      logger.log('')
-    }
-  }
+  reportPreflightSummary({ failures, quiet })
 
   return { __proto__: null, failures, passed: !failures.length }
 }
