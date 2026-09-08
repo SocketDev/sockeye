@@ -195,28 +195,13 @@ export async function checkPythonVersion(
         continue
       }
 
-      const versionParts = version.split('.').map(Number)
-      const minParts = effectiveMinVersion.split('.').map(Number)
-
-      const major = versionParts[0]
-      const minor = versionParts[1]
-      const minMajor = minParts[0]
-      const minMinor = minParts[1]
-
-      // Validate that we have at least major.minor and no NaN values
-      if (
-        major === undefined ||
-        minor === undefined ||
-        minMajor === undefined ||
-        minMinor === undefined ||
-        versionParts.some(n => Number.isNaN(n)) ||
-        minParts.some(n => Number.isNaN(n))
-      ) {
+      const sufficient = comparePythonVersions({
+        version,
+        minVersion: effectiveMinVersion,
+      })
+      if (sufficient === undefined) {
         continue
       }
-
-      const sufficient =
-        major > minMajor || (major === minMajor && minor >= minMinor)
 
       return {
         available: true,
@@ -233,6 +218,114 @@ export async function checkPythonVersion(
     sufficient: false,
     version: undefined,
   }
+}
+
+export async function cleanupDockerImages(): Promise<void> {
+  // Remove docker images (cross-platform)
+  try {
+    await spawn('docker', ['image', 'prune', '--all', '--force'], {
+      shell: WIN32,
+      stdio: 'inherit',
+    })
+    logger.success('Cleaned Docker images')
+  } catch (e) {
+    // Docker might not be available on all platforms/configs
+    logger.warn(`Could not clean Docker images: ${errorMessage(e)}`)
+  }
+}
+
+export async function cleanupPlatformDisk(platform: string): Promise<void> {
+  // Get cleanup paths from centralized configuration
+  const cleanupTasks = getCleanupPaths(platform)
+
+  if (platform === 'linux') {
+    // Linux-specific cleanup (~10GB total)
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+    for (const { desc, path: targetPath } of cleanupTasks) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await spawn('sudo', ['rm', '-rf', targetPath], { stdio: 'inherit' })
+        logger.success(`Removed ${desc}`)
+      } catch (e) {
+        logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
+      }
+    }
+
+    // Clean apt cache
+    try {
+      await spawn('sudo', ['apt-get', 'clean'], { stdio: 'inherit' })
+      logger.success('Cleaned apt cache')
+    } catch (e) {
+      logger.warn(`Could not clean apt cache: ${errorMessage(e)}`)
+    }
+  } else if (platform === 'darwin') {
+    // macOS-specific cleanup (~20GB total)
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+    for (const { desc, path: targetPath } of cleanupTasks) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await spawn('sudo', ['rm', '-rf', targetPath], { stdio: 'inherit' })
+        logger.success(`Removed ${desc}`)
+      } catch (e) {
+        logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
+      }
+    }
+
+    // Clean Homebrew cache
+    try {
+      await spawn('brew', ['cleanup', '-s'], { stdio: 'inherit' })
+      logger.success('Cleaned Homebrew cache')
+    } catch (e) {
+      logger.warn(`Could not clean Homebrew cache: ${errorMessage(e)}`)
+    }
+  } else if (WIN32) {
+    // Windows-specific cleanup (~15GB total)
+    // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
+    for (const { desc, path: targetPath } of cleanupTasks) {
+      try {
+        // Windows: Use rmdir or Remove-Item
+        // eslint-disable-next-line no-await-in-loop
+        await spawn(
+          'powershell',
+          [
+            '-Command',
+            `if (Test-Path '${targetPath}') { Remove-Item -Path '${targetPath}' -Recurse -Force -ErrorAction SilentlyContinue }`,
+          ],
+          { stdio: 'inherit' },
+        )
+        logger.success(`Removed ${desc}`)
+      } catch (e) {
+        logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
+      }
+    }
+  }
+}
+
+export function comparePythonVersions(config: {
+  version: string
+  minVersion: string
+}): boolean | undefined {
+  const { version, minVersion } = {
+    __proto__: null,
+    ...config,
+  } as typeof config
+  const versionParts = version.split('.').map(Number)
+  const minParts = minVersion.split('.').map(Number)
+  const major = versionParts[0]
+  const minor = versionParts[1]
+  const minMajor = minParts[0]
+  const minMinor = minParts[1]
+  if (
+    major === undefined ||
+    minor === undefined ||
+    minMajor === undefined ||
+    minMinor === undefined ||
+    versionParts.some(n => Number.isNaN(n)) ||
+    minParts.some(n => Number.isNaN(n))
+  ) {
+    return undefined
+  }
+  return major > minMajor || (major === minMajor && minor >= minMinor)
 }
 
 /**
@@ -273,82 +366,9 @@ export async function freeDiskSpace(): Promise<void> {
       logger.info(dfBefore.stdout?.trim() || '')
     }
 
-    // Get cleanup paths from centralized configuration
-    const cleanupTasks = getCleanupPaths(platform)
+    await cleanupPlatformDisk(platform)
 
-    if (platform === 'linux') {
-      // Linux-specific cleanup (~10GB total)
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
-      for (const { desc, path: targetPath } of cleanupTasks) {
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          await spawn('sudo', ['rm', '-rf', targetPath], { stdio: 'inherit' })
-          logger.success(`Removed ${desc}`)
-        } catch (e) {
-          logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
-        }
-      }
-
-      // Clean apt cache
-      try {
-        await spawn('sudo', ['apt-get', 'clean'], { stdio: 'inherit' })
-        logger.success('Cleaned apt cache')
-      } catch (e) {
-        logger.warn(`Could not clean apt cache: ${errorMessage(e)}`)
-      }
-    } else if (platform === 'darwin') {
-      // macOS-specific cleanup (~20GB total)
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
-      for (const { desc, path: targetPath } of cleanupTasks) {
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          await spawn('sudo', ['rm', '-rf', targetPath], { stdio: 'inherit' })
-          logger.success(`Removed ${desc}`)
-        } catch (e) {
-          logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
-        }
-      }
-
-      // Clean Homebrew cache
-      try {
-        await spawn('brew', ['cleanup', '-s'], { stdio: 'inherit' })
-        logger.success('Cleaned Homebrew cache')
-      } catch (e) {
-        logger.warn(`Could not clean Homebrew cache: ${errorMessage(e)}`)
-      }
-    } else if (WIN32) {
-      // Windows-specific cleanup (~15GB total)
-      // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
-      for (const { desc, path: targetPath } of cleanupTasks) {
-        try {
-          // Windows: Use rmdir or Remove-Item
-          // eslint-disable-next-line no-await-in-loop
-          await spawn(
-            'powershell',
-            [
-              '-Command',
-              `if (Test-Path '${targetPath}') { Remove-Item -Path '${targetPath}' -Recurse -Force -ErrorAction SilentlyContinue }`,
-            ],
-            { stdio: 'inherit' },
-          )
-          logger.success(`Removed ${desc}`)
-        } catch (e) {
-          logger.warn(`Could not remove ${targetPath}: ${errorMessage(e)}`)
-        }
-      }
-    }
-
-    // Remove docker images (cross-platform)
-    try {
-      await spawn('docker', ['image', 'prune', '--all', '--force'], {
-        shell: WIN32,
-        stdio: 'inherit',
-      })
-      logger.success('Cleaned Docker images')
-    } catch (e) {
-      // Docker might not be available on all platforms/configs
-      logger.warn(`Could not clean Docker images: ${errorMessage(e)}`)
-    }
+    await cleanupDockerImages()
 
     // Check disk space after cleanup
     if (WIN32) {
