@@ -100,6 +100,12 @@ function metadataText(value: unknown): value is string {
   )
 }
 
+function isOnePasswordMetadataRow(
+  value: unknown,
+): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
 export function onePasswordChoices(
   value: unknown,
   kind: 'account' | 'vault' | 'item',
@@ -108,10 +114,10 @@ export function onePasswordChoices(
     throw new Error('1Password metadata list is invalid or too large.')
   }
   return value.map((entry: unknown) => {
-    if (!entry || typeof entry !== 'object') {
+    if (!isOnePasswordMetadataRow(entry)) {
       throw new Error('1Password metadata entry is invalid.')
     }
-    const row = entry as Record<string, unknown>
+    const row = entry
     const id = kind === 'account' ? row['user_uuid'] : row['id']
     const name =
       kind === 'account'
