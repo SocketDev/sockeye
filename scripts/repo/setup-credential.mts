@@ -7,7 +7,7 @@
  *   then puts the secret directly into Touch-ID-protected Keychain storage.
  */
 
-import { constants, existsSync } from 'node:fs'
+import { constants, existsSync, realpathSync } from 'node:fs'
 import { access } from 'node:fs/promises'
 import process from 'node:process'
 
@@ -16,6 +16,8 @@ import {
   input,
   select,
 } from '@socketsecurity/lib-stable/stdio/prompts'
+import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
+import { authorizeOnePasswordTerminal } from '@socketsecurity/lib-stable/secrets/one-password'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -110,7 +112,36 @@ async function manualOnePasswordReference(): Promise<
   return { account, reference }
 }
 
-async function chooseOnePasswordReference(
+export async function authorizeOnePasswordAccount(
+  executable: string,
+  account: string,
+): Promise<void> {
+  const resolved = whichSync('op', { path: process.env['PATH'], nothrow: true })
+  if (
+    typeof resolved !== 'string' ||
+    realpathSync(resolved) !== realpathSync(executable)
+  ) {
+    throw new Error(
+      '1Password CLI selection differs from PATH. Put the supported op installation first in PATH and retry.',
+    )
+  }
+  process.stderr.write(
+    'Enable 1Password Settings > Developer > Integrate with 1Password CLI, unlock the desktop app, and approve this terminal.\n',
+  )
+  let status: string
+  try {
+    status = (await authorizeOnePasswordTerminal({ account })).status
+  } catch {
+    status = 'authorization-failed'
+  }
+  if (status !== 'authorized') {
+    throw new Error(
+      `1Password terminal authorization failed (${status}). Check desktop CLI integration and retry from the foreground terminal.`,
+    )
+  }
+}
+
+export async function chooseOnePasswordReference(
   executable: string,
 ): Promise<OnePasswordSelection | undefined> {
   const method = await select({
@@ -124,24 +155,21 @@ async function chooseOnePasswordReference(
     ],
   })
   if (method === 'reference') {
-    return await manualOnePasswordReference()
+    const selected = await manualOnePasswordReference()
+    if (selected) {
+      await authorizeOnePasswordAccount(executable, selected.account)
+    }
+    return selected
   }
   if (method !== 'guided') {
     return undefined
   }
-  try {
-    return await selectOnePasswordReference(executable, {
-      choose: async (message, choices) => await select({ message, choices }),
-      field: async message => await input({ message }),
-    })
-  } catch {
-    const manual = await confirm({
-      message:
-        '1Password metadata listing is unavailable. Enter the account and full reference instead?',
-      default: false,
-    })
-    return manual === true ? await manualOnePasswordReference() : undefined
-  }
+  return await selectOnePasswordReference(executable, {
+    authorize: async account =>
+      await authorizeOnePasswordAccount(executable, account),
+    choose: async (message, choices) => await select({ message, choices }),
+    field: async message => await input({ message }),
+  })
 }
 
 async function main(): Promise<void> {

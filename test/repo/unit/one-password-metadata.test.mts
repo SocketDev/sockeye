@@ -34,7 +34,11 @@ test('guides explicit account, vault, and item selection without reading secret 
   )
   const selected = await selectOnePasswordReference(
     '/example/op',
-    { choose, field: async () => 'credentials/private key' },
+    {
+      authorize: async () => {},
+      choose,
+      field: async () => 'credentials/private key',
+    },
     { read },
   )
   expect(selected).toEqual({
@@ -66,7 +70,11 @@ test('cancellation and forged selections cannot expand scope', async () => {
   expect(
     await selectOnePasswordReference(
       '/example/op',
-      { choose: async () => 'unlisted-account', field },
+      {
+        authorize: async () => {},
+        choose: async () => 'unlisted-account',
+        field,
+      },
       { read },
     ),
   ).toBeUndefined()
@@ -134,6 +142,7 @@ test('pins the chosen account without inherited service, connect, or session cre
 
 test('empty accounts fail and invalid fields cancel before native import', async () => {
   const prompts = {
+    authorize: async () => {},
     choose: async (message: string, choices: { value: string }[]) => {
       expect(message).toContain('1Password')
       return choices[0]!.value
@@ -196,7 +205,7 @@ test.each([2, 3])(
     expect(
       await selectOnePasswordReference(
         '/example/op',
-        { choose, field },
+        { authorize: async () => {}, choose, field },
         { read },
       ),
     ).toBeUndefined()
@@ -255,4 +264,63 @@ test('metadata transport bounds output and discards subprocess diagnostics', asy
     ]),
   ).rejects.toThrow()
   expect(execute).toHaveBeenCalledTimes(3)
+})
+
+test('authorizes the chosen account before reading vault metadata', async () => {
+  const events: string[] = []
+  await selectOnePasswordReference(
+    '/example/op',
+    {
+      authorize: async account => {
+        events.push(`authorize:${account}`)
+      },
+      choose: async (message, choices) => {
+        expect(message).toContain('1Password')
+        return choices[0]!.value
+      },
+      field: async () => 'password',
+    },
+    {
+      read: async (executable, args) => {
+        expect(executable).toBe('/example/op')
+        events.push(args[0]!)
+        return [
+          {
+            user_uuid: ACCOUNT,
+            url: 'example.1password.com',
+            id: ITEM,
+            name: 'Example vault',
+            title: 'Example item',
+          },
+        ]
+      },
+    },
+  )
+  expect(events).toEqual(['account', `authorize:${ACCOUNT}`, 'vault', 'item'])
+})
+
+test('authorization denial stops before vault, item, and field access', async () => {
+  const denied = new Error('Authorization denied')
+  const read = vi.fn(async () => [
+    { user_uuid: ACCOUNT, url: 'example.1password.com' },
+  ])
+  const field = vi.fn(async () => 'password')
+  await expect(
+    selectOnePasswordReference(
+      '/example/op',
+      {
+        authorize: async () => {
+          throw denied
+        },
+        choose: async (message, choices) => {
+          expect(message).toContain('1Password')
+          return choices[0]!.value
+        },
+        field,
+      },
+      { read },
+    ),
+  ).rejects.toBe(denied)
+  expect(read).toHaveBeenCalledTimes(1)
+  expect(field).not.toHaveBeenCalled()
 })

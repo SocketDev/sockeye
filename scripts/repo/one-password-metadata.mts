@@ -12,6 +12,7 @@ export interface OnePasswordSelection {
 }
 
 export interface OnePasswordPrompts {
+  authorize(account: string): Promise<void>
   choose(message: string, choices: OnePasswordChoice[]): Promise<unknown>
   field(message: string): Promise<unknown>
 }
@@ -189,6 +190,7 @@ export async function selectOnePasswordReference(
   if (!account) {
     return undefined
   }
+  await prompts.authorize(account)
   const vault = await choose('vault', ['vault', 'list', '--account', account])
   if (!vault) {
     return undefined
