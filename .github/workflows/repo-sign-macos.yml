@@ -1,4 +1,5 @@
 name: 🔏 Sign macOS
+run-name: Sign macOS for ${{ github.ref_name }}
 
 # Repo-owned workflow: builds, signs, and notarizes the Sockeye binary for
 # macOS. Uses the fleet checkout + setup actions (under .github/actions/fleet/)
@@ -34,6 +35,7 @@ permissions:
 # build-sign job runs setup-and-install, so nothing is declared here.
 jobs:
   build-sign:
+    name: Build and sign
     runs-on: macos-14
     permissions:
       contents: read
@@ -62,7 +64,7 @@ jobs:
             git fetch "${FETCH_ARGS[@]}"
           fi
           git checkout -q --detach FETCH_HEAD
-      - name: Setup and install
+      - name: Set up and install
         uses: ./.github/actions/fleet/setup-and-install
         with:
           checkout: 'false'
@@ -82,7 +84,7 @@ jobs:
       - name: Build prod binary
         run: pnpm run build --mode prod
 
-      - name: Sign with Developer ID
+      - name: Sign with developer id
         if: ${{ !inputs.adhoc }}
         env:
           SOCKEYE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}

@@ -16,6 +16,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
@@ -100,7 +101,7 @@ async function main(): Promise<void> {
   const configuredProfile =
     typeof values['keychain-profile'] === 'string'
       ? values['keychain-profile']
-      : process.env[NOTARY_PROFILE_ENV]
+      : getEnvValue(NOTARY_PROFILE_ENV)
   const execute = values['run'] === true
   const profile = configuredProfile ?? `$${NOTARY_PROFILE_ENV}`
   const archives = positionals.map(String)

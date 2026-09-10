@@ -13,6 +13,7 @@
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
@@ -82,7 +83,7 @@ function signingPlans(positionals: string[], values: Record<string, unknown>) {
   const configuredIdentity =
     typeof values['identity'] === 'string'
       ? values['identity']
-      : process.env[SIGNING_IDENTITY_ENV]
+      : getEnvValue(SIGNING_IDENTITY_ENV)
   const targets =
     positionals.length > 0
       ? positionals.map(String)

@@ -6,6 +6,7 @@
  */
 
 import process from 'node:process'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
@@ -46,7 +47,7 @@ async function main(): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error('Sockeye fuzzing currently requires its macOS toolchain')
   }
-  const secondsText = process.env['SOCKEYE_FUZZ_SECONDS'] ?? '60'
+  const secondsText = getEnvValue('SOCKEYE_FUZZ_SECONDS') ?? '60'
   if (!/^\d+$/u.test(secondsText) || Number(secondsText) < 1) {
     throw new Error('SOCKEYE_FUZZ_SECONDS must be a positive integer')
   }

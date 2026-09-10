@@ -11,6 +11,7 @@ import { constants, existsSync, realpathSync } from 'node:fs'
 import { access } from 'node:fs/promises'
 import process from 'node:process'
 
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import {
   confirm,
   input,
@@ -116,7 +117,7 @@ export async function authorizeOnePasswordAccount(
   executable: string,
   account: string,
 ): Promise<void> {
-  const resolved = whichSync('op', { path: process.env['PATH'], nothrow: true })
+  const resolved = whichSync('op', { path: getEnvValue('PATH'), nothrow: true })
   if (
     typeof resolved !== 'string' ||
     realpathSync(resolved) !== realpathSync(executable)
