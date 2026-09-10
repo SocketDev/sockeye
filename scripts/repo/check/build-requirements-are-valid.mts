@@ -161,6 +161,7 @@ const SCRIPT_META: ScriptMeta = {
   describe:
     'Validate builder requirements, inheritance references, and telemetry declarations.',
   help: 'Usage: pnpm run check:build-requirements',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

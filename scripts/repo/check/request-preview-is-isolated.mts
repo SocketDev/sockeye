@@ -77,6 +77,7 @@ export function runRequestPreviewCheck(): number {
 const SCRIPT_META: ScriptMeta = {
   describe: 'Validate shared request preparation and isolated preview tests.',
   help: 'Usage: pnpm run check:request-preview',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

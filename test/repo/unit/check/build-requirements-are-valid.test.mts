@@ -6,13 +6,13 @@ import { afterEach, expect, test } from 'vitest'
 import {
   checkBuildRequirements,
   findBuildRequirements,
-} from '../../../scripts/repo/check/build-requirements-are-valid.mts'
+} from '../../../../scripts/repo/check/build-requirements-are-valid.mts'
 import {
   BUILD_REQUIREMENTS_SCHEMA_PATH,
   getBuildRequirementsPath,
   isBuildRequirementsPath,
   ML_BUILD_REQUIREMENTS_FILENAME,
-} from '../../../packages/build-infra/lib/build-requirements/paths.mts'
+} from '../../../../packages/build-infra/lib/build-requirements/paths.mts'
 
 const roots: string[] = []
 afterEach(async () => {

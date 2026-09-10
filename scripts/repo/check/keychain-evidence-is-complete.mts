@@ -4,7 +4,7 @@ import process from 'node:process'
 
 import { REPO_ROOT } from '../../fleet/paths.mts'
 import { isMainModule } from '../../fleet/process/is-main-module.mts'
-import { runMain } from '../../fleet/process/run-main.mts'
+import { isJsonRequested, runMain } from '../../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../../fleet/process/run-main.mts'
 import { ordinaryTestEnvironment } from '../test.mts'
 import { keychainSuiteAllowed } from '../test-keychain-interactive.mts'
@@ -20,6 +20,7 @@ export const SCRIPT_META: ScriptMeta = {
   describe:
     'Validate Keychain evidence tooling, or strictly verify attended release evidence against both architecture artifacts.',
   help: 'Usage: pnpm run check:keychain-evidence [<evidence-directory> --binary <arm64-path> --binary <x64-path> --source <commit>]\nNo arguments validates tooling only; it does not validate attended evidence.',
+  json: 'result',
 }
 
 export function checkKeychainTooling(root: string): string[] {
@@ -111,7 +112,9 @@ export function checkKeychainEvidenceArguments(args: string[]): string[] {
 export function runKeychainEvidenceCheck(
   options: { args?: string[] | undefined } = {},
 ): number {
-  const { args = process.argv.slice(2) } = options
+  const argv = options.args ?? process.argv.slice(2)
+  const json = isJsonRequested(argv)
+  const args = argv.filter(arg => arg !== '--json')
   try {
     const issues = args.length
       ? checkKeychainEvidenceArguments(args)
@@ -122,7 +125,8 @@ export function runKeychainEvidenceCheck(
       )
       return 1
     }
-    process.stdout.write(
+    const output = json ? process.stderr : process.stdout
+    output.write(
       args.length
         ? 'Attended evidence matches supplied artifacts and source.\n'
         : 'Keychain tooling checked; attended evidence remains unverified.\n',

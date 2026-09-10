@@ -104,6 +104,7 @@ const SCRIPT_META: ScriptMeta = {
   describe:
     'Check native security instrumentation, production isolation, and test wiring.',
   help: 'Usage: pnpm run check:native-security-tests',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

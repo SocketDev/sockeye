@@ -85,6 +85,7 @@ const SCRIPT_META: ScriptMeta = {
   describe:
     'Check doctor capability queries and production isolation alongside behavioral tests.',
   help: 'Usage: pnpm run check:diagnostics',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

@@ -42,5 +42,29 @@
       "packages/onnxruntime-builder/upstream/onnxruntime",
       "packages/yoga-layout-builder/upstream/yoga"
     ]
+  },
+  "vitest": {
+    "lanes": {
+      "slow": [
+        "**/test/**/integration/**",
+        "**/test/**/e2e/**",
+        "packages/bin-stub-builder/test/c-unit-tests.test.mts",
+        "packages/build-infra/test/checkpoint-extraction.test.mts",
+        "packages/build-infra/test/get-tool-version.test.mts",
+        "packages/build-infra/test/validate-checkpoints.test.mts",
+        "packages/keychain-cli-builder/test/keychain-cli.test.mts",
+        "packages/node-smol-builder/test/smol-manifest-native.test.mts",
+        "packages/node-smol-builder/test/unit/smol-markdown-render.test.mts",
+        "packages/sockeye-daemon-builder/test/sockeye-daemon.test.mts",
+        "test/repo/unit/build.test.mts",
+        "test/repo/unit/fuzz.test.mts",
+        "test/repo/unit/notarize.test.mts",
+        "test/repo/unit/setup-credential.test.mts",
+        "test/repo/unit/setup-sockeye.test.mts",
+        "test/repo/unit/sign.test.mts",
+        "test/repo/unit/test.test.mts",
+        "test/repo/unit/verify-release.test.mts"
+      ]
+    }
   }
 }
