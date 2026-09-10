@@ -2004,6 +2004,7 @@ opencode.json
 .claude/skills/fleet/managing-pnpm-workspaces/SKILL.md
 .claude/skills/fleet/managing-pnpm-workspaces/references/catalog-policy.md
 .claude/skills/fleet/managing-worktrees/SKILL.md
+.claude/skills/fleet/managing-worktrees/lib/gate-hydration.mts
 .claude/skills/fleet/managing-worktrees/lib/land.mts
 .claude/skills/fleet/managing-worktrees/references/land-mode.md
 .claude/skills/fleet/managing-worktrees/references/pr-fanout-mode.md
