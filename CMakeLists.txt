@@ -10,6 +10,8 @@ set(SOCKEYE_VERSION "${PROJECT_VERSION}" CACHE STRING "Sockeye release version")
 set(SOCKEYE_SANITIZER "none" CACHE STRING "Native sanitizer: none, address, or undefined")
 set_property(CACHE SOCKEYE_SANITIZER PROPERTY STRINGS none address undefined)
 
+include(CTest)
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,68 +21,134 @@ set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 
 add_executable(sockeye
   src/sockeye/child-process.cc
+  src/sockeye/file-identity.cc
   src/sockeye/input-policy.cc
   src/sockeye/keychain-macos.mm
   src/sockeye/main.cc
+  src/sockeye/readiness.cc
+  src/sockeye/run-request.cc
   src/sockeye/one-password.cc
   src/sockeye/secret-buffer.cc
   src/sockeye/terminal.cc
 )
 
-add_executable(sockeye-input-policy-test
+if(BUILD_TESTING)
+  add_executable(sockeye-input-policy-test
   src/sockeye/input-policy.cc
   test/repo/unit/native/input-policy-test.cc
-)
+  )
 
-target_include_directories(sockeye-input-policy-test PRIVATE src)
+  target_include_directories(sockeye-input-policy-test PRIVATE src)
 
-add_executable(sockeye-child-process-test
+  add_executable(sockeye-child-process-test
   src/sockeye/child-process.cc
+  src/sockeye/file-identity.cc
   src/sockeye/secret-buffer.cc
   test/repo/unit/native/child-process-test.cc
-)
-target_include_directories(sockeye-child-process-test PRIVATE src)
-target_compile_definitions(sockeye-child-process-test PRIVATE SOCKEYE_TESTING=1)
+  )
+  target_include_directories(sockeye-child-process-test PRIVATE src)
+  target_compile_definitions(sockeye-child-process-test PRIVATE SOCKEYE_TESTING=1)
 
-if(SOCKEYE_SANITIZER STREQUAL "address")
-  target_compile_options(sockeye PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-  target_link_options(sockeye PRIVATE -fsanitize=address)
-  target_compile_options(sockeye-input-policy-test PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-  target_link_options(sockeye-input-policy-test PRIVATE -fsanitize=address)
-elseif(SOCKEYE_SANITIZER STREQUAL "undefined")
-  target_compile_options(sockeye PRIVATE -fsanitize=undefined -fno-omit-frame-pointer)
-  target_link_options(sockeye PRIVATE -fsanitize=undefined)
-  target_compile_options(sockeye-input-policy-test PRIVATE -fsanitize=undefined -fno-omit-frame-pointer)
-  target_link_options(sockeye-input-policy-test PRIVATE -fsanitize=undefined)
-elseif(NOT SOCKEYE_SANITIZER STREQUAL "none")
-  message(FATAL_ERROR "SOCKEYE_SANITIZER must be none, address, or undefined")
+  add_executable(sockeye-readiness-test
+    src/sockeye/readiness.cc
+    src/sockeye/input-policy.cc
+    test/repo/unit/native/readiness-test.cc
+  )
+  target_include_directories(sockeye-readiness-test PRIVATE src)
+
+  add_executable(sockeye-run-request-test
+    src/sockeye/run-request.cc
+    src/sockeye/file-identity.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/run-request-test.cc
+  )
+  target_include_directories(sockeye-run-request-test PRIVATE src)
+  add_executable(sockeye-preview-isolation-test
+    src/sockeye/main.cc
+  src/sockeye/readiness.cc
+    src/sockeye/run-request.cc
+    src/sockeye/file-identity.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/integration/native/forbidden-effects.cc
+  )
+  target_include_directories(sockeye-preview-isolation-test PRIVATE src)
+
+  add_executable(sockeye-doctor-test
+    src/sockeye/main.cc
+  src/sockeye/readiness.cc
+    src/sockeye/run-request.cc
+    src/sockeye/file-identity.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/integration/native/doctor-effects.cc
+  )
+  target_include_directories(sockeye-doctor-test PRIVATE src)
+
+  add_executable(sockeye-keychain-observer
+  test/repo/e2e/native/keychain-observer.cc
+  )
+  add_executable(sockeye-keychain-policy-fixture
+  test/repo/e2e/native/keychain-policy-fixture.mm
+  )
+  target_compile_options(sockeye-keychain-policy-fixture PRIVATE -fobjc-arc)
 endif()
 
-target_compile_options(sockeye-input-policy-test PRIVATE
-  -Wall
-  -Wconversion
-  -Werror
-  -Wextra
-  -Wpedantic
-  -Wshadow
-  -fstack-protector-strong
+set(SOCKEYE_SECURITY_TARGETS
+  sockeye
 )
-target_compile_options(sockeye-child-process-test PRIVATE
-  -Wall
-  -Wconversion
-  -Werror
-  -Wextra
-  -Wpedantic
-  -Wshadow
-  -fstack-protector-strong
-)
+if(BUILD_TESTING)
+  list(APPEND SOCKEYE_SECURITY_TARGETS
+    sockeye-input-policy-test
+    sockeye-run-request-test
+    sockeye-readiness-test
+    sockeye-preview-isolation-test
+    sockeye-doctor-test
+    sockeye-child-process-test
+    sockeye-keychain-observer
+    sockeye-keychain-policy-fixture
+  )
+endif()
+foreach(target IN LISTS SOCKEYE_SECURITY_TARGETS)
+  target_compile_options(${target} PRIVATE -Wall -Wextra -Werror -Wconversion -Wpedantic -Wshadow)
+  if(NOT target STREQUAL "sockeye")
+    target_compile_options(${target} PRIVATE -UNDEBUG)
+  endif()
+  if(SOCKEYE_SANITIZER STREQUAL "address" OR SOCKEYE_SANITIZER STREQUAL "undefined")
+    target_compile_options(${target} PRIVATE -fsanitize=${SOCKEYE_SANITIZER} -fno-omit-frame-pointer)
+    target_link_options(${target} PRIVATE -fsanitize=${SOCKEYE_SANITIZER})
+  elseif(NOT SOCKEYE_SANITIZER STREQUAL "none")
+    message(FATAL_ERROR "SOCKEYE_SANITIZER must be none, address, or undefined")
+  endif()
+endforeach()
 
-add_executable(sockeye-input-policy-fuzz EXCLUDE_FROM_ALL
+if(BUILD_TESTING)
+  target_compile_options(sockeye-input-policy-test PRIVATE
+  -Wall
+  -Wconversion
+  -Werror
+  -Wextra
+  -Wpedantic
+  -Wshadow
+  -fstack-protector-strong
+  )
+  target_compile_options(sockeye-child-process-test PRIVATE
+  -Wall
+  -Wconversion
+  -Werror
+  -Wextra
+  -Wpedantic
+  -Wshadow
+  -fstack-protector-strong
+  )
+
+  add_executable(sockeye-input-policy-fuzz EXCLUDE_FROM_ALL
   src/sockeye/input-policy.cc
   test/repo/fuzz/native/input-policy-fuzz.cc
-)
-target_include_directories(sockeye-input-policy-fuzz PRIVATE src)
-target_compile_options(sockeye-input-policy-fuzz PRIVATE
+  )
+  target_include_directories(sockeye-input-policy-fuzz PRIVATE src)
+  target_compile_options(sockeye-input-policy-fuzz PRIVATE
   -Wall
   -Wconversion
   -Werror
@@ -89,10 +157,12 @@ target_compile_options(sockeye-input-policy-fuzz PRIVATE
   -Wshadow
   -fsanitize=fuzzer,address,undefined
   -fno-omit-frame-pointer
-)
-target_link_options(sockeye-input-policy-fuzz PRIVATE
+  )
+  target_link_options(sockeye-input-policy-fuzz PRIVATE
   -fsanitize=fuzzer,address,undefined
-)
+  )
+
+endif()
 
 target_include_directories(sockeye PRIVATE src)
 target_compile_definitions(sockeye PRIVATE SOCKEYE_VERSION="${SOCKEYE_VERSION}")
@@ -116,7 +186,12 @@ target_link_libraries(sockeye PRIVATE
   ${LOCAL_AUTHENTICATION_FRAMEWORK}
   ${SECURITY_FRAMEWORK}
 )
-target_link_libraries(sockeye-child-process-test PRIVATE ${FOUNDATION_FRAMEWORK})
+if(BUILD_TESTING)
+  target_link_libraries(sockeye-child-process-test PRIVATE ${FOUNDATION_FRAMEWORK})
+  target_link_libraries(sockeye-keychain-policy-fixture PRIVATE
+    ${FOUNDATION_FRAMEWORK} ${LOCAL_AUTHENTICATION_FRAMEWORK} ${SECURITY_FRAMEWORK}
+  )
+endif()
 
 add_custom_command(TARGET sockeye POST_BUILD
   COMMAND /usr/bin/codesign --force --identifier dev.socket.sockeye --sign - $<TARGET_FILE:sockeye>

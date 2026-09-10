@@ -7,6 +7,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import process from 'node:process'
 
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
@@ -54,7 +55,7 @@ async function main(): Promise<void> {
   const packageJson: { version: string } = JSON.parse(
     await readFile(new URL('../../package.json', import.meta.url), 'utf8'),
   )
-  const version = process.env['RELEASE_VERSION'] ?? packageJson.version
+  const version = getEnvValue('RELEASE_VERSION') ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
   const architecture = process.arch === 'arm64' ? 'arm64' : 'x86_64'
 
@@ -67,6 +68,7 @@ async function main(): Promise<void> {
     '-B',
     cmakeBuildDir,
     `-DCMAKE_BUILD_TYPE=${buildType}`,
+    '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
     `-DCMAKE_OSX_ARCHITECTURES=${architecture}`,
     `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outputDir}`,
     `-DSOCKEYE_VERSION=${version}`,

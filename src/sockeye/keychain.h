@@ -24,6 +24,10 @@ struct KeychainError {
   std::string detail;
 };
 
+KeychainStatus InspectBiometricReadiness(KeychainError &error);
+KeychainStatus InspectCredentialPolicy(std::string_view identifier,
+                                      KeychainError &error);
+
 class AuthorizationContext final {
 public:
   AuthorizationContext();

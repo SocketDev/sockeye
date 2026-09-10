@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import {
   REPO_ROOT,
   resolvePackageJsonPath,
@@ -36,7 +37,7 @@ export const LOGOMARK_SVG_PATHS = [
  * tests and scripts always look in the directory the build actually wrote.
  */
 export function getBuildMode(): string {
-  return process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+  return getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
 }
 
 export function getBuildRoot(mode: string, platformArch: string): string {
@@ -81,3 +82,17 @@ export function getAgentCiPackagePaths(repository: string): {
     packageJson: resolvePackageJsonPath(path.dirname(dist)),
   } as { dist: string; entry: string; packageJson: string }
 }
+
+export const KEYCHAIN_INTERACTIVE_SUITE = path.join(
+  REPO_ROOT,
+  'test',
+  'repo',
+  'e2e',
+  'keychain-lifecycle.test.mts',
+)
+
+export const KEYCHAIN_VALIDATION_RUNBOOK = path.join(
+  REPO_ROOT,
+  'docs',
+  'keychain-validation.md',
+)

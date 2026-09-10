@@ -3,6 +3,7 @@
 #import <Security/Security.h>
 
 #include "sockeye/keychain.h"
+#include "sockeye/input-policy.h"
 
 #include <dispatch/dispatch.h>
 
@@ -84,6 +85,85 @@ void SetOsError(KeychainError &error, OSStatus status,
 }
 
 } // namespace
+
+KeychainStatus InspectBiometricReadiness(KeychainError &error) {
+  @autoreleasepool {
+    LAContext *context = [[LAContext alloc] init];
+    context.interactionNotAllowed = YES;
+    NSError *failure = nil;
+    const BOOL available = [context
+        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                    error:&failure];
+    const bool touch_id = context.biometryType == LABiometryTypeTouchID;
+    [context invalidate];
+    if (available && touch_id) {
+      error = {};
+      return error.status;
+    }
+    const int code = static_cast<int>(failure.code);
+    if (available || ([failure.domain isEqualToString:LAErrorDomain] &&
+        (code == LAErrorBiometryNotAvailable ||
+         code == LAErrorBiometryNotEnrolled || code == LAErrorBiometryLockout))) {
+      SetError(error, KeychainStatus::kUnavailable, code,
+               "Use a Mac with Touch ID, enroll a fingerprint, and unlock the device before retrying.");
+    } else {
+      SetError(error, KeychainStatus::kIo, code,
+               "macOS could not determine biometric readiness; retry from the unlocked local session.");
+    }
+    return error.status;
+  }
+}
+
+KeychainStatus InspectCredentialPolicy(std::string_view identifier,
+                                      KeychainError &error) {
+  @autoreleasepool {
+    if (!IsEnvironmentName(identifier)) {
+      SetError(error, KeychainStatus::kIo, 0, "Credential name is invalid.");
+      return error.status;
+    }
+    NSMutableDictionary *query = BaseQuery(identifier);
+    LAContext *context = [[LAContext alloc] init];
+    if (query == nil || context == nil) {
+      SetError(error, KeychainStatus::kIo, 0,
+               "Credential metadata context is unavailable; retry locally.");
+      return error.status;
+    }
+    context.interactionNotAllowed = YES;
+    query[(__bridge id)kSecUseAuthenticationContext] = context;
+    query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
+    query[(__bridge id)kSecReturnAttributes] = @YES;
+    query[(__bridge id)kSecReturnData] = @NO;
+    CFTypeRef result = nullptr;
+    const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+    [context invalidate];
+    if (status != errSecSuccess || result == nullptr ||
+        CFGetTypeID(result) != CFDictionaryGetTypeID()) {
+      if (result != nullptr) CFRelease(result);
+      SetError(error, status == errSecItemNotFound ? KeychainStatus::kNotFound : KeychainStatus::kIo,
+               static_cast<int>(status), "Credential metadata could not be verified without authentication.");
+      return error.status;
+    }
+    CFDictionaryRef item = static_cast<CFDictionaryRef>(result);
+    CFTypeRef access = CFDictionaryGetValue(item, kSecAttrAccessControl);
+    CFTypeRef marker = CFDictionaryGetValue(item, kSecAttrGeneric);
+    KeychainError policy_error;
+    SecAccessControlRef required = CreateRequiredAccessControl(policy_error);
+    if (required == nullptr || access == nullptr ||
+        CFGetTypeID(access) != SecAccessControlGetTypeID()) {
+      SetError(error, KeychainStatus::kIo, policy_error.os_status,
+               "Credential metadata lacks a verifiable access policy; inspect it manually.");
+    } else if (!CFEqual(access, required) || marker == nullptr ||
+               !CFEqual(marker, (__bridge CFDataRef)PolicyMarkerData())) {
+      SetError(error, KeychainStatus::kInvalidPolicy, 0,
+               "Credential policy differs from the required current-biometry device-only policy.");
+    } else {
+      error = {};
+    }
+    if (required != nullptr) CFRelease(required);
+    CFRelease(result);
+    return error.status;
+  }
+}
 
 struct AuthorizationContext::Impl {
   LAContext *context = [[LAContext alloc] init];

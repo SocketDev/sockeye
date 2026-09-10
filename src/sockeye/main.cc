@@ -21,6 +21,8 @@
 #include "sockeye/one-password.h"
 #include "sockeye/secret-buffer.h"
 #include "sockeye/terminal.h"
+#include "sockeye/run-request.h"
+#include "sockeye/readiness.h"
 
 #ifndef SOCKEYE_VERSION
 #define SOCKEYE_VERSION "0.0.0"
@@ -33,18 +35,6 @@ constexpr int kUsageExit = 2;
 constexpr int kNotFoundExit = 3;
 constexpr int kDeniedExit = 4;
 constexpr int kSystemExit = 5;
-constexpr std::size_t kMaxArgumentBytes = 4'096;
-constexpr std::size_t kMaxManifestBytes = 65'535;
-
-struct RunOptions {
-  std::vector<FileIdentity> bound_files;
-  std::vector<std::string> child_arguments;
-  std::vector<std::string> credential_names;
-  FileIdentity executable;
-  std::vector<std::string> passed_environment;
-  DirectoryIdentity working_directory;
-};
-
 void PrintUsage(FILE *stream) {
   std::fprintf(
       stream, "usage:\n"
@@ -54,183 +44,12 @@ void PrintUsage(FILE *stream) {
               "  sockeye run --credential <NAME> [--credential <NAME> ...]\n"
               "    [--pass-env <NAME> ...] [--bind-file <ABSOLUTE_PATH> ...]\n"
               "    --cwd <ABSOLUTE_PATH> -- <ABSOLUTE_EXECUTABLE> [ARG ...]\n\n"
+              "  sockeye doctor [--credential <NAME>] [--fix]\n"
+              "  sockeye explain <same options as run>\n\n"
               "Sockeye has no command that returns credential plaintext. The "
               "run command\n"
               "authenticates one exact child manifest and passes credentials "
               "only to it.\n");
-}
-
-bool InsertUnique(std::set<std::string> &seen, const std::string &value,
-                  std::string_view option, std::string &error) {
-  if (!seen.insert(value).second) {
-    error = "Manifest rejected: duplicate " + std::string(option) +
-            " value is not allowed.";
-    return false;
-  }
-  return true;
-}
-
-bool ParseRunOptions(int argc, char **argv, RunOptions &options,
-                     std::string &error) {
-  std::set<std::string> bound_paths;
-  std::set<std::string> credentials;
-  std::set<std::string> environment;
-  std::string requested_working_directory;
-  int index = 2;
-  for (; index < argc; ++index) {
-    const std::string option = argv[index];
-    if (option == "--") {
-      ++index;
-      break;
-    }
-    if (option != "--bind-file" && option != "--credential" &&
-        option != "--cwd" && option != "--pass-env") {
-      error = "Manifest rejected: unknown run option before --.";
-      return false;
-    }
-    if (++index >= argc) {
-      error = "Manifest rejected: run option is missing its value.";
-      return false;
-    }
-    const std::string value = argv[index];
-    if (option == "--credential") {
-      if (!IsEnvironmentName(value) ||
-          !InsertUnique(credentials, value, option, error)) {
-        if (error.empty()) {
-          error = "Manifest rejected: credential names must match "
-                  "[A-Z_][A-Z0-9_]{0,126}.";
-        }
-        return false;
-      }
-      options.credential_names.push_back(value);
-    } else if (option == "--pass-env") {
-      if (!IsEnvironmentName(value) ||
-          !InsertUnique(environment, value, option, error)) {
-        if (error.empty()) {
-          error = "Manifest rejected: pass-through environment names must "
-                  "match [A-Z_][A-Z0-9_]{0,126}.";
-        }
-        return false;
-      }
-      options.passed_environment.push_back(value);
-    } else if (option == "--bind-file") {
-      FileIdentity identity;
-      if (!InspectRegularFile(value, identity, error) ||
-          HasDisplayControl(identity.canonical_path) ||
-          !InsertUnique(bound_paths, identity.canonical_path, option, error)) {
-        if (error.empty()) {
-          error = "Manifest rejected: bound file is not safe to display and "
-                  "approve.";
-        }
-        return false;
-      }
-      options.bound_files.push_back(std::move(identity));
-    } else {
-      if (!requested_working_directory.empty()) {
-        error = "Manifest rejected: --cwd may appear exactly once.";
-        return false;
-      }
-      requested_working_directory = value;
-    }
-  }
-
-  if (options.credential_names.empty() || requested_working_directory.empty() ||
-      index >= argc) {
-    error = "Manifest rejected: at least one credential, one --cwd, and a "
-            "child after -- are required.";
-    return false;
-  }
-  for (const std::string &name : options.credential_names) {
-    if (environment.contains(name)) {
-      error = "Manifest rejected: a credential name cannot also be passed from "
-              "the parent environment.";
-      return false;
-    }
-  }
-  if (HasDisplayControl(requested_working_directory) ||
-      !InspectDirectory(requested_working_directory, options.working_directory,
-                        error) ||
-      !InspectExecutable(argv[index], options.executable, error) ||
-      HasDisplayControl(options.executable.canonical_path)) {
-    if (error.empty()) {
-      error = "Manifest rejected: executable path is not safe to display and "
-              "approve.";
-    }
-    return false;
-  }
-  ++index;
-
-  std::size_t manifest_bytes = options.working_directory.canonical_path.size() +
-                               options.executable.canonical_path.size();
-  for (; index < argc; ++index) {
-    const std::string argument = argv[index];
-    if (argument.size() > kMaxArgumentBytes) {
-      error = "Manifest rejected: one child argument exceeds 4096 bytes.";
-      return false;
-    }
-    manifest_bytes += argument.size();
-    if (manifest_bytes > kMaxManifestBytes) {
-      error = "Manifest rejected: child manifest exceeds 65535 bytes.";
-      return false;
-    }
-    options.child_arguments.push_back(argument);
-  }
-  return true;
-}
-
-std::string CanonicalManifest(const RunOptions &options) {
-  std::string manifest = "sockeye-manifest-v1\n";
-  AppendCanonicalField(manifest, "cwd",
-                       options.working_directory.canonical_path);
-  AppendCanonicalField(manifest, "exec", options.executable.canonical_path);
-  AppendCanonicalField(manifest, "exec-sha256", DigestHex(options.executable));
-
-  std::vector<std::string> credential_names = options.credential_names;
-  std::ranges::sort(credential_names);
-  for (const std::string &name : credential_names) {
-    AppendCanonicalField(manifest, "credential", name);
-  }
-  std::vector<std::string> passed_environment = options.passed_environment;
-  std::ranges::sort(passed_environment);
-  for (const std::string &name : passed_environment) {
-    AppendCanonicalField(manifest, "pass-env", name);
-  }
-  std::vector<FileIdentity> bound_files = options.bound_files;
-  std::ranges::sort(bound_files, {}, &FileIdentity::canonical_path);
-  for (const FileIdentity &file : bound_files) {
-    AppendCanonicalField(manifest, "bind-file", file.canonical_path);
-    AppendCanonicalField(manifest, "bind-sha256", DigestHex(file));
-  }
-  for (const std::string &argument : options.child_arguments) {
-    AppendCanonicalField(manifest, "arg", argument);
-  }
-  return manifest;
-}
-
-void PrintApproval(const RunOptions &options, std::string_view digest) {
-  std::fprintf(stderr, "Sockeye approval request\n");
-  std::fprintf(stderr, "  manifest: sha256:%.*s\n", 16, digest.data());
-  std::fprintf(stderr, "  working directory: %s\n",
-               options.working_directory.canonical_path.c_str());
-  std::fprintf(stderr, "  executable: %s\n",
-               options.executable.canonical_path.c_str());
-  std::fprintf(stderr, "  executable sha256: %s\n",
-               DigestHex(options.executable).c_str());
-  for (const FileIdentity &file : options.bound_files) {
-    std::fprintf(stderr, "  bound file: %s\n", file.canonical_path.c_str());
-    std::fprintf(stderr, "    sha256: %s\n", DigestHex(file).c_str());
-  }
-  for (const std::string &name : options.credential_names) {
-    std::fprintf(stderr, "  credential: %s\n", name.c_str());
-  }
-  for (const std::string &name : options.passed_environment) {
-    std::fprintf(stderr, "  pass parent env: %s\n", name.c_str());
-  }
-  for (std::size_t index = 0; index < options.child_arguments.size(); ++index) {
-    const std::string visible = VisibleArgument(options.child_arguments[index]);
-    std::fprintf(stderr, "  arg[%zu]: %s\n", index, visible.c_str());
-  }
-  std::fflush(stderr);
 }
 
 int ExitForKeychain(const KeychainError &error) {
@@ -360,17 +179,28 @@ int RunDelete(std::string_view identifier) {
   return 0;
 }
 
+int ExplainRunRequest(int argc, char **argv) {
+  RunOptions options;
+  std::string error;
+  if (!PrepareRunRequest(argc, argv, options, error)) {
+    std::fprintf(stderr, "%s\n", error.c_str());
+    return kUsageExit;
+  }
+  RenderRunRequest(stdout, options, DigestText(CanonicalRunManifest(options)), true);
+  return 0;
+}
+
 int RunApprovedChild(int argc, char **argv) {
   RunOptions options;
   std::string parse_error;
-  if (!ParseRunOptions(argc, argv, options, parse_error)) {
+  if (!PrepareRunRequest(argc, argv, options, parse_error)) {
     std::fprintf(stderr, "%s\n", parse_error.c_str());
     return kUsageExit;
   }
 
-  const std::string manifest = CanonicalManifest(options);
+  const std::string manifest = CanonicalRunManifest(options);
   const std::string manifest_digest = DigestText(manifest);
-  PrintApproval(options, manifest_digest);
+  RenderRunRequest(stderr, options, manifest_digest, false);
 
   AuthorizationContext context;
   KeychainError keychain_error;
@@ -449,6 +279,12 @@ int main(int argc, char **argv) {
   }
   if (argc == 3 && std::strcmp(argv[1], "delete") == 0) {
     return sockeye::RunDelete(argv[2]);
+  }
+  if (argc >= 2 && std::strcmp(argv[1], "doctor") == 0) {
+    return sockeye::RunDoctorCommand(argc, argv, SOCKEYE_VERSION, sockeye::RunSet);
+  }
+  if (argc >= 2 && std::strcmp(argv[1], "explain") == 0) {
+    return sockeye::ExplainRunRequest(argc, argv);
   }
   if (argc >= 3 && std::strcmp(argv[1], "run") == 0) {
     return sockeye::RunApprovedChild(argc, argv);

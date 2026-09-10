@@ -2,11 +2,20 @@ import { spawnSync } from 'node:child_process'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
-import { SCRIPT_META } from '../../../scripts/repo/test.mts'
+import {
+  SCRIPT_META,
+  ordinaryTestEnvironment,
+} from '../../../scripts/repo/test.mts'
 
 const entry = fileURLToPath(
   new URL('../../../scripts/repo/test.mts', import.meta.url),
 )
+
+test('ordinary test children cannot inherit attended selection', () => {
+  const environment = { SOCKEYE_INTERACTIVE_TESTS: '1', BUILD_MODE: 'asan' }
+  expect(ordinaryTestEnvironment(environment)).toEqual({ BUILD_MODE: 'asan' })
+  expect(environment.SOCKEYE_INTERACTIVE_TESTS).toBe('1')
+})
 
 for (const flag of ['--help', '--describe']) {
   test(`answers ${flag} without filesystem writes or child processes`, () => {

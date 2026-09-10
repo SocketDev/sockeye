@@ -50,3 +50,64 @@ sockeye delete SOCKET_RELEASE_APP_PRIVATE_KEY
 Use the built binary path if `sockeye` is not installed on your shell PATH.
 Never put the private key in a shell command, an environment file, or a
 workflow variable.
+
+## Preview a request
+
+Use `sockeye explain` with the same arguments as `sockeye run`:
+
+```sh
+sockeye explain --credential SOCKET_RELEASE_APP_PRIVATE_KEY \
+  --cwd "$PWD" -- /usr/bin/true
+```
+
+The preview prints current file hashes, credential names, escaped arguments,
+and the full manifest digest. It does not authenticate, read credential
+values, or start the child. It grants no authorization for a later run.
+
+`run` prepares the request again and requires fresh Touch ID. Parent
+environment values are neither displayed nor bound by the manifest.
+The preview does not validate unbound modules, plugins, or child behavior.
+Request paths and arguments appear in its output; keep that output local.
+
+## Recovery
+
+Run `sockeye doctor` to check terminal and biometric availability. To check one
+credential's policy metadata, run:
+
+```sh
+sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY
+```
+
+The check does not read the credential value or request authentication.
+Healthy metadata does not prove that a later credential read will succeed.
+
+To repair a missing item or an observed policy mismatch, run:
+
+```sh
+sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY --fix
+```
+
+Repair uses the existing attended setup operation. Enter the original value
+through the hidden terminal prompt and approve fresh Touch ID. A healthy item
+needs no change. If its policy cannot be determined, repair refuses mutation.
+Without a credential name, `--fix` reports required manual actions for device
+or session problems; it cannot enroll biometrics or unlock the session.
+
+Keep the original credential in its external source. Sockeye cannot export the
+stored plaintext for recovery. A new Mac requires fresh attended setup from
+that source. Changed biometric enrollment can make an existing item unusable.
+
+If a run reports a missing item or policy mismatch, check the requested name.
+Use attended setup to attempt replacement from the original source. If it
+fails, preserve the error code and stop. Deletion and recreation of an
+inaccessible item have not yet been verified across supported test devices.
+Do not weaken the access policy or use a password fallback to recover it.
+
+Cancellation, biometric lockout, and session lock must not reuse an earlier
+approval. Restore foreground terminal access and biometric availability, then
+start a fresh operation. Do not assume replacement completed after a failed
+command; verify with the intended child through another approved run.
+
+The [attended validation runbook](keychain-validation.md) tracks lifecycle and
+recovery evidence. Its hardware observations remain unverified until recorded
+against the intended binaries on both supported architectures.

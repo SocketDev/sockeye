@@ -78,7 +78,13 @@
     "build:hook-bundle": "node scripts/fleet/build-hook-bundle.mts",
     "build:hook-snapshot": "node scripts/fleet/build-hook-snapshot.mts",
     "build:snapshot-launcher": "node scripts/fleet/build-snapshot-launcher.mts",
-    "check:build-requirements": "node scripts/repo/check/build-requirements-are-valid.mts"
+    "check:build-requirements": "node scripts/repo/check/build-requirements-are-valid.mts",
+    "check:test-budget-headroom": "node scripts/fleet/check/test-budget-headroom.mts",
+    "check:diagnostics": "node scripts/repo/check/diagnostics-are-noninteractive.mts",
+    "check:request-preview": "node scripts/repo/check/request-preview-is-isolated.mts",
+    "check:native-security-tests": "node scripts/repo/check/native-security-tests-are-wired.mts",
+    "check:keychain-evidence": "node scripts/repo/check/keychain-evidence-is-complete.mts",
+    "test:keychain:interactive": "node scripts/repo/test-keychain-interactive.mts"
   },
   "devDependencies": {
     "@mdn/browser-compat-data": "catalog:",

@@ -23,9 +23,18 @@ export const SCRIPT_META: ScriptMeta = {
 
 const logger = getDefaultLogger()
 
+export function ordinaryTestEnvironment(
+  environment: NodeJS.ProcessEnv,
+): NodeJS.ProcessEnv {
+  const result = { ...environment }
+  delete result['SOCKEYE_INTERACTIVE_TESTS']
+  return result
+}
+
 async function run(script: string, args: string[] = []): Promise<number> {
   const result = await spawn(process.execPath, [script, ...args], {
     cwd: REPO_ROOT,
+    env: ordinaryTestEnvironment(process.env),
     stdio: 'inherit',
   })
   return result.code ?? 1
