@@ -3305,6 +3305,8 @@ importers:
         specifier: 'catalog:'
         version: 26.4.0
 
+  .claude/hooks/fleet/task-scope-guard: {}
+
   .claude/hooks/fleet/test-dir-name-guard:
     dependencies:
       '@socketsecurity/lib-stable':
@@ -3839,6 +3841,8 @@ importers:
   .config/fleet/oxlint-plugin/fleet/prefer-shell-win32: {}
 
   .config/fleet/oxlint-plugin/fleet/prefer-socket-lib-compare-str: {}
+
+  .config/fleet/oxlint-plugin/fleet/prefer-socket-lib-env: {}
 
   .config/fleet/oxlint-plugin/fleet/prefer-socket-lib-error-message: {}
 
