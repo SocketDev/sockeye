@@ -56,10 +56,9 @@ export function computeCreationCacheHash(
       )
     }
 
-    cacheHash = computeSourceHash(
-      data.sourcePaths,
-      fullMetadata !== '' ? fullMetadata : platformMetadata,
-    )
+    cacheHash = computeSourceHash(data.sourcePaths, {
+      platformMetadata: fullMetadata !== '' ? fullMetadata : platformMetadata,
+    })
     logger.substep(`Cache key: ${cacheHash.substring(0, 12)}...`)
   }
 

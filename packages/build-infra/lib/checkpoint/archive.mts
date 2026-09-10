@@ -182,7 +182,7 @@ export async function createCheckpointArchive(
         tarBase,
         tempExtractDir,
       )
-      artifactHash = computeSourceHash([extractedArtifactPath], undefined, {
+      artifactHash = computeSourceHash([extractedArtifactPath], {
         relativeTo: tempExtractDir,
       })
       logger.substep(`Artifact hash: ${artifactHash.substring(0, 12)}...`)

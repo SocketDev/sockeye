@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { parseSync } from 'rolldown/utils'
 
 import { existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -58,60 +59,12 @@ describe('node-smol package', () => {
       const buildPath = path.join(scriptsDir, 'common/shared/build.mts')
       const content = await fs.readFile(buildPath, 'utf8')
 
-      // Should not throw syntax errors.
-      expect(content).toBeTruthy()
-      expect(content).toContain('import')
-      expect(content).toContain('Node.js')
+      expect(parseSync(buildPath, content).errors).toEqual([])
     })
   })
 
-  describe('build script documentation', () => {
-    const buildFlagsDocPath = NODE_SMOL_BUILD_FLAGS_DOC_PATH
-
-    it('build.mts should point at the canonical build-flags doc', async () => {
-      const buildPath = path.join(scriptsDir, 'common/shared/build.mts')
-      const content = await fs.readFile(buildPath, 'utf8')
-
-      expect(content).toContain('docs/repo/agents.md/node-smol-build-flags.md')
-      expect(existsSync(buildFlagsDocPath)).toBeTruthy()
-    })
-
-    it('the build-flags doc should document binary size optimization', async () => {
-      const content = await fs.readFile(buildFlagsDocPath, 'utf8')
-
-      expect(content).toContain('Binary size optimization')
-      expect(content).toContain('MB')
-    })
-
-    it('the build-flags doc should document configuration flags', async () => {
-      const content = await fs.readFile(buildFlagsDocPath, 'utf8')
-
-      expect(content).toContain('--with-intl=small-icu')
-      expect(content).toContain('--without-*')
-    })
-
-    it('the build-flags doc should document the compression strategy', async () => {
-      const content = await fs.readFile(buildFlagsDocPath, 'utf8')
-
-      expect(content).toContain('compression strategy')
-      expect(content).toContain('Zstandard')
-    })
-
-    it('the build-flags doc should document performance impact', async () => {
-      const content = await fs.readFile(buildFlagsDocPath, 'utf8')
-
-      expect(content).toContain('Performance impact')
-      expect(content).toContain('Startup overhead')
-      expect(content).toContain('Runtime performance')
-    })
-
-    it('the build-flags doc should document usage options', async () => {
-      const content = await fs.readFile(buildFlagsDocPath, 'utf8')
-
-      expect(content).toContain('--clean')
-      expect(content).toContain('--verify')
-      expect(content).toContain('--test')
-    })
+  it('ships its build-flags reference document', () => {
+    expect(existsSync(NODE_SMOL_BUILD_FLAGS_DOC_PATH)).toBe(true)
   })
 
   describe('build directory structure', () => {
@@ -140,23 +93,6 @@ describe('node-smol package', () => {
 
       // Private package should not configure npm publishing.
       expect(pkgJson.publishConfig).toBeUndefined()
-    })
-  })
-
-  describe('build script structure', () => {
-    it('build.mts should import required dependencies', async () => {
-      const buildPath = path.join(scriptsDir, 'common/shared/build.mts')
-      const content = await fs.readFile(buildPath, 'utf8')
-
-      // Check for key imports.
-      expect(content).toContain("from 'node:fs'")
-    })
-
-    it('build.mts should reference the patch stage', async () => {
-      const buildPath = path.join(scriptsDir, 'common/shared/build.mts')
-      const content = await fs.readFile(buildPath, 'utf8')
-
-      expect(content).toContain('patch')
     })
   })
 

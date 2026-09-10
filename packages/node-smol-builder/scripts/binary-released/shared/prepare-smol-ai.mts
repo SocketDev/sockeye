@@ -25,9 +25,9 @@ export async function copySmolAiArtifacts(
     platformArch,
   )
   await fs.mkdir(buildDir, { recursive: true })
-  await execBuildStep(
-    'cmake',
-    [
+  await execBuildStep('cmake', {
+    cwd: LANGUAGE_MODEL_INFRA_DIR,
+    args: [
       '-S',
       LANGUAGE_MODEL_INFRA_DIR,
       '-B',
@@ -37,13 +37,11 @@ export async function copySmolAiArtifacts(
       `-DCMAKE_BUILD_TYPE=${buildMode === 'prod' ? 'Release' : 'Debug'}`,
       '-DSMOL_AI_BUILD_NAPI=OFF',
     ],
-    { cwd: LANGUAGE_MODEL_INFRA_DIR },
-  )
-  await execBuildStep(
-    'cmake',
-    ['--build', buildDir, '--target', 'smol_ai_core', '--parallel'],
-    { cwd: LANGUAGE_MODEL_INFRA_DIR },
-  )
+  })
+  await execBuildStep('cmake', {
+    cwd: LANGUAGE_MODEL_INFRA_DIR,
+    args: ['--build', buildDir, '--target', 'smol_ai_core', '--parallel'],
+  })
 
   const libraries =
     process.platform === 'win32'

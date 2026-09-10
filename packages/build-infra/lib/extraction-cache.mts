@@ -100,12 +100,15 @@ export function collectFiles(dirPath: string): string[] {
  */
 export function computeSourceHash(
   sourcePaths: readonly string[],
-  platformMetadata?: string | undefined,
-  options?: { relativeTo?: string | undefined } | undefined,
+  options?:
+    | { relativeTo?: string | undefined; platformMetadata?: string | undefined }
+    | undefined,
 ): string {
   const opts = { __proto__: null, ...options } as {
     relativeTo?: string | undefined
+    platformMetadata?: string | undefined
   }
+  const platformMetadata = opts.platformMetadata
   const relativeTo = opts.relativeTo
   // Expand directories to individual files
   const expandedPaths: string[] = []

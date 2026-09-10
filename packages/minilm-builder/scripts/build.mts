@@ -43,6 +43,7 @@ import {
   verifyModels,
 } from './build-phases.mts'
 import { getBuildPaths, getCurrentPlatform } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -92,7 +93,7 @@ async function initBuildContext() {
   // non-source checkpoints. Model builds run natively per host (no cross-
   // compile), so passing process.* is safe.
   const targetPlatform = process.platform
-  const targetArch = process.env['TARGET_ARCH'] || process.arch
+  const targetArch = getEnvValue('TARGET_ARCH') || process.arch
   const { buildDir, cacheDir, modelsDir } = getBuildPaths(
     BUILD_MODE,
     platformArch,

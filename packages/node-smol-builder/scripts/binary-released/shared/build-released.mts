@@ -58,6 +58,7 @@ import {
 import { prepareExternalSources } from './prepare-external-sources.mts'
 import { cloneNodeSource } from '../../source-copied/shared/copy-source.mts'
 import { applySocketPatches } from '../../source-patched/shared/apply-patches.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -155,11 +156,12 @@ export async function buildRelease(config, buildOptions = {}) {
    */
   const CPU_COUNT = (() => {
     // Check for explicit override via environment variable
-    if (process.env['BUILD_JOBS']) {
-      const envJobs = Number.parseInt(process.env['BUILD_JOBS'], 10)
+    const buildJobs = getEnvValue('BUILD_JOBS')
+    if (buildJobs) {
+      const envJobs = Number.parseInt(buildJobs, 10)
       if (Number.isNaN(envJobs) || envJobs < 1) {
         throw new Error(
-          `Invalid BUILD_JOBS value: ${process.env['BUILD_JOBS']} (must be a positive integer)`,
+          `Invalid BUILD_JOBS value: ${getEnvValue('BUILD_JOBS')} (must be a positive integer)`,
         )
       }
       return envJobs

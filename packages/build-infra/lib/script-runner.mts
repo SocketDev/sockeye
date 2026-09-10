@@ -124,9 +124,9 @@ export async function runParallel(
 export async function runPnpmScript(
   packageName: string,
   scriptName: string,
-  args: string[] = [],
-  options: SpawnExtra = {},
+  options: SpawnExtra & { args?: string[] | undefined } = {},
 ) {
+  const { args = [], ...spawnOptions } = options
   const pnpmResolved = await which('pnpm', { nothrow: true })
   // which() may return string[] under some option shapes — take the first hit.
   const pnpmPath = Array.isArray(pnpmResolved) ? pnpmResolved[0] : pnpmResolved
@@ -139,7 +139,7 @@ export async function runPnpmScript(
   return spawn(pnpmPath, pnpmArgs, {
     shell: WIN32,
     stdio: 'inherit',
-    ...options,
+    ...spawnOptions,
   })
 }
 
@@ -154,9 +154,9 @@ export async function runPnpmScript(
  */
 export async function runPnpmScriptAll(
   scriptName: string,
-  args: string[] = [],
-  options: SpawnExtra = {},
+  options: SpawnExtra & { args?: string[] | undefined } = {},
 ) {
+  const { args = [], ...spawnOptions } = options
   const pnpmResolved = await which('pnpm', { nothrow: true })
   // which() may return string[] under some option shapes — take the first hit.
   const pnpmPath = Array.isArray(pnpmResolved) ? pnpmResolved[0] : pnpmResolved
@@ -169,7 +169,7 @@ export async function runPnpmScriptAll(
   return spawn(pnpmPath, pnpmArgs, {
     shell: WIN32,
     stdio: 'inherit',
-    ...options,
+    ...spawnOptions,
   })
 }
 
@@ -184,12 +184,12 @@ export async function runPnpmScriptAll(
  */
 export async function runQuiet(
   command: string,
-  args: string[] = [],
-  options: SpawnExtra = {},
+  options: SpawnExtra & { args?: string[] | undefined } = {},
 ) {
+  const { args = [], ...spawnOptions } = options
   return spawn(command, args, {
     shell: WIN32,
-    ...options,
+    ...spawnOptions,
   })
 }
 
@@ -241,7 +241,10 @@ export const pnpm = {
   /**
    * Build all packages or specific package.
    */
-  build: async (packageName?: string | undefined, options: SpawnExtra = {}) => {
+  build: async (
+    options: SpawnExtra & { packageName?: string | undefined } = {},
+  ) => {
+    const { packageName, ...spawnOptions } = options
     logger.step(packageName ? `Building ${packageName}` : 'Building packages')
     const pnpmResolved = await which('pnpm', { nothrow: true })
     // which() may return string[] under some option shapes — take the first hit.
@@ -258,7 +261,7 @@ export const pnpm = {
     return spawn(pnpmPath, args, {
       shell: WIN32,
       stdio: 'inherit',
-      ...options,
+      ...spawnOptions,
     })
   },
 
@@ -285,7 +288,10 @@ export const pnpm = {
   /**
    * Run tests in specific package or all packages.
    */
-  test: async (packageName?: string | undefined, options: SpawnExtra = {}) => {
+  test: async (
+    options: SpawnExtra & { packageName?: string | undefined } = {},
+  ) => {
+    const { packageName, ...spawnOptions } = options
     logger.step(packageName ? `Testing ${packageName}` : 'Running tests')
     const pnpmResolved = await which('pnpm', { nothrow: true })
     // which() may return string[] under some option shapes — take the first hit.
@@ -302,7 +308,7 @@ export const pnpm = {
     return spawn(pnpmPath, args, {
       shell: WIN32,
       stdio: 'inherit',
-      ...options,
+      ...spawnOptions,
     })
   },
 }

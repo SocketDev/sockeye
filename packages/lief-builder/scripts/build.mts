@@ -48,6 +48,7 @@ import {
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { LIEF_REQUIRED_FILES } from '../lib/required-files.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -90,7 +91,7 @@ export function getLiefBuildDirs(platformArch) {
 export function getCurrentLiefPlatformArch() {
   const libc = detectLibc()
   // Respect TARGET_ARCH for cross-compilation (set by workflows/Makefiles)
-  const arch = process.env['TARGET_ARCH'] || process.arch
+  const arch = getEnvValue('TARGET_ARCH') || process.arch
   // Use asset platform naming (win instead of win32).
   return getAssetPlatformArch(process.platform, arch, libc)
 }
@@ -906,7 +907,7 @@ async function downloadLiefCheckpoint({ platformArch, buildDir }) {
       const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
 
       // Extract arch from platformArch for checkpoint (e.g., "darwin-arm64" -> "arm64")
-      const targetArch = process.env['TARGET_ARCH'] || process.arch
+      const targetArch = getEnvValue('TARGET_ARCH') || process.arch
       const targetPlatform = isWin32() ? 'win' : process.platform
 
       await createCheckpoint(
@@ -975,7 +976,7 @@ async function downloadLiefCheckpoint({ platformArch, buildDir }) {
 
 function configureLiefWindowsCompiler(cmakeArgs) {
   // Support cross-compilation via TARGET_ARCH environment variable.
-  const targetArch = process.env['TARGET_ARCH']
+  const targetArch = getEnvValue('TARGET_ARCH')
   const isCrossCompileArm64 = targetArch === 'aarch64' || targetArch === 'arm64'
 
   // Use cross-compiler for ARM64, native gcc for x64.
@@ -1054,7 +1055,7 @@ async function configureLiefBuild({ liefBuildDir }) {
   // miscompile via downstream link-time errors ("ignoring file ...
   // found architecture 'arm64', required architecture 'x86_64'").
   if (process.platform === 'darwin') {
-    const targetArch = process.env['TARGET_ARCH'] || process.arch
+    const targetArch = getEnvValue('TARGET_ARCH') || process.arch
     const osxArch = targetArch === 'x64' ? 'x86_64' : 'arm64'
     cmakeArgs.push(`-DCMAKE_OSX_ARCHITECTURES=${osxArch}`)
     logger.info(
@@ -1319,7 +1320,7 @@ async function main() {
     logger.info('')
 
     // Create checkpoint.
-    const lbTargetArch = process.env['TARGET_ARCH'] || process.arch
+    const lbTargetArch = getEnvValue('TARGET_ARCH') || process.arch
     const lbTargetPlatform = isWin32() ? 'win' : process.platform
     await createCheckpoint(
       buildDir,

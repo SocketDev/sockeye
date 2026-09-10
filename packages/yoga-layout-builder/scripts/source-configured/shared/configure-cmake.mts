@@ -18,6 +18,7 @@ import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { getOptimizationFlags } from '../../lib/optimization-flags.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -69,21 +70,18 @@ export async function configureCMake(config) {
   const toolchainSuffix = 'cmake/Modules/Platform/Emscripten.cmake'
   const searchPaths = []
 
-  if (process.env['EMSCRIPTEN']) {
+  const emscripten = getEnvValue('EMSCRIPTEN')
+  if (emscripten) {
     searchPaths.push(
-      path.join(process.env['EMSCRIPTEN'], toolchainSuffix),
+      path.join(emscripten, toolchainSuffix),
       // Homebrew: EMSCRIPTEN is bin/, toolchain is in sibling libexec/
-      path.join(process.env['EMSCRIPTEN'], '..', 'libexec', toolchainSuffix),
+      path.join(emscripten, '..', 'libexec', toolchainSuffix),
     )
   }
-  if (process.env['EMSDK']) {
+  const emsdk = getEnvValue('EMSDK')
+  if (emsdk) {
     searchPaths.push(
-      path.join(
-        process.env['EMSDK'],
-        'upstream',
-        'emscripten',
-        toolchainSuffix,
-      ),
+      path.join(emsdk, 'upstream', 'emscripten', toolchainSuffix),
     )
   }
 

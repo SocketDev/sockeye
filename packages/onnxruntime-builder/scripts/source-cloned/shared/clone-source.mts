@@ -1,3 +1,7 @@
+import {
+  getDefaultFormatting,
+  stringifyWithFormatting,
+} from '@socketsecurity/lib-stable/json/format'
 /**
  * Source cloning phase for ONNX Runtime.
  *
@@ -287,7 +291,7 @@ export async function cloneOnnxSource(config) {
   if (existsSync(path.dirname(wasmScopePath))) {
     await fs.writeFile(
       wasmScopePath,
-      `${JSON.stringify({ type: 'commonjs' }, null, 2)}\n`,
+      stringifyWithFormatting({ type: 'commonjs' }, getDefaultFormatting()),
       'utf8',
     )
     logger.success('Scoped CommonJS package.json for onnxruntime/wasm')

@@ -63,6 +63,7 @@ import {
   downloadSocketBtmRelease,
 } from '@socketsecurity/lib-stable/releases/socket-btm'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -86,8 +87,8 @@ const packageRoot = CURL_PACKAGE_ROOT
 const curlUpstream = path.join(packageRoot, 'upstream', 'curl')
 const mbedtlsUpstream = path.join(packageRoot, 'upstream', 'mbedtls')
 
-const CROSS_COMPILE = process.env['CROSS_COMPILE'] === '1'
-const TARGET_ARCH = process.env['TARGET_ARCH'] || process.arch
+const CROSS_COMPILE = getEnvValue('CROSS_COMPILE') === '1'
+const TARGET_ARCH = getEnvValue('TARGET_ARCH') || process.arch
 
 /**
  * Get build directories for a given platform-arch.

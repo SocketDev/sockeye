@@ -13,6 +13,7 @@ import { parseArgs } from 'node:util'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getFeature } from '../../lib/smol-features.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -37,11 +38,12 @@ const VALID_CHECKPOINTS = [
  * job).
  */
 export function calculateCpuCount() {
-  if (process.env['BUILD_JOBS']) {
-    const envJobs = Number.parseInt(process.env['BUILD_JOBS'], 10)
+  const buildJobs = getEnvValue('BUILD_JOBS')
+  if (buildJobs) {
+    const envJobs = Number.parseInt(buildJobs, 10)
     if (Number.isNaN(envJobs) || envJobs < 1) {
       throw new Error(
-        `Invalid BUILD_JOBS value: ${process.env['BUILD_JOBS']} (must be a positive integer)`,
+        `Invalid BUILD_JOBS value: ${getEnvValue('BUILD_JOBS')} (must be a positive integer)`,
       )
     }
     return envJobs

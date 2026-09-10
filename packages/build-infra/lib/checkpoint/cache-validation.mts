@@ -75,7 +75,9 @@ export function computeBinaryCheckpointHash(
     lief: liefMetadata,
     configureFlags: configureFlagsMetadata,
   })
-  return computeSourceHash(sourcePaths, fullMetadata || platformMetadata)
+  return computeSourceHash(sourcePaths, {
+    platformMetadata: fullMetadata || platformMetadata,
+  })
 }
 
 export function validateCheckpointBuildOptions(

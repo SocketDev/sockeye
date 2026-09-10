@@ -13,7 +13,6 @@ import * as binModule from '@socketsecurity/lib-stable/exe/path/which'
 import * as spawnModule from '@socketsecurity/lib-stable/process/spawn/child'
 
 import {
-  pnpm,
   runParallel,
   runPnpmScript,
   runPnpmScriptAll,
@@ -86,7 +85,9 @@ describe('script-runner', () => {
     it('should pass additional arguments to script', async () => {
       mockSpawn.mockResolvedValue({ code: 0 })
 
-      await runPnpmScript('my-package', 'test', ['--coverage', '--watch'])
+      await runPnpmScript('my-package', 'test', {
+        args: ['--coverage', '--watch'],
+      })
 
       expect(mockSpawn).toHaveBeenCalledWith(
         '/usr/local/bin/pnpm',
@@ -108,9 +109,10 @@ describe('script-runner', () => {
     it('should merge custom options', async () => {
       mockSpawn.mockResolvedValue({ code: 0 })
 
-      await runPnpmScript('my-package', 'build', [], {
+      await runPnpmScript('my-package', 'build', {
         cwd: '/custom/path',
         env: { NODE_ENV: 'test' },
+        args: [],
       })
 
       expect(mockSpawn).toHaveBeenCalledWith(
@@ -152,7 +154,7 @@ describe('script-runner', () => {
     it('should pass arguments to all packages', async () => {
       mockSpawn.mockResolvedValue({ code: 0 })
 
-      await runPnpmScriptAll('build', ['--prod'])
+      await runPnpmScriptAll('build', { args: ['--prod'] })
 
       expect(mockSpawn).toHaveBeenCalledWith(
         '/usr/local/bin/pnpm',
@@ -327,7 +329,7 @@ describe('script-runner', () => {
         stdout: 'output',
       })
 
-      const result = await runQuiet('echo', ['test'])
+      const result = await runQuiet('echo', { args: ['test'] })
 
       expect(mockSpawn).toHaveBeenCalledWith(
         'echo',
@@ -342,7 +344,7 @@ describe('script-runner', () => {
     it('should not use inherit stdio', async () => {
       mockSpawn.mockResolvedValue({ code: 0 })
 
-      await runQuiet('echo', ['test'])
+      await runQuiet('echo', { args: ['test'] })
 
       const callArgs = mockSpawn.mock.calls[0]![2]!
       expect(callArgs.stdio).not.toBe('inherit')
@@ -351,7 +353,10 @@ describe('script-runner', () => {
     it('should merge custom options', async () => {
       mockSpawn.mockResolvedValue({ code: 0 })
 
-      await runQuiet('echo', ['test'], { env: { TEST: '1' } })
+      await runQuiet('echo', {
+        env: { TEST: '1' },
+        args: ['test'],
+      })
 
       expect(mockSpawn).toHaveBeenCalledWith(
         'echo',
@@ -359,138 +364,6 @@ describe('script-runner', () => {
         expect.objectContaining({
           env: { TEST: '1' },
         }),
-      )
-    })
-  })
-
-  describe('pnpm.install', () => {
-    it('should run pnpm install with frozen lockfile', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.install()
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/usr/local/bin/pnpm',
-        ['install', '--frozen-lockfile'],
-        expect.objectContaining({
-          stdio: 'inherit',
-        }),
-      )
-    })
-
-    it('should throw error if pnpm not found', async () => {
-      mockWhich.mockResolvedValue(undefined)
-
-      await expect(pnpm.install()).rejects.toThrow('pnpm not found in PATH')
-    })
-  })
-
-  describe('pnpm.build', () => {
-    it('should build all packages when no package name provided', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.build()
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/usr/local/bin/pnpm',
-        ['run', '-r', 'build'],
-        expect.objectContaining({
-          stdio: 'inherit',
-        }),
-      )
-    })
-
-    it('should build specific package when name provided', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.build('my-package')
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/usr/local/bin/pnpm',
-        ['--filter', 'my-package', 'run', 'build'],
-        expect.objectContaining({
-          stdio: 'inherit',
-        }),
-      )
-    })
-
-    it('should throw error if pnpm not found', async () => {
-      mockWhich.mockResolvedValue(undefined)
-
-      await expect(pnpm.build()).rejects.toThrow('pnpm not found in PATH')
-    })
-  })
-
-  describe('pnpm.test', () => {
-    it('should run tests in all packages when no package name provided', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.test()
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/usr/local/bin/pnpm',
-        ['run', '-r', 'test'],
-        expect.objectContaining({
-          stdio: 'inherit',
-        }),
-      )
-    })
-
-    it('should run tests in specific package when name provided', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.test('my-package')
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/usr/local/bin/pnpm',
-        ['--filter', 'my-package', 'run', 'test'],
-        expect.objectContaining({
-          stdio: 'inherit',
-        }),
-      )
-    })
-
-    it('should throw error if pnpm not found', async () => {
-      mockWhich.mockResolvedValue(undefined)
-
-      await expect(pnpm.test()).rejects.toThrow('pnpm not found in PATH')
-    })
-  })
-
-  describe('integration scenarios', () => {
-    it('should handle typical monorepo workflow', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      // Install dependencies
-      await pnpm.install()
-
-      // Build all packages
-      await pnpm.build()
-
-      // Run tests
-      await pnpm.test()
-
-      expect(mockSpawn).toHaveBeenCalledTimes(3)
-    })
-
-    it('should handle package-specific build and test', async () => {
-      mockSpawn.mockResolvedValue({ code: 0 })
-
-      await pnpm.build('onnxruntime-builder')
-      await pnpm.test('onnxruntime-builder')
-
-      expect(mockSpawn).toHaveBeenCalledTimes(2)
-      expect(mockSpawn).toHaveBeenNthCalledWith(
-        1,
-        '/usr/local/bin/pnpm',
-        ['--filter', 'onnxruntime-builder', 'run', 'build'],
-        expect.anything(),
-      )
-      expect(mockSpawn).toHaveBeenNthCalledWith(
-        2,
-        '/usr/local/bin/pnpm',
-        ['--filter', 'onnxruntime-builder', 'run', 'test'],
-        expect.anything(),
       )
     })
   })

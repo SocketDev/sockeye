@@ -19,6 +19,7 @@ import { errorMessage } from 'local-build-infra/lib/error-utils'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getSockeyeBinaryPath } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -50,7 +51,7 @@ async function main() {
   // (common.mk would otherwise default BUILD_MODE to prod under CI and drop the
   // platform-arch segment when PLATFORM_ARCH is unset).
   const platformArch = `${process.platform}-${process.arch}`
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+  const mode = getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
 
   logger.info(`Building sockeye daemon with ${makefile} (${mode})…`)
   // execBuildCommand throws on a non-zero exit, so reaching the next line means make won.

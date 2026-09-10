@@ -32,6 +32,7 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -151,7 +152,7 @@ async function main() {
     throw new Error(`node_api.h not found under ${nodeInclude}.`)
   }
 
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+  const mode = getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
   const platformArch = `${process.platform}-${process.arch}`
   const outDir = getKeychainAddonOutDir(mode, platformArch)
   await mkdir(outDir, { recursive: true })

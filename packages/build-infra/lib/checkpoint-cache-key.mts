@@ -114,7 +114,9 @@ export function computeBuildInputsFingerprint(config: {
     ...config,
   } as typeof config
   const existingDirs = dirs.filter(dir => existsSync(dir))
-  return computeSourceHash(existingDirs, `node-${nodeVersion}`)
+  return computeSourceHash(existingDirs, {
+    platformMetadata: `node-${nodeVersion}`,
+  })
 }
 
 /**

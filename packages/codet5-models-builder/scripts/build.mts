@@ -40,6 +40,7 @@ import {
   quantizeModels,
 } from './build-phases.mts'
 import { getBuildPaths, getCurrentPlatform } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -92,7 +93,7 @@ async function initBuildContext() {
   // no cross-compile). createCheckpoint now throws without these for non-source
   // checkpoints.
   const targetPlatform = process.platform
-  const targetArch = process.env['TARGET_ARCH'] || process.arch
+  const targetArch = getEnvValue('TARGET_ARCH') || process.arch
   const {
     buildDir,
     configFile,

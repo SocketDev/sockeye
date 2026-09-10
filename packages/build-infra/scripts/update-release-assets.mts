@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 import {
+  getDefaultFormatting,
+  stringifyWithFormatting,
+} from '@socketsecurity/lib-stable/json/format'
+import {
   BUILD_RELEASE_ASSETS_FILE,
   getBuildTempDir,
   getReleaseChecksumDownloadPath,
@@ -245,7 +249,7 @@ export async function writeReleaseAssetUpdates(config) {
 
     await fs.writeFile(
       BUILD_RELEASE_ASSETS_FILE,
-      JSON.stringify(output, null, 2) + '\n',
+      stringifyWithFormatting(output, getDefaultFormatting()),
       'utf8',
     )
     logger.success(`Updated ${BUILD_RELEASE_ASSETS_FILE}`)

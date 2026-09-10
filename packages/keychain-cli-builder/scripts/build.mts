@@ -15,6 +15,7 @@ import { errorMessage } from 'local-build-infra/lib/error-utils'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getKeychainCliBinaryPath } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
@@ -29,17 +30,22 @@ async function main(): Promise<void> {
   if (!makefile) {
     throw new Error(`socket-keychain does not support ${process.platform}`)
   }
-  const mode = process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+  const mode = getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
   const platformArch = `${process.platform}-${process.arch}`
-  const releaseVersion = process.env['RELEASE_VERSION']
+  const releaseVersion = getEnvValue('RELEASE_VERSION')
   const makeArgs = ['-f', makefile]
   if (releaseVersion) {
     makeArgs.push(`VERSION=${releaseVersion}`)
   }
   logger.info(`Building socket-keychain (${mode}, ${platformArch})…`)
-  await execBuildStep('make', makeArgs, {
+  await execBuildStep('make', {
     cwd: packageRoot,
-    env: { ...process.env, BUILD_MODE: mode, PLATFORM_ARCH: platformArch },
+    env: {
+      ...process.env,
+      BUILD_MODE: mode,
+      PLATFORM_ARCH: platformArch,
+    },
+    args: makeArgs,
   })
   const binaryPath = getKeychainCliBinaryPath(mode, platformArch)
   if (!existsSync(binaryPath)) {

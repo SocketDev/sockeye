@@ -57,11 +57,11 @@ export function estimateBuildTime(baseMinutes: number, cores: number): number {
  */
 export async function execBuildStep(
   command: string,
-  args: string[] | string = [],
-  options: ExecOptions = {},
+  options: ExecOptions & { args?: string[] | string | undefined } = {},
 ) {
+  const { args = [], ...execOptions } = options
   const spawnOptions: ExecOptions = {
-    ...options,
+    ...execOptions,
   }
   // Only set stdio to 'inherit' when encoding is unspecified. Specifying it requires capturing output.
   if (!spawnOptions.encoding) {

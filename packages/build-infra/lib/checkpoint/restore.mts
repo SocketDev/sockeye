@@ -129,7 +129,7 @@ export async function extractLockedCheckpoint(
 
   await extractTarball(tarballPath, extractDir)
 
-  const extractedHash = computeSourceHash([targetPath], undefined, {
+  const extractedHash = computeSourceHash([targetPath], {
     relativeTo: extractDir,
   })
 

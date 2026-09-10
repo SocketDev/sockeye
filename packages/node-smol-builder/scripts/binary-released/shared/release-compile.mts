@@ -21,6 +21,7 @@ import {
   getReleaseNinjaPaths,
   getReleaseWindowsConfigurationPath,
 } from './paths.mts'
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -38,7 +39,7 @@ export async function compileReleaseBinary(config) {
   const totalCpus = os.cpus().length
   const totalRamGB = Math.floor(os.totalmem() / (1024 * 1024 * 1024))
   const isMemoryConstrained = jobCount < totalCpus
-  const isEnvOverride = Boolean(process.env['BUILD_JOBS'])
+  const isEnvOverride = Boolean(getEnvValue('BUILD_JOBS'))
 
   logger.log(
     `⏱️  Estimated time: ${timeEstimate.estimatedMinutes} minutes (${timeEstimate.minMinutes}-${timeEstimate.maxMinutes} min range)`,
@@ -177,8 +178,8 @@ export async function configureReleaseBinary(config) {
   // through to GYP-generated build files, which propagates to ninja.
   const buildEnv = {
     ...process.env,
-    CFLAGS: appendCCRemapFlags(process.env['CFLAGS']),
-    CXXFLAGS: appendCCRemapFlags(process.env['CXXFLAGS']),
+    CFLAGS: appendCCRemapFlags(getEnvValue('CFLAGS')),
+    CXXFLAGS: appendCCRemapFlags(getEnvValue('CXXFLAGS')),
   }
 
   await exec(configureCommand, configureArgs, {
