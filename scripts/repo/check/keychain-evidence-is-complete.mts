@@ -108,7 +108,10 @@ export function checkKeychainEvidenceArguments(args: string[]): string[] {
   return validateKeychainEvidence(values, artifacts, source)
 }
 
-export function runKeychainEvidenceCheck(args = process.argv.slice(2)): number {
+export function runKeychainEvidenceCheck(
+  options: { args?: string[] | undefined } = {},
+): number {
+  const { args = process.argv.slice(2) } = options
   try {
     const issues = args.length
       ? checkKeychainEvidenceArguments(args)

@@ -71,6 +71,9 @@ Request paths and arguments appear in its output; keep that output local.
 
 ## Recovery
 
+<details>
+<summary>Diagnose and repair a credential</summary>
+
 Run `sockeye doctor` to check terminal and biometric availability. To check one
 credential's policy metadata, run:
 
@@ -111,3 +114,5 @@ command; verify with the intended child through another approved run.
 The [attended validation runbook](keychain-validation.md) tracks lifecycle and
 recovery evidence. Its hardware observations remain unverified until recorded
 against the intended binaries on both supported architectures.
+
+</details>

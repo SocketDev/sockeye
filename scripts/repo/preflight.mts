@@ -43,7 +43,7 @@ async function main(): Promise<number> {
   const diagnosticsStatus = runDiagnosticsCheck()
   const previewStatus = runRequestPreviewCheck()
   const nativeSecurityStatus = runNativeSecurityTestsCheck()
-  const keychainEvidenceStatus = runKeychainEvidenceCheck([])
+  const keychainEvidenceStatus = runKeychainEvidenceCheck({ args: [] })
   const requirementStatus = runBuildRequirementsCheck()
   const fleetStatus = await runFleetPreflight(process.argv.slice(2))
   return combinePreflightResults({

@@ -90,9 +90,3 @@ export const KEYCHAIN_INTERACTIVE_SUITE = path.join(
   'e2e',
   'keychain-lifecycle.test.mts',
 )
-
-export const KEYCHAIN_VALIDATION_RUNBOOK = path.join(
-  REPO_ROOT,
-  'docs',
-  'keychain-validation.md',
-)

@@ -10,6 +10,9 @@ would affect normal credentials or enrollment. Never use real credentials.
 
 ## Preparation
 
+<details>
+<summary>Build helpers and prepare disposable fixtures</summary>
+
 Build the intended source with `pnpm run build`. Record its full source commit
 and signing class: `unsigned`, `ad-hoc`, or `developer-id`. Confirm the checkout
 has no source changes. Record the tested binary's architecture and signing
@@ -41,6 +44,8 @@ the observer launches only after approval. Record process exit status, equality,
 and total biometric prompt count in your observation notes. Do not record values
 or account metadata. Preserve failed observations as failures.
 
+</details>
+
 ## Required observations
 
 Complete each row on both architectures. A row passes only when every listed
@@ -69,6 +74,9 @@ stop testing and preserve redacted failure evidence. Reproduce the defect under
 a bounded fix plan before changing production Keychain code.
 
 ## Collect and check evidence
+
+<details>
+<summary>Record observations and validate artifacts</summary>
 
 Run the collector from a foreground terminal after performing the observations.
 Set `SOCKEYE_KEYCHAIN_EVIDENCE_FILE` to a new JSON file outside the checkout.
@@ -109,3 +117,5 @@ RELEASE-EVIDENCE must connect strict artifact checking to the release pipeline.
 After testing, remove disposable items through attended `sockeye delete`.
 Record any failed cleanup as unverified recovery. Repeat the matrix after
 access-policy, mutation, authentication, signing, or release-binary changes.
+
+</details>
