@@ -87,10 +87,10 @@ if(BUILD_TESTING)
   target_include_directories(sockeye-doctor-test PRIVATE src)
 
   add_executable(sockeye-keychain-observer
-  test/repo/e2e/native/keychain-observer.cc
+  test/repo/e2e/fixture/keychain/observer.cc
   )
   add_executable(sockeye-keychain-policy-fixture
-  test/repo/e2e/native/keychain-policy-fixture.mm
+  test/repo/e2e/fixture/keychain/policy.mm
   )
   target_compile_options(sockeye-keychain-policy-fixture PRIVATE -fobjc-arc)
 endif()
