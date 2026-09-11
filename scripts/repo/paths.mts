@@ -7,6 +7,9 @@ import path from 'node:path'
 import process from 'node:process'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
+
+export * from '../fleet/paths.mts'
+
 import {
   REPO_ROOT,
   resolvePackageJsonPath,
