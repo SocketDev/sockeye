@@ -261,6 +261,27 @@ export async function isToolInstalled(toolName) {
     await spawn(cmd, [toolName], { stdio: 'ignore' })
     return true
   } catch {
+    if (!DARWIN) {
+      return false
+    }
+  }
+  try {
+    const { code, stdout } = await spawn(
+      'brew',
+      ['list', '--versions', toolName],
+      {
+        env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
+        stdio: 'pipe',
+      },
+    )
+    return (
+      code === 0 &&
+      stdout.split(/\r?\n/u).some(line => {
+        const { 0: formula, 1: version } = line.trim().split(/\s+/u)
+        return formula === toolName && Boolean(version)
+      })
+    )
+  } catch {
     return false
   }
 }

@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+import {
+  getScriptArgs,
+  getScriptLogger,
+  scriptStdio,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Launch one explicit Agent-CI workflow through Sockeye. This process
  *   handles credential names and public variable values only. Sockeye reads
@@ -17,7 +22,6 @@ import path from 'node:path'
 import process from 'node:process'
 
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import {
@@ -42,9 +46,10 @@ export const SCRIPT_META: ScriptMeta = {
   help: `Usage: pnpm run ci:sockeye -- run --workflow .github/workflows/ci.yml [--repository <absolute-path>] [--var NAME=value] [--quiet] [--pause-on-failure] [--github-token] [--json]
 Supply each declared public workflow variable with --var NAME=value. Secret values come from Sockeye Keychain storage after Touch ID.
 The bridge rejects other workflow selectors, environment files, and secret override or variable-file flags.`,
+  json: 'result',
 }
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 export function resolveAgentCiWorkflow(
   repository: string,
@@ -99,7 +104,7 @@ export function agentCiFiles(repository: string): {
 }
 
 async function main(): Promise<void> {
-  const request = parseAgentCiRequest(process.argv.slice(2))
+  const request = parseAgentCiRequest(getScriptArgs())
   if (
     request.repository !== undefined &&
     !path.isAbsolute(request.repository)
@@ -138,7 +143,7 @@ async function main(): Promise<void> {
   )
   const result = await spawn(sockeye, sockeyeArguments, {
     cwd: repository,
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
   })
   process.exitCode = result.code ?? 1
 }

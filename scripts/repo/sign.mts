@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+import {
+  getScriptArgs,
+  getScriptLogger,
+  scriptStdio,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Sign Sockeye release binaries with the hardened runtime
  *   (release-checklist step 5). Dry-run is the default and prints the exact
@@ -16,7 +21,6 @@ import process from 'node:process'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -25,12 +29,13 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getBinaryPath, getBuildMode } from './paths.mts'
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Sign Sockeye binaries with the hardened runtime; print commands unless execution is requested.',
   help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with a Developer ID Application identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    identity (default: $SOCKEYE_SIGNING_IDENTITY)\n  --entitlements <p>   entitlements plist\n\nPaths default to the built binary for the current mode.',
+  json: 'result',
 }
 
 export const SIGNING_IDENTIFIER = 'dev.socket.sockeye'
@@ -66,7 +71,7 @@ export function displayCommand(command: string, args: string[]): string {
 async function runCodesign(args: string[]): Promise<void> {
   const result = await spawn('/usr/bin/codesign', args, {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
   })
   if (result.code !== 0) {
     throw new Error(`codesign failed with exit code ${result.code}`)
@@ -121,6 +126,7 @@ async function main(): Promise<void> {
     )
   }
   const { positionals, values } = parseArgs({
+    args: getScriptArgs(),
     options: {
       'ad-hoc': { default: false, type: 'boolean' },
       entitlements: { type: 'string' },

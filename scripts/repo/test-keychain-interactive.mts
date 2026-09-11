@@ -1,3 +1,4 @@
+import { scriptStdio } from '../fleet/process/script-output.mts'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { existsSync, readFileSync } from 'node:fs'
 import process from 'node:process'
@@ -18,6 +19,7 @@ export const SCRIPT_META: ScriptMeta = {
   describe:
     'Collect attended Keychain observations on a dedicated test Mac; never runs in CI.',
   help: 'Usage: pnpm run test:keychain:interactive\nSet SOCKEYE_KEYCHAIN_EVIDENCE_FILE to a new external JSON path, SOCKEYE_KEYCHAIN_SOURCE to the source commit, and SOCKEYE_KEYCHAIN_SIGNING_CLASS to unsigned, ad-hoc, or developer-id. Read docs/keychain-validation.md first.',
+  json: 'result',
 }
 
 export function keychainAttendanceAllowed(
@@ -49,7 +51,7 @@ export function keychainForegroundTerminal(): boolean {
   const result = spawnSync(
     getNativeTestBinaryPath('sockeye-keychain-observer'),
     ['--foreground-terminal'],
-    { stdio: 'inherit' },
+    { stdio: scriptStdio('inherit') },
   )
   return !result.error && result.status === 0
 }
@@ -85,7 +87,7 @@ export async function runKeychainInteractive(): Promise<number> {
   }
   const terminal = createInterface({
     input: process.stdin,
-    output: process.stdout,
+    output: process.argv.includes('--json') ? process.stderr : process.stdout,
   })
   try {
     if (
@@ -103,7 +105,7 @@ export async function runKeychainInteractive(): Promise<number> {
     ['scripts/fleet/test.mts', KEYCHAIN_INTERACTIVE_SUITE],
     {
       cwd: REPO_ROOT,
-      stdio: 'inherit',
+      stdio: scriptStdio('inherit'),
       env: { ...process.env, SOCKEYE_INTERACTIVE_TESTS: '1' },
     },
   )

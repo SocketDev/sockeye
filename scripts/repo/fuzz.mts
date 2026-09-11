@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import {
+  getScriptLogger,
+  scriptStdio,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Build and run the bounded native input-policy fuzz target. The default
  *   one-minute budget is long enough for a local gate and short enough to run
@@ -10,7 +14,6 @@ import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -22,9 +25,10 @@ import { getCmakeBuildDir, getOutputDir } from './paths.mts'
 export const SCRIPT_META: ScriptMeta = {
   describe: 'Build and run the bounded native input-policy fuzz target.',
   help: 'Usage: pnpm run fuzz\nEnvironment: SOCKEYE_FUZZ_SECONDS sets the positive runtime budget in seconds (default: 60).',
+  json: 'result',
 }
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 const platformArch = `${process.platform}-${process.arch}`
 const mode = 'fuzz'
 
@@ -36,7 +40,7 @@ async function run(
   const result = await spawn(command, args, {
     cwd: REPO_ROOT,
     env: env ? { ...process.env, ...env } : process.env,
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
   })
   if (result.code !== 0) {
     throw new Error(`${command} failed with exit code ${result.code}`)

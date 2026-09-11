@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { getScriptArgs, scriptStdio } from '../fleet/process/script-output.mts'
 /**
  * @file Human-only credential setup with Socket Lib prompts.
  *   Usage: `pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY`
@@ -41,6 +42,7 @@ export const SCRIPT_META: ScriptMeta = {
   describe:
     'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
   help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME>\nRequires a foreground terminal and Touch ID. Guided import lists account, vault, and item metadata before requesting the field reference.',
+  json: 'result',
 }
 
 const ONE_PASSWORD_PATHS = ['/opt/homebrew/bin/op', '/usr/local/bin/op']
@@ -84,7 +86,7 @@ async function runNative(
     )
   }
   const result = await spawn(binary, args, {
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
     ...(account ? { env: onePasswordEnvironment({ account }) } : {}),
   })
   if (result.code !== 0) {
@@ -97,16 +99,22 @@ async function runNative(
 async function manualOnePasswordReference(): Promise<
   OnePasswordSelection | undefined
 > {
-  const account = await input({
-    message: '1Password account sign-in address or user ID:',
-  })
+  const account = await input(
+    {
+      message: '1Password account sign-in address or user ID:',
+    },
+    { output: process.stderr },
+  )
   if (typeof account !== 'string' || !/^[a-zA-Z0-9.-]{1,512}$/.test(account)) {
     return undefined
   }
-  const reference = await input({
-    message:
-      'Full 1Password reference (op://Vault/item/field), not its secret value:',
-  })
+  const reference = await input(
+    {
+      message:
+        'Full 1Password reference (op://Vault/item/field), not its secret value:',
+    },
+    { output: process.stderr },
+  )
   if (typeof reference !== 'string' || !isOnePasswordReference(reference)) {
     return undefined
   }
@@ -145,16 +153,19 @@ export async function authorizeOnePasswordAccount(
 export async function chooseOnePasswordReference(
   executable: string,
 ): Promise<OnePasswordSelection | undefined> {
-  const method = await select({
-    message: 'How should Sockeye locate the 1Password field?',
-    choices: [
-      {
-        name: 'Choose account, vault, and item (recommended)',
-        value: 'guided',
-      },
-      { name: 'Enter account and full reference', value: 'reference' },
-    ],
-  })
+  const method = await select(
+    {
+      message: 'How should Sockeye locate the 1Password field?',
+      choices: [
+        {
+          name: 'Choose account, vault, and item (recommended)',
+          value: 'guided',
+        },
+        { name: 'Enter account and full reference', value: 'reference' },
+      ],
+    },
+    { output: process.stderr },
+  )
   if (method === 'reference') {
     const selected = await manualOnePasswordReference()
     if (selected) {
@@ -168,13 +179,15 @@ export async function chooseOnePasswordReference(
   return await selectOnePasswordReference(executable, {
     authorize: async account =>
       await authorizeOnePasswordAccount(executable, account),
-    choose: async (message, choices) => await select({ message, choices }),
-    field: async message => await input({ message }),
+    choose: async (message, choices) =>
+      await select({ message, choices }, { output: process.stderr }),
+    field: async message =>
+      await input({ message }, { output: process.stderr }),
   })
 }
 
 async function main(): Promise<void> {
-  const [identifier, ...extra] = process.argv.slice(2)
+  const [identifier, ...extra] = getScriptArgs()
   if (
     identifier === undefined ||
     extra.length > 0 ||
@@ -187,10 +200,13 @@ async function main(): Promise<void> {
     throw new Error('Credential setup requires a foreground terminal.')
   }
   const executable = await findOnePassword()
-  const source = await select({
-    message: `How should Sockeye set ${identifier}?`,
-    choices: credentialSourceChoices(Boolean(executable)),
-  })
+  const source = await select(
+    {
+      message: `How should Sockeye set ${identifier}?`,
+      choices: credentialSourceChoices(Boolean(executable)),
+    },
+    { output: process.stderr },
+  )
   if (!isCredentialSource(source)) {
     return
   }
@@ -206,10 +222,13 @@ async function main(): Promise<void> {
   if (!selected) {
     return
   }
-  const approved = await confirm({
-    message: `Import ${identifier} from ${selected.reference} in account ${selected.account} into Touch-ID-protected Keychain?`,
-    default: false,
-  })
+  const approved = await confirm(
+    {
+      message: `Import ${identifier} from ${selected.reference} in account ${selected.account} into Touch-ID-protected Keychain?`,
+      default: false,
+    },
+    { output: process.stderr },
+  )
   if (approved !== true) {
     return
   }

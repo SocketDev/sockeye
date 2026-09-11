@@ -108,6 +108,15 @@ test('manual reference selection authorizes before returning an import candidate
   })
   expect(mocks.authorize).toHaveBeenCalledTimes(1)
   expect(mocks.metadata).not.toHaveBeenCalled()
+  expect(mocks.choose).toHaveBeenCalledWith(expect.any(Object), {
+    output: process.stderr,
+  })
+  expect(mocks.input).toHaveBeenNthCalledWith(1, expect.any(Object), {
+    output: process.stderr,
+  })
+  expect(mocks.input).toHaveBeenNthCalledWith(2, expect.any(Object), {
+    output: process.stderr,
+  })
 })
 
 test('guided authorization failures never offer a manual fallback', async () => {

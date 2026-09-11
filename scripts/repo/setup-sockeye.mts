@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import {
+  getScriptArgs,
+  getScriptLogger,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Install the Sockeye binary: download from a GitHub release, verify the
  *   checksum, install to ~/.socket/bin, and remove the quarantine attribute so
@@ -18,8 +22,6 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
-
 import { getBinaryPath } from './paths.mts'
 import {
   spawn,
@@ -27,12 +29,13 @@ import {
 } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { abortScript } from '../fleet/process/script-result.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { safeDeleteSync } from '@socketsecurity/lib-stable/fs/safe'
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
 const BIN_PATH = path.join(BIN_DIR, 'sockeye')
@@ -46,21 +49,24 @@ const PLATFORM_ARCH = `${PLATFORM}-${ARCH}`
 async function installLocal(): Promise<void> {
   if (PLATFORM !== 'darwin') {
     logger.fail('Sockeye requires macOS.')
-    process.exit(1)
+    abortScript(1)
   }
 
   logger.log('Building prod binary…')
-  const build = await spawn('pnpm', ['run', 'build', '--', '--mode', 'prod'])
+  const env = { ...process.env, BUILD_MODE: 'prod' }
+  const build = await spawn('pnpm', ['run', 'build'], { env })
   if (build.code !== 0) {
     logger.fail('Build failed.')
-    process.exit(1)
+    abortScript(1)
   }
 
   logger.log('Ad-hoc signing with hardened runtime…')
-  const sign = await spawn('pnpm', ['run', 'sign', '--ad-hoc', '--run'])
+  const sign = await spawn('pnpm', ['run', 'sign', '--ad-hoc', '--run'], {
+    env,
+  })
   if (sign.code !== 0) {
     logger.fail('Signing failed.')
-    process.exit(1)
+    abortScript(1)
   }
 
   const prodPath = getBinaryPath('prod', PLATFORM_ARCH)
@@ -68,7 +74,7 @@ async function installLocal(): Promise<void> {
   const builtPath = existsSync(prodPath) ? prodPath : devPath
   if (!existsSync(builtPath)) {
     logger.fail(`Built binary not found at ${prodPath} or ${devPath}.`)
-    process.exit(1)
+    abortScript(1)
   }
   installFrom(builtPath)
 }
@@ -90,7 +96,7 @@ async function installFromRelease(tag: string): Promise<void> {
     logger.fail(
       `Download failed. Check that ${tag} exists and carries ${assetName}.`,
     )
-    process.exit(1)
+    abortScript(1)
   }
 
   logger.log('Verifying checksum…')
@@ -108,7 +114,7 @@ async function installFromRelease(tag: string): Promise<void> {
       .split(/\s+/)[0]
     if (expected && actual !== expected) {
       logger.fail(`Checksum mismatch. Saw: ${actual}. Want: ${expected}.`)
-      process.exit(1)
+      abortScript(1)
     }
     logger.success('Checksum verified.')
   }
@@ -118,7 +124,7 @@ async function installFromRelease(tag: string): Promise<void> {
   const extractedPath = path.join(tmpDir, 'sockeye')
   if (!existsSync(extractedPath)) {
     logger.fail(`Extracted binary not found at ${extractedPath}.`)
-    process.exit(1)
+    abortScript(1)
   }
 
   installFrom(extractedPath)
@@ -155,7 +161,7 @@ function installFrom(binaryPath: string): void {
 }
 
 export async function main(): Promise<number> {
-  const args = process.argv.slice(2)
+  const args = getScriptArgs()
   const isLocal = args.includes('--local')
   const releaseIdx = args.indexOf('--release')
   const releaseTag = releaseIdx >= 0 ? args[releaseIdx + 1] : undefined
@@ -181,6 +187,7 @@ const SCRIPT_META: ScriptMeta = {
 
 The binary installs to ~/.socket/bin/sockeye. The quarantine attribute is
 removed so it executes without the Gatekeeper prompt.`,
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

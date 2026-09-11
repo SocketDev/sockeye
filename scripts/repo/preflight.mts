@@ -1,3 +1,4 @@
+import { getScriptArgs } from '../fleet/process/script-output.mts'
 import process from 'node:process'
 
 import { main as runFleetPreflight } from '../fleet/preflight.mts'
@@ -43,9 +44,11 @@ async function main(): Promise<number> {
   const diagnosticsStatus = runDiagnosticsCheck()
   const previewStatus = runRequestPreviewCheck()
   const nativeSecurityStatus = runNativeSecurityTestsCheck()
-  const keychainEvidenceStatus = runKeychainEvidenceCheck({ args: [] })
+  const keychainEvidenceStatus = runKeychainEvidenceCheck({
+    args: process.argv.includes('--json') ? ['--json'] : [],
+  })
   const requirementStatus = runBuildRequirementsCheck()
-  const fleetStatus = await runFleetPreflight(process.argv.slice(2))
+  const fleetStatus = await runFleetPreflight(getScriptArgs())
   return combinePreflightResults({
     fleetStatus,
     requirementStatus,
@@ -59,6 +62,7 @@ async function main(): Promise<number> {
 const SCRIPT_META: ScriptMeta = {
   describe: 'Run fleet preflight and validate repository build requirements.',
   help: 'Usage: pnpm run preflight [--tests|--full]',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {

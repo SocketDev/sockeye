@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import {
+  getScriptArgs,
+  getScriptLogger,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Verify the exact archives (or binaries) that will be uploaded to a
  *   release (release-checklist steps 5–6). Everything here runs for real:
@@ -18,7 +22,6 @@ import path from 'node:path'
 import process from 'node:process'
 
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -27,12 +30,13 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { BINARY_NAME, getBinaryPath, getBuildMode } from './paths.mts'
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Verify signatures, Gatekeeper acceptance, and checksums of Sockeye release files.',
   help: 'Usage: pnpm run verify-release [archive-or-binary…]\n\nRequires macOS. Targets default to the built binary for the current mode. Verification runs codesign and spctl and prints release evidence.',
+  json: 'result',
 }
 
 export interface EvidenceRow {
@@ -170,8 +174,8 @@ async function main(): Promise<void> {
     )
   }
   const targets =
-    process.argv.length > 2
-      ? process.argv.slice(2)
+    getScriptArgs().length > 0
+      ? getScriptArgs()
       : [getBinaryPath(getBuildMode(), `${process.platform}-${process.arch}`)]
   for (const target of targets) {
     if (!existsSync(target)) {

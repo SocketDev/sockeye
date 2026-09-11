@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import {
+  getScriptLogger,
+  scriptStdio,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Configure and build the host Sockeye executable with CMake.
  */
@@ -8,7 +12,6 @@ import { readFile, stat } from 'node:fs/promises'
 import process from 'node:process'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -26,14 +29,15 @@ export const SCRIPT_META: ScriptMeta = {
   describe:
     'Build the Sockeye executable and keychain addon with the macOS toolchain.',
   help: 'Usage: pnpm run build\nEnvironment: BUILD_MODE selects the build mode; RELEASE_VERSION overrides the embedded version.',
+  json: 'result',
 }
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 async function run(command: string, args: string[]): Promise<void> {
   const result = await spawn(command, args, {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
   })
   if (result.code !== 0) {
     throw new Error(`${command} failed with exit code ${result.code}`)

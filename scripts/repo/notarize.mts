@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+import {
+  getScriptArgs,
+  getScriptLogger,
+  scriptStdio,
+} from '../fleet/process/script-output.mts'
 /**
  * @file Notarize signed Sockeye release archives and staple the ticket
  *   (release-checklist step 5). Dry-run is the default and prints the exact
@@ -19,7 +24,6 @@ import process from 'node:process'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -28,12 +32,13 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { displayCommand } from './sign.mts'
 
-const logger = getDefaultLogger()
+const logger = getScriptLogger()
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Submit signed Sockeye archives to Apple and staple supported archives; dry-run by default.',
   help: 'Usage: pnpm run notarize [options] <archive…>\n\n  --run                      submit, wait, and staple\n  --keychain-profile <name>   profile (default: $SOCKEYE_NOTARY_PROFILE)\n\nArchives must be .zip, .dmg, or .pkg. Credentials stay in the notarytool Keychain profile.',
+  json: 'result',
 }
 
 export const NOTARY_PROFILE_ENV = 'SOCKEYE_NOTARY_PROFILE'
@@ -48,7 +53,7 @@ export function isStapleable(archive: string): boolean {
 async function runXcrun(args: string[]): Promise<void> {
   const result = await spawn('/usr/bin/xcrun', args, {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
+    stdio: scriptStdio('inherit'),
   })
   if (result.code !== 0) {
     throw new Error(`xcrun ${args[0]} failed with exit code ${result.code}`)
@@ -74,6 +79,7 @@ async function main(): Promise<void> {
     )
   }
   const { positionals, values } = parseArgs({
+    args: getScriptArgs(),
     options: {
       help: { default: false, type: 'boolean' },
       'keychain-profile': { type: 'string' },

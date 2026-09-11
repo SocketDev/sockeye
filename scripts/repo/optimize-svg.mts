@@ -24,6 +24,7 @@ const SCRIPT_META: ScriptMeta = {
   describe:
     'optimizes both repository glyph variants without changing gradient references',
   help: 'Usage: pnpm run optimize:svg',
+  json: 'result',
 }
 
 if (isMainModule(import.meta.url)) {
