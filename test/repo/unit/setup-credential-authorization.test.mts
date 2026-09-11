@@ -134,3 +134,16 @@ test('guided authorization failures never offer a manual fallback', async () => 
   expect(mocks.confirm).not.toHaveBeenCalled()
   expect(mocks.input).not.toHaveBeenCalled()
 })
+
+test('guided selection receives the requested credential name for ranking', async () => {
+  mocks.choose.mockResolvedValue('guided')
+  mocks.metadata.mockResolvedValue(undefined)
+  await chooseOnePasswordReference('/example/op', {
+    credentialName: 'EXAMPLE_API_TOKEN',
+  })
+  expect(mocks.metadata).toHaveBeenCalledWith(
+    '/example/op',
+    expect.any(Object),
+    { credentialName: 'EXAMPLE_API_TOKEN' },
+  )
+})

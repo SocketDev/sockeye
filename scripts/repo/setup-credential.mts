@@ -152,6 +152,7 @@ export async function authorizeOnePasswordAccount(
 
 export async function chooseOnePasswordReference(
   executable: string,
+  options: { credentialName?: string | undefined } = {},
 ): Promise<OnePasswordSelection | undefined> {
   const method = await select(
     {
@@ -176,14 +177,18 @@ export async function chooseOnePasswordReference(
   if (method !== 'guided') {
     return undefined
   }
-  return await selectOnePasswordReference(executable, {
-    authorize: async account =>
-      await authorizeOnePasswordAccount(executable, account),
-    choose: async (message, choices) =>
-      await select({ message, choices }, { output: process.stderr }),
-    field: async message =>
-      await input({ message }, { output: process.stderr }),
-  })
+  return await selectOnePasswordReference(
+    executable,
+    {
+      authorize: async account =>
+        await authorizeOnePasswordAccount(executable, account),
+      choose: async (message, choices) =>
+        await select({ message, choices }, { output: process.stderr }),
+      field: async message =>
+        await input({ message }, { output: process.stderr }),
+    },
+    { credentialName: options.credentialName },
+  )
 }
 
 async function main(): Promise<void> {
@@ -218,7 +223,9 @@ async function main(): Promise<void> {
   if (!executable) {
     return
   }
-  const selected = await chooseOnePasswordReference(executable)
+  const selected = await chooseOnePasswordReference(executable, {
+    credentialName: identifier,
+  })
   if (!selected) {
     return
   }

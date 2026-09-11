@@ -107,14 +107,41 @@ function isOnePasswordMetadataRow(
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function normalizeCredentialLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/u)
+    .filter(Boolean)
+    .join(' ')
+}
+
+function credentialLabelScore(label: string, credentialName: string): number {
+  const target = normalizeCredentialLabel(credentialName)
+  if (!target) {
+    return 0
+  }
+  const normalized = normalizeCredentialLabel(label)
+  const tokens = new Set(target.split(' '))
+  if (normalized === target) {
+    return tokens.size + 2
+  }
+  if (` ${normalized} `.includes(` ${target} `)) {
+    return tokens.size + 1
+  }
+  const labelTokens = new Set(normalized.split(' '))
+  return [...tokens].filter(token => labelTokens.has(token)).length
+}
+
 export function onePasswordChoices(
   value: unknown,
   kind: 'account' | 'vault' | 'item',
+  options?: { credentialName?: string | undefined } | undefined,
 ): OnePasswordChoice[] {
+  const opts = { __proto__: null, ...options } as NonNullable<typeof options>
   if (!Array.isArray(value) || value.length > 10_000) {
     throw new Error('1Password metadata list is invalid or too large.')
   }
-  return value.map((entry: unknown) => {
+  const choices = value.map((entry: unknown) => {
     if (!isOnePasswordMetadataRow(entry)) {
       throw new Error('1Password metadata entry is invalid.')
     }
@@ -133,8 +160,18 @@ export function onePasswordChoices(
     ) {
       throw new Error('1Password metadata names or IDs are invalid.')
     }
-    return { __proto__: null, name: `${name} (${id})`, value: id }
+    return {
+      __proto__: null,
+      choice: { __proto__: null, name: `${name} (${id})`, value: id },
+      score:
+        kind === 'item'
+          ? credentialLabelScore(name, opts.credentialName ?? '')
+          : 0,
+    }
   })
+  return choices
+    .toSorted((left, right) => right.score - left.score)
+    .map(entry => entry.choice)
 }
 
 export function onePasswordFieldReference(
@@ -160,7 +197,12 @@ export function onePasswordFieldReference(
 export async function selectOnePasswordReference(
   executable: string,
   prompts: OnePasswordPrompts,
-  options?: { read?: typeof readOnePasswordMetadata | undefined } | undefined,
+  options?:
+    | {
+        credentialName?: string | undefined
+        read?: typeof readOnePasswordMetadata | undefined
+      }
+    | undefined,
 ): Promise<OnePasswordSelection | undefined> {
   const opts = { __proto__: null, ...options } as NonNullable<typeof options>
   const read = opts.read ?? readOnePasswordMetadata
@@ -171,6 +213,7 @@ export async function selectOnePasswordReference(
     const choices = onePasswordChoices(
       await read(executable, [...args, '--format', 'json']),
       kind,
+      { credentialName: opts.credentialName },
     )
     if (!choices.length) {
       throw new Error(

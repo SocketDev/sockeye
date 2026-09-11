@@ -324,3 +324,86 @@ test('authorization denial stops before vault, item, and field access', async ()
   expect(read).toHaveBeenCalledTimes(1)
   expect(field).not.toHaveBeenCalled()
 })
+
+test('ranks item labels by normalized exact, contained, and shared credential tokens', () => {
+  const entries = [
+    { id: 'unrelated', title: 'Deployment signing certificate' },
+    { id: 'partial', title: 'Socket API legacy' },
+    { id: 'contained', title: 'GitHub SOCKET_API_TOKEN_FOR_CLI_AND_SFW' },
+    { id: 'exact', title: 'socket-api token for cli and sfw' },
+    { id: 'reordered', title: 'SFW AND CLI FOR TOKEN API SOCKET' },
+    { id: 'same-score', title: 'API Socket notes' },
+    { id: 'unrelated-second', title: 'Release signing certificate' },
+  ]
+  const original = structuredClone(entries)
+  const choices = onePasswordChoices(entries, 'item', {
+    credentialName: 'SOCKET_API_TOKEN_FOR_CLI_AND_SFW',
+  })
+  expect(choices.map(choice => choice.value)).toEqual([
+    'exact',
+    'contained',
+    'reordered',
+    'partial',
+    'same-score',
+    'unrelated',
+    'unrelated-second',
+  ])
+  expect(entries).toEqual(original)
+  expect(choices.find(choice => choice.value === 'contained')?.name).toBe(
+    'GitHub SOCKET_API_TOKEN_FOR_CLI_AND_SFW (contained)',
+  )
+})
+
+test('ranking ignores IDs and preserves order without label matches or a usable target', () => {
+  const entries = [
+    { id: 'unrelated', title: 'Deployment' },
+    { id: 'SOCKET_API_TOKEN', title: 'Release' },
+  ]
+  for (const credentialName of [undefined, '', '___', 'SOCKET_API_TOKEN']) {
+    expect(
+      onePasswordChoices(entries, 'item', { credentialName }).map(
+        choice => choice.value,
+      ),
+    ).toEqual(['unrelated', 'SOCKET_API_TOKEN'])
+  }
+  const vaults = entries.map(entry => ({ id: entry.id, name: entry.title }))
+  expect(
+    onePasswordChoices(vaults, 'vault', { credentialName: 'Release' }).map(
+      choice => choice.value,
+    ),
+  ).toEqual(['unrelated', 'SOCKET_API_TOKEN'])
+})
+
+test('guided selection ranks only item choices and retains explicit selection', async () => {
+  const choose = vi.fn(
+    async (message: string, choices: { value: string }[]) => {
+      expect(message).toContain('1Password')
+      return choices[0]!.value
+    },
+  )
+  const read = vi.fn(async (executable: string, args: string[]) => {
+    expect(executable).toBe('/example/op')
+    if (args[0] === 'account')
+      return [{ user_uuid: ACCOUNT, url: 'example.1password.com' }]
+    if (args[0] === 'vault') return [{ id: VAULT, name: 'Example engineering' }]
+    return [
+      { id: 'unrelated-item', title: 'Deployment' },
+      { id: ITEM, title: 'GitHub SOCKET_PR_APP_PRIVATE_KEY' },
+    ]
+  })
+  const selected = await selectOnePasswordReference(
+    '/example/op',
+    {
+      authorize: async () => {},
+      choose,
+      field: async () => 'credential',
+    },
+    { credentialName: 'SOCKET_PR_APP_PRIVATE_KEY', read },
+  )
+  expect(selected?.reference).toBe(`op://${VAULT}/${ITEM}/credential`)
+  expect(choose.mock.calls[2]![1].map(choice => choice.value)).toEqual([
+    ITEM,
+    'unrelated-item',
+  ])
+  expect(choose).toHaveBeenCalledTimes(3)
+})
