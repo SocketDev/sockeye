@@ -1,8 +1,38 @@
+//#region scripts/repo/gen/bootstrap/src/workspace-migration.d.mts
+export declare function migrateWorkspaceSettings(dest: string, yaml: string): string;
+//#endregion
+//#region template/base/universal/scripts/fleet/process/script-meta.d.mts
+/**
+ * A script's self-description, answered without running its side effect.
+ * `--describe` prints `describe` verbatim — one line, what the script does —
+ * so script inventories and agents can read purpose without opening the file.
+ * `-h`/`--help` prints `describe`, a blank line, then `help`, which opens
+ * with a `Usage:` line naming the sanctioned invocation and lists the flags
+ * `main()` actually parses.
+ */
+interface ScriptMeta {
+  readonly json?: 'native' | 'result' | undefined;
+  readonly describe: string;
+  readonly help: string;
+}
+//#endregion
+//#region template/base/universal/scripts/fleet/process/script-result.d.mts
+interface ScriptResult {
+  readonly exitCode: number;
+  readonly data?: unknown | undefined;
+  readonly error?: string | undefined;
+}
+//#endregion
+//#region template/base/universal/scripts/fleet/process/run-main-minimal.d.mts
+type MainFn = () => number | void | ScriptResult | Promise<number | void | ScriptResult>;
+export declare function runMainMinimal(main: MainFn, meta: ScriptMeta): void;
+//#endregion
 //#region template/base/universal/scripts/fleet/lib/conditional-config.d.mts
-type ConfigFlag = 'bundlesVendoredDeps' | 'hasGhcr' | 'hasNapi' | 'hasPrebakes' | 'hasRust' | 'isGithubAction';
+type ConfigFlag = 'bundlesVendoredDeps' | 'hasCodeql' | 'hasCratesRegistry' | 'hasGhcr' | 'hasGithubRelease' | 'hasNapi' | 'hasPrebakes' | 'hasRust' | 'isGithubAction';
 //#endregion
 //#region scripts/repo/gen/bootstrap/src/conditional-files.d.mts
 interface ConditionalManifestGroup {
+  readonly removeWhenInactive?: boolean | undefined;
   readonly marker?: string | undefined;
   readonly capability?: string | undefined;
   readonly buildType?: string | undefined;
@@ -137,25 +167,9 @@ export declare function stripLegacyPackBlock(target: string): string;
  */
 export declare function stripLegacyUntrackEntriesFromFleetBlock(target: string): string;
 /**
- * Write the fetcher-owned `<fleet-pack>` `.gitignore` region: `.agents/` (the
- * regenerated agent mirror — dead weight in a thin consumer; the fetch
- * repopulates it) plus the wholly-fleet bundle untrack paths (see
- * fleetPackOwnedPaths). The region is REGENERATED from the manifest on every
- * run — replaced whole, so a stale entry from an earlier pack is pruned
- * instead of carried forward (the old append-only refresh accreted every
- * prior line forever). Hand-added ignores belong outside the markers and are
- * untouched, as is the cascade's `<fleet>` region — the two writers own
- * disjoint regions, so neither can discard the other's rules. The dep-0
- * bootstrap (`scripts/repo/bootstrap/`) is NOT listed: it ships via the
- * manual cascade, never the release bundle, so it never enters this untrack
- * set and stays tracked by default.
- *
- * This is the HALF that is safe to run unconditionally for a thin consumer. It
- * only edits `.gitignore`; it never touches the git index, so a member whose
- * payload is still tracked keeps every file it has committed (gitignore has no
- * effect on tracked paths). The index-mutating half lives in
- * untrackFleetPackPaths and stays behind an explicit `--thin`.
+ * Refresh exact tracked fleet paths using the active ownership classification.
  */
+export declare function fleetTrackedAllowlist(manifest: FleetFileManifest, current: readonly string[]): string;
 export declare function refreshFleetPackIgnores(config: {
   dest: string;
   manifest: FleetFileManifest;
@@ -279,12 +293,7 @@ export declare function packBeginMarker(): string;
  */
 export declare function packEndMarker(): string;
 /**
- * Splice the fetcher-owned `<fleet-pack>` block into `target`. When the
- * markers exist the whole region (markers inclusive) is REPLACED — that is
- * what prunes a stale entry; the region is wholly fetcher-owned, so hand
- * ignores belong outside it. When absent, the block is appended at end of
- * file, after the cascade's `<fleet>` region and the member's `<repo>`
- * wrapper, so the fleet splice's repo-region adjacency is never broken.
+ * Replace the nested fleet-pack inventory and preserve repo overrides.
  */
 export declare function splicePackBlock(config: {
   readonly packBlock: string;
@@ -597,7 +606,8 @@ export declare function removeTombstonedPaths(dest: string, manifest: FleetFileM
  * `.config/fleet/tsconfig.check.json`, `.gitkeep` seeds, cascade-only
  * release-excluded scripts under `scripts/fleet/` — can never be collateral.
  * Excluded conditional files without a record are pruned only when their
- * bytes match the archive. Locally customized files remain untouched.
+ * bytes match the archive or the group declares removal when inactive.
+ * Other locally customized files remain untouched.
  */
 interface PruneStaleFleetFilesOptions {
   archiveManifest?: FleetFileManifest | undefined;
@@ -662,14 +672,14 @@ export declare function installFiles(filesDir: string, dest: string, manifest: B
  */
 export declare function materializeFromLocalTemplate(dest: string, manifest: BundleManifest, options?: InstallFilesOptions | undefined): InstallFilesResult | undefined;
 /**
- * Untrack the bundle's GENERATED build outputs (`manifest.generatedPaths`)
- * from the git index after placement. The bundle SHIPS these files — placement
+ * Untrack the bundle's GENERATED build outputs (`manifest.generatedPaths`) from
+ * the git index after placement. The bundle SHIPS these files — placement
  * writes them to disk — while the fleet gitignore block ignores them and
  * `generated-outputs-are-untracked` forbids TRACKING them. A member that
- * historically committed one (fleet-pack.cjs et al., before the ignore existed)
- * heals on the next refresh: the file stays on disk, but leaves the index.
- * Non-fatal by design — a non-git dest or an already-clean index is a no-op
- * (`--ignore-unmatch`).
+ * historically committed one (fleet-pack.generated.cjs et al., before the
+ * ignore existed) heals on the next refresh: the file stays on disk, but leaves
+ * the index. Non-fatal by design — a non-git dest or an already-clean index is
+ * a no-op (`--ignore-unmatch`).
  */
 export declare function untrackGeneratedOutputs(dest: string, generatedPaths: readonly string[] | undefined): void;
 /**
@@ -1023,5 +1033,6 @@ export declare function runStatus(config: InstallConfig): Promise<number>;
  */
 export declare function installFleet(config: InstallConfig): Promise<number>;
 export declare function isMainModule(): boolean;
+export declare function main(): Promise<number>;
 //#endregion
-export { OCI_MANIFEST_ACCEPT as MANIFEST_ACCEPT };
+export { OCI_MANIFEST_ACCEPT as MANIFEST_ACCEPT, type ScriptMeta };
