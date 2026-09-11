@@ -45,10 +45,16 @@
   },
   "vitest": {
     "lanes": {
+      "mid": [
+        "packages/build-infra/test/build-pipeline.test.mts",
+        "packages/build-infra/test/checkpoint-manager.test.mts",
+        "packages/build-infra/test/checkpoint-signature-validation.test.mts"
+      ],
       "slow": [
         "**/test/**/integration/**",
         "**/test/**/e2e/**",
         "packages/bin-stub-builder/test/c-unit-tests.test.mts",
+        "packages/build-infra/test/build-env.test.mts",
         "packages/build-infra/test/checkpoint-extraction.test.mts",
         "packages/build-infra/test/get-tool-version.test.mts",
         "packages/build-infra/test/validate-checkpoints.test.mts",
