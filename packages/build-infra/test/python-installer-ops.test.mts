@@ -207,12 +207,7 @@ describe('Python package availability', () => {
   })
 
   test('collects every unavailable package without installation', async () => {
-    vi.mocked(spawn).mockResolvedValue({
-      code: 1,
-      pid: 0,
-      stdout: '',
-      stderr: '',
-    })
+    vi.mocked(spawn).mockRejectedValue(new Error('example missing import'))
     expect(
       await ensureAllPythonPackages(['example-package', 'other-package'], {
         autoInstall: false,

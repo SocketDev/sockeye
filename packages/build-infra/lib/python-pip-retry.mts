@@ -36,13 +36,24 @@ export function getPythonInstallArgs(config) {
   return args
 }
 
+export async function runPythonPipAttempt(pip, args, config) {
+  const result = await spawn(pip, args, { ...config, throws: false })
+  if (result.signal || typeof result.code !== 'number') {
+    throw new Error(
+      `Python package installation stopped at ${pip}: saw signal ${result.signal ?? 'none'} instead of an exit status. Retry after checking the process termination.`,
+      { cause: result },
+    )
+  }
+  return result
+}
+
 export async function runPythonPipRetries(config) {
   const { pip, args, spawnOptions, packageName, quiet } = {
     __proto__: null,
     ...config,
   }
-  let result = await spawn(pip, args, spawnOptions)
-  let exitCode = result.code ?? 0
+  let result = await runPythonPipAttempt(pip, args, spawnOptions)
+  let exitCode = result.code
 
   // PEP 668 runtime retry (quiet mode only): if the marker file was
   // missing but pip still rejected with the externally-managed token,
@@ -54,8 +65,8 @@ export async function runPythonPipRetries(config) {
     // Insert --break-system-packages before the trailing package
     // specifier so pip parses it as a flag, not as a package name.
     pepArgs.splice(pepArgs.length - 1, 0, '--break-system-packages')
-    result = await spawn(pip, pepArgs, spawnOptions)
-    exitCode = result.code ?? 0
+    result = await runPythonPipAttempt(pip, pepArgs, spawnOptions)
+    exitCode = result.code
   }
 
   if (exitCode !== 0 && args.includes('--only-binary=:all:')) {
@@ -76,8 +87,8 @@ export async function runPythonPipRetries(config) {
     ) {
       retryArgs.splice(retryArgs.length - 1, 0, '--break-system-packages')
     }
-    result = await spawn(pip, retryArgs, spawnOptions)
-    exitCode = result.code ?? 0
+    result = await runPythonPipAttempt(pip, retryArgs, spawnOptions)
+    exitCode = result.code
   }
 
   return exitCode
