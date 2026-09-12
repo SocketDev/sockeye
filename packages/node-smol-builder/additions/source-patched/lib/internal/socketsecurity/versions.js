@@ -1111,11 +1111,6 @@ function coerceHyphenUpper(str, ecosystem) {
 
 // Parse a range comparator (e.g., ">=1.0.0", "^2.0.0")
 function parseComparator(comp, ecosystem) {
-  comp = StringPrototypeTrim(comp)
-  if (!comp) {
-    return undefined
-  }
-
   // Standalone wildcard * matches anything
   if (comp === '*' || comp === 'x' || comp === 'X') {
     return {
