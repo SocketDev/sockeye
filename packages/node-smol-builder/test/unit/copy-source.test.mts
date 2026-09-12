@@ -59,10 +59,7 @@ test('accepts the exact source SHA and trims command output', async () => {
   )
 })
 
-for (const result of [
-  { code: 1, stdout: '' },
-  { code: 0, stdout: 'different-sha' },
-]) {
+for (const result of [{ code: 0, stdout: 'different-sha' }]) {
   test(`rejects unverifiable source ${JSON.stringify(result)}`, async () => {
     io.spawn.mockResolvedValue(result)
     await expect(
@@ -70,3 +67,11 @@ for (const result of [
     ).rejects.toThrow()
   })
 }
+
+test('propagates a failed source identity probe', async () => {
+  const failure = Object.assign(new Error('fixture Git failure'), { code: 1 })
+  io.spawn.mockRejectedValue(failure)
+  await expect(
+    verifyNodeSourceCommit('/example/source', 'example-sha'),
+  ).rejects.toBe(failure)
+})

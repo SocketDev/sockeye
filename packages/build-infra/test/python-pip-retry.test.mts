@@ -79,7 +79,8 @@ test('signal termination cannot report a successful installation or retry', asyn
       const result = {
         cmd: pip,
         args,
-        code: undefined,
+        // oxlint-disable-next-line socket/prefer-undefined-over-null -- Node reports null exit status when a signal terminates a child.
+        code: null,
         signal: 'SIGTERM',
         stdout: '',
         stderr: '',
