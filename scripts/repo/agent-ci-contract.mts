@@ -182,7 +182,10 @@ function workflowExpressions(value: string): string[] {
         }
       } else if (character === "'" || character === '"') {
         quote = character
-      } else if (character === '}' && value[index + 1] === '}') {
+      } else if (
+        character === '}' &&
+        value.charCodeAt(index + 1) === 125 /* '}' */
+      ) {
         break
       }
     }
