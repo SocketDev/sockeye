@@ -45,11 +45,9 @@ export async function checkManualBuildTool(
       if (cmdPath) {
         try {
           // eslint-disable-next-line no-await-in-loop
-          const checkResult = await spawn(cmd, args, { stdio: 'pipe' })
-          if (checkResult.code === 0) {
-            logger.success(`${name} is available`)
-            found = true
-          }
+          await spawn(cmd, args, { stdio: 'pipe' })
+          logger.success(`${name} is available`)
+          found = true
         } catch {
           // pkg-config failed, continue.
         }

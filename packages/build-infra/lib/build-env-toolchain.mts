@@ -48,7 +48,7 @@ export async function checkPython() {
   const pythonCmds = ['python3', 'python']
   const minVersion = getMinPythonVersion()
   const versionParts = minVersion.split('.').map(Number)
-  const minMajor = versionParts[0] ?? 3
+  const minMajor = versionParts[0]!
   const minMinor = versionParts[1] ?? 0
 
   for (let i = 0, { length } = pythonCmds; i < length; i += 1) {

@@ -72,9 +72,6 @@ export async function checkPythonPackageVersion(packageName, expectedVersion) {
       ['-c', `import ${packageName}; print(${packageName}.__version__)`],
       { stdio: 'pipe' },
     )
-    if (result.code !== 0) {
-      return false
-    }
     const installedVersion = (result.stdout || '').trim()
     return installedVersion === expectedVersion
   } catch {
@@ -228,7 +225,7 @@ export async function ensurePythonPackage(
       if (reinstallResult) {
         return reinstallResult
       }
-    } else if (hasCorrectVersion) {
+    } else {
       return { __proto__: null, available: true, installed: false }
     }
   } else if (isInstalled) {

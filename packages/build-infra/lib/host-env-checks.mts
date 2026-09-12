@@ -113,7 +113,7 @@ export async function checkNetworkConnectivity(): Promise<{
         'try { $null = Invoke-WebRequest -Uri "https://github.com" -Method Head -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop; Write-Output "200" } catch { Write-Output "0" }',
       ])
 
-      const statusCode = (result.stdout ?? '').trim()
+      const statusCode = result.stdout.trim()
       return {
         connected: statusCode === '200',
         statusCode: statusCode === '200' ? '200' : undefined,
@@ -132,7 +132,7 @@ export async function checkNetworkConnectivity(): Promise<{
       'https://github.com',
     ])
 
-    const statusCode = (result.stdout ?? '').trim()
+    const statusCode = result.stdout.trim()
     return {
       connected:
         statusCode === '200' || statusCode === '301' || statusCode === '302',
@@ -162,10 +162,7 @@ export async function checkPythonVersion(
   const pythonCommands = ['python3', 'python']
 
   for (let i = 0, { length } = pythonCommands; i < length; i += 1) {
-    const pythonCmd = pythonCommands[i]
-    if (!pythonCmd) {
-      continue
-    }
+    const pythonCmd = pythonCommands[i]!
     try {
       // eslint-disable-next-line no-await-in-loop
       const result = await spawn(
@@ -177,7 +174,7 @@ export async function checkPythonVersion(
         { shell: WIN32 },
       )
 
-      const version = (result.stdout ?? '').trim()
+      const version = result.stdout.trim()
       if (!version) {
         continue
       }

@@ -221,12 +221,8 @@ export async function installTools(toolNames, options = {}) {
 
     try {
       // eslint-disable-next-line no-await-in-loop
-      const success = await installTool(toolName, options)
-      if (success) {
-        installed.push(toolName)
-      } else {
-        failed.push(toolName)
-      }
+      await installTool(toolName, options)
+      installed.push(toolName)
     } catch (e) {
       // installTool throws on unsupported package manager or spawn failure.
       // Record the failure and continue with the rest of the list so the

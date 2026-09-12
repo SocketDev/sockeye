@@ -289,20 +289,9 @@ export async function createPythonVenv(config) {
       logger.substep(`Creating Python venv: ${targetVenvPath}`)
     }
 
-    const createResult = await spawn(
-      systemPython,
-      ['-m', 'venv', targetVenvPath],
-      {
-        stdio: quiet ? 'pipe' : 'inherit',
-      },
-    )
-
-    if (createResult.code !== 0) {
-      if (!quiet) {
-        logger.warn('Failed to create venv')
-      }
-      return false
-    }
+    await spawn(systemPython, ['-m', 'venv', targetVenvPath], {
+      stdio: quiet ? 'pipe' : 'inherit',
+    })
 
     // Verify venv was created
     if (existsSync(potentialPip) && existsSync(potentialPython)) {
