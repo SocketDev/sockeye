@@ -112,6 +112,7 @@ patches/vitest@5.0.0.patch linguist-generated=true
 scripts/fleet linguist-generated=true
 scripts/repo/bootstrap linguist-generated=true
 test/fleet/_shared/lib linguist-generated=true
+test/fleet/common/fixture linguist-generated=true
 test/fleet/e2e/comment-voice.test.mts linguist-generated=true
 test/fleet/integration/comment-voice.test.mts linguist-generated=true
 test/fleet/nock-loopback-passthrough.test.mts linguist-generated=true
@@ -119,6 +120,7 @@ test/fleet/registry-infra/cargo/placeholder.test.mts linguist-generated=true
 test/fleet/registry-infra/npm/placeholder.test.mts linguist-generated=true
 test/fleet/scripts/setup.mts linguist-generated=true
 test/fleet/unit/comment-voice.test.mts linguist-generated=true
+*.patch whitespace=-blank-at-eol,-space-before-tab
 # </fleet>
 # <repo>
 # </repo>

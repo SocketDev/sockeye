@@ -1,7 +1,7 @@
-# <picture><img width="32" height="32" alt="sockeye" src="https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/repo/logomark.svg"></picture> Sockeye
+# <picture><img width="32" height="32" alt="Sockeye" src="https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/repo/logomark.svg"></picture> Sockeye
 
-[![Follow @SocketSecurity](assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
-[![Follow @socket.dev on Bluesky](assets/fleet/badge-follow-bluesky.svg)](https://bsky.app/profile/socket.dev)
+[![Follow @SocketSecurity](https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
+[![Follow @socket.dev on Bluesky](https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/fleet/badge-follow-bluesky.svg)](https://bsky.app/profile/socket.dev)
 
 Touch-gated local credentials for developer tools and automation.
 
