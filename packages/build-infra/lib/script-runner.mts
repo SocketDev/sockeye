@@ -45,15 +45,11 @@ export async function runCommand(
 ): Promise<void> {
   logger.info(`Running: ${command} ${args.join(' ')}`)
 
-  const result = await spawn(command, args, {
+  await spawn(command, args, {
     cwd,
     shell: WIN32,
     stdio: 'inherit',
   })
-
-  if (result.code !== 0) {
-    throw new Error(`Command failed with exit code ${result.code}`)
-  }
 }
 
 /**
@@ -127,10 +123,8 @@ export async function runPnpmScript(
   options: SpawnExtra & { args?: string[] | undefined } = {},
 ) {
   const { args = [], ...spawnOptions } = options
-  const pnpmResolved = await which('pnpm', { nothrow: true })
-  // which() may return string[] under some option shapes — take the first hit.
-  const pnpmPath = Array.isArray(pnpmResolved) ? pnpmResolved[0] : pnpmResolved
-  if (!pnpmPath) {
+  const pnpmPath = await which('pnpm', { nothrow: true })
+  if (typeof pnpmPath !== 'string') {
     throw new Error(PNPM_NOT_FOUND_MSG)
   }
 
@@ -157,10 +151,8 @@ export async function runPnpmScriptAll(
   options: SpawnExtra & { args?: string[] | undefined } = {},
 ) {
   const { args = [], ...spawnOptions } = options
-  const pnpmResolved = await which('pnpm', { nothrow: true })
-  // which() may return string[] under some option shapes — take the first hit.
-  const pnpmPath = Array.isArray(pnpmResolved) ? pnpmResolved[0] : pnpmResolved
-  if (!pnpmPath) {
+  const pnpmPath = await which('pnpm', { nothrow: true })
+  if (typeof pnpmPath !== 'string') {
     throw new Error(PNPM_NOT_FOUND_MSG)
   }
 
@@ -246,12 +238,8 @@ export const pnpm = {
   ) => {
     const { packageName, ...spawnOptions } = options
     logger.step(packageName ? `Building ${packageName}` : 'Building packages')
-    const pnpmResolved = await which('pnpm', { nothrow: true })
-    // which() may return string[] under some option shapes — take the first hit.
-    const pnpmPath = Array.isArray(pnpmResolved)
-      ? pnpmResolved[0]
-      : pnpmResolved
-    if (!pnpmPath) {
+    const pnpmPath = await which('pnpm', { nothrow: true })
+    if (typeof pnpmPath !== 'string') {
       throw new Error(PNPM_NOT_FOUND_MSG)
     }
     const args = packageName
@@ -270,12 +258,8 @@ export const pnpm = {
    */
   install: async (options: SpawnExtra = {}) => {
     logger.step('Installing dependencies')
-    const pnpmResolved = await which('pnpm', { nothrow: true })
-    // which() may return string[] under some option shapes — take the first hit.
-    const pnpmPath = Array.isArray(pnpmResolved)
-      ? pnpmResolved[0]
-      : pnpmResolved
-    if (!pnpmPath) {
+    const pnpmPath = await which('pnpm', { nothrow: true })
+    if (typeof pnpmPath !== 'string') {
       throw new Error(PNPM_NOT_FOUND_MSG)
     }
     return spawn(pnpmPath, ['install', '--frozen-lockfile'], {
@@ -293,12 +277,8 @@ export const pnpm = {
   ) => {
     const { packageName, ...spawnOptions } = options
     logger.step(packageName ? `Testing ${packageName}` : 'Running tests')
-    const pnpmResolved = await which('pnpm', { nothrow: true })
-    // which() may return string[] under some option shapes — take the first hit.
-    const pnpmPath = Array.isArray(pnpmResolved)
-      ? pnpmResolved[0]
-      : pnpmResolved
-    if (!pnpmPath) {
+    const pnpmPath = await which('pnpm', { nothrow: true })
+    if (typeof pnpmPath !== 'string') {
       throw new Error(PNPM_NOT_FOUND_MSG)
     }
     const args = packageName

@@ -45,12 +45,13 @@ test('validates the archive before extracting with supported safeguards', async 
 })
 
 test('stops extraction when tar cannot list the archive', async () => {
-  vi.mocked(spawn).mockResolvedValueOnce({
-    code: 2,
-    pid: 0,
-    stdout: '',
-    stderr: 'fixture listing failure',
-  })
+  vi.mocked(spawn).mockRejectedValueOnce(
+    Object.assign(new Error('example listing failure'), {
+      code: 2,
+      stdout: '',
+      stderr: 'example listing failure',
+    }),
+  )
   await expect(extractTarball('example.tar.gz', 'output')).rejects.toThrow()
   expect(spawn).toHaveBeenCalledTimes(1)
 })
@@ -73,12 +74,13 @@ test('reports extraction failure after successful validation', async () => {
     stdout: 'example.mts\n',
     stderr: '',
   })
-  vi.mocked(spawn).mockResolvedValueOnce({
-    code: 2,
-    pid: 0,
-    stdout: '',
-    stderr: 'fixture extraction failure',
-  })
+  vi.mocked(spawn).mockRejectedValueOnce(
+    Object.assign(new Error('example extraction failure'), {
+      code: 2,
+      stdout: '',
+      stderr: 'example extraction failure',
+    }),
+  )
   await expect(extractTarball('example.tar.gz', 'output')).rejects.toThrow()
   expect(spawn).toHaveBeenCalledTimes(2)
 })

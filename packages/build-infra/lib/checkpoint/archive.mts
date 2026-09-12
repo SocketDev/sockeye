@@ -294,11 +294,6 @@ export async function validateCreatedCheckpointArchive(
       stdio: 'pipe',
     },
   )
-  if (listResult.code !== 0) {
-    throw new Error(
-      'Tarball validation failed - archive appears corrupted or truncated',
-    )
-  }
   const tarContents = listResult.stdout ?? ''
   if (!tarContents || !tarContents.includes(tarBase)) {
     throw new Error(`Tarball missing expected file: ${tarBase}`)

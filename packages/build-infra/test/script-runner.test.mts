@@ -205,7 +205,7 @@ describe('script-runner', () => {
         { args: ['step3'], command: 'echo' },
       ]
 
-      const result = await runSequence(commands)
+      const result = await runSequence(commands, { throws: false })
 
       expect(result).toBe(1)
       // Third command not executed

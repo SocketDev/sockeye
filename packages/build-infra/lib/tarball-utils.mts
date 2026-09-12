@@ -104,10 +104,7 @@ export async function extractTarball(
   await addTarExtractionOptions(tarArgs, { stripComponents, overwrite })
 
   // Extract.
-  const result = await spawn(tarBin, tarArgs, { stdio })
-  if (result.code !== 0) {
-    throw new Error(`tar extraction failed with exit code ${result.code}`)
-  }
+  await spawn(tarBin, tarArgs, { stdio })
 
   return files
 }
@@ -133,12 +130,6 @@ export async function validateTarballPaths(
     stdio: 'pipe',
   })
 
-  if (listResult.code !== 0) {
-    throw new Error(
-      `Tarball validation failed for ${tarballPath}: tar listing exited ${listResult.code}; expected 0. Check the archive before extracting.`,
-    )
-  }
-
   const files = (listResult.stdout || '')
     .split(/\r?\n/)
     .filter(Boolean)
@@ -146,10 +137,7 @@ export async function validateTarballPaths(
 
   // Check for path traversal attempts.
   for (let i = 0, { length } = files; i < length; i += 1) {
-    const file = files[i]
-    if (file === undefined) {
-      continue
-    }
+    const file = files[i]!
     // Check for null bytes (can bypass filesystem checks)
     if (file.includes('\0')) {
       throw new Error(

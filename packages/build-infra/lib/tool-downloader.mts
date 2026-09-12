@@ -272,7 +272,7 @@ export async function extractArchive(archivePath, destDir, format) {
   await fs.mkdir(destDir, { recursive: true })
 
   if (format === 'zip') {
-    const result = await spawn(
+    await spawn(
       WIN32 ? 'powershell' : 'unzip',
       WIN32
         ? [
@@ -282,28 +282,12 @@ export async function extractArchive(archivePath, destDir, format) {
         : ['-q', '-o', archivePath, '-d', destDir],
       { stdio: 'inherit', shell: WIN32 },
     )
-    if (result.signal) {
-      throw new Error(
-        `Zip extraction killed by signal ${result.signal} for ${archivePath}`,
-      )
-    }
-    if ((result.code ?? result.exitCode ?? 0) !== 0) {
-      throw new Error(`Zip extraction failed for ${archivePath}`)
-    }
   } else {
     // tar.xz
-    const result = await spawn('tar', ['xf', archivePath, '-C', destDir], {
+    await spawn('tar', ['xf', archivePath, '-C', destDir], {
       stdio: 'inherit',
       shell: WIN32,
     })
-    if (result.signal) {
-      throw new Error(
-        `Tar extraction killed by signal ${result.signal} for ${archivePath}`,
-      )
-    }
-    if ((result.code ?? result.exitCode ?? 0) !== 0) {
-      throw new Error(`Tar extraction failed for ${archivePath}`)
-    }
   }
 }
 

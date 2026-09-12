@@ -37,10 +37,7 @@ export function collectFiles(dirPath: string): string[] {
   const stack: string[] = [dirPath]
 
   while (stack.length > 0) {
-    const currentDir = stack.pop()
-    if (currentDir === undefined) {
-      break
-    }
+    const currentDir = stack.pop()!
     let entries: Dirent[]
     try {
       entries = readdirSync(currentDir, { withFileTypes: true })
@@ -58,10 +55,7 @@ export function collectFiles(dirPath: string): string[] {
       throw e
     }
     for (let i = 0, { length } = entries; i < length; i += 1) {
-      const entry = entries[i]
-      if (!entry) {
-        continue
-      }
+      const entry = entries[i]!
       const fullPath = path.join(currentDir, entry.name)
       // Skip symlinks to prevent infinite loops and symlink attacks
       if (entry.isSymbolicLink()) {
@@ -306,7 +300,7 @@ export async function shouldExtract({
       // Regex matched but capture group missing - this is a programmer error
       throw new Error(
         'Cache hash pattern matched but capture group is missing. ' +
-          `Pattern: ${hashPattern} | Match: ${hashMatch[0] ?? 'undefined'}`,
+          `Pattern: ${hashPattern} | Match: ${hashMatch[0]}`,
       )
     }
 
