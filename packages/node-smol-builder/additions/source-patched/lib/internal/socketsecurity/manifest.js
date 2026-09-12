@@ -1145,7 +1145,13 @@ function parsePnpmLock(content) {
       }
 
       // Parse package key
-      const key = StringPrototypeSlice(trimmed, 0, trimmed.length - 1) // Remove trailing :
+      let key = StringPrototypeSlice(trimmed, 0, trimmed.length - 1) // Remove trailing :
+      if (
+        (key[0] === '"' && StringPrototypeEndsWith(key, '"')) ||
+        (key[0] === "'" && StringPrototypeEndsWith(key, "'"))
+      ) {
+        key = StringPrototypeSlice(key, 1, -1)
+      }
 
       let parsed
       if (key[0] === '/') {
