@@ -38,11 +38,16 @@ import {
   selectOnePasswordReference,
 } from './one-password-metadata.mts'
 import type { OnePasswordSelection } from './one-password-metadata.mts'
+import {
+  readSavedReference,
+  validateSavedReference,
+  writeSavedReference,
+} from './setup-credential/references.mts'
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
-  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> [--source one-password]\nRequires a foreground terminal and Touch ID. Guided import lists account, vault, and item metadata before requesting the field reference. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
+  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> [--source one-password]\nRequires a foreground terminal and Touch ID. Guided import selects an account and vault, searches item names, then requests the field reference. Successful imports save only the account and field reference in private local state for explicit reuse. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
   json: 'result',
 }
 
@@ -152,10 +157,21 @@ export async function chooseOnePasswordReference(
   executable: string,
   options: { credentialName?: string | undefined } = {},
 ): Promise<OnePasswordSelection | undefined> {
+  const saved = options.credentialName
+    ? await readSavedReference(options.credentialName)
+    : undefined
   const method = await select(
     {
       message: 'How should Sockeye locate the 1Password field?',
       choices: [
+        ...(saved
+          ? [
+              {
+                name: 'Use the saved account and field reference',
+                value: 'saved',
+              },
+            ]
+          : []),
         {
           name: 'Choose account, vault, and item (recommended)',
           value: 'guided',
@@ -165,6 +181,10 @@ export async function chooseOnePasswordReference(
     },
     { output: process.stderr },
   )
+  if (method === 'saved' && saved) {
+    await authorizeOnePasswordAccount(executable, saved.account)
+    return saved
+  }
   if (method === 'reference') {
     const selected = await manualOnePasswordReference()
     if (selected) {
@@ -182,6 +202,8 @@ export async function chooseOnePasswordReference(
         await authorizeOnePasswordAccount(executable, account),
       choose: async (message, choices) =>
         await select({ message, choices }, { output: process.stderr }),
+      search: async message =>
+        await input({ message }, { output: process.stderr }),
       field: async message =>
         await input({ message }, { output: process.stderr }),
     },
@@ -229,6 +251,7 @@ export async function setupCredential(
   if (!selected) {
     return 130
   }
+  validateSavedReference(selected)
   const approved = await confirm(
     {
       message: `Import ${identifier} from ${selected.reference} in account ${selected.account} into Touch-ID-protected Keychain?`,
@@ -242,6 +265,13 @@ export async function setupCredential(
   await runNative(['import-1password', identifier, selected.reference], {
     account: selected.account,
   })
+  try {
+    await writeSavedReference(identifier, selected)
+  } catch {
+    throw new Error(
+      'Credential imported into Keychain, but its reference metadata was not saved. Repair the private Sockeye state directory before reusing the reference.',
+    )
+  }
   return 0
 }
 

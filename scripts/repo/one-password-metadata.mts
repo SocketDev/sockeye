@@ -15,6 +15,7 @@ export interface OnePasswordPrompts {
   authorize(account: string): Promise<void>
   choose(message: string, choices: OnePasswordChoice[]): Promise<unknown>
   field(message: string): Promise<unknown>
+  search?(message: string): Promise<unknown>
 }
 
 export function onePasswordEnvironment(
@@ -210,11 +211,20 @@ export async function selectOnePasswordReference(
     kind: 'account' | 'vault' | 'item',
     args: string[],
   ): Promise<string | undefined> {
-    const choices = onePasswordChoices(
+    let choices = onePasswordChoices(
       await read(executable, [...args, '--format', 'json']),
       kind,
       { credentialName: opts.credentialName },
     )
+    if (kind === 'item' && prompts.search) {
+      const query = await prompts.search(
+        'Search item names in this vault (not secret values):',
+      )
+      if (typeof query !== 'string') {
+        return undefined
+      }
+      choices = searchOnePasswordChoices(choices, query)
+    }
     if (!choices.length) {
       throw new Error(
         `No 1Password ${kind} entries are available in the selected scope.`,
@@ -260,4 +270,26 @@ export async function selectOnePasswordReference(
     return undefined
   }
   return { account, reference }
+}
+
+export function searchOnePasswordChoices(
+  choices: OnePasswordChoice[],
+  query: string,
+): OnePasswordChoice[] {
+  if (query.length > 512 || /[\u0000-\u001f\u007f]/u.test(query)) {
+    throw new Error(
+      '1Password item search must contain at most 512 printable characters.',
+    )
+  }
+  const tokens = normalizeCredentialLabel(query).split(' ').filter(Boolean)
+  const matches = choices.filter(choice => {
+    const label = normalizeCredentialLabel(choice.name)
+    return tokens.every(token => label.includes(token))
+  })
+  if (matches.length > 100) {
+    throw new Error(
+      '1Password item search matched more than 100 items. Retry with a narrower item name.',
+    )
+  }
+  return matches
 }

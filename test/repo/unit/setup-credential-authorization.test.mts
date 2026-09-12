@@ -12,7 +12,19 @@ const mocks = vi.hoisted(() => ({
   which: vi.fn(),
   realpath: vi.fn(),
   metadata: vi.fn(),
+  readSaved: vi.fn(),
+  writeSaved: vi.fn(),
 }))
+vi.mock(
+  '../../../scripts/repo/setup-credential/references.mts',
+  async original => ({
+    ...(await original<
+      typeof import('../../../scripts/repo/setup-credential/references.mts')
+    >()),
+    readSavedReference: mocks.readSaved,
+    writeSavedReference: mocks.writeSaved,
+  }),
+)
 vi.mock('node:fs/promises', async original => ({
   ...(await original<typeof import('node:fs/promises')>()),
   access: mocks.access,
@@ -61,6 +73,8 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.readSaved.mockResolvedValue(undefined)
+  mocks.writeSaved.mockResolvedValue(undefined)
   mocks.which.mockReturnValue('/example/op')
   mocks.realpath.mockReturnValue('/example/canonical/op')
   mocks.authorize.mockResolvedValue({ status: 'authorized' })
@@ -231,7 +245,17 @@ test.each([false, true])(
           env: expect.objectContaining({ OP_ACCOUNT: 'exampleaccount' }),
         }),
       )
-    } else expect(mocks.spawn).not.toHaveBeenCalled()
+      expect(mocks.writeSaved).toHaveBeenCalledExactlyOnceWith(
+        'EXAMPLE_API_TOKEN',
+        {
+          account: 'exampleaccount',
+          reference: 'op://examplevault/exampleitem/password',
+        },
+      )
+    } else {
+      expect(mocks.spawn).not.toHaveBeenCalled()
+      expect(mocks.writeSaved).not.toHaveBeenCalled()
+    }
   },
 )
 
@@ -246,4 +270,94 @@ test('required 1Password source preserves canceled reference selection', async (
   })
   expect(mocks.confirm).not.toHaveBeenCalled()
   expect(mocks.spawn).not.toHaveBeenCalled()
+})
+
+test('saved references still require explicit selection and account authorization', async () => {
+  const selection = {
+    account: 'exampleaccount',
+    reference: 'op://examplevault/exampleitem/password',
+  }
+  mocks.readSaved.mockResolvedValue(selection)
+  mocks.choose.mockResolvedValue('saved')
+  expect(
+    await chooseOnePasswordReference('/example/op', {
+      credentialName: 'EXAMPLE_API_TOKEN',
+    }),
+  ).toEqual(selection)
+  expect(mocks.authorize).toHaveBeenCalledExactlyOnceWith({
+    account: 'exampleaccount',
+  })
+  expect(mocks.metadata).not.toHaveBeenCalled()
+})
+
+test('canceling saved reference selection does not authorize', async () => {
+  mocks.readSaved.mockResolvedValue({
+    account: 'exampleaccount',
+    reference: 'op://examplevault/exampleitem/password',
+  })
+  mocks.choose.mockResolvedValue(undefined)
+  expect(
+    await chooseOnePasswordReference('/example/op', {
+      credentialName: 'EXAMPLE_API_TOKEN',
+    }),
+  ).toBeUndefined()
+  expect(mocks.authorize).not.toHaveBeenCalled()
+})
+
+test('failed native import never saves reference metadata', async () => {
+  mocks.access.mockResolvedValue(undefined)
+  mocks.choose.mockResolvedValue('guided')
+  mocks.metadata.mockResolvedValue({
+    account: 'exampleaccount',
+    reference: 'op://examplevault/exampleitem/password',
+  })
+  mocks.confirm.mockResolvedValue(true)
+  mocks.spawn.mockResolvedValue({ code: 1 })
+  await withTerminal(async () => {
+    await expect(
+      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+    ).rejects.toThrow()
+  })
+  expect(mocks.writeSaved).not.toHaveBeenCalled()
+})
+
+test('declining a saved reference import authorizes its account but never mutates Keychain', async () => {
+  mocks.access.mockResolvedValue(undefined)
+  mocks.readSaved.mockResolvedValue({
+    account: 'exampleaccount',
+    reference: 'op://examplevault/exampleitem/password',
+  })
+  mocks.choose.mockResolvedValue('saved')
+  mocks.confirm.mockResolvedValue(false)
+  await withTerminal(async () => {
+    expect(
+      await setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+    ).toBe(130)
+  })
+  expect(mocks.authorize).toHaveBeenCalledExactlyOnceWith({
+    account: 'exampleaccount',
+  })
+  expect(mocks.confirm).toHaveBeenCalledWith(
+    expect.objectContaining({ default: false }),
+    { output: process.stderr },
+  )
+  expect(mocks.spawn).not.toHaveBeenCalled()
+  expect(mocks.writeSaved).not.toHaveBeenCalled()
+})
+
+test('rejects malformed selected metadata before confirmation or native import', async () => {
+  mocks.access.mockResolvedValue(undefined)
+  mocks.choose.mockResolvedValue('guided')
+  mocks.metadata.mockResolvedValue({
+    account: 'exampleaccount',
+    reference: 'op://missing-field',
+  })
+  await withTerminal(async () => {
+    await expect(
+      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+    ).rejects.toThrow()
+  })
+  expect(mocks.confirm).not.toHaveBeenCalled()
+  expect(mocks.spawn).not.toHaveBeenCalled()
+  expect(mocks.writeSaved).not.toHaveBeenCalled()
 })

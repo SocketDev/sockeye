@@ -16,7 +16,8 @@ import confirmation. Canceled selection or confirmation returns exit code 130.
 
 If the 1Password CLI is installed in a supported location, setup recommends
 **Import once from 1Password**. Guided selection lists your accounts, vaults,
-and items through the 1Password CLI. Account access can trigger 1Password's
+and items through the 1Password CLI. Search item names after selecting a vault.
+The search checks metadata in that vault and shows at most 100 matching items. Account access can trigger 1Password's
 approval prompt for your terminal. Select an item, then enter its field name
 or section/field path. You can also enter an account and an explicit
 `op://Vault/item/field` reference.
@@ -24,6 +25,13 @@ or section/field path. You can also enter an account and an explicit
 Setup shows the account, reference, and destination credential before import.
 The native Sockeye process reads the selected value and stores it in Keychain.
 The setup process lists metadata only; it does not read secret fields.
+Successful imports save the account and field reference in private local state
+under `~/.socket/_state/sockeye/one-password/`. These files contain no credential
+values. Setup offers saved references as an explicit choice. Reuse still requires
+account authorization and import confirmation. Invalid or unsafe metadata stops
+setup until its private file is repaired. A metadata write failure reports that
+the credential was imported but the reference was not saved.
+
 The selected account remains pinned during import. Service-account and Connect
 environment settings cannot silently select another credential source.
 
