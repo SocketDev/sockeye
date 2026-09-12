@@ -12,11 +12,7 @@ const builtinModulesSet = new Set(builtinModules)
 export function buildCallExpressionHandler(config) {
   const context = { __proto__: null, ...config } as typeof config
   return function visitCallExpression(node, ancestors) {
-    if (
-      rewriteSyncCall(node, context) ||
-      rewriteFileUrlCall(node, context) ||
-      rewriteDynamicImportCall(node, ancestors, context)
-    ) {
+    if (rewriteSyncCall(node, context) || rewriteFileUrlCall(node, context)) {
       return
     }
     rewriteBuiltinRequire(node, ancestors, context)
@@ -49,33 +45,13 @@ export function rewriteBuiltinRequire(node, ancestors, config) {
   }
 }
 
-export function rewriteDynamicImportCall(node, ancestors, config) {
-  const { safeOverwrite, topLevelStatementsToRemove } = {
-    __proto__: null,
-    ...config,
-  } as typeof config
-  const parent = ancestors[ancestors.length - 2]
-  if (
-    node.callee?.type !== 'ImportExpression' ||
-    parent.type === 'AwaitExpression'
-  ) {
-    return false
-  }
-  if (
-    node.arguments?.[0]?.value === 'module' &&
-    parent.type === 'VariableDeclarator' &&
-    parent.id?.type === 'ObjectPattern'
-  ) {
-    const declaration = ancestors.findLast(
-      frame => frame.type === 'VariableDeclaration',
+export function rewriteDynamicImportExpression(node, config) {
+  if (node.options) {
+    throw new Error(
+      'Cannot transform import in synchronous WASM wrapper: require cannot enforce import options. Remove import options before generating the wrapper.',
     )
-    if (declaration && ancestors.some(frame => frame.type === 'Program')) {
-      topLevelStatementsToRemove.push(declaration)
-    }
-  } else {
-    safeOverwrite(node.callee.start, node.callee.end, 'require')
   }
-  return true
+  config.safeOverwrite(node.start, node.start + 6, 'require')
 }
 
 export function rewriteFileUrlCall(node, config) {

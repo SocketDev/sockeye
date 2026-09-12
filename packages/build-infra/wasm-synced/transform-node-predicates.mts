@@ -62,9 +62,9 @@ export function isSyncModuleImport(init) {
   }
   const { argument } = init
   return (
-    argument?.type === 'CallExpression' &&
-    argument.callee?.type === 'ImportExpression' &&
-    argument.arguments?.[0]?.value === 'module'
+    argument?.type === 'ImportExpression' &&
+    (argument.source?.value === 'module' ||
+      argument.source?.value === 'node:module')
   )
 }
 

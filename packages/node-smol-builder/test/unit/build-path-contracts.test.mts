@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from 'vitest'
+import { getReleaseWindowsConfigurationPath } from '../../scripts/binary-released/shared/paths.mts'
 import {
   BUILD_ROOT,
   getBuildPaths,
@@ -83,6 +84,9 @@ test('cache paths layer shared before platform and architecture overrides', () =
 })
 test('shared source and existence filtering retain actual paths without inventing files', () => {
   const shared = getSharedBuildPaths()
+  expect(
+    getReleaseWindowsConfigurationPath(shared.nodeSourceDir, 'Release'),
+  ).toBe(path.join(shared.nodeSourceDir, 'Release'))
   expect(shared.buildDir).toBe(path.join(BUILD_ROOT, 'shared'))
   expect(shared.configureScript).toBe(
     path.join(shared.nodeSourceDir, 'configure'),

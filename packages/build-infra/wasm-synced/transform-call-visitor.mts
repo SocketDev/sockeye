@@ -1,4 +1,7 @@
-import { buildCallExpressionHandler } from './transform-call-handlers.mts'
+import {
+  buildCallExpressionHandler,
+  rewriteDynamicImportExpression,
+} from './transform-call-handlers.mts'
 import {
   isSyncCreateRequireProperty,
   isSyncIdentifier,
@@ -18,6 +21,9 @@ export function buildCallVisitor(config) {
   return {
     __proto__: null,
     CallExpression: buildCallExpressionHandler(config),
+    ImportExpression(node) {
+      rewriteDynamicImportExpression(node, config)
+    },
     VariableDeclaration(node) {
       if (hasCreateRequireDeclaration(node)) {
         safeRemove(node.start, node.end)
@@ -79,7 +85,8 @@ export function hasCreateRequireDeclaration(node) {
   const declaration = node.declarations[0]
   if (
     declaration.id?.type !== 'ObjectPattern' ||
-    !declaration.id.properties?.some(isSyncCreateRequireProperty)
+    declaration.id.properties?.length !== 1 ||
+    !isSyncCreateRequireProperty(declaration.id.properties[0])
   ) {
     return false
   }
