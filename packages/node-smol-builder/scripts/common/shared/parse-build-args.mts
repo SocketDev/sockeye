@@ -40,8 +40,12 @@ const VALID_CHECKPOINTS = [
 export function calculateCpuCount() {
   const buildJobs = getEnvValue('BUILD_JOBS')
   if (buildJobs) {
-    const envJobs = Number.parseInt(buildJobs, 10)
-    if (Number.isNaN(envJobs) || envJobs < 1) {
+    const envJobs = Number(buildJobs)
+    if (
+      !/^\+?\d+$/u.test(buildJobs.trim()) ||
+      !Number.isSafeInteger(envJobs) ||
+      envJobs < 1
+    ) {
       throw new Error(
         `Invalid BUILD_JOBS value: ${getEnvValue('BUILD_JOBS')} (must be a positive integer)`,
       )

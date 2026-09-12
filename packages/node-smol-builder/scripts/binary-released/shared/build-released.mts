@@ -15,7 +15,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import os from 'node:os'
+import { calculateCpuCount } from '../../common/shared/parse-build-args.mts'
 
 import {
   clearBuildLog,
@@ -58,7 +58,6 @@ import {
 import { prepareExternalSources } from './prepare-external-sources.mts'
 import { cloneNodeSource } from '../../source-copied/shared/copy-source.mts'
 import { applySocketPatches } from '../../source-patched/shared/apply-patches.mts'
-import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
 
@@ -154,28 +153,7 @@ export async function buildRelease(config, buildOptions = {}) {
   /**
    * Calculate optimal number of parallel build jobs.
    */
-  const CPU_COUNT = (() => {
-    // Check for explicit override via environment variable
-    const buildJobs = getEnvValue('BUILD_JOBS')
-    if (buildJobs) {
-      const envJobs = Number.parseInt(buildJobs, 10)
-      if (Number.isNaN(envJobs) || envJobs < 1) {
-        throw new Error(
-          `Invalid BUILD_JOBS value: ${getEnvValue('BUILD_JOBS')} (must be a positive integer)`,
-        )
-      }
-      return envJobs
-    }
-
-    // Adaptive calculation based on available memory
-    const totalCpus = os.cpus().length
-    const totalRamGB = Math.floor(os.totalmem() / (1024 * 1024 * 1024))
-    const memoryBasedJobs = Math.floor(totalRamGB / 4)
-
-    // Use the minimum of CPU count and memory-based calculation
-    // Ensure at least 1 job even on very low-memory systems
-    return Math.max(1, Math.min(totalCpus, memoryBasedJobs))
-  })()
+  const CPU_COUNT = calculateCpuCount()
 
   // ============================================================================
   // MAIN RELEASE BUILD LOGIC
