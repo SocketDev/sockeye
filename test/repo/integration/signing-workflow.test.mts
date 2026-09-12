@@ -92,3 +92,10 @@ test('signature verification failure fails the workflow step', () => {
   )
   expect(result.status).toBe(1)
 })
+
+test('cleans up imported certificates even after a failed signing step', () => {
+  const cleanup = signingStep('Clean up signing keychain')
+  expect(cleanup.if).toBe('${{ always() && !inputs.adhoc }}')
+  expect(cleanup.with?.['mode']).toBe('cleanup')
+  expect(job.steps.at(-1)).toBe(cleanup)
+})

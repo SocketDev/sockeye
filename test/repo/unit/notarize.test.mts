@@ -115,3 +115,31 @@ test('staples supported archive types and excludes zip tickets', () => {
   expect(isStapleable('example.zip')).toBe(false)
   expect(isStapleable('example-binary')).toBe(false)
 })
+
+test('reads the notary profile from an explicit temporary keychain', async () => {
+  vi.mocked(spawn).mockResolvedValue({
+    cmd: '/usr/bin/xcrun',
+    args: [],
+    signal: null,
+    code: 0,
+    stdout: '{"status":"Accepted"}',
+    stderr: '',
+  })
+  await submitNotaryArchive({
+    archive: 'example.zip',
+    profile: 'example-notary',
+    keychain: '/example/temporary.keychain-db',
+  })
+  expect(vi.mocked(spawn).mock.calls[0]?.[1]).toEqual([
+    'notarytool',
+    'submit',
+    'example.zip',
+    '--keychain-profile',
+    'example-notary',
+    '--keychain',
+    '/example/temporary.keychain-db',
+    '--wait',
+    '--output-format',
+    'json',
+  ])
+})

@@ -112,13 +112,15 @@ jobs:
           xcrun notarytool store-credentials sockeye-notary \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID"
+            --team-id "$APPLE_TEAM_ID" \
+            --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
 
       - name: Notarize archive
         if: ${{ !inputs.adhoc }}
         run: pnpm run notarize --run
           build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
           --keychain-profile sockeye-notary
+          --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
 
       - name: Verify developer signature
         if: ${{ !inputs.adhoc }}
@@ -143,3 +145,9 @@ jobs:
           path: |
             build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
             build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip.sha256
+
+      - name: Clean up signing keychain
+        if: ${{ always() && !inputs.adhoc }}
+        uses: ./.github/actions/repo/import-codesign-certs
+        with:
+          mode: cleanup

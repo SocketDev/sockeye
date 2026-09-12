@@ -1,36 +1,83 @@
-name: 'Import code-signing certificates'
-description: 'Imports a PKCS12 certificate and private key into a macOS Keychain.'
-author: 'Itty Bitty Apps Pty Ltd'
+name: Import code-signing certificates
+description: Import certificates into an isolated temporary keychain and restore the original search list during cleanup.
 inputs:
-  keychain:
-    description: 'The name of the keychain to import into.'
-    required: true
-    default: 'signing_temp'
-  create-keychain:
-    description: 'A boolean indicating whether to create the keychain.'
-    required: true
-    default: 'true'
-  keychain-password:
-    description: 'The password to use with the keychain. Gets auto-generated if keychain is "signing_temp".'
-    required: false
-  p12-filepath:
-    description: 'The path to the PKCS12 file to import.'
-    required: false
+  mode:
+    description: Import certificates or clean up the temporary keychain.
+    default: import
   p12-file-base64:
-    description: 'The certificates in a PKCS12 file encoded as a base64 string.'
-    required: false
+    description: Base64-encoded PKCS12 certificates.
   p12-password:
-    description: 'The password used to import the PKCS12 file.'
-    required: true
-outputs:
-  keychain-password:
-    description: 'The password for temporary keychain.'
-  security-response:
-    description: 'The output of the security commands.'
+    description: Password for the PKCS12 certificates.
 runs:
-  using: 'node24'
-  main: 'dist/index.js'
-  post: 'dist/index.js'
-branding:
-  icon: 'lock'
-  color: 'blue'
+  using: composite
+  steps:
+    - name: Manage signing keychain
+      shell: bash
+      env:
+        SIGNING_ACTION_MODE: ${{ inputs.mode }}
+        P12_BASE64: ${{ inputs.p12-file-base64 }}
+        P12_PASSWORD: ${{ inputs.p12-password }}
+      run: |
+        set -euo pipefail
+        set +x
+        cleanup_signing_keychain() {
+          local directory="${SOCKEYE_SIGNING_TEMP_DIR:-}" result=0 entry basename
+          local original=()
+          if [[ -z "$directory" ]]; then return 0; fi
+          basename="${directory#"$RUNNER_TEMP"/}"
+          if [[ "$directory" != "$RUNNER_TEMP/$basename" || ! "$basename" =~ ^sockeye-signing\.[A-Za-z0-9]{6}$ || -L "$directory" || ! -d "$directory" ]]; then
+            printf '%s\n' 'Invalid signing temporary directory; refusing cleanup.' >&2
+            return 1
+          fi
+          if [[ -f "$directory/original-search-list" ]]; then
+            while IFS= read -r -d '' entry; do original+=("$entry"); done < "$directory/original-search-list"
+            security list-keychains -d user -s "${original[@]}" || result=$?
+          fi
+          if [[ -e "$directory/signing.keychain-db" ]]; then
+            security delete-keychain "$directory/signing.keychain-db" || result=$?
+          fi
+          rm -f "$directory/certificate.p12"
+          if [[ "$result" == 0 ]]; then
+            rm -rf "$directory"
+            printf 'SOCKEYE_SIGNING_TEMP_DIR=\nSOCKEYE_SIGNING_KEYCHAIN=\n' >> "$GITHUB_ENV"
+            unset SOCKEYE_SIGNING_TEMP_DIR
+          fi
+          return "$result"
+        }
+        if [[ "$SIGNING_ACTION_MODE" == cleanup ]]; then
+          cleanup_signing_keychain
+          exit 0
+        fi
+        if [[ "$SIGNING_ACTION_MODE" != import || -z "$P12_BASE64" ]]; then
+          printf '%s\n' 'Signing import requires import mode and PKCS12 certificate data.' >&2
+          exit 1
+        fi
+        umask 077
+        SOCKEYE_SIGNING_TEMP_DIR="$(mktemp -d "$RUNNER_TEMP/sockeye-signing.XXXXXX")"
+        trap 'status=$?; if [[ "$status" != 0 ]]; then cleanup_signing_keychain || true; fi; exit "$status"' EXIT
+        printf 'SOCKEYE_SIGNING_TEMP_DIR=%s\n' "$SOCKEYE_SIGNING_TEMP_DIR" >> "$GITHUB_ENV"
+        security list-keychains -d user > "$SOCKEYE_SIGNING_TEMP_DIR/search-list.txt"
+        original=()
+        pattern='^[[:space:]]*"(.*)"[[:space:]]*$'
+        while IFS= read -r entry; do
+          if [[ ! "$entry" =~ $pattern ]]; then
+            printf '%s\n' 'Cannot parse the original keychain search list; refusing import.' >&2
+            exit 1
+          fi
+          original+=("${BASH_REMATCH[1]}")
+        done < "$SOCKEYE_SIGNING_TEMP_DIR/search-list.txt"
+        : > "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp"
+        for entry in "${original[@]}"; do printf '%s\0' "$entry" >> "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp"; done
+        mv "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp" "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list"
+        keychain="$SOCKEYE_SIGNING_TEMP_DIR/signing.keychain-db"
+        printf 'SOCKEYE_SIGNING_KEYCHAIN=%s\n' "$keychain" >> "$GITHUB_ENV"
+        password="$(openssl rand -hex 32)"
+        printf '::add-mask::%s\n' "$password"
+        security create-keychain -p "$password" "$keychain"
+        security set-keychain-settings -lut 21600 "$keychain"
+        security unlock-keychain -p "$password" "$keychain"
+        printf '%s' "$P12_BASE64" | base64 --decode > "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12"
+        security import "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
+        rm -f "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12"
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
+        security list-keychains -d user -s "$keychain" "${original[@]}"

@@ -37,7 +37,7 @@ const logger = getScriptLogger()
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Submit signed Sockeye archives to Apple and staple supported archives; dry-run by default.',
-  help: 'Usage: pnpm run notarize [options] <archive…>\n\n  --run                      submit, wait, and staple\n  --keychain-profile <name>   profile (default: $SOCKEYE_NOTARY_PROFILE)\n\nArchives must be .zip, .dmg, or .pkg. Credentials stay in the notarytool Keychain profile.',
+  help: 'Usage: pnpm run notarize [options] <archive…>\n\n  --run                      submit, wait, and staple\n  --keychain <path>          keychain containing the profile\n  --keychain-profile <name>   profile (default: $SOCKEYE_NOTARY_PROFILE)\n\nArchives must be .zip, .dmg, or .pkg. Credentials stay in the notarytool Keychain profile.',
   json: 'result',
 }
 
@@ -60,25 +60,38 @@ async function runXcrun(args: string[]): Promise<void> {
   }
 }
 
-export async function submitNotaryArchive(config: {
+interface NotarySubmission {
   archive: string
   profile: string
-}): Promise<void> {
-  const { archive, profile } = { __proto__: null, ...config } as typeof config
-  const result = await spawn(
-    '/usr/bin/xcrun',
-    [
-      'notarytool',
-      'submit',
-      archive,
-      '--keychain-profile',
-      profile,
-      '--wait',
-      '--output-format',
-      'json',
-    ],
-    { cwd: REPO_ROOT, stdio: 'pipe' },
-  )
+  keychain?: string | undefined
+}
+
+export function notarySubmissionArgs(config: NotarySubmission): string[] {
+  const { archive, profile, keychain } = {
+    __proto__: null,
+    ...config,
+  } as typeof config
+  return [
+    'notarytool',
+    'submit',
+    archive,
+    '--keychain-profile',
+    profile,
+    ...(keychain === undefined ? [] : ['--keychain', keychain]),
+    '--wait',
+    '--output-format',
+    'json',
+  ]
+}
+
+export async function submitNotaryArchive(
+  config: NotarySubmission,
+): Promise<void> {
+  const { archive } = { __proto__: null, ...config } as typeof config
+  const result = await spawn('/usr/bin/xcrun', notarySubmissionArgs(config), {
+    cwd: REPO_ROOT,
+    stdio: 'pipe',
+  })
   if (result.code !== 0) {
     throw new Error(
       `Notarization failed for ${archive}: exit ${result.code}; inspect the Apple submission log`,
@@ -120,6 +133,7 @@ async function main(): Promise<void> {
     options: {
       help: { default: false, type: 'boolean' },
       'keychain-profile': { type: 'string' },
+      keychain: { type: 'string' },
       run: { default: false, type: 'boolean' },
     },
     allowPositionals: true,
@@ -132,6 +146,7 @@ async function main(): Promise<void> {
     logger.log('  --run                      submit, wait, and staple')
     logger.log('  --keychain-profile <name>  notarytool keychain profile')
     logger.log(`                             (default: $${NOTARY_PROFILE_ENV})`)
+    logger.log('  --keychain <path>          keychain containing the profile')
     logger.log('')
     logger.log('  archives must be .zip, .dmg, or .pkg — the exact files that')
     logger.log('  will be uploaded to the release')
@@ -145,6 +160,8 @@ async function main(): Promise<void> {
     typeof values['keychain-profile'] === 'string'
       ? values['keychain-profile']
       : getEnvValue(NOTARY_PROFILE_ENV)
+  const keychain =
+    typeof values['keychain'] === 'string' ? values['keychain'] : undefined
   const execute = values['run'] === true
   const profile = configuredProfile ?? `$${NOTARY_PROFILE_ENV}`
   const archives = positionals.map(String)
@@ -156,7 +173,7 @@ async function main(): Promise<void> {
     for (let i = 0, { length } = archives; i < length; i += 1) {
       const archive = archives[i]!
       logger.log(
-        `  ${displayCommand('/usr/bin/xcrun', ['notarytool', 'submit', archive, '--keychain-profile', profile, '--wait', '--output-format', 'json'])}`,
+        `  ${displayCommand('/usr/bin/xcrun', notarySubmissionArgs({ archive, profile, keychain }))}`,
       )
       if (isStapleable(archive)) {
         logger.log(
@@ -192,7 +209,7 @@ async function main(): Promise<void> {
       throw new Error(`Nothing to notarize at ${archive}`)
     }
     logger.info(`Submitting ${archive} for notarization (waits for Apple)…`)
-    await submitNotaryArchive({ archive, profile: configuredProfile })
+    await submitNotaryArchive({ archive, profile: configuredProfile, keychain })
     if (isStapleable(archive)) {
       await runXcrun(['stapler', 'staple', archive])
       logger.success(`Notarized and stapled ${archive}`)
