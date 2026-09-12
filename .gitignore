@@ -4098,6 +4098,7 @@ test/fleet/unit/comment-voice.test.mts
 !packages/node-smol-builder/test/fixtures/
 packages/node-smol-builder/test/fixtures/*
 !packages/node-smol-builder/test/fixtures/uv-lock/
+!packages/node-smol-builder/test/fixtures/boringssl/
 
 !/docs/repo/agents.md/
 !/docs/repo/agents.md/node-smol-build-flags.md

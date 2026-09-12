@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 import process from 'node:process'
 import {
   getBuilderImageTag,
@@ -126,16 +127,8 @@ test.each(['example-builder', 'binpress'])(
       force: true,
     })
     expect(result).toMatchObject({ ok: true, strategy: 'docker' })
-    expect(result.artifactPath).toContain(
-      path.join(
-        'packages',
-        packageName,
-        'build',
-        'dev',
-        'out',
-        'Final',
-        packageName,
-      ),
+    expect(normalizePath(result.artifactPath)).toContain(
+      `packages/${packageName}/build/dev/out/Final/${packageName}`,
     )
     expect(fs.mkdir).toHaveBeenCalledExactlyOnceWith(build.outputDir, {
       recursive: true,
