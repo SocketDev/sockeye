@@ -1,11 +1,20 @@
 import { expect, test, vi } from 'vitest'
 
 const io = vi.hoisted(() => ({
+  compress: vi.fn(),
+  finalize: vi.fn(),
   release: vi.fn(),
   strip: vi.fn(),
   paths: vi.fn(),
   parse: vi.fn(),
   shared: vi.fn(),
+}))
+vi.mock(
+  import('../../scripts/binary-compressed/shared/build-compressed.mts'),
+  () => ({ buildCompressed: io.compress }),
+)
+vi.mock(import('../../scripts/finalized/shared/finalize-binary.mts'), () => ({
+  finalizeBinary: io.finalize,
 }))
 vi.mock(
   import('../../scripts/binary-released/shared/build-released.mts'),
@@ -58,4 +67,6 @@ test('build-only compilation forwards the checkpoint opt-out and stops before st
   await vi.waitFor(() => expect(io.release).toHaveBeenCalledOnce())
   expect(io.release.mock.calls[0]?.[1]).toEqual({ skipCheckpoint: true })
   expect(io.strip).not.toHaveBeenCalled()
+  expect(io.compress).not.toHaveBeenCalled()
+  expect(io.finalize).not.toHaveBeenCalled()
 })

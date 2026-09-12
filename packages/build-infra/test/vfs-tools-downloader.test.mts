@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import AdmZip from 'adm-zip'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import {
   computeFileSha256,
   createVfsToolsTarball,
@@ -42,19 +42,29 @@ vi.mock(import('../lib/vfs-tool-catalog.mts'), () => ({
   getAvailableTools: io.available,
   getPlatformKey: (platform: string, arch: string) => `${platform}-${arch}`,
 }))
-let actualRemove: typeof safeDelete
 
 const bytes = 'example VFS archive'
 const digest = crypto.createHash('sha256').update(bytes).digest('hex')
 let root: string
-beforeEach(async () => {
+let actualRemove: typeof safeDelete
+beforeAll(async () => {
   actualRemove = (
     await vi.importActual<{ safeDelete: typeof safeDelete }>(
       '@socketsecurity/lib-stable/fs/safe',
     )
   ).safeDelete
+})
+async function removeFixturePath(target: string) {
+  const relative = path.relative(root, target)
+  if (path.isAbsolute(relative) || relative.split(path.sep)[0] === '..') {
+    throw new Error('Fixture cleanup escaped its owned temporary root')
+  }
+  await actualRemove(target)
+}
+beforeEach(async () => {
   vi.resetAllMocks()
   root = await fs.mkdtemp(path.join(os.tmpdir(), 'sockeye-vfs-download-'))
+  vi.spyOn(os, 'tmpdir').mockReturnValue(root)
   delete io.catalog['example-tool']
   delete io.catalog['unavailable-tool']
   io.catalog['example-tool'] = {
@@ -62,7 +72,7 @@ beforeEach(async () => {
     'linux-x64': { url: 'https://example.invalid/tool.tar.gz', sha256: digest },
   }
   io.available.mockReturnValue(['example-tool'])
-  io.remove.mockImplementation(actualRemove)
+  io.remove.mockImplementation(removeFixturePath)
   io.download.mockImplementation(async (url: string, destination: string) => {
     await fs.writeFile(destination, bytes)
   })
@@ -80,7 +90,7 @@ beforeEach(async () => {
 })
 afterEach(async () => {
   vi.restoreAllMocks()
-  await actualRemove(root)
+  await removeFixturePath(root)
 })
 function options() {
   return { destDir: root, platform: 'linux', arch: 'x64' }
@@ -274,7 +284,7 @@ test('uses host defaults and tolerates scratch cleanup failure after successful 
       scratch.push(target)
       throw new Error('fixture cleanup denied')
     }
-    await actualRemove(target)
+    await removeFixturePath(target)
   })
   try {
     expect(
@@ -283,7 +293,7 @@ test('uses host defaults and tolerates scratch cleanup failure after successful 
   } finally {
     for (let i = 0, { length } = scratch; i < length; i += 1) {
       const directory = scratch[i]!
-      await actualRemove(directory)
+      await removeFixturePath(directory)
     }
   }
 })

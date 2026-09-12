@@ -4,7 +4,7 @@ import { existsSync, promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import {
   acquireLock,
   computeSha256,
@@ -37,21 +37,30 @@ vi.mock(import('@socketsecurity/lib-stable/fs/safe'), () => ({
 vi.mock(import('@socketsecurity/lib-stable/constants/platform'), () => ({
   isWin32: () => io.windows,
 }))
-let actualRemove: typeof safeDelete
 
 const bytes = 'example archive contents'
 const digest = crypto.createHash('sha256').update(bytes).digest('hex')
 let root: string
-beforeEach(async () => {
+let actualRemove: typeof safeDelete
+beforeAll(async () => {
   actualRemove = (
     await vi.importActual<{ safeDelete: typeof safeDelete }>(
       '@socketsecurity/lib-stable/fs/safe',
     )
   ).safeDelete
+})
+async function removeFixturePath(target: string) {
+  const relative = path.relative(root, target)
+  if (path.isAbsolute(relative) || relative.split(path.sep)[0] === '..') {
+    throw new Error('Fixture cleanup escaped its owned temporary root')
+  }
+  await actualRemove(target)
+}
+beforeEach(async () => {
   vi.resetAllMocks()
   root = await fs.mkdtemp(path.join(os.tmpdir(), 'sockeye-tool-download-'))
   vi.stubEnv('EXTERNAL_TOOLS_CACHE', root)
-  io.remove.mockImplementation(actualRemove)
+  io.remove.mockImplementation(removeFixturePath)
   io.download.mockImplementation(async (url: string, destination: string) => {
     await fs.writeFile(destination, bytes)
   })
@@ -70,7 +79,7 @@ afterEach(async () => {
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
   vi.useRealTimers()
-  await actualRemove(root)
+  await removeFixturePath(root)
 })
 function resolver() {
   return {
