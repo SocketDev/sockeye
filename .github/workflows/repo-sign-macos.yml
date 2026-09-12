@@ -11,7 +11,6 @@ run-name: Sign macOS for ${{ github.ref_name }}
 #   APPLE_APP_SPECIFIC_PASSWORD (secret) — notarytool auth
 #   APPLE_ID (variable) — Apple ID email
 #   APPLE_TEAM_ID (variable) — Developer Program team ID
-#   APPLE_SIGNING_IDENTITY (variable) — the cert common name
 #
 # Until those secrets are in place, set adhoc: true on dispatch to build and
 # ad-hoc sign without a certificate. Ad-hoc is good for local testing but not
@@ -37,6 +36,8 @@ jobs:
   build-sign:
     name: Build and sign
     runs-on: macos-14
+    env:
+      BUILD_MODE: prod
     permissions:
       contents: read
     steps:
@@ -49,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           SERVER_URL: ${{ github.server_url }}
           REPOSITORY: ${{ github.repository }}
-          TRIGGER_REF: ${{ github.ref }}
+          TRIGGER_REF: ${{ github.sha }}
         run: |
           set -euo pipefail
           git init -q
@@ -82,12 +83,12 @@ jobs:
           p12-password: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS }}
 
       - name: Build prod binary
-        run: pnpm run build --mode prod
+        run: pnpm run build
 
       - name: Sign with developer id
         if: ${{ !inputs.adhoc }}
         env:
-          SOCKEYE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+          SOCKEYE_SIGNING_IDENTITY: 'Developer ID Application: Socket Inc. (PZRCDQ736X)'
         run: pnpm run sign --run
 
       - name: Sign ad-hoc
@@ -99,7 +100,7 @@ jobs:
           cd build/prod/darwin-arm64/out/Final
           zip -r -X sockeye-darwin-arm64.zip sockeye
 
-      # Notarize and staple (skipped on ad-hoc runs — notarytool needs a
+      # Notarize (skipped on ad-hoc runs — notarytool needs a
       # Developer ID signature).
       - name: Store notarytool credentials
         if: ${{ !inputs.adhoc }}
@@ -113,18 +114,22 @@ jobs:
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
             --team-id "$APPLE_TEAM_ID"
 
-      - name: Notarize and staple
+      - name: Notarize archive
         if: ${{ !inputs.adhoc }}
         run: pnpm run notarize --run
           build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
           --keychain-profile sockeye-notary
 
-      - name: Verify signature
+      - name: Verify developer signature
+        if: ${{ !inputs.adhoc }}
         run: |
-          codesign -dv --verbose=4 build/prod/darwin-arm64/out/Final/sockeye
-          if [ "${{ inputs.adhoc }}" != "true" ]; then
-            xcrun stapler validate build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
-          fi
+          codesign --verify --strict --verbose=4 \
+            -R '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"' \
+            build/prod/darwin-arm64/out/Final/sockeye
+
+      - name: Verify ad-hoc signature
+        if: ${{ inputs.adhoc }}
+        run: codesign --verify --strict --verbose=4 build/prod/darwin-arm64/out/Final/sockeye
 
       - name: Compute checksum
         run: |
@@ -134,7 +139,7 @@ jobs:
       - name: Upload artifact
         uses: ./.github/actions/fleet/upload-artifact
         with:
-          name: sockeye-darwin-arm64
+          name: ${{ inputs.adhoc && 'sockeye-darwin-arm64-adhoc' || 'sockeye-darwin-arm64' }}
           path: |
             build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
             build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip.sha256

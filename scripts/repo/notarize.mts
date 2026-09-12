@@ -60,6 +60,43 @@ async function runXcrun(args: string[]): Promise<void> {
   }
 }
 
+export async function submitNotaryArchive(config: {
+  archive: string
+  profile: string
+}): Promise<void> {
+  const { archive, profile } = { __proto__: null, ...config } as typeof config
+  const result = await spawn(
+    '/usr/bin/xcrun',
+    [
+      'notarytool',
+      'submit',
+      archive,
+      '--keychain-profile',
+      profile,
+      '--wait',
+      '--output-format',
+      'json',
+    ],
+    { cwd: REPO_ROOT, stdio: 'pipe' },
+  )
+  if (result.code !== 0) {
+    throw new Error(
+      `Notarization failed for ${archive}: exit ${result.code}; inspect the Apple submission log`,
+    )
+  }
+  const response: unknown = JSON.parse(result.stdout)
+  if (
+    response === null ||
+    typeof response !== 'object' ||
+    !('status' in response) ||
+    response.status !== 'Accepted'
+  ) {
+    throw new Error(
+      `Notarization refused for ${archive}: Apple did not return Accepted; inspect the Apple submission log`,
+    )
+  }
+}
+
 function validateNotaryArchives(archives: string[]): void {
   for (let i = 0, { length } = archives; i < length; i += 1) {
     const archive = archives[i]!
@@ -119,7 +156,7 @@ async function main(): Promise<void> {
     for (let i = 0, { length } = archives; i < length; i += 1) {
       const archive = archives[i]!
       logger.log(
-        `  ${displayCommand('/usr/bin/xcrun', ['notarytool', 'submit', archive, '--keychain-profile', profile, '--wait'])}`,
+        `  ${displayCommand('/usr/bin/xcrun', ['notarytool', 'submit', archive, '--keychain-profile', profile, '--wait', '--output-format', 'json'])}`,
       )
       if (isStapleable(archive)) {
         logger.log(
@@ -155,17 +192,7 @@ async function main(): Promise<void> {
       throw new Error(`Nothing to notarize at ${archive}`)
     }
     logger.info(`Submitting ${archive} for notarization (waits for Apple)…`)
-    await runXcrun([
-      'notarytool',
-      'submit',
-      archive,
-      '--keychain-profile',
-      configuredProfile,
-      '--wait',
-    ])
-    logger.log(
-      'Confirm the log above shows "status: Accepted"; fetch details with "xcrun notarytool log <submission-id>"',
-    )
+    await submitNotaryArchive({ archive, profile: configuredProfile })
     if (isStapleable(archive)) {
       await runXcrun(['stapler', 'staple', archive])
       logger.success(`Notarized and stapled ${archive}`)
