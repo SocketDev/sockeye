@@ -126,12 +126,10 @@ export async function applyCommonTransforms(config) {
         declaratorNode.end,
         nextDeclarator.start,
       )
-      const commaIndex = textBetween.indexOf(',')
-      if (commaIndex !== -1) {
-        safeRemove(declaratorNode.start, declaratorNode.end + commaIndex + 1)
-      } else {
-        safeRemove(declaratorNode.start, nextDeclarator.start)
-      }
+      const comma = Parser.tokenizer(textBetween, {
+        ecmaVersion: 'latest',
+      }).getToken()
+      safeRemove(declaratorNode.start, declaratorNode.end + comma.end)
     } else {
       // Not first declarator - remove from previous comma to this declarator
       const prevDeclarator = declarators[index - 1]
@@ -139,12 +137,10 @@ export async function applyCommonTransforms(config) {
         prevDeclarator.end,
         declaratorNode.start,
       )
-      const commaIndex = textBetween.lastIndexOf(',')
-      if (commaIndex !== -1) {
-        safeRemove(prevDeclarator.end + commaIndex, declaratorNode.end)
-      } else {
-        safeRemove(prevDeclarator.end, declaratorNode.end)
-      }
+      const comma = Parser.tokenizer(textBetween, {
+        ecmaVersion: 'latest',
+      }).getToken()
+      safeRemove(prevDeclarator.end + comma.start, declaratorNode.end)
     }
   }
 
@@ -233,7 +229,7 @@ export async function applyCommonTransforms(config) {
       logger.substep(
         `Gutted ${guttedCount} WebAssembly.instantiate function(s)`,
       )
-    } else if (functionsToGut.length > 0) {
+    } else {
       logger.warn(
         `Expected to gut ${functionsToGut.length} function(s) but found ${guttedCount}`,
       )

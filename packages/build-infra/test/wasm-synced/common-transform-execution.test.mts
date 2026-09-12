@@ -70,6 +70,14 @@ test.each([
   ['exampleModule.ready?.();', 'exampleModule.ready?.();'],
   ['const require = createRequire(import.meta.url);', ''],
   [
+    'const require = createRequire(import.meta.url) /*,*/, exampleValue = 1;',
+    'const  exampleValue = 1;',
+  ],
+  [
+    'const exampleValue = 1, /*,*/ require = createRequire(import.meta.url);',
+    'const exampleValue = 1;',
+  ],
+  [
     'const require = createRequire(import.meta.url), exampleValue = 1;',
     'const  exampleValue = 1;',
   ],

@@ -39,44 +39,36 @@ export function buildDeclVisitor(config) {
     // Remove ALL export statements
     ExportDefaultDeclaration(node, ancestors) {
       const parent = ancestors[ancestors.length - 2]
-      if (parent?.type === 'Program') {
-        // Find the index of this export in the program body
-        const programBody = parent.body
-        const exportDefaultIndex = programBody.indexOf(node)
+      // Find the index of this export in the program body
+      const programBody = parent.body
+      const exportDefaultIndex = programBody.indexOf(node)
 
-        // If exporting a function declaration, keep the function but remove "export default"
-        if (node.declaration?.type === 'FunctionDeclaration') {
-          // Remove "export default" keywords only, keep the function declaration
-          safeRemove(node.start, node.declaration.start)
-        } else {
-          // For other default exports (expressions, etc), remove entirely
-          safeRemove(node.start, node.end)
-        }
+      // If exporting a function declaration, keep the function but remove "export default"
+      if (node.declaration?.type === 'FunctionDeclaration') {
+        // Remove "export default" keywords only, keep the function declaration
+        safeRemove(node.start, node.declaration.start)
+      } else {
+        // For other default exports (expressions, etc), remove entirely
+        safeRemove(node.start, node.end)
+      }
 
-        // Mark all statements after the export for removal (pthread initialization code)
-        for (let i = exportDefaultIndex + 1; i < programBody.length; i++) {
-          topLevelStatementsToRemove.push(programBody[i])
-        }
+      // Mark all statements after the export for removal (pthread initialization code)
+      for (let i = exportDefaultIndex + 1; i < programBody.length; i++) {
+        topLevelStatementsToRemove.push(programBody[i])
       }
     },
-    ExportNamedDeclaration(node, ancestors) {
-      const parent = ancestors[ancestors.length - 2]
-      if (parent?.type === 'Program') {
-        if (node.declaration) {
-          // Remove "export" keyword only: "export const foo" → "const foo"
-          safeRemove(node.start, node.declaration.start)
-        } else {
-          // Remove entire statement: export { ... };
-          safeRemove(node.start, node.end)
-        }
+    ExportNamedDeclaration(node) {
+      if (node.declaration) {
+        // Remove "export" keyword only: "export const foo" → "const foo"
+        safeRemove(node.start, node.declaration.start)
+      } else {
+        // Remove entire statement: export { ... };
+        safeRemove(node.start, node.end)
       }
     },
     // Remove ALL import statements (not needed with embedded WASM)
-    ImportDeclaration(node, ancestors) {
-      const parent = ancestors[ancestors.length - 2]
-      if (parent?.type === 'Program') {
-        safeRemove(node.start, node.end)
-      }
+    ImportDeclaration(node) {
+      safeRemove(node.start, node.end)
     },
     // Remove findWasmBinary function - we have embedded wasmBinary
     FunctionDeclaration(node) {
@@ -142,14 +134,10 @@ export function buildDeclVisitor(config) {
 
       // Remove async keyword from ALL async functions (including Module)
       if (node.async) {
-        const asyncPos = mjsContent.indexOf('async', node.start)
-        if (asyncPos !== -1 && asyncPos < node.body.start) {
-          const end =
-            asyncPos +
-            5 +
-            (mjsContent.charCodeAt(asyncPos + 5) === 0x20 ? 1 : 0)
-          safeRemove(asyncPos, end)
-        }
+        const asyncPos = node.start
+        const end =
+          asyncPos + 5 + (mjsContent.charCodeAt(asyncPos + 5) === 0x20 ? 1 : 0)
+        safeRemove(asyncPos, end)
       }
 
       // Mark helper functions for gutting in Pass 3 (but NOT the main Module function)
@@ -180,30 +168,25 @@ export function buildDeclVisitor(config) {
     },
     ArrowFunctionExpression(node) {
       if (node.async) {
-        const pos = mjsContent.indexOf('async', node.start)
-        if (pos !== -1 && pos < node.start + 20) {
-          // Remove the 5-char "async" keyword. If a trailing space
-          // follows (e.g. "async foo" or "async ()=>"), also eat that
-          // space. But NEVER consume the next non-space char: minified
-          // code sometimes writes `async()=>` with no space, and the
-          // old `pos + 6` stripped the opening paren along with
-          // "async" — producing `=>{...})` parse errors downstream.
-          const end =
-            pos + 5 + (mjsContent.charCodeAt(pos + 5) === 0x20 ? 1 : 0)
-          safeRemove(pos, end)
-        }
+        const pos = node.start
+        // Remove the 5-char "async" keyword. If a trailing space
+        // follows (e.g. "async foo" or "async ()=>"), also eat that
+        // space. But NEVER consume the next non-space char: minified
+        // code sometimes writes `async()=>` with no space, and the
+        // old `pos + 6` stripped the opening paren along with
+        // "async" — producing `=>{...})` parse errors downstream.
+        const end = pos + 5 + (mjsContent.charCodeAt(pos + 5) === 0x20 ? 1 : 0)
+        safeRemove(pos, end)
       }
     },
     // Remove await keyword
     AwaitExpression(node) {
-      const pos = mjsContent.indexOf('await', node.start)
-      if (pos !== -1 && pos < node.start + 10) {
-        // Same off-by-one guard as the async-keyword removal above.
-        // Remove the 5-char "await" keyword plus only a TRAILING SPACE
-        // (never a non-space followup char like `(` or `[`).
-        const end = pos + 5 + (mjsContent.charCodeAt(pos + 5) === 0x20 ? 1 : 0)
-        safeRemove(pos, end)
-      }
+      const pos = node.start
+      // Same off-by-one guard as the async-keyword removal above.
+      // Remove the 5-char "await" keyword plus only a TRAILING SPACE
+      // (never a non-space followup char like `(` or `[`).
+      const end = pos + 5 + (mjsContent.charCodeAt(pos + 5) === 0x20 ? 1 : 0)
+      safeRemove(pos, end)
     },
     // Handle optional call expressions: readyPromiseResolve?.(Module)
     ChainExpression(node) {
