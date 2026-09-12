@@ -4,6 +4,7 @@ import {
   credentialSourceChoices,
   isCredentialSource,
   isOnePasswordReference,
+  parseCredentialSetupArgs,
 } from '../../../scripts/repo/setup-credential-contract.mts'
 
 describe('credential setup policy', () => {
@@ -24,4 +25,34 @@ describe('credential setup policy', () => {
     expect(isCredentialSource('keychain')).toBe(true)
     expect(isCredentialSource('runtime-1password')).toBe(false)
   })
+})
+
+test('parses a required 1Password source without a secret value', () => {
+  expect(
+    parseCredentialSetupArgs(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+  ).toEqual({ identifier: 'EXAMPLE_API_TOKEN', source: 'one-password' })
+  expect(parseCredentialSetupArgs(['EXAMPLE_API_TOKEN'])).toEqual({
+    identifier: 'EXAMPLE_API_TOKEN',
+    source: undefined,
+  })
+})
+test.each([
+  [],
+  ['EXAMPLE_API_TOKEN', 'value'],
+  ['lowercase'],
+  ['EXAMPLE_API_TOKEN', '--source', 'keychain'],
+  ['EXAMPLE_API_TOKEN', '--source'],
+  ['EXAMPLE_API_TOKEN', '--unknown'],
+])('rejects unsupported setup arguments %j', (...args) => {
+  expect(() => parseCredentialSetupArgs(args)).toThrow()
+})
+
+test('argument diagnostics do not echo unknown input', () => {
+  expect(() =>
+    parseCredentialSetupArgs(['EXAMPLE_API_TOKEN', '--FAKE_PRIVATE_ARGUMENT']),
+  ).toThrow(
+    expect.objectContaining({
+      message: expect.not.stringContaining('FAKE_PRIVATE_ARGUMENT'),
+    }),
+  )
 })

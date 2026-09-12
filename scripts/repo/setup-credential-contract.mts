@@ -5,7 +5,37 @@
  *   the preferred one-time source; Keychain entry is the direct fallback.
  */
 
+import { parseArgs } from 'node:util'
+
 export type CredentialSource = 'keychain' | 'one-password'
+
+export function parseCredentialSetupArgs(args: readonly string[]): {
+  identifier: string
+  source: 'one-password' | undefined
+} {
+  try {
+    const { positionals, values } = parseArgs({
+      args: [...args],
+      strict: true,
+      allowPositionals: true,
+      options: { source: { type: 'string' } },
+    })
+    const identifier = positionals[0]
+    if (
+      positionals.length !== 1 ||
+      identifier === undefined ||
+      !/^[A-Z_][A-Z0-9_]{0,126}$/u.test(identifier) ||
+      (values.source !== undefined && values.source !== 'one-password')
+    ) {
+      throw new Error('Invalid credential setup arguments.')
+    }
+    return { identifier, source: values.source }
+  } catch {
+    throw new Error(
+      'Invalid credential setup arguments. Use one uppercase credential name and optional --source one-password.',
+    )
+  }
+}
 
 export interface CredentialSourceChoice {
   description: string

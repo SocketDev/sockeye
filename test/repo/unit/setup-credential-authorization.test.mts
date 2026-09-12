@@ -3,6 +3,8 @@ import type { OnePasswordPrompts } from '../../../scripts/repo/one-password-meta
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  access: vi.fn(),
+  spawn: vi.fn(),
   authorize: vi.fn(),
   choose: vi.fn(),
   input: vi.fn(),
@@ -10,6 +12,17 @@ const mocks = vi.hoisted(() => ({
   which: vi.fn(),
   realpath: vi.fn(),
   metadata: vi.fn(),
+}))
+vi.mock('node:fs/promises', async original => ({
+  ...(await original<typeof import('node:fs/promises')>()),
+  access: mocks.access,
+}))
+vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
+  spawn: mocks.spawn,
+}))
+vi.mock('../../../scripts/repo/paths.mts', () => ({
+  getBinaryPath: () => '/example/sockeye',
+  getBuildMode: () => 'release',
 }))
 vi.mock('@socketsecurity/lib-stable/secrets/one-password', () => ({
   authorizeOnePasswordTerminal: mocks.authorize,
@@ -25,6 +38,7 @@ vi.mock('@socketsecurity/lib-stable/stdio/prompts', () => ({
 vi.mock('node:fs', async importOriginal => ({
   ...(await importOriginal<typeof import('node:fs')>()),
   realpathSync: mocks.realpath,
+  existsSync: () => true,
 }))
 vi.mock('../../../scripts/fleet/process/is-main-module.mts', () => ({
   isMainModule: () => false,
@@ -42,6 +56,7 @@ vi.mock(
 import {
   authorizeOnePasswordAccount,
   chooseOnePasswordReference,
+  setupCredential,
 } from '../../../scripts/repo/setup-credential.mts'
 
 beforeEach(() => {
@@ -146,4 +161,89 @@ test('guided selection receives the requested credential name for ranking', asyn
     expect.any(Object),
     { credentialName: 'EXAMPLE_API_TOKEN' },
   )
+})
+
+async function withTerminal(run: () => Promise<void>): Promise<void> {
+  const streams = [process.stdin, process.stdout]
+  const descriptors = streams.map(stream =>
+    Object.getOwnPropertyDescriptor(stream, 'isTTY'),
+  )
+  try {
+    for (const stream of streams)
+      Object.defineProperty(stream, 'isTTY', {
+        configurable: true,
+        value: true,
+      })
+    await run()
+  } finally {
+    for (const [index, stream] of streams.entries()) {
+      const descriptor = descriptors[index]
+      if (descriptor) Object.defineProperty(stream, 'isTTY', descriptor)
+      else Reflect.deleteProperty(stream, 'isTTY')
+    }
+  }
+}
+
+test('required 1Password source refuses missing CLI without direct-entry fallback', async () => {
+  mocks.access.mockRejectedValue(
+    Object.assign(new Error('unavailable'), { code: 'ENOENT' }),
+  )
+  await withTerminal(async () => {
+    await expect(
+      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+    ).rejects.toThrow()
+  })
+  expect(mocks.choose).not.toHaveBeenCalled()
+  expect(mocks.spawn).not.toHaveBeenCalled()
+})
+
+test.each([false, true])(
+  'required 1Password source imports only after approval=%s',
+  async approved => {
+    mocks.access.mockResolvedValue(undefined)
+    mocks.choose.mockResolvedValue('guided')
+    mocks.metadata.mockResolvedValue({
+      account: 'exampleaccount',
+      reference: 'op://examplevault/exampleitem/password',
+    })
+    mocks.confirm.mockResolvedValue(approved)
+    mocks.spawn.mockResolvedValue({ code: 0 })
+    await withTerminal(async () => {
+      expect(
+        await setupCredential([
+          'EXAMPLE_API_TOKEN',
+          '--source',
+          'one-password',
+        ]),
+      ).toBe(approved ? 0 : 130)
+    })
+    expect(mocks.choose).toHaveBeenCalledTimes(1)
+    if (approved) {
+      expect(mocks.spawn).toHaveBeenCalledWith(
+        '/example/sockeye',
+        [
+          'import-1password',
+          'EXAMPLE_API_TOKEN',
+          'op://examplevault/exampleitem/password',
+        ],
+        expect.objectContaining({
+          stdio: 'inherit',
+          env: expect.objectContaining({ OP_ACCOUNT: 'exampleaccount' }),
+        }),
+      )
+    } else expect(mocks.spawn).not.toHaveBeenCalled()
+  },
+)
+
+test('required 1Password source preserves canceled reference selection', async () => {
+  mocks.access.mockResolvedValue(undefined)
+  mocks.choose.mockResolvedValue('guided')
+  mocks.metadata.mockResolvedValue(undefined)
+  await withTerminal(async () => {
+    expect(
+      await setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+    ).toBe(130)
+  })
+  expect(mocks.confirm).not.toHaveBeenCalled()
+  expect(mocks.spawn).not.toHaveBeenCalled()
 })

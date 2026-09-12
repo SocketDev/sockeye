@@ -30,6 +30,7 @@ import {
   credentialSourceChoices,
   isCredentialSource,
   isOnePasswordReference,
+  parseCredentialSetupArgs,
 } from './setup-credential-contract.mts'
 
 import {
@@ -41,7 +42,7 @@ import type { OnePasswordSelection } from './one-password-metadata.mts'
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
-  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME>\nRequires a foreground terminal and Touch ID. Guided import lists account, vault, and item metadata before requesting the field reference.',
+  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> [--source one-password]\nRequires a foreground terminal and Touch ID. Guided import lists account, vault, and item metadata before requesting the field reference. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
   json: 'result',
 }
 
@@ -62,12 +63,6 @@ async function findOnePassword(): Promise<string | undefined> {
     }
   }
   return undefined
-}
-
-function usage(): never {
-  throw new Error(
-    'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME>',
-  )
 }
 
 async function runNative(
@@ -125,7 +120,10 @@ export async function authorizeOnePasswordAccount(
   executable: string,
   account: string,
 ): Promise<void> {
-  const resolved = whichSync('op', { path: getEnvValue('PATH'), nothrow: true })
+  const resolved = whichSync('op', {
+    path: getEnvValue('PATH'),
+    nothrow: true,
+  })
   if (
     typeof resolved !== 'string' ||
     realpathSync(resolved) !== realpathSync(executable)
@@ -191,43 +189,45 @@ export async function chooseOnePasswordReference(
   )
 }
 
-async function main(): Promise<void> {
-  const [identifier, ...extra] = getScriptArgs()
-  if (
-    identifier === undefined ||
-    extra.length > 0 ||
-    !/^[A-Z_][A-Z0-9_]{0,126}$/u.test(identifier)
-  ) {
-    usage()
-  }
+export async function setupCredential(
+  args: readonly string[],
+): Promise<number> {
+  const { identifier, source: requestedSource } = parseCredentialSetupArgs(args)
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error('Credential setup requires a foreground terminal.')
   }
   const executable = await findOnePassword()
-  const source = await select(
-    {
-      message: `How should Sockeye set ${identifier}?`,
-      choices: credentialSourceChoices(Boolean(executable)),
-    },
-    { output: process.stderr },
-  )
+  if (requestedSource && !executable) {
+    throw new Error(
+      '1Password credential setup is unavailable. A supported 1Password CLI was not found. Install the CLI, enable desktop integration, and retry.',
+    )
+  }
+  const source =
+    requestedSource ??
+    (await select(
+      {
+        message: `How should Sockeye set ${identifier}?`,
+        choices: credentialSourceChoices(Boolean(executable)),
+      },
+      { output: process.stderr },
+    ))
   if (!isCredentialSource(source)) {
-    return
+    return 130
   }
   if (source === 'keychain') {
     await runNative(['set', identifier])
-    return
+    return 0
   }
 
   if (!executable) {
-    return
+    return 130
   }
   const selected = await chooseOnePasswordReference(executable, {
     credentialName: identifier,
   })
   if (!selected) {
-    return
+    return 130
   }
   const approved = await confirm(
     {
@@ -237,13 +237,14 @@ async function main(): Promise<void> {
     { output: process.stderr },
   )
   if (approved !== true) {
-    return
+    return 130
   }
   await runNative(['import-1password', identifier, selected.reference], {
     account: selected.account,
   })
+  return 0
 }
 
 if (isMainModule(import.meta.url)) {
-  runMain(main, SCRIPT_META)
+  runMain(async () => await setupCredential(getScriptArgs()), SCRIPT_META)
 }

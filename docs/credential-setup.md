@@ -10,6 +10,10 @@ Run this from a real terminal after building Sockeye:
 pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY
 ```
 
+Add `--source one-password` to require an attended 1Password import. This mode
+stops if the supported CLI is unavailable. It keeps account selection and
+import confirmation. Canceled selection or confirmation returns exit code 130.
+
 If the 1Password CLI is installed in a supported location, setup recommends
 **Import once from 1Password**. Guided selection lists your accounts, vaults,
 and items through the 1Password CLI. Account access can trigger 1Password's
