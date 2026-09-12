@@ -6,7 +6,7 @@ vi.mock(
   import('local-build-infra/lib/build-operations'),
   async importOriginal => ({
     ...(await importOriginal()),
-    exec: io.exec,
+    execBuildStep: io.exec,
   }),
 )
 vi.mock(
@@ -26,7 +26,7 @@ vi.mock(
 
 beforeEach(() => {
   vi.clearAllMocks()
-  io.exec.mockResolvedValue(undefined)
+  io.exec.mockResolvedValue({ code: 0, stdout: '', stderr: '', pid: 0 })
   io.tool.mockResolvedValue({ available: false })
   io.which.mockReturnValue(undefined)
 })
@@ -44,8 +44,8 @@ test('preserves Linux x64 symbol metadata even when optional tools exist', async
   io.which.mockReturnValue('/example/tool')
   await stripPlatformBinary('/example/node', { arch: 'x64', platform: 'linux' })
   expect(io.exec.mock.calls).toEqual([
-    ['strip', ['--strip-debug', '/example/node']],
-    ['sstrip', ['/example/node']],
+    ['strip', { args: ['--strip-debug', '/example/node'] }],
+    ['sstrip', { args: ['/example/node'] }],
   ])
 })
 
@@ -55,6 +55,7 @@ test('removes optional ARM64 sections and continues if a section is absent', asy
     if (command === 'objcopy') {
       throw new Error('Fixture absent section')
     }
+    return { code: 0, stdout: '', stderr: '', pid: 0 }
   })
   await stripPlatformBinary('/example/node', {
     arch: 'arm64',
@@ -63,7 +64,9 @@ test('removes optional ARM64 sections and continues if a section is absent', asy
   expect(
     io.exec.mock.calls.filter(([command]) => command === 'objcopy'),
   ).toHaveLength(4)
-  expect(io.exec).toHaveBeenLastCalledWith('sstrip', ['/example/node'])
+  expect(io.exec).toHaveBeenLastCalledWith('sstrip', {
+    args: ['/example/node'],
+  })
 })
 
 for (const available of [false, true]) {
@@ -73,13 +76,14 @@ for (const available of [false, true]) {
       arch: 'arm64',
       platform: 'darwin',
     })
-    expect(io.exec).toHaveBeenNthCalledWith(1, 'strip', ['-x', '/example/node'])
+    expect(io.exec).toHaveBeenNthCalledWith(1, 'strip', {
+      args: ['-x', '/example/node'],
+    })
     expect(io.exec).toHaveBeenCalledTimes(available ? 2 : 1)
     if (available) {
-      expect(io.exec).toHaveBeenLastCalledWith('llvm-strip', [
-        '--strip-debug',
-        '/example/node',
-      ])
+      expect(io.exec).toHaveBeenLastCalledWith('llvm-strip', {
+        args: ['--strip-debug', '/example/node'],
+      })
     }
   })
 }

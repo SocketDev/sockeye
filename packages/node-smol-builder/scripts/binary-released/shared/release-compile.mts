@@ -2,8 +2,7 @@ import { existsSync, promises as fs } from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
 import {
-  estimateBuildTime,
-  exec,
+  execBuildStep,
   formatDuration,
   getBuildLogPath,
   getLastLogLines,
@@ -34,16 +33,11 @@ export async function compileReleaseBinary(config) {
     modeSourceDir,
     platform,
   } = config
-  const timeEstimate = estimateBuildTime(jobCount)
 
   const totalCpus = os.cpus().length
   const totalRamGB = Math.floor(os.totalmem() / (1024 * 1024 * 1024))
   const isMemoryConstrained = jobCount < totalCpus
   const isEnvOverride = Boolean(getEnvValue('BUILD_JOBS'))
-
-  logger.log(
-    `⏱️  Estimated time: ${timeEstimate.estimatedMinutes} minutes (${timeEstimate.minMinutes}-${timeEstimate.maxMinutes} min range)`,
-  )
 
   if (isEnvOverride) {
     logger.log(
@@ -92,7 +86,8 @@ export async function compileReleaseBinary(config) {
 
   try {
     const ninjaCommand = whichSync('ninja')
-    await exec(ninjaCommand, ['-C', 'out/Release', `-j${jobCount}`], {
+    await execBuildStep(ninjaCommand, {
+      args: ['-C', 'out/Release', `-j${jobCount}`],
       cwd: modeSourceDir,
       env: process.env,
     })
@@ -156,7 +151,8 @@ export async function configureReleaseBinary(config) {
       )
       if (existsSync(junctionPath)) {
         logger.log(`Removing stale ${configDir} directory/junction…`)
-        await exec('cmd.exe', ['/c', `rd /S /Q "${configDir}"`], {
+        await execBuildStep('cmd.exe', {
+          args: ['/c', `rd /S /Q "${configDir}"`],
           cwd: modeSourceDir,
         })
         logger.log(`Removed ${configDir}`)
@@ -182,7 +178,8 @@ export async function configureReleaseBinary(config) {
     CXXFLAGS: appendCCRemapFlags(getEnvValue('CXXFLAGS')),
   }
 
-  await exec(configureCommand, configureArgs, {
+  await execBuildStep(configureCommand, {
+    args: configureArgs,
     cwd: modeSourceDir,
     env: buildEnv,
     shell: isWin32(),
@@ -265,7 +262,8 @@ export async function refreshReleaseNinja(
       logger.warn(
         `node.gyp is newer than build.ninja (${new Date(gypStat.mtimeMs).toISOString()} > ${new Date(ninjaStat.mtimeMs).toISOString()}) — re-running configure to refresh ninja source list`,
       )
-      await exec(isWin32() ? 'vcbuild.bat' : './configure', configureArgs, {
+      await execBuildStep(isWin32() ? 'vcbuild.bat' : './configure', {
+        args: configureArgs,
         cwd: modeSourceDir,
         env: buildEnv,
         shell: isWin32(),

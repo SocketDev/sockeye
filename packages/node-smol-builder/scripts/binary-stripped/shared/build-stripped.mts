@@ -17,7 +17,7 @@ import path from 'node:path'
 
 import {
   createCheckpoint,
-  exec,
+  execBuildStep,
   getFileSize,
   smokeTestBinary,
 } from 'local-build-infra/lib/build-operations'
@@ -283,7 +283,7 @@ export async function stripPlatformBinary(
     // needed by native addons (.node files). Bare `strip` removes ALL symbols
     // including Node-API exports (_napi_*), causing native addons to SIGSEGV.
     logger.log('Phase 1: Basic stripping (preserving Node-API symbols)')
-    await exec('strip', ['-x', outputStrippedBinary])
+    await execBuildStep('strip', { args: ['-x', outputStrippedBinary] })
 
     // Phase 2: Try llvm-strip for more aggressive optimization.
     // Use ensureToolInstalled which verifies the tool works (catches broken z3 dependency).
@@ -300,7 +300,9 @@ export async function stripPlatformBinary(
       // --strip-debug only removes debug info, preserving Node-API symbols
       // needed by native addons (.node files).
       logger.log('Phase 2: LLVM stripping (strip-debug only)')
-      await exec('llvm-strip', ['--strip-debug', outputStrippedBinary])
+      await execBuildStep('llvm-strip', {
+        args: ['--strip-debug', outputStrippedBinary],
+      })
     } else if (llvmStripResult.error) {
       // Tool installer provides detailed error (e.g., broken dependency)
       logger.warn(`Phase 2: ${llvmStripResult.error}`)
@@ -330,7 +332,9 @@ export async function stripPlatformBinary(
     // - GNU binutils: https://sourceware.org/binutils/docs/binutils/strip.html
     // - Symbol preservation: https://www.technovelty.org/code/split-debugging-info-symbols.html
     logger.log('Phase 1: Basic stripping (preserving Node-API symbols)')
-    await exec('strip', ['--strip-debug', outputStrippedBinary])
+    await execBuildStep('strip', {
+      args: ['--strip-debug', outputStrippedBinary],
+    })
 
     // Phase 2: Remove unnecessary ELF sections if objcopy is available.
     // Architecture-specific optimization: Only safe on ARM64.
@@ -351,10 +355,9 @@ export async function stripPlatformBinary(
       for (let i = 0, { length } = sections; i < length; i += 1) {
         const section = sections[i]
         try {
-          await exec('objcopy', [
-            `--remove-section=${section}`,
-            outputStrippedBinary,
-          ])
+          await execBuildStep('objcopy', {
+            args: [`--remove-section=${section}`, outputStrippedBinary],
+          })
         } catch {
           // Section might not exist, continue.
           logger.skip(`Skipped ${section} (not present)`)
@@ -373,7 +376,7 @@ export async function stripPlatformBinary(
     // symbol table itself. Symbols remain in the dynamic symbol table.
     if (commandExists('sstrip')) {
       logger.log('Phase 3: Super strip (removing section headers)')
-      await exec('sstrip', [outputStrippedBinary])
+      await execBuildStep('sstrip', { args: [outputStrippedBinary] })
     } else {
       logger.skip('Phase 3: Skipped (sstrip not available)')
     }

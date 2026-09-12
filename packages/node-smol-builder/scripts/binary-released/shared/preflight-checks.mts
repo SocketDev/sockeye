@@ -10,7 +10,7 @@ import {
   checkDiskSpace,
   checkNetworkConnectivity,
   checkPythonVersion,
-  exec,
+  execBuildStep,
 } from 'local-build-infra/lib/build-operations'
 import { printError } from 'local-build-infra/lib/build-output'
 import {
@@ -59,10 +59,11 @@ async function checkBuildDiskSpace(buildDir: string): Promise<boolean> {
   return true
 }
 
-async function checkBuildPython(): Promise<boolean> {
+async function checkBuildPython(
+  requiredPythonVersion: string,
+): Promise<boolean> {
   // Check 2: Python version.
   logger.log('Checking Python version…')
-  const requiredPythonVersion = getMinPythonVersion()
   const python = await checkPythonVersion(requiredPythonVersion)
   if (python.available && python.sufficient) {
     logger.success(`Python ${python.version} is available`)
@@ -108,7 +109,8 @@ export async function checkBuildEnvironment(buildDir) {
 
   allChecks = await checkBuildDiskSpace(buildDir)
 
-  const pythonAvailable = await checkBuildPython()
+  const requiredPythonVersion = getMinPythonVersion()
+  const pythonAvailable = await checkBuildPython(requiredPythonVersion)
   allChecks = pythonAvailable && allChecks
 
   // Check 3: C++ compiler.
@@ -145,7 +147,8 @@ export async function checkBuildEnvironment(buildDir) {
   if (process.platform === 'darwin') {
     logger.log('Checking Xcode version…')
     try {
-      const result = await exec('xcodebuild', ['-version'], {
+      const result = await execBuildStep('xcodebuild', {
+        args: ['-version'],
         encoding: 'utf8',
         shell: false,
       })

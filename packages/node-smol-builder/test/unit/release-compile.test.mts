@@ -7,15 +7,14 @@ import {
   refreshReleaseNinja,
 } from '../../scripts/binary-released/shared/release-compile.mts'
 
-const io = vi.hoisted(() => ({ stat: vi.fn(), exec: vi.fn() }))
+const io = vi.hoisted(() => ({ stat: vi.fn(), exec: vi.fn(), log: vi.fn() }))
 vi.mock(import('node:fs'), async importOriginal => {
   const original = await importOriginal()
   return { ...original, promises: { ...original.promises, stat: io.stat } }
 })
-vi.mock(
-  import('local-build-infra/lib/build-operations'),
-  async importOriginal => ({ ...(await importOriginal()), exec: io.exec }),
-)
+vi.mock(import('@socketsecurity/lib-stable/process/spawn/child'), () => ({
+  spawn: io.exec,
+}))
 vi.mock(
   import('@socketsecurity/lib-stable/constants/platform'),
   async importOriginal => ({
@@ -32,6 +31,17 @@ vi.mock(
   }),
 )
 
+vi.mock(import('@socketsecurity/lib-stable/logger/default'), () => ({
+  getDefaultLogger: () => ({
+    log: io.log,
+    step: vi.fn(),
+    warn: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    fail: vi.fn(),
+  }),
+}))
+
 const config = {
   buildEnv: { CFLAGS: 'example-flag' },
   configureArgs: ['--without-npm'],
@@ -39,6 +49,7 @@ const config = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  io.exec.mockResolvedValue({ code: 0, stdout: '', stderr: '', pid: 0 })
   io.stat.mockResolvedValue({ mtimeMs: 1000 })
 })
 
@@ -50,7 +61,12 @@ test('refreshes stale Ninja metadata using the configuration arguments and envir
   expect(io.exec).toHaveBeenCalledExactlyOnceWith(
     './configure',
     config.configureArgs,
-    { cwd: '/example/source', env: config.buildEnv, shell: false },
+    {
+      cwd: '/example/source',
+      env: config.buildEnv,
+      shell: false,
+      stdio: 'inherit',
+    },
   )
 })
 
@@ -85,11 +101,13 @@ test('carries the initial configuration into stale metadata refresh before Ninja
     cwd: '/example/source',
     env: configured.buildEnv,
     shell: false,
+    stdio: 'inherit',
   })
+  expect(io.log.mock.calls.flat().join('\n')).not.toMatch(/undefined|NaN/)
   expect(io.exec).toHaveBeenLastCalledWith(
     '/example/ninja',
     ['-C', 'out/Release', '-j2'],
-    { cwd: '/example/source', env: process.env },
+    { cwd: '/example/source', env: process.env, stdio: 'inherit' },
   )
 })
 
