@@ -10,6 +10,7 @@ import {
 import { existsSync, mkdirSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import process from 'node:process'
+import path from 'node:path'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -77,6 +78,8 @@ async function main(): Promise<void> {
     `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outputDir}`,
     `-DSOCKEYE_VERSION=${version}`,
     `-DSOCKEYE_SANITIZER=${sanitizer}`,
+    `-DSOCKEYE_COVERAGE=${mode === 'coverage' ? 'ON' : 'OFF'}`,
+    `-DSOCKEYE_COVERAGE_PROFILE_FILE=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? path.join(cmakeBuildDir, 'profiles', '%m-%p.profraw')}`,
   ])
   await run('cmake', ['--build', cmakeBuildDir, '--parallel'])
 

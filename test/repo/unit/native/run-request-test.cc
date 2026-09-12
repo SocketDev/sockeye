@@ -2,10 +2,38 @@
 #include "sockeye/input-policy.h"
 
 #include <cassert>
+#include <cstdio>
 #include <string>
 #include <vector>
 
+namespace {
+void RejectRequest(std::vector<std::string> arguments) {
+  std::vector<char *> pointers;
+  for (std::string &argument : arguments) pointers.push_back(argument.data());
+  sockeye::RunOptions request;
+  std::string error;
+  assert(!sockeye::PrepareRunRequest(static_cast<int>(pointers.size()), pointers.data(), request, error));
+  assert(!error.empty());
+}
+void CheckRejectedRequests() {
+  const std::vector<std::vector<std::string>> invalid = {
+    {"sockeye", "run", "--credential"},
+    {"sockeye", "run", "--pass-env", "invalid-name"},
+    {"sockeye", "run", "--pass-env", "EXAMPLE", "--pass-env", "EXAMPLE"},
+    {"sockeye", "run", "--cwd", "/", "--cwd", "/"},
+    {"sockeye", "run", "--bind-file", "/usr/bin/true", "--bind-file", "/usr/bin/true"},
+    {"sockeye", "run", "--credential", "SOCKET_TEST_TOKEN", "--pass-env", "SOCKET_TEST_TOKEN", "--cwd", "/", "--", "/usr/bin/true"},
+    {"sockeye", "run", "--credential", "SOCKET_TEST_TOKEN", "--cwd", "/", "--", "/usr/bin/true", std::string(4097, 'x')},
+  };
+  for (const auto &arguments : invalid) RejectRequest(arguments);
+  std::vector<std::string> excessive = {"sockeye", "run", "--credential", "SOCKET_TEST_TOKEN", "--cwd", "/", "--", "/usr/bin/true"};
+  excessive.insert(excessive.end(), 17, std::string(4096, 'x'));
+  RejectRequest(excessive);
+}
+} // namespace
+
 int main() {
+  CheckRejectedRequests();
   sockeye::RunOptions request;
   request.working_directory.canonical_path = "/example";
   request.executable.canonical_path = "/example/tool";

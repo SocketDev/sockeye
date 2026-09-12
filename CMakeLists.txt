@@ -10,6 +10,12 @@ set(SOCKEYE_VERSION "${PROJECT_VERSION}" CACHE STRING "Sockeye release version")
 set(SOCKEYE_SANITIZER "none" CACHE STRING "Native sanitizer: none, address, or undefined")
 set_property(CACHE SOCKEYE_SANITIZER PROPERTY STRINGS none address undefined)
 
+set(SOCKEYE_COVERAGE_PROFILE_FILE "${CMAKE_CURRENT_BINARY_DIR}/profiles/%m-%p.profraw" CACHE STRING "Native coverage profile destination")
+option(SOCKEYE_COVERAGE "Instrument native targets with Clang source coverage" OFF)
+if(SOCKEYE_COVERAGE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  message(FATAL_ERROR "Sockeye coverage requires Clang")
+endif()
+
 include(CTest)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -48,6 +54,14 @@ if(BUILD_TESTING)
   )
   target_include_directories(sockeye-child-process-test PRIVATE src)
   target_compile_definitions(sockeye-child-process-test PRIVATE SOCKEYE_TESTING=1)
+
+  add_executable(sockeye-portable-core-test
+    src/sockeye/child-process.cc
+    src/sockeye/file-identity.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/portable-core-test.cc
+  )
+  target_include_directories(sockeye-portable-core-test PRIVATE src)
 
   add_executable(sockeye-readiness-test
     src/sockeye/readiness.cc
@@ -101,6 +115,7 @@ set(SOCKEYE_SECURITY_TARGETS
 if(BUILD_TESTING)
   list(APPEND SOCKEYE_SECURITY_TARGETS
     sockeye-input-policy-test
+    sockeye-portable-core-test
     sockeye-run-request-test
     sockeye-readiness-test
     sockeye-preview-isolation-test
@@ -111,6 +126,10 @@ if(BUILD_TESTING)
   )
 endif()
 foreach(target IN LISTS SOCKEYE_SECURITY_TARGETS)
+  if(SOCKEYE_COVERAGE)
+    target_compile_options(${target} PRIVATE "-fprofile-instr-generate=${SOCKEYE_COVERAGE_PROFILE_FILE}" -fcoverage-mapping)
+    target_link_options(${target} PRIVATE "-fprofile-instr-generate=${SOCKEYE_COVERAGE_PROFILE_FILE}")
+  endif()
   target_compile_options(${target} PRIVATE -Wall -Wextra -Werror -Wconversion -Wpedantic -Wshadow)
   if(NOT target STREQUAL "sockeye")
     target_compile_options(${target} PRIVATE -UNDEBUG)
@@ -176,7 +195,9 @@ target_compile_options(sockeye PRIVATE
   -fstack-protector-strong
 )
 target_compile_options(sockeye PRIVATE $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
-target_link_options(sockeye PRIVATE -Wl,-dead_strip)
+if(NOT SOCKEYE_COVERAGE)
+  target_link_options(sockeye PRIVATE -Wl,-dead_strip)
+endif()
 
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 find_library(LOCAL_AUTHENTICATION_FRAMEWORK LocalAuthentication REQUIRED)

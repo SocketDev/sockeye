@@ -97,6 +97,7 @@
     "build:oxlint-bundle": "node scripts/fleet/build-oxlint-bundle.mts",
     "check:workspace-installation": "node scripts/fleet/check/workspace-installation.mts",
     "cover:types": "node scripts/fleet/cover/types/run.mts",
+    "cover:cpp": "node scripts/repo/cover-cpp.mts",
     "depot:auth": "node scripts/fleet/registry-infra/depot/browser-auth.mts",
     "fleet:update": "node scripts/repo/bootstrap/fleet.mjs --if-current",
     "integrity-refresh": "node scripts/fleet/external-tools/refresh.mts",

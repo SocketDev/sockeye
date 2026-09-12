@@ -158,6 +158,8 @@ pnpm-debug.log
 .windsurf/
 AGENTS.md
 opencode.json
+.clang-format
+.clang-tidy
 .claude/agents/fleet/code-reviewer.md
 .claude/agents/fleet/fix.md
 .claude/agents/fleet/offload.md
@@ -2678,6 +2680,7 @@ docs/fleet/agents.md/worktree-hygiene.md
 docs/fleet/agents.md/writing-skills-well.md
 docs/fleet/ai-balancer.md
 docs/fleet/development/commands.md
+docs/fleet/development/cpp-javascript.md
 docs/fleet/development/documentation.md
 docs/fleet/development/javascript-api.md
 docs/fleet/development/mcp-service-connections.md

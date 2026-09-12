@@ -22,6 +22,7 @@ test('native security targets retain assertions and sanitizer instrumentation', 
   for (const target of [
     'sockeye-input-policy-test',
     'sockeye-child-process-test',
+    'sockeye-portable-core-test',
     'sockeye-run-request-test',
     'sockeye-preview-isolation-test',
     'sockeye-readiness-test',
@@ -38,6 +39,10 @@ test('native security targets retain assertions and sanitizer instrumentation', 
       expect(entry.command.lastIndexOf('-UNDEBUG')).toBeGreaterThan(
         entry.command.lastIndexOf('-DNDEBUG'),
       )
+      if (mode === 'coverage') {
+        expect(entry.command).toContain('-fprofile-instr-generate=')
+        expect(entry.command).toContain('-fcoverage-mapping')
+      }
       if (sanitizer) {
         expect(entry.command).toContain(`-fsanitize=${sanitizer}`)
       }
@@ -56,5 +61,9 @@ test('native security targets retain assertions and sanitizer instrumentation', 
   expect(production.length).toBeGreaterThan(0)
   for (const entry of production) {
     expect(entry.command).not.toContain('SOCKEYE_TESTING')
+    if (mode === 'coverage') {
+      expect(entry.command).toContain('-fprofile-instr-generate=')
+      expect(entry.command).toContain('-fcoverage-mapping')
+    }
   }
 })

@@ -160,6 +160,9 @@ async function main() {
 
   const build = resolvePlatformBuild(process.platform, mode)
   const optimize = mode === 'prod' ? '-O2' : '-O0'
+  const profileFlag = `-fprofile-instr-generate=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? path.join(outDir, 'profiles', '%m-%p.profraw')}`
+  const coverage =
+    mode === 'coverage' ? [profileFlag, '-fcoverage-mapping'] : []
   const includes = [`-I${nodeInclude}`, `-I${KEYSTORE_SOURCE_DIR}`]
   const shimObj = path.join(outDir, 'keychain_napi.o')
   const backendObj = path.join(outDir, 'keystore_backend.o')
@@ -171,6 +174,7 @@ async function main() {
     [
       '-c',
       optimize,
+      ...coverage,
       '-std=c++17',
       ...build.compileFlags,
       ...includes,
@@ -187,6 +191,7 @@ async function main() {
     [
       '-c',
       optimize,
+      ...coverage,
       ...(build.backendLang === 'objc++' ? ['-std=c++17'] : ['-x', 'c']),
       ...build.compileFlags,
       ...includes,
@@ -200,7 +205,15 @@ async function main() {
   logger.info(`Linking keychain.node…`)
   execBuildCommand(
     build.compiler,
-    ['-shared', shimObj, backendObj, ...build.linkFlags, '-o', outPath],
+    [
+      '-shared',
+      shimObj,
+      backendObj,
+      ...(mode === 'coverage' ? [profileFlag] : []),
+      ...build.linkFlags,
+      '-o',
+      outPath,
+    ],
     packageRoot,
   )
 

@@ -4,6 +4,13 @@
   },
   "$schema": "../socket-wheelhouse-schema.json",
   "schemaVersion": 1,
+  "capabilities": {
+    "cpp": [
+      "src/sockeye",
+      "packages/keychain-addon-builder/src",
+      "packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm"
+    ]
+  },
   "repoName": "sockeye",
   "bundle": {
     "ref": "fleet-pack-011e1c67ce8860fdf7dca52a45e1a8d6620379e6",
