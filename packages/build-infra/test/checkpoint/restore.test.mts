@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { closeSync, openSync, promises as fs, readSync } from 'node:fs'
+import {
+  closeSync,
+  openSync,
+  promises as fs,
+  readSync,
+  statSync,
+} from 'node:fs'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { withLock } from '../../lib/checkpoint-lock.mts'
 import { computeSourceHash } from '../../lib/extraction-cache.mts'
@@ -38,9 +44,11 @@ const config = {
   targetPath: '/example/build/output.node',
 }
 function stats(size = 30, mtimeMs = 1000) {
-  return { size, mtimeMs, isFile: () => true } as Awaited<
-    ReturnType<typeof fs.stat>
-  >
+  const metadata = statSync(new URL(import.meta.url))
+  metadata.size = size
+  metadata.mtimeMs = mtimeMs
+  metadata.mtime = new Date(mtimeMs)
+  return metadata
 }
 beforeEach(() => {
   vi.resetAllMocks()

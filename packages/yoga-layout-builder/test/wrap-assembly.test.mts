@@ -84,13 +84,14 @@ test.each(setters)(
     const { calls, lib } = createBindings()
     const yoga = wrapAssembly(lib)
     const node = yoga.Node.create()
-    for (const [value, suffix, expected] of [
+    const values: Array<[unknown, string, number | undefined]> = [
       [12, '', 12],
       ['25%', 'Percent', 25],
       ['30', '', 30],
       ['auto', 'Auto', undefined],
       [{ unit: Unit.Percent, valueOf: () => 75 }, 'Percent', 75],
-    ]) {
+    ]
+    for (const [value, suffix, expected] of values) {
       node[name](2, value)
       expect(calls).toHaveBeenLastCalledWith(
         `${name}${suffix}`,

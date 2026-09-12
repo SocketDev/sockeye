@@ -6,6 +6,7 @@ import {
   promises as fs,
   readSync,
   renameSync,
+  statSync,
 } from 'node:fs'
 import { safeDeleteSync } from '@socketsecurity/lib-stable/fs/safe'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
@@ -49,9 +50,11 @@ const config = {
   tarExcludes: undefined,
 }
 function archiveStats(size = 30, directory = false) {
-  return { size, isDirectory: () => directory } as Awaited<
-    ReturnType<typeof fs.stat>
-  >
+  const stats = statSync(
+    new URL(directory ? '.' : import.meta.url, import.meta.url),
+  )
+  stats.size = size
+  return stats
 }
 function createArchive() {
   return createCheckpointArchive(

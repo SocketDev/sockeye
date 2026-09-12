@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { existsSync, promises as fs } from 'node:fs'
+import { existsSync, promises as fs, statSync } from 'node:fs'
 import { isCI } from '@socketsecurity/lib-stable/env/ci'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { withTryLock } from '../../lib/checkpoint-lock.mts'
@@ -22,14 +22,19 @@ const config = {
   artifactPath: 'example.node',
   checkpointChain: ['current', 'previous'],
 }
+function checkpointStats(size: number, mtimeMs: number) {
+  const metadata = statSync(new URL(import.meta.url))
+  metadata.size = size
+  metadata.mtimeMs = mtimeMs
+  metadata.mtime = new Date(mtimeMs)
+  return metadata
+}
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(isCI).mockReturnValue(true)
   vi.mocked(existsSync).mockReturnValue(true)
   vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
-  vi.mocked(fs.stat).mockResolvedValue({ size: 30, mtimeMs: 0 } as Awaited<
-    ReturnType<typeof fs.stat>
-  >)
+  vi.mocked(fs.stat).mockResolvedValue(checkpointStats(30, 0))
   vi.mocked(withTryLock).mockImplementation(async (...args) => args[1](true))
 })
 test.each([
@@ -61,10 +66,7 @@ test('removes an old archive and its metadata under the lock', async () => {
 test.each([0, 17])(
   'removes invalid archive size %s even when recent',
   async size => {
-    vi.mocked(fs.stat).mockResolvedValue({
-      size,
-      mtimeMs: 1_000_000,
-    } as Awaited<ReturnType<typeof fs.stat>>)
+    vi.mocked(fs.stat).mockResolvedValue(checkpointStats(size, 1_000_000))
     vi.mocked(existsSync).mockImplementation(file =>
       String(file).endsWith('.tar.gz'),
     )
@@ -75,9 +77,7 @@ test.each([0, 17])(
 test.each([1_000_000, 1_100_000])(
   'preserves recent or future-dated valid archive %s',
   async mtimeMs => {
-    vi.mocked(fs.stat).mockResolvedValue({ size: 30, mtimeMs } as Awaited<
-      ReturnType<typeof fs.stat>
-    >)
+    vi.mocked(fs.stat).mockResolvedValue(checkpointStats(30, mtimeMs))
     await cleanupPreviousCheckpoint('/example/checkpoints', 'current', config)
     expect(withTryLock).not.toHaveBeenCalled()
   },
