@@ -117,10 +117,7 @@ export function loadExternalToolsJson(
           ? extendsField
           : []
     for (let i = 0, { length } = extendsList; i < length; i += 1) {
-      const relativeBase = extendsList[i]
-      if (relativeBase === undefined) {
-        continue
-      }
+      const relativeBase = extendsList[i]!
       const extendsPath = resolveRequirementReference({
         manifestPath: jsonPath,
         reference: relativeBase,

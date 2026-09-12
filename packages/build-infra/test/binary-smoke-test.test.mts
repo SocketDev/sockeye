@@ -63,7 +63,9 @@ test('runs the native fixture battery in order', async () => {
   ])
 })
 test('stops the native battery after its first failed command', async () => {
-  smoke.spawn.mockResolvedValueOnce({ code: 1 })
+  smoke.spawn.mockRejectedValueOnce(
+    Object.assign(new Error('Fixture process failed'), { code: 1 }),
+  )
   expect(await runNativeBinaryTests('/example/binary')).toBe(false)
   expect(smoke.spawn).toHaveBeenCalledTimes(1)
 })

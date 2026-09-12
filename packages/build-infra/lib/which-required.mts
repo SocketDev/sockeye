@@ -13,9 +13,8 @@ import { which } from '@socketsecurity/lib-stable/exe/path/which'
  * Resolve a binary on PATH, throwing when it cannot be found.
  */
 export async function whichRequired(binName: string): Promise<string> {
-  const found = await which(binName)
-  const binPath = Array.isArray(found) ? found[0] : found
-  if (!binPath) {
+  const binPath = await which(binName)
+  if (typeof binPath !== 'string') {
     throw new Error(
       `Required binary not found: '${binName}'. ` +
         'PATH lookup returned nothing; wanted an executable path. ' +

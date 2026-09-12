@@ -174,15 +174,12 @@ export async function buildBinSuitePackage(config: BuildBinSuitePackageConfig) {
     // Helper to run make with proper environment.
     const runMake = async (args: string[]) => {
       logger.info(`Running: make ${args.join(' ')}`)
-      const result = await spawn('make', args, {
+      await spawn('make', args, {
         cwd: packageDir,
         env: makeEnv,
         shell: isWin32(),
         stdio: 'inherit',
       })
-      if (result.code !== 0) {
-        throw new Error(`Make failed with exit code ${result.code}`)
-      }
     }
 
     // Clean stale object files to avoid issues with renamed source files
@@ -262,11 +259,6 @@ export async function defaultSmokeTest(
 
   // Run --version to ensure binary is functional
   const result = await spawn(binaryPath, ['--version'])
-  if (result.code !== 0) {
-    throw new Error(
-      `Binary --version check failed with exit code ${result.code}`,
-    )
-  }
   if (!(result.stdout || '').includes(packageName)) {
     throw new Error(
       `Binary --version output missing '${packageName}': ${result.stdout || ''}`,

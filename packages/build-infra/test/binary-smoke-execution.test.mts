@@ -48,6 +48,25 @@ beforeEach(() => {
   io.docker.mockResolvedValue(true)
 })
 
+test('direct result validation accepts an omitted optional status', () => {
+  expect(
+    checkSpawnResult({ stdout: 'example output' }, 'version', '/example/tool'),
+  ).toBe(true)
+})
+
+test('empty process errors use diagnostics and fail Rosetta execution', async () => {
+  expect(
+    reportBinaryTestError({
+      error: new Error(''),
+      execPath: '/example/tool',
+      args: ['--version'],
+      testName: 'version',
+    }),
+  ).toBe(false)
+  io.spawn.mockRejectedValue(new Error(''))
+  expect(await runRosettaBinaryTest('/example/tool')).toBe(false)
+})
+
 test.each(['docker-static', 'qemu-static', 'rosetta-static', 'static'])(
   'uses static validation when strategy is %s',
   async strategy => {

@@ -67,13 +67,7 @@ export async function fetchNodeChecksum(
     } as unknown as { error: string; version: string }
   }
 
-  // parseShasums yields the file's own lowercase hex, which is the format both
-  // callers want: verifyNodeChecksum compares hex, and the update-node skill
-  // writes `sha256:<hex>` into .gitmodules. An SRI form is still decoded so a
-  // future switch back to an SRI-producing source stays compatible.
-  const hash = sri.startsWith('sha256-')
-    ? Buffer.from(sri.slice('sha256-'.length), 'base64').toString('hex')
-    : sri
+  const hash = sri
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- null-proto idiom: `__proto__: null` keeps the literal prototype-free but changes its inferred type, so the cast is what makes the declared shape hold.
   return { __proto__: null, hash, version } as unknown as {

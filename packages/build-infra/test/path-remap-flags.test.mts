@@ -16,6 +16,12 @@ function fixedPaths() {
   vi.spyOn(process, 'cwd').mockReturnValue('/example/user-root/project')
   vi.stubEnv('CARGO_HOME', '/example/user-root/cargo')
 }
+
+test('absent Cargo home uses the default directory below the user home', () => {
+  fixedPaths()
+  vi.stubEnv('CARGO_HOME', undefined)
+  expect(getRemapPairs()[0]).toEqual(['/example/user-root/.cargo', '/cargo'])
+})
 test('compiler environment preserves existing options and applies every path mapping', () => {
   fixedPaths()
   const original = { CFLAGS: ' -O2 ', CXXFLAGS: '-g', UNRELATED: 'preserve' }

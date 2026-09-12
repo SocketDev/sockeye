@@ -93,15 +93,11 @@ export async function buildStubFromSource(platformArch: string) {
 
   // Run make clean all.
   const buildStart = Date.now()
-  const result = await spawn('make', ['-f', makefile, 'clean', 'all'], {
+  await spawn('make', ['-f', makefile, 'clean', 'all'], {
     cwd: stubDir,
     env,
     stdio: 'inherit',
   })
-
-  if (result.code !== 0) {
-    throw new Error(`Make failed with exit code ${result.code}`)
-  }
 
   const buildDuration = Math.round((Date.now() - buildStart) / 1000)
   logger.info(`Stub build completed in ${buildDuration}s`)
@@ -196,7 +192,7 @@ export async function downloadPrebuiltStub(
 
     // Check for path traversal attempts.
     for (let i = 0, { length } = files; i < length; i += 1) {
-      const file = files[i] ?? ''
+      const file = files[i]!
       const normalized = path.normalize(file)
       if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
         throw new Error(

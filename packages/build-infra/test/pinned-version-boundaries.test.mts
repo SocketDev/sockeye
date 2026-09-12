@@ -91,6 +91,18 @@ test('unpinned and non-Python tools refuse Python install specs', () => {
   ).toBe('example-package')
 })
 
+test('Python pins without extras produce plain package specifiers', () => {
+  manifest({ 'example-python': { packageManager: 'pip', version: '1.2.3' } })
+  expect(getPinnedPackage('example-python', { packageRoot: root })).toBe(
+    'example-python==1.2.3',
+  )
+})
+
+test('default loaders use the base tool configuration', () => {
+  expect(loadAllTools()).toEqual(loadAllTools({}))
+  expect(loadPythonVersions()).toEqual(loadPythonVersions({}))
+})
+
 test.each([
   ['apt', 'example-package=1.2.3*'],
   ['apk', 'example-package=1.2.3*'],
