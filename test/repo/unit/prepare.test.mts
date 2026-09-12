@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 
 import {
   ensureWorkspacePackages,
-  isAppliedRefCurrentOrNewer,
+  isAppliedRefCurrent,
 } from '../../../scripts/repo/bootstrap/prepare.mts'
 
 test('inserts missing workspace packages without changing existing settings', () => {
@@ -21,9 +21,12 @@ test('creates the workspace block when it is absent', () => {
   )
 })
 
-test('recognizes the applied pin and rejects absent or malformed refs', () => {
-  expect(isAppliedRefCurrentOrNewer('example-ref', 'example-ref')).toBe(true)
-  expect(isAppliedRefCurrentOrNewer(undefined, 'example-ref')).toBe(false)
-  expect(isAppliedRefCurrentOrNewer('example-ref', undefined)).toBe(false)
-  expect(isAppliedRefCurrentOrNewer('example-ref', 'different-ref')).toBe(false)
+test('skips hydration only for the same nonempty applied pin', () => {
+  expect(isAppliedRefCurrent('example-ref', 'example-ref')).toBe(true)
+  expect(isAppliedRefCurrent(undefined, 'example-ref')).toBe(false)
+  expect(isAppliedRefCurrent('example-ref', undefined)).toBe(false)
+  expect(isAppliedRefCurrent('example-ref', 'different-ref')).toBe(false)
+  expect(isAppliedRefCurrent('', '')).toBe(false)
+  expect(isAppliedRefCurrent(undefined, undefined)).toBe(false)
+  expect(isAppliedRefCurrent('example-ref', '')).toBe(false)
 })

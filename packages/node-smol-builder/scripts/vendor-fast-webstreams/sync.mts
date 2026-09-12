@@ -20,6 +20,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import path from 'node:path'
+import { findPackageJSON } from 'node:module'
+import { isMainModule } from '../../../../scripts/fleet/process/is-main-module.mts'
 import { fileURLToPath } from 'node:url'
 
 import { parse as acornParse } from 'acorn'
@@ -45,8 +47,20 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const PACKAGE_NAME = 'experimental-fast-webstreams'
-const PACKAGE_ROOT = path.resolve(__dirname, '../..')
-const NODE_MODULES_PKG = path.join(PACKAGE_ROOT, 'node_modules', PACKAGE_NAME)
+export function resolveFastWebstreamsManifest(
+  options: { parentUrl?: string | undefined } = {},
+): string {
+  const manifest = findPackageJSON(
+    PACKAGE_NAME,
+    options.parentUrl ?? import.meta.url,
+  )
+  if (!manifest) {
+    throw new Error(
+      `Installed package ${PACKAGE_NAME} has no manifest. Run pnpm install from the repository root.`,
+    )
+  }
+  return manifest
+}
 const VENDOR_DIR = path.resolve(
   __dirname,
   '../../additions/source-patched/deps/fast-webstreams',
@@ -120,7 +134,8 @@ export function fixWriterWritableCycle(content: string, filename: string) {
  * Process and convert source files from node_modules.
  */
 export async function processSourceFiles() {
-  const srcDir = path.join(NODE_MODULES_PKG, 'src')
+  const pkgJsonPath = resolveFastWebstreamsManifest()
+  const srcDir = path.join(path.dirname(pkgJsonPath), 'src')
   if (!existsSync(srcDir)) {
     throw new Error(`Source directory not found: ${srcDir}`)
   }
@@ -155,7 +170,6 @@ export async function processSourceFiles() {
 
   // Create version file
   const versionFile = path.join(VENDOR_DIR, 'VERSION')
-  const pkgJsonPath = path.join(NODE_MODULES_PKG, 'package.json')
   let pkgJson
   try {
     pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'))
@@ -299,16 +313,7 @@ async function main() {
     logger.info('=== fast-webstreams Vendor Sync ===')
     logger.error('')
 
-    // Check node_modules package exists
-    if (!existsSync(NODE_MODULES_PKG)) {
-      throw new Error(
-        `Package not found in node_modules: ${NODE_MODULES_PKG}\n` +
-          'Run "pnpm install" first to install dependencies.',
-      )
-    }
-
-    // Get version from node_modules
-    const mainPkgJsonPath = path.join(NODE_MODULES_PKG, 'package.json')
+    const mainPkgJsonPath = resolveFastWebstreamsManifest()
     let pkgJson
     try {
       pkgJson = JSON.parse(readFileSync(mainPkgJsonPath, 'utf8'))
@@ -335,7 +340,9 @@ async function main() {
   }
 }
 
-main().catch((e: unknown) => {
-  logger.error(errorMessage(e))
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  main().catch((e: unknown) => {
+    logger.error(errorMessage(e))
+    process.exitCode = 1
+  })
+}
