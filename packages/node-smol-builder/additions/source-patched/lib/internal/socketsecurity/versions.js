@@ -1218,45 +1218,10 @@ function parseComparator(comp, ecosystem) {
   return undefined
 }
 
-// Check if prerelease version is allowed for this comparator
-// Per semver spec: prerelease versions only satisfy ranges that explicitly
-// include prerelease tags on the same [major, minor, patch] tuple
-function prereleaseAllowed(version, comp) {
-  // If version has no prerelease, it's always allowed
-  if (!version.prerelease || version.prerelease.length === 0) {
-    return true
-  }
-
-  // If comparator's version has prerelease on same tuple, allow it
-  if (
-    comp.version &&
-    comp.version.prerelease &&
-    comp.version.prerelease.length > 0
-  ) {
-    // Check if same major.minor.patch
-    if (
-      version.major === comp.version.major &&
-      version.minor === comp.version.minor &&
-      version.patch === comp.version.patch
-    ) {
-      return true
-    }
-  }
-
-  // Prerelease versions don't satisfy non-prerelease ranges
-  return false
-}
-
 // Check if version satisfies a comparator
-function satisfiesComparator(version, comp, checkPrerelease = true) {
+function satisfiesComparator(version, comp) {
   const v =
     typeof version === 'object' && version !== null ? version : parse(version)
-
-  // Per semver spec: prerelease versions only match ranges that explicitly
-  // include prerelease tags on the same [major, minor, patch] tuple
-  if (checkPrerelease && !prereleaseAllowed(v, comp)) {
-    return false
-  }
 
   switch (comp.op) {
     case '=':
@@ -1527,8 +1492,7 @@ function satisfies(version, range, ecosystem = 'npm') {
       }
 
       const comp = comparators[compIdx++]
-      // Pass false to skip prerelease check since we already did it
-      if (!comp || !satisfiesComparator(v, comp, false)) {
+      if (!comp || !satisfiesComparator(v, comp)) {
         allMatch = false
         break
       }
