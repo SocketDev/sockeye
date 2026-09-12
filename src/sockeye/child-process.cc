@@ -243,8 +243,14 @@ int LaunchChild(const FileIdentity &executable,
     error = "Child launch failed: could not initialize spawn actions.";
     return 6;
   }
+#if defined(__MAC_26_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_26_0 && \
+    __MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_26_0
   const int chdir_status = posix_spawn_file_actions_addfchdir(
       &actions, working_directory_descriptor);
+#else
+  const int chdir_status = posix_spawn_file_actions_addfchdir_np(
+      &actions, working_directory_descriptor);
+#endif
   if (chdir_status != 0) {
     posix_spawn_file_actions_destroy(&actions);
     ClearSensitiveEnvironment(environment, sensitive_indexes);
