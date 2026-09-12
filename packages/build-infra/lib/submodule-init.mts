@@ -71,9 +71,8 @@ export async function ensureSubmodule({
   logger.info(`Materializing ${name} upstream tree…`)
   logger.log(`Running: ${cloneCommand}`)
 
-  let result
   try {
-    result = await spawn(
+    await spawn(
       process.execPath,
       [
         path.join(monorepoRoot, 'scripts/fleet/git-partial-submodule.mts'),
@@ -88,14 +87,6 @@ export async function ensureSubmodule({
         `Run: ${cloneCommand}\n` +
         `Error: ${errorMessage(e)}`,
       { cause: e },
-    )
-  }
-
-  const exit = result.code ?? result.exitCode ?? 0
-  if (exit !== 0) {
-    throw new Error(
-      `Failed to materialize ${name} upstream tree (exit code ${exit}).\n` +
-        `Run: ${cloneCommand}`,
     )
   }
 

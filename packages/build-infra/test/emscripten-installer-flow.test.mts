@@ -53,8 +53,16 @@ function commands() {
     .mock.calls.map(call => ({ command: call[0], args: call[1] }))
 }
 
-function spawnResult(code: number, stdout = '') {
-  return { code, stdout, stderr: '', pid: 0 }
+function spawnResult(stdout = '') {
+  return { code: 0, stdout, stderr: '', pid: 0 }
+}
+
+function spawnFailure() {
+  return Object.assign(new Error('Fixture SDK process failure'), {
+    code: 1,
+    stdout: '',
+    stderr: '',
+  })
 }
 
 describe('Emscripten installer phases', () => {
@@ -75,9 +83,9 @@ describe('Emscripten installer phases', () => {
   test('activation applies only SDK environment variables', async () => {
     installedSdk()
     vi.mocked(spawn)
-      .mockResolvedValueOnce(spawnResult(0))
+      .mockResolvedValueOnce(spawnResult())
       .mockResolvedValueOnce(
-        spawnResult(0, 'EM_CONFIG=example-config\nIGNORED=value\n'),
+        spawnResult('EM_CONFIG=example-config\nIGNORED=value\n'),
       )
     const result = await activateEmscripten({
       emsdkPath: directory,
@@ -92,7 +100,7 @@ describe('Emscripten installer phases', () => {
 
   test('activation failure does not source or mutate the environment', async () => {
     installedSdk()
-    vi.mocked(spawn).mockResolvedValueOnce(spawnResult(1))
+    vi.mocked(spawn).mockRejectedValueOnce(spawnFailure())
     expect(
       (await activateEmscripten({ emsdkPath: directory, quiet: true }))
         .activated,
@@ -101,15 +109,29 @@ describe('Emscripten installer phases', () => {
     expect(process.env['EMSDK']).toBeUndefined()
   })
 
-  test('source failure preserves critical environment fallbacks', async () => {
+  test('source failure leaves activation and environment unchanged', async () => {
     installedSdk()
     vi.mocked(spawn)
-      .mockResolvedValueOnce(spawnResult(0))
-      .mockResolvedValueOnce(spawnResult(1))
+      .mockResolvedValueOnce(spawnResult())
+      .mockRejectedValueOnce(spawnFailure())
     expect(
       (await activateEmscripten({ emsdkPath: directory, quiet: true }))
         .activated,
-    ).toBe(true)
+    ).toBe(false)
+    expect(process.env['EMSCRIPTEN']).toBeUndefined()
+    expect(process.env['EMSDK']).toBeUndefined()
+    expect(commands()).toHaveLength(2)
+  })
+
+  test('successful empty environment output supplies critical SDK fallbacks', async () => {
+    installedSdk()
+    vi.mocked(spawn).mockResolvedValue(spawnResult())
+    const result = await activateEmscripten({
+      emsdkPath: directory,
+      quiet: true,
+    })
+    expect(result.activated).toBe(true)
+    expect(process.env['EMSDK']).toBe(directory)
     expect(process.env['EMSCRIPTEN']).toBe(
       path.join(directory, 'upstream', 'emscripten'),
     )
@@ -128,10 +150,10 @@ describe('Emscripten installer phases', () => {
   test('failed activation installs the requested version then retries once', async () => {
     installedSdk()
     vi.mocked(spawn)
-      .mockResolvedValueOnce(spawnResult(1))
-      .mockResolvedValueOnce(spawnResult(0))
-      .mockResolvedValueOnce(spawnResult(0))
-      .mockResolvedValueOnce(spawnResult(0))
+      .mockRejectedValueOnce(spawnFailure())
+      .mockResolvedValueOnce(spawnResult())
+      .mockResolvedValueOnce(spawnResult())
+      .mockResolvedValueOnce(spawnResult())
     expect(
       await ensureEmscripten({
         installPath: directory,
@@ -166,9 +188,9 @@ describe('Emscripten installer phases', () => {
     async phase => {
       vi.mocked(whichSync).mockReturnValue('/example/git')
       for (let index = 0; index < phase; index += 1) {
-        vi.mocked(spawn).mockResolvedValueOnce(spawnResult(0))
+        vi.mocked(spawn).mockResolvedValueOnce(spawnResult())
       }
-      vi.mocked(spawn).mockResolvedValueOnce(spawnResult(1))
+      vi.mocked(spawn).mockRejectedValueOnce(spawnFailure())
       expect(
         await installEmscripten({ installPath: directory, quiet: true }),
       ).toBe(false)
@@ -178,7 +200,7 @@ describe('Emscripten installer phases', () => {
 
   test('installation clones, installs, and activates in order', async () => {
     vi.mocked(whichSync).mockReturnValue('/example/git')
-    vi.mocked(spawn).mockResolvedValue(spawnResult(0))
+    vi.mocked(spawn).mockResolvedValue(spawnResult())
     expect(
       await installEmscripten({
         installPath: directory,

@@ -22,16 +22,13 @@ export async function activateEmsdkVersion(config) {
   if (!quiet) {
     logger.info(`Activating Emscripten ${version}...`)
   }
-  const result = await spawn(emsdkCmd, ['activate', version], {
+  await spawn(emsdkCmd, ['activate', version], {
     cwd: emsdkPath,
     env: getEmsdkSpawnEnv(),
     shell: WIN32,
     stdio: quiet ? 'pipe' : 'inherit',
   })
-  if (result.code !== 0 && !quiet) {
-    printError(`Failed to activate Emscripten ${version}`)
-  }
-  return result.code === 0
+  return true
 }
 
 export async function cloneEmsdkCheckout(config) {
@@ -40,15 +37,12 @@ export async function cloneEmsdkCheckout(config) {
   if (!quiet) {
     logger.substep(`Cloning Emscripten SDK to ${emsdkPath}...`)
   }
-  const result = await spawn(
+  await spawn(
     'git',
     ['clone', 'https://github.com/emscripten-core/emsdk.git', emsdkPath],
     { env: process.env, stdio: quiet ? 'pipe' : 'inherit' },
   )
-  if (result.code !== 0 && !quiet) {
-    printError('Failed to clone Emscripten SDK')
-  }
-  return result.code === 0
+  return true
 }
 
 export async function installEmsdkVersion({
@@ -59,13 +53,13 @@ export async function installEmsdkVersion({
   const resolvedEmsdkPath = emsdkPath || getEmsdkPath()
   const emsdkCmd = WIN32 ? 'emsdk.bat' : './emsdk'
   try {
-    const installResult = await spawn(emsdkCmd, ['install', version], {
+    await spawn(emsdkCmd, ['install', version], {
       cwd: resolvedEmsdkPath,
       env: getEmsdkSpawnEnv(),
       shell: WIN32,
       stdio: quiet ? 'pipe' : 'inherit',
     })
-    return installResult.code === 0
+    return true
   } catch (e) {
     if (!quiet) {
       printError(`Error installing Emscripten ${version}: ${errorMessage(e)}`)
@@ -75,7 +69,7 @@ export async function installEmsdkVersion({
 }
 
 export async function readEmsdkEnvironment(config) {
-  const { emsdkPath, quiet } = { __proto__: null, ...config } as typeof config
+  const { emsdkPath } = { __proto__: null, ...config } as typeof config
   const constructEnvCmd = WIN32 ? 'emsdk_env.bat' : './emsdk_env.sh'
   const result = await spawn(
     WIN32 ? constructEnvCmd : 'bash',
@@ -86,8 +80,5 @@ export async function readEmsdkEnvironment(config) {
       shell: WIN32,
     },
   )
-  if (result.code !== 0 && !quiet) {
-    logger.warn('Failed to source Emscripten environment')
-  }
   return parseEmsdkEnvironment(result.stdout, emsdkPath)
 }
