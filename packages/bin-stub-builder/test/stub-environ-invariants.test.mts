@@ -89,9 +89,12 @@ function stripCommentsAndLiterals(source: string): string {
       index += 2
       while (
         index < source.length &&
-        !(source[index] === '*' && source[index + 1] === '/')
+        !(
+          source.charCodeAt(index) === 42 /* '*' */ &&
+          source.charCodeAt(index + 1) === 47 /* '/' */
+        )
       ) {
-        out.push(source[index] === '\n' ? '\n' : ' ')
+        out.push(source.charCodeAt(index) === 10 /* '\n' */ ? '\n' : ' ')
         index += 1
       }
       if (index < source.length) {
@@ -101,7 +104,10 @@ function stripCommentsAndLiterals(source: string): string {
       continue
     }
     if (char === '/' && next === '/') {
-      while (index < source.length && source[index] !== '\n') {
+      while (
+        index < source.length &&
+        source.charCodeAt(index) !== 10 /* '\n' */
+      ) {
         out.push(' ')
         index += 1
       }

@@ -3873,6 +3873,8 @@ importers:
 
   .config/fleet/oxlint-plugin/fleet/prefer-cached-for-loop: {}
 
+  .config/fleet/oxlint-plugin/fleet/prefer-char-code-comparison: {}
+
   .config/fleet/oxlint-plugin/fleet/prefer-crlf-safe-split: {}
 
   .config/fleet/oxlint-plugin/fleet/prefer-ellipsis-char: {}
@@ -5339,9 +5341,6 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
-
-  '@types/node@26.1.2':
-    resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
 
   '@types/node@26.4.1':
     resolution: {integrity: sha512-k97ENvZWtvA6yqz5/FS6a7duDgOPEeOQOc2iKS/nY6mX6qJUKtLnWzQS+Xj6tXweyj6ZcTAK2Qecetnvi9nCLA==}
@@ -7752,7 +7751,7 @@ snapshots:
 
   '@types/adm-zip@0.5.8':
     dependencies:
-      '@types/node': 26.1.2
+      '@types/node': 26.4.1
 
   '@types/aws-lambda@8.10.162': {}
 
@@ -7778,10 +7777,6 @@ snapshots:
       '@types/unist': 3.0.3
 
   '@types/ms@2.1.0': {}
-
-  '@types/node@26.1.2':
-    dependencies:
-      undici-types: 8.3.0
 
   '@types/node@26.4.1':
     dependencies:
