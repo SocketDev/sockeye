@@ -62,7 +62,11 @@ describe('preflight-checks', () => {
       sufficient: true,
     })
     mockCheckCompiler.mockResolvedValue({ available: true })
-    mockCheckPythonVersion.mockResolvedValue({ available: true })
+    mockCheckPythonVersion.mockResolvedValue({
+      available: true,
+      sufficient: true,
+      version: '3.12',
+    })
   })
 
   describe(runPreflightChecks, () => {

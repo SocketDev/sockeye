@@ -41,7 +41,12 @@ export async function checkPreflightPython(
   version: string,
 ): Promise<string | undefined> {
   const pythonCheck = await checkPythonVersion(version)
-  return pythonCheck.available ? undefined : `Python ${version}+ not found`
+  if (!pythonCheck.available) {
+    return `Python ${version}+ not found`
+  }
+  return pythonCheck.sufficient
+    ? undefined
+    : `Python ${pythonCheck.version} is too old (${version}+ required)`
 }
 
 export function reportPreflightSummary(config: {

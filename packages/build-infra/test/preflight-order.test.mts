@@ -26,7 +26,11 @@ beforeEach(() => {
     requiredGB: 5,
   })
   vi.mocked(checkCompiler).mockResolvedValue({ available: false })
-  vi.mocked(checkPythonVersion).mockResolvedValue({ available: false })
+  vi.mocked(checkPythonVersion).mockResolvedValue({
+    available: false,
+    sufficient: false,
+    version: undefined,
+  })
 })
 
 describe('build preflight ordering', () => {
@@ -63,7 +67,11 @@ describe('build preflight ordering', () => {
   })
 
   test('skips disabled checks and uses an explicit Python minimum', async () => {
-    vi.mocked(checkPythonVersion).mockResolvedValue({ available: true })
+    vi.mocked(checkPythonVersion).mockResolvedValue({
+      available: true,
+      sufficient: true,
+      version: '3.11',
+    })
     expect(
       await runPreflightChecks({
         disk: false,
