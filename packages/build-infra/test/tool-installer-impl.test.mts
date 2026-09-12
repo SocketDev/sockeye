@@ -67,12 +67,13 @@ describe('package manager installation execution', () => {
   })
 
   test('rejects a failed package-manager exit before verifying', async () => {
-    vi.mocked(spawn).mockResolvedValue({
-      code: 1,
-      pid: 0,
-      stdout: '',
-      stderr: '',
-    })
+    vi.mocked(spawn).mockRejectedValue(
+      Object.assign(new Error('fixture installation failure'), {
+        code: 1,
+        stdout: '',
+        stderr: '',
+      }),
+    )
     expect(await installTool('example-tool', 'apt')).toBe(false)
     expect(vi.mocked(whichSync).mock.calls).toHaveLength(0)
   })
