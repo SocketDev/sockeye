@@ -488,13 +488,12 @@ function parsePackageLock(content) {
 
 // Parse yarn.lock descriptor (Classic and Berry)
 function parseYarnDescriptor(descriptor) {
-  // Handle Yarn Berry protocols (patch:, portal:, workspace:)
+  // Handle Yarn Berry patch descriptors.
   if (StringPrototypeIndexOf(descriptor, 'patch:') === 0) {
-    // Extract the package name after 'patch:' and before '@npm:' or '@workspace:'
+    // Extract the package name after 'patch:' and before its registry protocol.
     const afterPatch = StringPrototypeSlice(descriptor, 6) // 'patch:'.length
     let npmIndex = StringPrototypeIndexOf(afterPatch, '@npm:')
     const npmEncodedIndex = StringPrototypeIndexOf(afterPatch, '@npm%3A')
-    const workspaceIndex = StringPrototypeIndexOf(afterPatch, '@workspace:')
 
     // Use the first valid occurrence
     if (
@@ -507,18 +506,10 @@ function parseYarnDescriptor(descriptor) {
     if (npmIndex > 0) {
       return { name: StringPrototypeSlice(afterPatch, 0, npmIndex) }
     }
-    if (workspaceIndex > 0) {
-      return { name: StringPrototypeSlice(afterPatch, 0, workspaceIndex) }
-    }
   }
 
-  // Handle standard Berry descriptors with @npm: or @workspace:
-  let protocolIndex = StringPrototypeIndexOf(descriptor, '@npm:')
-  if (protocolIndex > 0) {
-    return { name: StringPrototypeSlice(descriptor, 0, protocolIndex) }
-  }
-
-  protocolIndex = StringPrototypeIndexOf(descriptor, '@workspace:')
+  // Handle standard Berry registry descriptors.
+  const protocolIndex = StringPrototypeIndexOf(descriptor, '@npm:')
   if (protocolIndex > 0) {
     return { name: StringPrototypeSlice(descriptor, 0, protocolIndex) }
   }

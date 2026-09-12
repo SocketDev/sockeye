@@ -102,6 +102,45 @@ test('treats a missing Git executable as no dirty-source signal', async () => {
   expect(io.spawn).not.toHaveBeenCalled()
 })
 
+test('treats a rejected Git probe as no dirty-source signal', async () => {
+  io.spawn.mockRejectedValue(new Error('Fixture Git unavailable'))
+  await expect(isNodeSourceDirty('/example/source')).resolves.toBe(false)
+})
+
+test('restores patched source without requesting pristine fallback', async () => {
+  io.exists.mockReturnValue(false)
+  await restoreReleaseSource(config)
+  expect(io.restore).toHaveBeenCalledExactlyOnceWith(
+    '/example/build',
+    'example-tool',
+    'source-patched',
+    { destDir: '/example/build' },
+  )
+})
+
+test('reports unavailable verification files without rejecting source', async () => {
+  io.read.mockRejectedValue(new Error('Fixture source file unavailable'))
+  await expect(
+    verifyReleaseSource({
+      bootstrapFile: '/example/bootstrap.js',
+      testFile: '/example/test.cc',
+    }),
+  ).resolves.toBeUndefined()
+  expect(io.read).toHaveBeenCalledTimes(2)
+})
+
+test('tolerates an unrecognized V8 include layout', async () => {
+  io.read
+    .mockResolvedValueOnce('#include "example/iterator.h"')
+    .mockResolvedValueOnce('')
+  await expect(
+    verifyReleaseSource({
+      bootstrapFile: '/example/bootstrap.js',
+      testFile: '/example/test.cc',
+    }),
+  ).resolves.toBeUndefined()
+})
+
 test('does not restore an existing source tree', async () => {
   await restoreReleaseSource(config)
   expect(io.restore).not.toHaveBeenCalled()

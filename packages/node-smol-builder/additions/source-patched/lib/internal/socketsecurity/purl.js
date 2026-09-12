@@ -329,29 +329,6 @@ function scanDelimiters(str) {
     }
   }
 
-  // If we found a hash, we still need to check for ? before it
-  if (hashIdx !== -1 && queryIdx === -1) {
-    for (let i = 0; i < hashIdx; i++) {
-      const ch = StringPrototypeCharCodeAt(str, i)
-      if (ch === CHAR_QUESTION) {
-        queryIdx = i
-        break
-      }
-    }
-  }
-
-  // Find first slash if we haven't yet (only in pre-query portion)
-  if (firstSlashIdx === -1) {
-    const end =
-      queryIdx !== -1 ? queryIdx : hashIdx !== -1 ? hashIdx : str.length
-    for (let i = 0; i < end; i++) {
-      if (StringPrototypeCharCodeAt(str, i) === CHAR_SLASH) {
-        firstSlashIdx = i
-        break
-      }
-    }
-  }
-
   return { __proto__: null, hashIdx, queryIdx, firstSlashIdx }
 }
 
