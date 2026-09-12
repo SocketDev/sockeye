@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import process from 'node:process'
 
 /**
@@ -12,6 +12,14 @@ import {
   getPackageManagerInstructions,
   getPreferredPackageManager,
 } from '../lib/tool-installer.mts'
+
+vi.mock(import('@socketsecurity/lib-stable/exe/path/which'), () => ({
+  which: vi.fn(async (command: string) => `/example/bin/${command}`),
+  whichSync: vi.fn((command: string) => `/example/bin/${command}`),
+}))
+vi.mock(import('@socketsecurity/lib-stable/process/spawn/child'), () => ({
+  spawn: vi.fn(async () => ({ code: 0 })),
+}))
 
 describe('tool-installer', () => {
   describe(detectPackageManagers, () => {
