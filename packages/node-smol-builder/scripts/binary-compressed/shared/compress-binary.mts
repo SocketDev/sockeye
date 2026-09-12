@@ -132,19 +132,9 @@ export async function compressBinary(
     logger.log(`  Target libc: ${targetLibc}`)
   }
 
-  let result
-  try {
-    result = await spawn(binpressPath, binpressArgs, {
-      stdio: 'inherit',
-    })
-  } catch (spawnError) {
-    result = spawnError
-  }
-
-  const exitCode = result.code ?? 0
-  if (exitCode !== 0) {
-    throw new Error(`binpress failed (exit code: ${exitCode})`)
-  }
+  await spawn(binpressPath, binpressArgs, {
+    stdio: 'inherit',
+  })
 
   // Get output size.
   const outputSizeMB = await getFileSizeMB(outputPath)
