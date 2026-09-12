@@ -188,6 +188,7 @@ globalThis.primordials = {
 
   // TypeError
   TypeError,
+  RangeError,
 
   // URL
   URL,

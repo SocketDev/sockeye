@@ -1130,6 +1130,7 @@ function parsePnpmLock(content) {
     const isPackageEntry =
       indent >= 2 &&
       indent <= 4 &&
+      (!currentPkg || indent <= currentIndent) &&
       StringPrototypeEndsWith(trimmed, ':') &&
       trimmed.length > 1
 
