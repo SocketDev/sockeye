@@ -39,16 +39,17 @@ const CHAIN_DEV = [
   'source-cloned',
 ]
 
-export function getCheckpointChain(mode) {
+export function getCheckpointChain(mode?: string | undefined) {
   return mode === 'prod' ? CHAIN_PROD : CHAIN_DEV
 }
 
 function main() {
   const args = process.argv.slice(2)
   const buildMode = args.includes('--prod') ? 'prod' : 'dev'
+  // oxlint-disable-next-line socket/no-direct-stream-write -- shell protocol.
   process.stdout.write(`${getCheckpointChain(buildMode).join(',')}\n`)
 }
 
-if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')) {
   main()
 }

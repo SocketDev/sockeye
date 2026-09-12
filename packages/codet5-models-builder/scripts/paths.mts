@@ -32,7 +32,11 @@ export const MODELS_DIR = path.join(BUILD_ROOT, 'models')
  *
  * @returns {object} Build paths
  */
-export function getBuildPaths(buildMode, platformArch, quantLevel) {
+export function getBuildPaths(
+  buildMode: string,
+  platformArch: string,
+  quantLevel: string,
+) {
   if (!platformArch) {
     throw new Error('platformArch is required for getBuildPaths()')
   }

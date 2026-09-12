@@ -32,7 +32,11 @@ export const BUILD_ROOT = path.join(PACKAGE_ROOT, 'build')
  *
  * @returns {object} Build paths
  */
-export function getBuildPaths(mode, platformArch, quantLevel) {
+export function getBuildPaths(
+  mode: string,
+  platformArch: string,
+  quantLevel: string,
+) {
   if (!platformArch) {
     throw new Error('platformArch is required for getBuildPaths()')
   }
@@ -64,7 +68,12 @@ export async function getCurrentPlatform() {
  *
  * @returns {object} Model paths
  */
-export function getModelPaths(mode, platformArch, quantLevel, modelName) {
+export function getModelPaths(
+  mode: string,
+  platformArch: string,
+  quantLevel: string,
+  modelName: string,
+) {
   const { cacheDir, modelsDir } = getBuildPaths(mode, platformArch, quantLevel)
 
   const cacheModelDir = path.join(cacheDir, modelName)

@@ -20,7 +20,7 @@ export const PACKAGE_ROOT = path.resolve(__dirname, '..')
 
 // Source files: use the official yoga bindings from the cloned source. They match the yoga core version.
 // These are resolved dynamically based on the build mode's source directory.
-export function getBindingsPaths(sourceDir) {
+export function getBindingsPaths(sourceDir: string) {
   const bindingsDir = path.join(sourceDir, 'javascript/src')
   return {
     __proto__: null,
@@ -59,7 +59,7 @@ export function getSharedBuildPaths() {
  * @param {string} platformArch - Platform-arch (e.g., 'darwin-arm64') -
  *   REQUIRED.
  */
-export function getBuildPaths(mode, platformArch) {
+export function getBuildPaths(mode: string, platformArch: string) {
   if (!platformArch) {
     throw new Error('platformArch is required for getBuildPaths()')
   }

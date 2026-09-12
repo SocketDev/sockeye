@@ -26,9 +26,10 @@ export function getCheckpointChain() {
 }
 
 function printChain() {
+  // oxlint-disable-next-line socket/no-direct-stream-write -- shell protocol.
   process.stdout.write(`${CHAIN.join(',')}\n`)
 }
 
-if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')) {
   printChain()
 }

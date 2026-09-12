@@ -107,6 +107,21 @@ test('does not restore an existing source tree', async () => {
   expect(io.restore).not.toHaveBeenCalled()
 })
 
+test('dirty-source reset honors the five-second inspection window without --yes', async () => {
+  vi.useFakeTimers()
+  try {
+    io.spawn.mockResolvedValue({ code: 0, stdout: ' M example.cc\n' })
+    const resetting = resetReleaseSource({ ...config, autoYes: false })
+    await vi.advanceTimersByTimeAsync(4999)
+    expect(io.remove).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    await resetting
+    expect(io.remove).toHaveBeenCalledExactlyOnceWith('/example/source')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('falls back from patched to pristine source checkpoints', async () => {
   io.exists.mockReturnValue(false)
   io.restore.mockResolvedValueOnce(false).mockResolvedValueOnce(true)

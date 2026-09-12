@@ -37,7 +37,10 @@ export const UPSTREAM_PATH = path.join(PACKAGE_ROOT, 'upstream/onnxruntime')
  *
  * @returns {object} Build output paths
  */
-export function getBuildOutputPaths(sourceDir, platform = process.platform) {
+export function getBuildOutputPaths(
+  sourceDir: string,
+  platform = process.platform,
+) {
   const platformName = platform === 'darwin' ? 'MacOS' : 'Linux'
   const buildOutputDir = path.join(
     sourceDir,
@@ -71,7 +74,7 @@ export function getBuildOutputPaths(sourceDir, platform = process.platform) {
  * @param {string} platformArch - Platform-arch (e.g., 'darwin-arm64') -
  *   REQUIRED.
  */
-export function getBuildPaths(mode, platformArch) {
+export function getBuildPaths(mode: string, platformArch: string) {
   if (!platformArch) {
     throw new Error('platformArch is required for getBuildPaths()')
   }
