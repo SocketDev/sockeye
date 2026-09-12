@@ -145,12 +145,12 @@ jobs:
           main-script: pnpm test --ci
 
   cover-shards:
-    name: Coverage collection (${{ matrix.shard }}/2)
+    name: Coverage collection (${{ matrix.shard }}/4)
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
@@ -192,7 +192,7 @@ jobs:
           COVERAGE_SHARD: ${{ matrix.shard }}
         with:
           setup-script: pnpm run build
-          main-script: pnpm run cover:shard --shard="$COVERAGE_SHARD/2"
+          main-script: pnpm run cover:shard --shard="$COVERAGE_SHARD/4"
       - name: Upload coverage collection
         uses: ./.github/actions/fleet/upload-artifact
         with:
@@ -264,6 +264,16 @@ jobs:
         with:
           name: coverage-shard-2
           path: .cache/fleet/coverage-shards/2
+      - name: Download third coverage collection
+        uses: ./.github/actions/fleet/download-artifact
+        with:
+          name: coverage-shard-3
+          path: .cache/fleet/coverage-shards/3
+      - name: Download fourth coverage collection
+        uses: ./.github/actions/fleet/download-artifact
+        with:
+          name: coverage-shard-4
+          path: .cache/fleet/coverage-shards/4
       - name: Apply full coverage gates
         id: coverage
         uses: ./.github/actions/fleet/run-script
@@ -271,7 +281,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           setup-script: pnpm run build
-          main-script: pnpm run cover:aggregate --shards=2
+          main-script: pnpm run cover:aggregate --shards=4
       - name: Upload aggregate diagnostics
         if: failure() && steps.coverage.outcome == 'failure'
         uses: ./.github/actions/fleet/upload-artifact

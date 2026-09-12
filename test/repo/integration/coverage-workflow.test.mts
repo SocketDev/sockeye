@@ -30,7 +30,7 @@ function jobStep(job: Job, name: string): Step {
   return step
 }
 
-test('collects both milestone shards and aggregates their complete receipts on macOS', () => {
+test('collects all four milestone shards and aggregates their complete receipts on macOS', () => {
   const collection = workflow.jobs['cover-shards']!
   const aggregate = workflow.jobs['coverage']!
   expect(collection.if).toBe(
@@ -38,7 +38,7 @@ test('collects both milestone shards and aggregates their complete receipts on m
   )
   expect(collection.strategy).toEqual({
     'fail-fast': false,
-    matrix: { shard: [1, 2] },
+    matrix: { shard: [1, 2, 3, 4] },
   })
   expect(aggregate.needs).toEqual(['cover-shards'])
   expect(aggregate.if).toBe(
@@ -52,7 +52,7 @@ test('collects both milestone shards and aggregates their complete receipts on m
   }
   expect(jobStep(collection, 'Collect coverage').with).toEqual({
     'setup-script': 'pnpm run build',
-    'main-script': 'pnpm run cover:shard --shard="$COVERAGE_SHARD/2"',
+    'main-script': 'pnpm run cover:shard --shard="$COVERAGE_SHARD/4"',
   })
   expect(jobStep(collection, 'Upload coverage collection').with?.['path']).toBe(
     '.cache/fleet/coverage-shards/${{ matrix.shard }}',
@@ -60,6 +60,8 @@ test('collects both milestone shards and aggregates their complete receipts on m
   for (const [ordinal, index] of [
     ['first', 1],
     ['second', 2],
+    ['third', 3],
+    ['fourth', 4],
   ] as const) {
     expect(
       jobStep(aggregate, `Download ${ordinal} coverage collection`).with,
@@ -70,7 +72,7 @@ test('collects both milestone shards and aggregates their complete receipts on m
   }
   expect(jobStep(aggregate, 'Apply full coverage gates').with).toEqual({
     'setup-script': 'pnpm run build',
-    'main-script': 'pnpm run cover:aggregate --shards=2',
+    'main-script': 'pnpm run cover:aggregate --shards=4',
   })
 })
 
