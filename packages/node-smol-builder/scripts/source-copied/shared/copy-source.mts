@@ -222,10 +222,6 @@ export async function verifyNodeSourceCommit(
       { stdio: 'pipe' },
     )
 
-    if (verifyResult.code !== 0) {
-      throw new Error('Failed to verify upstream commit SHA')
-    }
-
     const upstreamSha = verifyResult.stdout.trim()
     if (upstreamSha !== nodeSha) {
       throw new Error(

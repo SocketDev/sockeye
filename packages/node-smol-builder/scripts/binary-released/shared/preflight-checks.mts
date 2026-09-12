@@ -157,10 +157,7 @@ export async function checkBuildEnvironment(buildDir) {
         const version = match[1]
         const parts = version.split('.')
         const majorVersion = Number.parseInt(parts[0], 10)
-        if (Number.isNaN(majorVersion)) {
-          logger.warn(`Invalid Xcode version format: ${version}`)
-          allChecks = false
-        } else if (majorVersion >= 16) {
+        if (majorVersion >= 16) {
           logger.success(`Xcode ${version} meets requirements (clang 19+)`)
         } else {
           logger.fail(`Xcode ${version} is too old (need Xcode 16+)`)

@@ -197,11 +197,7 @@ async function main(): Promise<void> {
   // source-patched sub-phase, so this doesn't re-clone/re-patch unnecessarily.
   logger.log('')
   logger.log('Starting build…')
-  const r = await spawn(process.execPath, buildArgs, { stdio: 'inherit' })
-  if (r.code !== 0) {
-    logger.fail(`build failed (exit ${r.code})`)
-    process.exitCode = r.code ?? 1
-  }
+  await spawn(process.execPath, buildArgs, { stdio: 'inherit' })
 }
 
 if (import.meta.url === toFileUrl(process.argv[1])) {

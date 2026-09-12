@@ -63,14 +63,12 @@ export async function compileReleaseBinary(config) {
   // These ._* files cause ninja to fail trying to compile binary metadata as C++
   if (platform !== 'darwin') {
     try {
-      const findResult = await spawn(
+      await spawn(
         'find',
         [modeSourceDir, '-name', '._*', '-type', 'f', '-delete'],
         { stdio: 'pipe' },
       )
-      if (findResult.code === 0) {
-        logger.log('Cleaned macOS AppleDouble files from source tree')
-      }
+      logger.log('Cleaned macOS AppleDouble files from source tree')
     } catch {
       // find not available or failed - non-fatal, build may still succeed
     }

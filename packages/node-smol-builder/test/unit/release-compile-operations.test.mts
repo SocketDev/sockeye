@@ -118,6 +118,39 @@ test('honors the configured job override and performs metadata cleanup', async (
   )
   expect(io.log.mock.calls.flat().join('\n')).toContain('BUILD_JOBS override')
 })
+
+test('reports a single overridden compilation job', async () => {
+  io.env.mockImplementation(name => (name === 'BUILD_JOBS' ? '1' : undefined))
+  await compileReleaseBinary({ ...config, jobCount: 1 })
+  expect(io.log.mock.calls.flat().join('\n')).toContain(
+    '1 CPU core for parallel compilation',
+  )
+})
+
+test('reports a single available CPU without a memory reduction', async () => {
+  const os = await import('node:os')
+  const cpus = vi.spyOn(os.default, 'cpus').mockReturnValue([])
+  try {
+    await compileReleaseBinary({ ...config, jobCount: 1 })
+    expect(io.log.mock.calls.flat().join('\n')).toContain(
+      '1 CPU core for parallel compilation',
+    )
+  } finally {
+    cpus.mockRestore()
+  }
+})
+
+test('configures Windows when no stale output directories exist', async () => {
+  io.win.mockReturnValue(true)
+  await configureReleaseBinary({
+    configureFlags: [],
+    modeSourceDir: config.modeSourceDir,
+    outDir: '/example/output',
+  })
+  expect(io.remove).not.toHaveBeenCalled()
+  expect(io.spawn).toHaveBeenCalledOnce()
+  expect(io.spawn.mock.calls[0]![0]).toBe('vcbuild.bat')
+})
 test.each(['', 'fixture compiler diagnostic'])(
   'preserves rejected compilation and reports log tail %s',
   async tail => {
