@@ -1003,18 +1003,12 @@ function min(versions, ecosystem = 'npm') {
 }
 
 // Coerce a partial semver string ("1", "1.2", "1.x") into a strict "X.Y.Z"
-// that tryParse will accept. Missing components pad with 0. Returns undefined
-// when the input isn't a partial-numeric match. Used by parseComparator below
+// that tryParse will accept. Callers validate the partial-numeric form first.
+// Missing components pad with 0. Used by parseComparator below
 // so `^1`, `^1.2`, `~1`, `>=1`, etc. resolve correctly.
 function coercePartialToFull(str) {
   const trimmed = StringPrototypeTrim(str)
-  if (!trimmed) {
-    return undefined
-  }
   const match = RegExpPrototypeExec(RANGE_WILDCARD_REGEX, trimmed)
-  if (!match) {
-    return undefined
-  }
   const major = match[1]
   const minor = match[2]
   const patch = match[3]
@@ -1040,9 +1034,6 @@ function tryParseOrCoerce(str, ecosystem) {
     return undefined
   }
   const coerced = coercePartialToFull(str)
-  if (!coerced) {
-    return undefined
-  }
   const parsed = tryParse(coerced, ecosystem)
   if (!parsed) {
     return undefined
@@ -1077,9 +1068,6 @@ function tryParseOrCoerce(str, ecosystem) {
 // input returns undefined so the caller can drop the bound.
 function coerceHyphenUpper(str, ecosystem) {
   const trimmed = StringPrototypeTrim(str)
-  if (!trimmed) {
-    return undefined
-  }
   // Fully-qualified upper: use it verbatim with inclusive <=.
   const full = tryParse(trimmed, ecosystem)
   if (full) {
@@ -1118,9 +1106,6 @@ function coerceHyphenUpper(str, ecosystem) {
   // RANGE_WILDCARD_REGEX accepted (e.g. trailing whitespace that the
   // regex tolerates). Treat like the inclusive fully-qualified case.
   const padded = coercePartialToFull(trimmed)
-  if (!padded) {
-    return undefined
-  }
   const v = tryParse(padded, ecosystem)
   if (!v) {
     return undefined
@@ -1480,13 +1465,7 @@ function satisfies(version, range, ecosystem = 'npm') {
           allMatch = false
           break
         }
-        // compileRange only pushes a comparator for each bound that parsed
-        // successfully (lower / upper). `compIdx += 2` would desync the
-        // index if either bound was undefined. Today the guard above breaks
-        // before we get here in the one-undefined-bound case, but making
-        // the increment match the actual push count is defensive against a
-        // future caller that replaces `break` with `continue`.
-        compIdx += (hr.lower ? 1 : 0) + (hr.upper ? 1 : 0)
+        compIdx += 2
         j += 2
         continue
       }
