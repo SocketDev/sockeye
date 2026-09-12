@@ -13,6 +13,8 @@
     "ci:sockeye": "node scripts/repo/agent-ci.mts",
     "clean": "node scripts/fleet/clean.mts",
     "cover": "node scripts/fleet/cover.mts",
+    "cover:aggregate": "node scripts/fleet/cover-aggregate.mts",
+    "cover:shard": "node scripts/fleet/cover-shard.mts",
     "doctor:auth": "node scripts/fleet/check/setup-is-prompt-less.mts",
     "fix": "node scripts/fleet/fix.mts",
     "format": "node scripts/fleet/format.mts",
