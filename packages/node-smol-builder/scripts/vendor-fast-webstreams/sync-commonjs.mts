@@ -33,7 +33,7 @@ export function convertToCommonJS(content: string, _filename: string): string {
     result = `'use strict'\n\n${result}`
   }
 
-  const localExports = new Set<string>()
+  const localExports = new Map<string, string>()
   const reExports: ReExportEntry[] = []
 
   // Capture named re-exports and their source module.
@@ -92,26 +92,26 @@ export function convertToCommonJS(content: string, _filename: string): string {
   result = result.replace(
     /export\s+const\s+(\w+)\s*=/g,
     (_match, name: string) => {
-      localExports.add(name)
+      localExports.set(name, name)
       return `const ${name} =`
     },
   )
   result = result.replace(
     /export\s+function\s+(\w+)\s*\(/g,
     (_match, name: string) => {
-      localExports.add(name)
+      localExports.set(name, name)
       return `function ${name}(`
     },
   )
   result = result.replace(
     /export\s+async\s+function\s+(\w+)\s*\(/g,
     (_match, name: string) => {
-      localExports.add(name)
+      localExports.set(name, name)
       return `async function ${name}(`
     },
   )
   result = result.replace(/export\s+class\s+(\w+)/g, (_match, name: string) => {
-    localExports.add(name)
+    localExports.set(name, name)
     return `class ${name}`
   })
   // Capture local named exports, excluding re-export statements.
@@ -120,12 +120,10 @@ export function convertToCommonJS(content: string, _filename: string): string {
     (_match, items: string) => {
       // oxlint-disable-next-line socket/prefer-cached-for-loop -- iterable is an array-producing expression.
       for (const item of items.split(',')) {
-        const name = item
-          .trim()
-          .split(/\s+as\s+/)[0]
-          ?.trim()
+        const { 0: original, 1: alias } = item.trim().split(/\s+as\s+/)
+        const name = original?.trim()
         if (name) {
-          localExports.add(name)
+          localExports.set(alias?.trim() || name, name)
         }
       }
       return ''
@@ -140,8 +138,8 @@ export function convertToCommonJS(content: string, _filename: string): string {
   }
   // Iterable is an array-producing expression.
   // oxlint-disable-next-line socket/prefer-cached-for-loop -- see above
-  for (const name of Array.from(localExports).toSorted()) {
-    exportLines.push(`exports.${name} = ${name};`)
+  for (const name of Array.from(localExports.keys()).toSorted()) {
+    exportLines.push(`exports.${name} = ${localExports.get(name)};`)
   }
   if (exportLines.length > 0) {
     result += `\n\n${exportLines.join('\n')}\n`
