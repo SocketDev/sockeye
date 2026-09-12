@@ -243,11 +243,10 @@ export async function compileWasm(config) {
     })
   } finally {
     clearInterval(updateInterval)
+    getSpinner().stop()
   }
 
   if (buildScriptResult.code !== 0) {
-    getSpinner().stop()
-
     const errorMsg = [
       'ONNX Runtime build script failed',
       '',
@@ -285,7 +284,6 @@ export async function compileWasm(config) {
   }
 
   const duration = formatDuration(Date.now() - startTime)
-  getSpinner().stop()
   logger.success(`Build completed in ${duration}`)
 
   const wasmFile = buildWasmFile

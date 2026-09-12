@@ -27,7 +27,12 @@ test('does not probe root support for a non-root build', async () => {
 for (const channel of ['stdout', 'stderr']) {
   test(`includes root permission only when ${channel} advertises support`, async () => {
     vi.spyOn(process, 'getuid').mockReturnValue(0)
-    io.spawn.mockResolvedValue({ [channel]: '--allow_running_as_root' })
+    io.spawn.mockResolvedValue({
+      code: 0,
+      stdout: '',
+      stderr: '',
+      [channel]: '--allow_running_as_root',
+    })
     const args = ['--build_wasm']
     await addRootBuildArgument(args, '/example/source')
     expect(args).toEqual(['--build_wasm', '--allow_running_as_root'])
@@ -41,7 +46,7 @@ for (const channel of ['stdout', 'stderr']) {
 
 test('retains arguments when upstream does not support the root flag', async () => {
   vi.spyOn(process, 'getuid').mockReturnValue(0)
-  io.spawn.mockResolvedValue({ stdout: '--build_wasm', stderr: '' })
+  io.spawn.mockResolvedValue({ code: 0, stdout: '--build_wasm', stderr: '' })
   const args = ['--build_wasm']
   await addRootBuildArgument(args, '/example/source')
   expect(args).toEqual(['--build_wasm'])
