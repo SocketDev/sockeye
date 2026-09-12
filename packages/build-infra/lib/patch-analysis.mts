@@ -91,11 +91,8 @@ export function checkPatchConflicts(
   // Check for overlapping modifications between patches
   for (let i = 0; i < patchModifications.length; i++) {
     for (let j = i + 1; j < patchModifications.length; j++) {
-      const patch1 = patchModifications[i]
-      const patch2 = patchModifications[j]
-      if (!patch1 || !patch2) {
-        continue
-      }
+      const patch1 = patchModifications[i]!
+      const patch2 = patchModifications[j]!
 
       // Find files modified by both patches
       // oxlint-disable-next-line socket/prefer-cached-for-loop -- loop variable is destructured
@@ -108,17 +105,14 @@ export function checkPatchConflicts(
             r1 < length1;
             r1 += 1
           ) {
-            const range1 = ranges1[r1]
-            if (range1 === undefined) {
-              continue
-            }
+            const range1 = ranges1[r1]!
             for (
               let r2 = 0, { length: length2 } = ranges2;
               r2 < length2;
               r2 += 1
             ) {
-              const range2 = ranges2[r2]
-              if (range2 !== undefined && rangesOverlap(range1, range2)) {
+              const range2 = ranges2[r2]!
+              if (rangesOverlap(range1, range2)) {
                 conflicts.push({
                   message: `Patches '${patch1.name}' and '${patch2.name}' both modify ${file} at overlapping lines (${range1.start}-${range1.end} vs ${range2.start}-${range2.end})`,
                   severity: 'error',
@@ -152,11 +146,7 @@ export function parsePatchFileModifications(
   let i = 0
 
   while (i < lines.length) {
-    const line = lines[i]
-    if (line === undefined) {
-      i++
-      continue
-    }
+    const line = lines[i]!
 
     // Parse unified diff file header: "--- a/path/to/file.js"
     if (line.startsWith('--- a/')) {
@@ -169,25 +159,31 @@ export function parsePatchFileModifications(
     if (line.startsWith('@@') && currentFile) {
       const match = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line)
       if (match) {
-        const newStart = Number.parseInt(match[3] ?? '', 10)
+        const newStart = Number.parseInt(match[3]!, 10)
         const newCount = match[4] ? Number.parseInt(match[4], 10) : 1
 
         // Skip malformed hunks with invalid line numbers
-        if (Number.isNaN(newStart) || Number.isNaN(newCount)) {
+        if (
+          !Number.isSafeInteger(newStart) ||
+          !Number.isSafeInteger(newCount)
+        ) {
           i++
           continue
-        }
-
-        let ranges = fileModifications.get(currentFile)
-        if (!ranges) {
-          ranges = []
-          fileModifications.set(currentFile, ranges)
         }
 
         // Handle deletion-only hunks (newCount = 0) to avoid invalid ranges where end < start
         // Deletion hunks have newCount=0, resulting in range [start, start] which represents
         // the line position where content was deleted
-        const end = newCount === 0 ? newStart : newStart + newCount - 1
+        const end = newCount === 0 ? newStart : newStart + (newCount - 1)
+        if (!Number.isSafeInteger(end)) {
+          i++
+          continue
+        }
+        let ranges = fileModifications.get(currentFile)
+        if (!ranges) {
+          ranges = []
+          fileModifications.set(currentFile, ranges)
+        }
         ranges.push({ end, start: newStart })
       }
     }

@@ -35,7 +35,7 @@ const PATCH_NOT_FOUND_MSG = 'patch not found in PATH'
  * The subset of a spawn result / spawn error the patch runners inspect.
  */
 export interface PatchSpawnOutcome {
-  code?: number | undefined
+  code?: number | null | undefined
   stderr?: string | Buffer | undefined
   stdout?: string | Buffer | undefined
 }
@@ -80,7 +80,7 @@ export async function applyPatch(
     result = spawnError
   }
 
-  const exitCode = result.code ?? 0
+  const exitCode = result.code
   if (exitCode !== 0) {
     throw new Error(`Failed to apply patch: ${patchFile}`)
   }
@@ -141,10 +141,7 @@ export async function applyPatchDirectory(
 
   // Apply patches in order.
   for (let i = 0, { length } = patchFiles; i < length; i += 1) {
-    const patchFile = patchFiles[i]
-    if (patchFile === undefined) {
-      continue
-    }
+    const patchFile = patchFiles[i]!
     // eslint-disable-next-line no-await-in-loop
     await applyPatch(patchFile, targetDir)
   }
@@ -234,7 +231,7 @@ export async function revertPatch(
     result = spawnError
   }
 
-  const exitCode = result.code ?? 0
+  const exitCode = result.code
   if (exitCode !== 0) {
     throw new Error(`Failed to revert patch: ${patchFile}`)
   }
@@ -280,7 +277,7 @@ export async function testPatchApplication(
     }
 
     // If reverse patch succeeds, the patch has been applied.
-    return (result.code ?? 0) === 0
+    return result.code === 0
   } catch {
     return false
   }
@@ -326,7 +323,7 @@ export async function validatePatch(
       result = spawnError
     }
 
-    const exitCode = result.code ?? 0
+    const exitCode = result.code
     if (exitCode !== 0) {
       printError(`Patch validation failed: ${patchFile}`)
       if (result.stderr) {
