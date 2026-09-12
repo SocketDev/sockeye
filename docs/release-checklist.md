@@ -14,8 +14,8 @@ release commit.
 | Process identity | Executable launch race is closed or explicitly accepted with independent review.                                      | Open                                                   |
 | Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                                  | Sanitizers pass; 15-minute fuzz evidence recorded      |
 | Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                        | Open                                                   |
-| Signing          | Hardened-runtime Developer ID signature verifies on the final archive.                                                | Open                                                   |
-| Notarization     | Apple notarization succeeds and the ticket is stapled.                                                                | Open                                                   |
+| Signing          | Hardened-runtime Developer ID signature verifies on the final archive.                                                | ARM64 CI validation passed; release recheck required   |
+| Notarization     | Apple accepts the archive; binaries pass online ticket verification. Staple supported DMG and PKG outputs.            | ARM64 CI validation passed; release recheck required   |
 | Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                      | Open                                                   |
 | Installation     | The installer downloads through the shared helper, verifies the checksum, installs atomically, and rejects tampering. | Open                                                   |
 | Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                       | Bridge and name-set tests pass; interactive smoke open |
@@ -27,13 +27,11 @@ release commit.
 2. Run all automated, sanitizer, fuzz, architecture, and interactive gates.
 3. Review the final threat model and binary diff independently.
 4. Build in CI from the reviewed commit.
-5. Sign, notarize, staple, and verify the exact archives that will be
-   uploaded: `pnpm run sign --run` (hardened runtime + Developer ID; dry
-   run without `--run`, `--ad-hoc` for a certificate-free local pass), then
-   `pnpm run notarize --run <archive>` (notarytool submit + staple; dry run
-   without `--run`), then `pnpm run verify-release -- <archive>`.
+5. Run the signing workflow in the authorized repository against the reviewed
+   commit. It signs and notarizes the exact archive. ZIP contents require online
+   ticket verification; staple supported DMG and PKG outputs.
 6. Produce SHA-256 checksums and provenance for every archive:
-   `pnpm run verify-release -- <archive>` runs the codesign, Gatekeeper,
+   `pnpm run verify-release <archive>` runs signature, online notarization,
    archive-listing, and SHA-256 checks for real and emits the evidence rows in
    this document's table format; provenance comes from CI attestations.
 7. Create the immutable GitHub release through the fleet release workflow.
@@ -45,6 +43,28 @@ Publishing is user-gated. Local development commits and dry runs must not create
 a public release.
 
 ## Recorded evidence
+
+### 2026-09-11 ARM64 signing validation
+
+The [signing workflow](https://github.com/SocketDev/sockeye/actions/runs/34664748749)
+built the production binary, imported the certificate, signed the binary, and
+received Apple's accepted notarization result. Signature verification, artifact
+upload, and temporary keychain cleanup passed.
+
+The downloaded ZIP contents passed strict signature verification and
+`codesign --check-notarization`. Its checksum matched the uploaded checksum file.
+
+| Item             | Evidence                                                           |
+| ---------------- | ------------------------------------------------------------------ |
+| Artifact source  | `ea8a1564570c55aae730595510856cf9c9b8be6b`                         |
+| Archive          | `sockeye-darwin-arm64.zip`                                         |
+| Signing identity | `Developer ID Application: Socket Inc. (PZRCDQ736X)`               |
+| Code identifier  | `dev.socket.sockeye`                                               |
+| SHA-256          | `ed272c81a7516694a1a07c834298aec69efa2328b728ff74ddfb9fad5cf503a1` |
+| Result           | Signature and online notarization verification passed              |
+
+This validates the ARM64 signing pipeline. Repeat verification for the release
+commit. Intel, attended Keychain, installation, and provenance gates remain open.
 
 ### 2026-07-17 native fuzz budget
 

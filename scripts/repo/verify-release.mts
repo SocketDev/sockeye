@@ -6,12 +6,12 @@ import {
 /**
  * @file Verify the exact archives (or binaries) that will be uploaded to a
  *   release (release-checklist steps 5–6). Everything here runs for real:
- *   `codesign --verify --deep --strict` and `spctl --assess --type execute`
- *   against every Sockeye binary found, an archive listing, and SHA-256
+ *   Strict codesign verification and online notarization checks run against
+ *   every Sockeye binary found, alongside an archive listing and SHA-256
  *   checksums. The results print as evidence rows in the release checklist's
- *   table format so the recorded-evidence row is generated, not typed.
- *   Exits non-zero if any check fails — a local ad-hoc build passes codesign
- *   but is rejected by Gatekeeper until the Developer ID build is notarized.
+ *   table format so the recorded-evidence row is generated, not typed. Exits
+ *   non-zero if any check fails — a local ad-hoc build passes codesign but
+ *   fails the online notarization check. App bundles require spctl assessment.
  */
 
 import crypto from 'node:crypto'
@@ -34,8 +34,8 @@ const logger = getScriptLogger()
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
-    'Verify signatures, Gatekeeper acceptance, and checksums of Sockeye release files.',
-  help: 'Usage: pnpm run verify-release [archive-or-binary…]\n\nRequires macOS. Targets default to the built binary for the current mode. Verification runs codesign and spctl and prints release evidence.',
+    'Verify signatures, notarization, and checksums of Sockeye release files.',
+  help: 'Usage: pnpm run verify-release [archive-or-binary…]\n\nRequires macOS. Targets default to the built binary for the current mode. Verification checks signatures and online notarization tickets for Sockeye CLI binaries and prints release evidence.',
   json: 'result',
 }
 
@@ -88,7 +88,7 @@ async function findBinaries(root: string): Promise<string[]> {
     .map(entry => path.join(entry.parentPath, entry.name))
 }
 
-async function verifyBinary(
+export async function verifyReleaseBinary(
   binaryPath: string,
   label: string,
   rows: EvidenceRow[],
@@ -104,18 +104,27 @@ async function verifyBinary(
     evidence: `\`${label}\`: ${codesign.passed ? 'passed --verify --deep --strict' : `FAILED (${codesign.detail})`}`,
     item: 'Codesign',
   })
-  const spctl = await runCheck('/usr/sbin/spctl', [
-    '--assess',
-    '--type',
-    'execute',
-    '--verbose',
-    binaryPath,
-  ])
+  const isApplication = path.extname(binaryPath).toLowerCase() === '.app'
+  const assessment = isApplication
+    ? await runCheck('/usr/sbin/spctl', [
+        '--assess',
+        '--type',
+        'execute',
+        '--verbose',
+        binaryPath,
+      ])
+    : await runCheck('/usr/bin/codesign', [
+        '--verify',
+        '--strict',
+        '--check-notarization',
+        '--verbose=2',
+        binaryPath,
+      ])
   rows.push({
-    evidence: `\`${label}\`: ${spctl.passed ? 'accepted by spctl --assess' : `REJECTED (${spctl.detail})`}`,
-    item: 'Gatekeeper',
+    evidence: `\`${label}\`: ${assessment.passed ? (isApplication ? 'accepted by spctl --assess' : 'passed codesign --check-notarization') : `REJECTED (${assessment.detail})`}`,
+    item: isApplication ? 'Gatekeeper' : 'Notarization',
   })
-  return codesign.passed && spctl.passed
+  return codesign.passed && assessment.passed
 }
 
 async function verifyArchive(
@@ -162,7 +171,7 @@ async function verifyArchive(
   let passed = true
   for (const binary of binaries) {
     const label = `${name}!${path.relative(scratch, binary)}`
-    passed = (await verifyBinary(binary, label, rows)) && passed
+    passed = (await verifyReleaseBinary(binary, label, rows)) && passed
   }
   return passed
 }
@@ -187,7 +196,10 @@ async function main(): Promise<void> {
 
   const head = await spawn('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT })
   const rows: EvidenceRow[] = [
-    { evidence: `\`${(head.stdout ?? '').trim()}\``, item: 'Source' },
+    {
+      evidence: `\`${(head.stdout ?? '').trim()}\``,
+      item: 'Verifier revision',
+    },
     {
       evidence: `\`node scripts/repo/verify-release.mts ${targets.join(' ')}\``,
       item: 'Command',
@@ -208,7 +220,8 @@ async function main(): Promise<void> {
         item: 'Binary',
       })
       passed =
-        (await verifyBinary(target, path.basename(target), rows)) && passed
+        (await verifyReleaseBinary(target, path.basename(target), rows)) &&
+        passed
     }
     rows.push({
       evidence: `\`${path.basename(target)}\` \`${await sha256(target)}\``,
