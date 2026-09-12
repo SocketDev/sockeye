@@ -88,10 +88,12 @@ export async function notarizeMachO(
     return false
   }
 
-  const zipDir = await fs.mkdtemp(path.join(os.tmpdir(), 'notarize-zip-'))
-  const zipPath = path.join(zipDir, `${path.basename(binaryPath)}.zip`)
+  let zipDir: string | undefined
+  let zipPath = binaryPath
 
   try {
+    zipDir = await fs.mkdtemp(path.join(os.tmpdir(), 'notarize-zip-'))
+    zipPath = path.join(zipDir, `${path.basename(binaryPath)}.zip`)
     // A bare Mach-O cannot be submitted directly; notarytool requires a zip,
     // app bundle, disk image, or installer package.
     await spawn('ditto', ['-c', '-k', binaryPath, zipPath])
@@ -136,7 +138,9 @@ export async function notarizeMachO(
       ].join('\n'),
     )
   } finally {
-    await safeDelete(zipDir).catch(() => {})
+    if (zipDir) {
+      await safeDelete(zipDir).catch(() => {})
+    }
     if (ownsCredentials) {
       await safeDelete(path.dirname(resolvedCredentials.keyPath)).catch(
         () => {},

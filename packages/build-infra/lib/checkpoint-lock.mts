@@ -18,6 +18,21 @@ import { promises as fs } from 'node:fs'
  * inode-stable shape flock() expects.
  */
 
+export async function releaseCheckpointLock(
+  handle: LockableHandle,
+  config: { acquired: boolean },
+): Promise<void> {
+  const { acquired } = { __proto__: null, ...config }
+  try {
+    if (acquired && typeof handle.unlock === 'function') {
+      await handle.unlock()
+    }
+  } catch {}
+  try {
+    await handle.close()
+  } catch {}
+}
+
 export type LockableHandle = Awaited<ReturnType<typeof fs.open>> & {
   lock?: ((mode: 'sh' | 'ex') => Promise<void>) | undefined
   tryLock?: ((mode: 'sh' | 'ex') => Promise<boolean>) | undefined
@@ -45,14 +60,7 @@ export async function withLock<T>(
     return await fn()
   } finally {
     if (lockFile) {
-      try {
-        if (typeof lockFile.unlock === 'function') {
-          await lockFile.unlock()
-        }
-        await lockFile.close()
-      } catch {
-        // Ignore unlock/close errors.
-      }
+      await releaseCheckpointLock(lockFile, { acquired: true })
     }
   }
 }
@@ -91,14 +99,7 @@ export async function withTryLock<T>(
     return undefined
   } finally {
     if (lockFile) {
-      try {
-        if (acquired && typeof lockFile.unlock === 'function') {
-          await lockFile.unlock()
-        }
-        await lockFile.close()
-      } catch {
-        // Ignore unlock/close errors.
-      }
+      await releaseCheckpointLock(lockFile, { acquired })
     }
   }
 }
