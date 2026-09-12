@@ -63,6 +63,51 @@ if(BUILD_TESTING)
   )
   target_include_directories(sockeye-portable-core-test PRIVATE src)
 
+  add_executable(sockeye-terminal-test
+    src/sockeye/terminal.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/terminal-test.cc
+  )
+  target_include_directories(sockeye-terminal-test PRIVATE src)
+  target_compile_definitions(sockeye-terminal-test PRIVATE
+    open=SockeyeTestOpen close=SockeyeTestClose read=SockeyeTestRead
+    write=SockeyeTestWrite isatty=SockeyeTestIsatty tcgetpgrp=SockeyeTestForegroundGroup
+    tcgetattr=SockeyeTestGetAttributes tcsetattr=SockeyeTestSetAttributes
+    mlock=SockeyeTestLock munlock=SockeyeTestUnlock
+  )
+  add_executable(sockeye-one-password-test
+    src/sockeye/one-password.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/one-password-test.cc
+  )
+  target_include_directories(sockeye-one-password-test PRIVATE src)
+  target_compile_definitions(sockeye-one-password-test PRIVATE
+    access=SockeyeTestAccess pipe=SockeyeTestPipe close=SockeyeTestClose
+    read=SockeyeTestRead posix_spawn=SockeyeTestSpawn waitpid=SockeyeTestWait
+  )
+
+  add_executable(sockeye-keychain-framework-test
+    src/sockeye/keychain-macos.mm
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/keychain-fakes.mm
+    test/repo/unit/native/keychain-test.mm
+  )
+  add_executable(sockeye-keystore-framework-test
+    packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm
+    test/repo/unit/native/keychain-fakes.mm
+    test/repo/unit/native/keystore-test.mm
+  )
+  foreach(target sockeye-keychain-framework-test sockeye-keystore-framework-test)
+    target_include_directories(${target} PRIVATE src packages/keystore-infra/src test/repo/unit/native)
+    target_compile_options(${target} PRIVATE
+      "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
+      "$<$<COMPILE_LANGUAGE:OBJCXX>:SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/test/repo/unit/native/keychain-fakes.h>"
+    )
+  endforeach()
+
   add_executable(sockeye-readiness-test
     src/sockeye/readiness.cc
     src/sockeye/input-policy.cc
@@ -116,6 +161,10 @@ if(BUILD_TESTING)
   list(APPEND SOCKEYE_SECURITY_TARGETS
     sockeye-input-policy-test
     sockeye-portable-core-test
+    sockeye-terminal-test
+    sockeye-keychain-framework-test
+    sockeye-keystore-framework-test
+    sockeye-one-password-test
     sockeye-run-request-test
     sockeye-readiness-test
     sockeye-preview-isolation-test
@@ -208,6 +257,9 @@ target_link_libraries(sockeye PRIVATE
   ${SECURITY_FRAMEWORK}
 )
 if(BUILD_TESTING)
+  foreach(target sockeye-keychain-framework-test sockeye-keystore-framework-test)
+    target_link_libraries(${target} PRIVATE ${FOUNDATION_FRAMEWORK} ${LOCAL_AUTHENTICATION_FRAMEWORK} ${SECURITY_FRAMEWORK})
+  endforeach()
   target_link_libraries(sockeye-child-process-test PRIVATE ${FOUNDATION_FRAMEWORK})
   target_link_libraries(sockeye-keychain-policy-fixture PRIVATE
     ${FOUNDATION_FRAMEWORK} ${LOCAL_AUTHENTICATION_FRAMEWORK} ${SECURITY_FRAMEWORK}

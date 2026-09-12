@@ -1,9 +1,14 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { readdirSync, statSync } from 'node:fs'
+import path from 'node:path'
+import { REPO_ROOT } from '../../../scripts/repo/paths.mts'
 import {
   NATIVE_COVERAGE_ROOTS,
+  NATIVE_COVERAGE_TESTS,
   nativeLcovForRoot,
   nativeTranslationUnits,
+  nativeVitestArguments,
+  nativeVitestEnvironment,
   readNativeTestCounts,
   validateNativeCoverageRoots,
 } from '../../../scripts/repo/native-coverage.mts'
@@ -15,16 +20,22 @@ vi.mock(import('node:fs'), async original => ({
 beforeEach(() => vi.resetAllMocks())
 const receipt = {
   success: true,
-  numPassedTests: 3,
+  numPassedTests: NATIVE_COVERAGE_TESTS.length,
   numFailedTests: 0,
-  numPendingTests: 2,
-  numTotalTests: 5,
+  numPendingTests: 0,
+  numTodoTests: 0,
+  numTotalTests: NATIVE_COVERAGE_TESTS.length,
+  testResults: NATIVE_COVERAGE_TESTS.map(file => ({
+    name: path.resolve(REPO_ROOT, file),
+    status: 'passed',
+    assertionResults: [{ status: 'passed' }],
+  })),
 }
-test('counts only executed native Vitest tests, excluding skipped tests', () => {
+test('counts every selected native suite with fully executed tests', () => {
   expect(readNativeTestCounts(JSON.stringify(receipt))).toEqual({
-    passed: 3,
+    passed: NATIVE_COVERAGE_TESTS.length,
     failed: 0,
-    total: 3,
+    total: NATIVE_COVERAGE_TESTS.length,
   })
 })
 test.each([
@@ -108,4 +119,57 @@ test('discovers C++ and Objective-C++ production units recursively', () => {
     '/example/keychain.mm',
     '/example/nested/policy.cc',
   ])
+})
+
+test.each([
+  'omitted',
+  'duplicate',
+  'unknown',
+  'pending',
+  'todo',
+  'empty',
+  'failed-assertion',
+])('rejects incomplete native receipt %s', defect => {
+  const candidate = structuredClone(receipt)
+  if (defect === 'omitted') candidate.testResults.pop()
+  else if (defect === 'duplicate')
+    candidate.testResults[1] = candidate.testResults[0]!
+  else if (defect === 'unknown')
+    candidate.testResults[0]!.name = '/example/unrelated.test.mts'
+  else if (defect === 'pending') candidate.numPendingTests = 1
+  else if (defect === 'todo') candidate.numTodoTests = 1
+  else if (defect === 'empty') candidate.testResults[0]!.assertionResults = []
+  else candidate.testResults[0]!.assertionResults[0]!.status = 'pending'
+  expect(() => readNativeTestCounts(JSON.stringify(candidate))).toThrow()
+})
+
+test('composes the canonical Vitest child runner inside the native coverage phase', () => {
+  const args = nativeVitestArguments('/example/native-receipt.json')
+  expect(args.slice(0, 4)).toEqual([
+    'scripts/fleet/test-runner/run-vitest.mts',
+    'run',
+    '--config',
+    '.config/repo/vitest.config.mts',
+  ])
+  expect(args.slice(4, -2)).toEqual(NATIVE_COVERAGE_TESTS)
+  expect(args.slice(-2)).toEqual([
+    '--reporter=json',
+    '--outputFile=/example/native-receipt.json',
+  ])
+  expect(args).not.toContain('--force-during-active-run')
+})
+test('native child coverage does not inherit the JavaScript tier or overwrite parent test counts', () => {
+  const parent = {
+    FLEET_LANE: 'slow',
+    FLEET_TEST_SUMMARY_PATH: '/example/parent.json',
+    EXAMPLE_CONFIG: 'preserved',
+  }
+  const environment = nativeVitestEnvironment(parent, '/example/%m-%p.profraw')
+  expect(environment).toEqual({
+    EXAMPLE_CONFIG: 'preserved',
+    BUILD_MODE: 'coverage',
+    SOCKEYE_INTERACTIVE_TESTS: '',
+    LLVM_PROFILE_FILE: '/example/%m-%p.profraw',
+  })
+  expect(parent.FLEET_LANE).toBe('slow')
 })

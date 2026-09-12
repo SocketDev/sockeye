@@ -93,3 +93,13 @@ export const KEYCHAIN_INTERACTIVE_SUITE = path.join(
   'e2e',
   'keychain-lifecycle.test.mts',
 )
+
+export function getNativeProfilePattern(directory: string): string {
+  return path.join(directory, '%m-%p.profraw')
+}
+export function getDefaultNativeProfilePattern(buildDirectory: string): string {
+  return getNativeProfilePattern(path.join(buildDirectory, 'profiles'))
+}
+export function getNativeCoverageReceiptPath(profiles: string): string {
+  return path.join(profiles, 'vitest.json')
+}

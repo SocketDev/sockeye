@@ -109,9 +109,16 @@ bool ReadOnePasswordReference(std::string_view reference, SecretBuffer &output,
   const bool read_ok = ReadAll(pipe_fds[0], output, error);
   close(pipe_fds[0]);
   int child_status = 0;
-  while (waitpid(child, &child_status, 0) < 0 && errno == EINTR) {
-  }
+  pid_t waited = -1;
+  do {
+    waited = waitpid(child, &child_status, 0);
+  } while (waited < 0 && errno == EINTR);
   SecureClearString(reference_copy);
+  if (waited != child) {
+    output.Clear();
+    error = "1Password import failed: child status could not be collected.";
+    return false;
+  }
   if (!read_ok) {
     output.Clear();
     return false;

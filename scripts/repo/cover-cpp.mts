@@ -12,12 +12,18 @@ import {
   getScriptArgs,
   writeScriptStdout,
 } from '../fleet/process/script-output.mts'
-import { getOutputDir, REPO_ROOT } from './paths.mts'
+import {
+  getNativeCoverageReceiptPath,
+  getNativeProfilePattern,
+  getOutputDir,
+  REPO_ROOT,
+} from './paths.mts'
 import { getKeychainAddonBinaryPath } from '../../packages/keychain-addon-builder/scripts/paths.mts'
 import {
   NATIVE_COVERAGE_BINARIES,
-  NATIVE_COVERAGE_TESTS,
   nativeLcovForRoot,
+  nativeVitestArguments,
+  nativeVitestEnvironment,
   readNativeTestCounts,
   validateNativeCoverageRoots,
 } from './native-coverage.mts'
@@ -78,10 +84,10 @@ async function nativeCommand(
   })
   if (result.code !== 0) {
     throw new Error(
-      `Native coverage command failed: ${command} (${result.code}): ${String(result.stderr ?? '')}`,
+      `Native coverage command failed: ${command} (${result.code}): ${result.stderr ?? ''}`,
     )
   }
-  return String(result.stdout ?? '')
+  return result.stdout ?? ''
 }
 function nativeFiles(config: NativeConfig) {
   const opts = { __proto__: null, ...config } as typeof config
@@ -120,7 +126,7 @@ async function prepareNativeCoverage(config: NativeConfig): Promise<void> {
   await nativeCommand(process.execPath, ['scripts/repo/build.mts'], {
     ...process.env,
     BUILD_MODE: 'coverage',
-    SOCKEYE_COVERAGE_PROFILE_FILE: path.join(profiles, '%m-%p.profraw'),
+    SOCKEYE_COVERAGE_PROFILE_FILE: getNativeProfilePattern(profiles),
   })
   const common = [
     '--manifest',
@@ -153,22 +159,12 @@ async function executeNativeCoverage(config: NativeConfig): Promise<void> {
   const profiles = readProfileDirectory(config)
   await nativeCommand(
     process.execPath,
-    [
-      'scripts/fleet/test.mts',
-      ...NATIVE_COVERAGE_TESTS,
-      '--reporter=json',
-      `--outputFile=${path.join(readProfileDirectory(config), 'vitest.json')}`,
-    ],
-    {
-      ...process.env,
-      BUILD_MODE: 'coverage',
-      SOCKEYE_INTERACTIVE_TESTS: '',
-      LLVM_PROFILE_FILE: path.join(profiles, '%m-%p.profraw'),
-    },
+    nativeVitestArguments(getNativeCoverageReceiptPath(profiles)),
+    nativeVitestEnvironment(process.env, getNativeProfilePattern(profiles)),
   )
   const counts = readNativeTestCounts(
     readFileSync(
-      path.join(readProfileDirectory(config), 'vitest.json'),
+      getNativeCoverageReceiptPath(readProfileDirectory(config)),
       'utf8',
     ),
   )
@@ -180,7 +176,7 @@ async function reportNativeCoverage(config: NativeConfig): Promise<void> {
   const opts = { __proto__: null, ...config } as typeof config
   readNativeTestCounts(
     readFileSync(
-      path.join(readProfileDirectory(config), 'vitest.json'),
+      getNativeCoverageReceiptPath(readProfileDirectory(config)),
       'utf8',
     ),
   )

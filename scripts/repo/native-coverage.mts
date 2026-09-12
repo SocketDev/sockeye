@@ -1,5 +1,6 @@
 import { readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
+import { REPO_ROOT } from './paths.mts'
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
 export const NATIVE_COVERAGE_ROOTS = [
@@ -10,6 +11,9 @@ export const NATIVE_COVERAGE_ROOTS = [
 export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/cli.test.mts',
   'test/repo/integration/portable-core.test.mts',
+  'test/repo/integration/terminal-native.test.mts',
+  'test/repo/integration/keychain-framework-native.test.mts',
+  'test/repo/integration/one-password-native.test.mts',
   'test/repo/integration/run-request.test.mts',
   'test/repo/integration/readiness.test.mts',
   'test/repo/integration/explain.test.mts',
@@ -21,6 +25,10 @@ export const NATIVE_COVERAGE_BINARIES = [
   'sockeye-input-policy-test',
   'sockeye-child-process-test',
   'sockeye-portable-core-test',
+  'sockeye-terminal-test',
+  'sockeye-keychain-framework-test',
+  'sockeye-keystore-framework-test',
+  'sockeye-one-password-test',
   'sockeye-run-request-test',
   'sockeye-readiness-test',
   'sockeye-preview-isolation-test',
@@ -50,6 +58,7 @@ export function readNativeTestCounts(text: string): {
     'numPassedTests',
     'numFailedTests',
     'numPendingTests',
+    'numTodoTests',
     'numTotalTests',
   ] as const
   for (const key of counts) {
@@ -65,19 +74,77 @@ export function readNativeTestCounts(text: string): {
   const passed: number = Reflect.get(report, 'numPassedTests')
   const failed: number = Reflect.get(report, 'numFailedTests')
   const pending: number = Reflect.get(report, 'numPendingTests')
+  const todo: number = Reflect.get(report, 'numTodoTests')
   const total: number = Reflect.get(report, 'numTotalTests')
   if (
     !('success' in report) ||
     report.success !== true ||
     failed > 0 ||
     passed === 0 ||
+    pending !== 0 ||
+    todo !== 0 ||
     passed + failed + pending !== total
   ) {
     throw new Error(
       'Native Vitest execution did not successfully execute tests',
     )
   }
+  validateNativeSuiteReceipt(report, passed)
   return { passed, failed, total: passed + failed }
+}
+interface NativeSuiteReceipt {
+  name: string
+  status: 'passed'
+  assertionResults: unknown[]
+}
+function isExecutedNativeSuite(suite: unknown): suite is NativeSuiteReceipt {
+  return (
+    typeof suite === 'object' &&
+    suite !== null &&
+    'name' in suite &&
+    typeof suite.name === 'string' &&
+    path.isAbsolute(suite.name) &&
+    'status' in suite &&
+    suite.status === 'passed' &&
+    'assertionResults' in suite &&
+    Array.isArray(suite.assertionResults) &&
+    suite.assertionResults.length > 0
+  )
+}
+function validateNativeSuiteReceipt(report: object, passed: number): void {
+  if (!('testResults' in report) || !Array.isArray(report.testResults)) {
+    throw new Error('Native Vitest receipt omitted suite results')
+  }
+  const expected = new Set(
+    NATIVE_COVERAGE_TESTS.map(file =>
+      normalizePath(path.resolve(REPO_ROOT, file)),
+    ),
+  )
+  let assertions = 0
+  for (const suite of report.testResults) {
+    if (!isExecutedNativeSuite(suite)) {
+      throw new Error('Native Vitest receipt contains an unexecuted suite')
+    }
+    if (!expected.delete(normalizePath(suite.name))) {
+      throw new Error(
+        'Native Vitest receipt contains an unexpected or duplicate suite',
+      )
+    }
+    for (const assertion of suite.assertionResults) {
+      if (
+        typeof assertion !== 'object' ||
+        assertion === null ||
+        !('status' in assertion) ||
+        assertion.status !== 'passed'
+      ) {
+        throw new Error('Native Vitest receipt contains an unexecuted test')
+      }
+      assertions += 1
+    }
+  }
+  if (expected.size !== 0 || assertions !== passed) {
+    throw new Error('Native Vitest receipt does not cover every selected test')
+  }
 }
 export function nativeTranslationUnits(root: string): string[] {
   if (statSync(root).isFile()) {
@@ -121,5 +188,31 @@ export function nativeLcovForRoot(text: string, root: string): string {
   if (!/^DA:\d+,\d+/m.test(result)) {
     throw new Error(`Native coverage has no executable lines for ${root}`)
   }
+  return result
+}
+
+export function nativeVitestArguments(receipt: string): string[] {
+  return [
+    'scripts/fleet/test-runner/run-vitest.mts',
+    'run',
+    '--config',
+    '.config/repo/vitest.config.mts',
+    ...NATIVE_COVERAGE_TESTS,
+    '--reporter=json',
+    `--outputFile=${receipt}`,
+  ]
+}
+export function nativeVitestEnvironment(
+  environment: NodeJS.ProcessEnv,
+  profilePattern: string,
+): NodeJS.ProcessEnv {
+  const result: NodeJS.ProcessEnv = {
+    ...environment,
+    BUILD_MODE: 'coverage',
+    SOCKEYE_INTERACTIVE_TESTS: '',
+    LLVM_PROFILE_FILE: profilePattern,
+  }
+  delete result['FLEET_LANE']
+  delete result['FLEET_TEST_SUMMARY_PATH']
   return result
 }

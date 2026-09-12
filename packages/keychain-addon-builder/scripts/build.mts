@@ -32,6 +32,7 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
+import { getDefaultNativeProfilePattern } from '../../../scripts/repo/paths.mts'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
@@ -160,7 +161,7 @@ async function main() {
 
   const build = resolvePlatformBuild(process.platform, mode)
   const optimize = mode === 'prod' ? '-O2' : '-O0'
-  const profileFlag = `-fprofile-instr-generate=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? path.join(outDir, 'profiles', '%m-%p.profraw')}`
+  const profileFlag = `-fprofile-instr-generate=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? getDefaultNativeProfilePattern(outDir)}`
   const coverage =
     mode === 'coverage' ? [profileFlag, '-fcoverage-mapping'] : []
   const includes = [`-I${nodeInclude}`, `-I${KEYSTORE_SOURCE_DIR}`]

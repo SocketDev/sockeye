@@ -1,0 +1,179 @@
+#include "keychain-fakes.h"
+#include "sockeye/keychain.h"
+#include <cassert>
+#include <cstring>
+#include <string>
+
+namespace {
+constexpr char kIdentifier[] = "SOCKET_TEST_TOKEN";
+constexpr char kValue[] = "example-fixture-value";
+const std::string invalid_utf8(1, static_cast<char>(0xff));
+NSMutableDictionary *ValidItem() {
+  return [@{(__bridge id)kSecAttrAccessControl: KeychainPolicyFixture(),
+            (__bridge id)kSecAttrGeneric: [@"sockeye:v1:biometry-current-set" dataUsingEncoding:NSUTF8StringEncoding],
+            (__bridge id)kSecValueData: [NSData dataWithBytes:kValue length:sizeof(kValue) - 1]} mutableCopy];
+}
+void Authenticate(sockeye::AuthorizationContext &context) {
+  sockeye::KeychainError error;
+  assert(context.Authenticate("example test approval", error));
+  assert(error.status == sockeye::KeychainStatus::kSuccess);
+}
+void CheckRead(NSDictionary *item, sockeye::KeychainStatus expected) {
+  ResetKeychainFake();
+  keychain_state.query_result = item;
+  sockeye::AuthorizationContext context;
+  Authenticate(context);
+  sockeye::SecretBuffer output;
+  sockeye::KeychainError error;
+  assert(sockeye::ReadCredential(context, kIdentifier, output, error) == expected);
+  if (expected == sockeye::KeychainStatus::kSuccess) {
+    assert(output.Size() == sizeof(kValue) - 1);
+    assert(std::memcmp(output.Data(), kValue, output.Size()) == 0);
+  } else assert(output.Size() == 0);
+}
+void CheckAuthentication() {
+  using sockeye::KeychainStatus;
+  ResetKeychainFake();
+  sockeye::AuthorizationContext context;
+  sockeye::KeychainError error;
+  assert(!context.Authenticate("", error));
+  assert(error.status == KeychainStatus::kIo);
+  assert(!context.Authenticate(invalid_utf8, error));
+  keychain_state.available = false;
+  assert(!context.Authenticate("example test approval", error));
+  assert(error.status == KeychainStatus::kUnavailable);
+  keychain_state.available = true;
+  keychain_state.approved = false;
+  assert(!context.Authenticate("example test approval", error));
+  assert(error.status == KeychainStatus::kDenied);
+  keychain_state.approved = true;
+  Authenticate(context);
+  assert(!context.Authenticate("example repeated approval", error));
+  assert(error.status == KeychainStatus::kDenied);
+  context.Invalidate();
+  sockeye::SecretBuffer value;
+  assert(sockeye::ReadCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  assert(sockeye::DeleteCredential(context, kIdentifier, error) == KeychainStatus::kDenied);
+}
+void CheckReadiness() {
+  using sockeye::KeychainStatus;
+  sockeye::KeychainError error;
+  ResetKeychainFake();
+  assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kSuccess);
+  keychain_state.biometry = LABiometryTypeNone;
+  assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kUnavailable);
+  keychain_state.available = false;
+  for (NSInteger code : {LAErrorBiometryNotAvailable, LAErrorBiometryNotEnrolled, LAErrorBiometryLockout}) {
+    keychain_state.error_code = code;
+    assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kUnavailable);
+  }
+  keychain_state.error_code = LAErrorUserCancel;
+  assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kIo);
+  keychain_state.error_domain = @"example.error";
+  assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kIo);
+  ResetKeychainFake();
+  keychain_state.query_result = ValidItem();
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kSuccess);
+  assert([keychain_state.last_query[(__bridge id)kSecReturnData] isEqual:@NO]);
+  SockeyeTestLAContext *query_context = keychain_state.last_query[(__bridge id)kSecUseAuthenticationContext];
+  assert(query_context.interactionNotAllowed);
+  assert(sockeye::InspectCredentialPolicy(invalid_utf8, error) == KeychainStatus::kIo);
+  for (OSStatus status : {errSecItemNotFound, errSecAuthFailed}) {
+    ResetKeychainFake(); keychain_state.query_statuses = {status};
+    assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == (status == errSecItemNotFound ? KeychainStatus::kNotFound : KeychainStatus::kIo));
+  }
+  ResetKeychainFake(); keychain_state.query_result = @"invalid item";
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
+  ResetKeychainFake(); keychain_state.query_result = @{};
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
+  ResetKeychainFake();
+  NSMutableDictionary *item = ValidItem(); item[(__bridge id)kSecAttrGeneric] = @"wrong marker";
+  keychain_state.query_result = item;
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kInvalidPolicy);
+}
+void CheckCredentialReads() {
+  using sockeye::KeychainStatus;
+  CheckRead(ValidItem(), KeychainStatus::kSuccess);
+  CheckRead(nil, KeychainStatus::kIo);
+  for (id access : @[@"wrong type", [@"wrong policy" dataUsingEncoding:NSUTF8StringEncoding]]) {
+    NSMutableDictionary *item = ValidItem(); item[(__bridge id)kSecAttrAccessControl] = access;
+    CheckRead(item, KeychainStatus::kInvalidPolicy);
+  }
+  NSMutableDictionary *item = ValidItem(); [item removeObjectForKey:(__bridge id)kSecAttrAccessControl];
+  CheckRead(item, KeychainStatus::kInvalidPolicy);
+  for (id data : @[@"wrong type", [NSData data], [NSMutableData dataWithLength:sockeye::SecretBuffer::kCapacity + 1]]) {
+    item = ValidItem(); item[(__bridge id)kSecValueData] = data;
+    CheckRead(item, KeychainStatus::kIo);
+  }
+  item = ValidItem(); [item removeObjectForKey:(__bridge id)kSecValueData]; CheckRead(item, KeychainStatus::kIo);
+  for (OSStatus status : {errSecAuthFailed, errSecInteractionNotAllowed, errSecUserCanceled, errSecNotAvailable, errSecParam}) {
+    ResetKeychainFake(); keychain_state.query_statuses = {status};
+    sockeye::AuthorizationContext context; Authenticate(context);
+    sockeye::SecretBuffer output; sockeye::KeychainError error;
+    const auto expected = status == errSecNotAvailable ? KeychainStatus::kUnavailable : status == errSecParam ? KeychainStatus::kIo : KeychainStatus::kDenied;
+    assert(sockeye::ReadCredential(context, kIdentifier, output, error) == expected);
+  }
+  for (OSStatus legacy : {errSecSuccess, errSecItemNotFound}) {
+    ResetKeychainFake(); keychain_state.query_statuses = {errSecItemNotFound, legacy}; keychain_state.query_result = ValidItem();
+    sockeye::AuthorizationContext context; Authenticate(context);
+    sockeye::SecretBuffer output; sockeye::KeychainError error;
+    assert(sockeye::ReadCredential(context, kIdentifier, output, error) == (legacy == errSecSuccess ? KeychainStatus::kInvalidPolicy : KeychainStatus::kNotFound));
+  }
+  ResetKeychainFake(); keychain_state.query_result = @"not a dictionary";
+  sockeye::AuthorizationContext context; Authenticate(context);
+  sockeye::SecretBuffer output; sockeye::KeychainError error;
+  assert(sockeye::ReadCredential(context, kIdentifier, output, error) == KeychainStatus::kIo);
+  assert(sockeye::ReadCredential(context, invalid_utf8, output, error) == KeychainStatus::kIo);
+}
+void CheckUnexpectedFailureResultCleanup() {
+  __weak NSObject *returned_object = nil;
+  @autoreleasepool {
+    ResetKeychainFake();
+    keychain_state.query_statuses = {errSecAuthFailed};
+    keychain_state.query_failure_result = [[NSObject alloc] init];
+    returned_object = keychain_state.query_failure_result;
+    sockeye::AuthorizationContext context; Authenticate(context);
+    sockeye::SecretBuffer output; sockeye::KeychainError error;
+    assert(sockeye::ReadCredential(context, kIdentifier, output, error) == sockeye::KeychainStatus::kDenied);
+    assert(output.Size() == 0);
+    ResetKeychainFake();
+  }
+  assert(returned_object == nil);
+}
+void CheckCredentialWrites() {
+  using sockeye::KeychainStatus;
+  ResetKeychainFake();
+  sockeye::AuthorizationContext context; Authenticate(context);
+  sockeye::SecretBuffer value; sockeye::KeychainError error;
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  assert(value.Assign(kValue, sizeof(kValue) - 1));
+  assert(sockeye::StoreCredential(context, invalid_utf8, value, error) == KeychainStatus::kIo);
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kSuccess);
+  assert(keychain_state.updates == 1 && keychain_state.additions == 0);
+  assert([keychain_state.last_item[(__bridge id)kSecAttrAccessControl] isEqual:KeychainPolicyFixture()]);
+  assert([keychain_state.last_item[(__bridge id)kSecValueData] length] == sizeof(kValue) - 1);
+  keychain_state.update_status = errSecItemNotFound;
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kSuccess);
+  assert(keychain_state.additions == 1);
+  keychain_state.add_status = errSecAuthFailed;
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  keychain_state.policy_failure = true;
+  for (bool with_error : {false, true}) {
+    keychain_state.policy_error_object = with_error;
+    assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kIo);
+  }
+  assert(sockeye::DeleteCredential(context, invalid_utf8, error) == KeychainStatus::kIo);
+  assert(sockeye::DeleteCredential(context, kIdentifier, error) == KeychainStatus::kSuccess);
+  keychain_state.delete_status = errSecItemNotFound;
+  assert(sockeye::DeleteCredential(context, kIdentifier, error) == KeychainStatus::kSuccess);
+  keychain_state.delete_status = errSecAuthFailed;
+  assert(sockeye::DeleteCredential(context, kIdentifier, error) == KeychainStatus::kDenied);
+}
+} // namespace
+int main() {
+  @autoreleasepool {
+    CheckAuthentication(); CheckReadiness(); CheckCredentialReads(); CheckUnexpectedFailureResultCleanup(); CheckCredentialWrites();
+  }
+  return 0;
+}

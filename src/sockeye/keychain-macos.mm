@@ -281,7 +281,13 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
       if (result != nullptr) {
         CFRelease(result);
       }
-      SetOsError(error, status, "Credential read");
+      if (status == errSecSuccess) {
+        output.Clear();
+        SetError(error, KeychainStatus::kIo, 0,
+                 "Credential read failed: macOS returned no Keychain result.");
+      } else {
+        SetOsError(error, status, "Credential read");
+      }
       return error.status;
     }
 
