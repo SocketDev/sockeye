@@ -177,19 +177,6 @@ export async function checkPythonVersion(
         { shell: WIN32 },
       )
 
-      // Check if spawn failed or returned undefined code.
-      // promise-spawn returns 'code' not 'status'.
-      if (!result || result.code === undefined) {
-        continue
-      }
-
-      if (result.code !== 0) {
-        if (result.stderr) {
-          logger.warn(`${pythonCmd} failed: ${result.stderr}`)
-        }
-        continue
-      }
-
       const version = (result.stdout ?? '').trim()
       if (!version) {
         continue

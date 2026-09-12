@@ -51,7 +51,7 @@ export async function buildBuilderImage(target, options = {}) {
   printInfo(`Building ${imageTag}...`)
 
   try {
-    const result = await spawn(
+    await spawn(
       'docker',
       ['compose', '-f', 'docker-compose.yml', 'build', serviceName],
       {
@@ -61,13 +61,8 @@ export async function buildBuilderImage(target, options = {}) {
       },
     )
 
-    if (result.code === 0) {
-      printSuccess(`Built ${imageTag}`)
-      return true
-    }
-
-    printError(`Failed to build ${imageTag}`)
-    return false
+    printSuccess(`Built ${imageTag}`)
+    return true
   } catch (e) {
     printError(`Build error: ${errorMessage(e)}`)
     return false
@@ -84,23 +79,16 @@ export async function ensureBuildxBuilder() {
 
   // Check if builder exists
   try {
-    const inspectResult = await spawn(
-      'docker',
-      ['buildx', 'inspect', builderName],
-      {
-        shell: WIN32,
-        stdio: 'pipe',
-      },
-    )
+    await spawn('docker', ['buildx', 'inspect', builderName], {
+      shell: WIN32,
+      stdio: 'pipe',
+    })
 
-    if (inspectResult.code === 0) {
-      // Builder exists, use it
-      await spawn('docker', ['buildx', 'use', builderName], {
-        shell: WIN32,
-        stdio: 'pipe',
-      })
-      return true
-    }
+    await spawn('docker', ['buildx', 'use', builderName], {
+      shell: WIN32,
+      stdio: 'pipe',
+    })
+    return true
   } catch {
     // Builder doesn't exist, create it
   }
@@ -108,7 +96,7 @@ export async function ensureBuildxBuilder() {
   // Create new builder
   printInfo('Creating Docker buildx builder…')
   try {
-    const createResult = await spawn(
+    await spawn(
       'docker',
       [
         'buildx',
@@ -126,13 +114,8 @@ export async function ensureBuildxBuilder() {
       },
     )
 
-    if (createResult.code === 0) {
-      printSuccess('Docker buildx builder created')
-      return true
-    }
-
-    printError('Failed to create buildx builder')
-    return false
+    printSuccess('Docker buildx builder created')
+    return true
   } catch (e) {
     printError(`Buildx builder creation error: ${errorMessage(e)}`)
     return false
@@ -230,7 +213,7 @@ export async function setupQemuEmulation() {
 
   try {
     // Use tonistiigi/binfmt to install QEMU handlers
-    const result = await spawn(
+    await spawn(
       'docker',
       ['run', '--privileged', '--rm', 'tonistiigi/binfmt', '--install', 'all'],
       {
@@ -239,16 +222,8 @@ export async function setupQemuEmulation() {
       },
     )
 
-    if (result.code === 0) {
-      printSuccess('QEMU emulation configured')
-      return true
-    }
-
-    printError('Failed to setup QEMU emulation')
-    if (result.stderr) {
-      printError(result.stderr)
-    }
-    return false
+    printSuccess('QEMU emulation configured')
+    return true
   } catch (e) {
     printError(`QEMU setup error: ${errorMessage(e)}`)
     return false

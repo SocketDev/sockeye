@@ -133,16 +133,10 @@ export async function installPackageManager(
       return false
     }
 
-    const result = await spawn(shPath, ['-c', managerConfig.installScript], {
+    await spawn(shPath, ['-c', managerConfig.installScript], {
       env: process.env,
       stdio: 'inherit',
     })
-
-    const exitCode = result.code ?? 0
-    if (exitCode !== 0) {
-      printError(`Failed to install ${managerConfig.name}`)
-      return false
-    }
 
     // Verify installation.
     const installed = whichSync(managerConfig.binary, { nothrow: true })
@@ -216,16 +210,10 @@ export async function installTool(
       return false
     }
 
-    const result = await spawn(commandPath, args, {
+    await spawn(commandPath, args, {
       env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
       stdio: 'inherit',
     })
-
-    const exitCode = result.code ?? 0
-    if (exitCode !== 0) {
-      printError(`Failed to install ${tool} via ${packageManager}`)
-      return false
-    }
 
     await linkInstalledTool({ packageManager, packageName, commandPath })
 
@@ -259,19 +247,10 @@ export async function linkInstalledTool(config) {
   // the homebrew copy. Only on macOS, only for brew, only for the
   // formulas where it's load-bearing.
   if (packageManager === 'brew' && KEG_ONLY_FORMULAS.has(packageName)) {
-    const linkResult = await spawn(
-      commandPath,
-      ['link', '--overwrite', '--force', packageName],
-      {
-        env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
-        stdio: 'inherit',
-      },
-    )
-    if ((linkResult.code ?? 0) !== 0) {
-      logger.warn(
-        `${packageName} installed but \`brew link --overwrite --force\` failed; dependent tools may fail to load it`,
-      )
-    }
+    await spawn(commandPath, ['link', '--overwrite', '--force', packageName], {
+      env: { ...process.env, HOMEBREW_NO_ANALYTICS: '1' },
+      stdio: 'inherit',
+    })
   }
 }
 
@@ -349,8 +328,8 @@ export async function verifyToolWorks(tool, verifyArgs = ['--version']) {
     return false
   }
   try {
-    const result = await spawn(binPath, verifyArgs, { stdio: 'pipe' })
-    return result.code === 0
+    await spawn(binPath, verifyArgs, { stdio: 'pipe' })
+    return true
   } catch {
     return false
   }
