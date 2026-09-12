@@ -13,6 +13,7 @@
  * of truth for the chain lives in packages/build-infra/lib/
  * constants.mts (`CHECKPOINT_CHAINS.nodeSmol`) — keep in sync.
  */
+import console from 'node:console'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -31,8 +32,8 @@ export function getCheckpointChain() {
 }
 
 function printCheckpointChain() {
-  // oxlint-disable-next-line socket/no-direct-stream-write -- shell protocol.
-  process.stdout.write(`${CHAIN.join(',')}\n`)
+  // oxlint-disable-next-line socket/no-console-prefer-logger -- shell protocol.
+  console.log(CHAIN.join(','))
 }
 
 if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')) {

@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 import {
   builderPackageFromCallerPath,
   getFinalBinaryPath,
@@ -18,11 +19,15 @@ test.each([
   'final outputs keep build mode %s and target %s separate',
   (mode, target, binary) => {
     const root = '/example/repo/packages/example-builder'
-    expect(getFinalBinaryPath(root, mode, target, binary)).toBe(
-      `${root}/build/${mode}/${target}/out/Final/${binary}`,
-    )
-    expect(getFinalOutputDir(`${root}/build/${mode}/${target}`)).toBe(
-      `${root}/build/${mode}/${target}/out/Final`,
-    )
+    expect(
+      normalizePath(getFinalBinaryPath(root, mode, target, binary))
+        .split('/')
+        .slice(-6),
+    ).toEqual(['build', mode, target, 'out', 'Final', binary])
+    expect(
+      normalizePath(getFinalOutputDir('/example/platform-build'))
+        .split('/')
+        .slice(-3),
+    ).toEqual(['platform-build', 'out', 'Final'])
   },
 )

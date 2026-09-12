@@ -16,6 +16,7 @@
  * of truth for the chain lives in packages/build-infra/lib/
  * constants.mts (`CHECKPOINT_CHAINS.onnxruntime`) — keep in sync.
  */
+import console from 'node:console'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -44,8 +45,8 @@ export function getCheckpointChain(mode?: string | undefined) {
 function main() {
   const args = process.argv.slice(2)
   const buildMode = args.includes('--prod') ? 'prod' : 'dev'
-  // oxlint-disable-next-line socket/no-direct-stream-write -- shell protocol.
-  process.stdout.write(`${getCheckpointChain(buildMode).join(',')}\n`)
+  // oxlint-disable-next-line socket/no-console-prefer-logger -- shell protocol.
+  console.log(getCheckpointChain(buildMode).join(','))
 }
 
 if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1] ?? '')) {

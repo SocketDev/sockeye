@@ -62,7 +62,9 @@ test.each(scripts)(
       ),
     ]
     await load()
-    expect(write).toHaveBeenCalledExactlyOnceWith(`${chain.join(',')}\n`)
+    expect(write.mock.calls.map(call => call[0]).join('')).toBe(
+      `${chain.join(',')}\n`,
+    )
   },
 )
 
@@ -95,14 +97,14 @@ test.each([
       ? ['source-configured', 'source-cloned']
       : ['source-cloned']
     const prefix = ['finalized', 'wasm-synced']
-    expect(write).toHaveBeenLastCalledWith(
+    expect(write.mock.calls.map(call => call[0]).join('')).toBe(
       `${[...prefix, 'wasm-optimized', 'wasm-released', 'wasm-compiled', ...tail].join(',')}\n`,
     )
     vi.resetModules()
     write.mockClear()
     process.argv = [process.execPath, script, '--dev']
     await load()
-    expect(write).toHaveBeenCalledExactlyOnceWith(
+    expect(write.mock.calls.map(call => call[0]).join('')).toBe(
       `${[...prefix, 'wasm-released', 'wasm-compiled', ...tail].join(',')}\n`,
     )
   },
