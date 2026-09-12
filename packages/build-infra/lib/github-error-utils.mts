@@ -41,12 +41,7 @@ export async function checkGitHubStatus() {
     )
     if (response.ok) {
       const data = await response.json()
-      return {
-        __proto__: null,
-        description: data.status?.description || 'Unknown status',
-        status: data.status?.indicator || 'unknown',
-        url: 'https://www.githubstatus.com',
-      }
+      return parseGitHubServiceStatus(data)
     }
   } catch {
     // GitHub status check failed - don't let this block error reporting.
@@ -61,7 +56,7 @@ export async function checkGitHubStatus() {
  *
  * @returns {boolean} True if the error appears to be transient.
  */
-export function isTransientError(error) {
+export function isTransientError(error: unknown) {
   const message = errorMessage(error)
   return TRANSIENT_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
@@ -77,7 +72,7 @@ export function isTransientError(error) {
  * @returns {Promise<void>}
  */
 export async function logTransientErrorHelp(
-  error,
+  error: unknown,
   { checkStatus = true } = {},
 ) {
   if (!isTransientError(error)) {
@@ -109,4 +104,33 @@ export async function logTransientErrorHelp(
   logger.warn(
     'If the issue persists, check https://www.githubstatus.com for outages.',
   )
+}
+
+export function parseGitHubServiceStatus(data: unknown): {
+  description: string
+  status: string
+  url: string
+} {
+  const record =
+    typeof data === 'object' && data !== null && 'status' in data
+      ? data.status
+      : undefined
+  const description =
+    typeof record === 'object' && record !== null && 'description' in record
+      ? record.description
+      : undefined
+  const indicator =
+    typeof record === 'object' && record !== null && 'indicator' in record
+      ? record.indicator
+      : undefined
+  const result = {
+    __proto__: null,
+    description:
+      typeof description === 'string' && description
+        ? description
+        : 'Unknown status',
+    status: typeof indicator === 'string' && indicator ? indicator : 'unknown',
+    url: 'https://www.githubstatus.com',
+  }
+  return result
 }

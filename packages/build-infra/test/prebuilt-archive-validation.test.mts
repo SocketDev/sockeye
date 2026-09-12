@@ -36,7 +36,6 @@ vi.mock(
 const config = {
   assetName: 'example-linux-arm64.tar.gz',
   downloadedArchive: '/example/archive.tar.gz',
-  tempDir: '/example/temp',
   tool: 'example-tool',
   versionFile: '/example/.version',
 }
@@ -64,7 +63,6 @@ test('checks the release checksum after closing the archive header', async () =>
   expect(archive.checksum).toHaveBeenCalledWith({
     assetName: config.assetName,
     filePath: config.downloadedArchive,
-    tempDir: config.tempDir,
     tool: config.tool,
   })
   expect(archive.remove).not.toHaveBeenCalled()

@@ -23,10 +23,9 @@ export async function verifyPrebuiltArchive(config: {
   downloadedArchive: string
   versionFile: string
   assetName: string
-  tempDir: string
   tool: string
 }): Promise<void> {
-  const { downloadedArchive, versionFile, assetName, tempDir, tool } = {
+  const { downloadedArchive, versionFile, assetName, tool } = {
     __proto__: null,
     ...config,
   } as typeof config
@@ -53,7 +52,6 @@ export async function verifyPrebuiltArchive(config: {
   const checksumResult = await verifyReleaseChecksum({
     assetName,
     filePath: downloadedArchive,
-    tempDir,
     tool,
   })
   if (!checksumResult.valid) {

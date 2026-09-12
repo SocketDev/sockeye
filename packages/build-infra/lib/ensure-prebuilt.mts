@@ -32,7 +32,6 @@ import { errorMessage } from './error-utils.mts'
 // the actual error-handling path, where a failure to load it
 // degrades gracefully (the transient-error hint is omitted).
 import {
-  getBuildTempDir,
   getPrebuiltDownloadDir,
   getPrebuiltMemberPath,
   getPrebuiltVersionPath,
@@ -217,15 +216,13 @@ export function createPrebuiltApi(config: PrebuiltConfig): PrebuiltApi {
         downloadedArchive,
         versionFile,
         assetName,
-        tempDir: getBuildTempDir(packageRoot),
         tool: name,
       })
 
       // Clean stale extraction (cached Docker layers / partial extracts).
       const extractDirContents = readdirSync(extractDir)
       const archiveBasename = path.basename(downloadedArchive)
-      for (let i = 0, { length } = extractDirContents; i < length; i += 1) {
-        const item = extractDirContents[i]
+      for (const item of extractDirContents) {
         if (item !== archiveBasename && item !== '.version') {
           const itemPath = getPrebuiltMemberPath(extractDir, item)
           await safeDelete(itemPath, { maxRetries: 3, retryDelay: 100 })
