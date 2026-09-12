@@ -5,6 +5,7 @@ import { parse } from 'yaml'
 
 interface WorkflowStep {
   name: string
+  id?: string
   if?: string
   run?: string
   env?: Record<string, string>
@@ -97,5 +98,14 @@ test('cleans up imported certificates even after a failed signing step', () => {
   const cleanup = signingStep('Clean up signing keychain')
   expect(cleanup.if).toBe('${{ always() && !inputs.adhoc }}')
   expect(cleanup.with?.['mode']).toBe('cleanup')
+  expect(signingStep('Import codesign certificate').id).toBe('import-signing')
+  expect(cleanup.with?.['temporary-directory']).toBe(
+    '${{ steps.import-signing.outputs.temporary-directory }}',
+  )
+  for (const name of ['Store notarytool credentials', 'Notarize archive']) {
+    expect(signingStep(name).env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBe(
+      '${{ steps.import-signing.outputs.keychain }}',
+    )
+  }
   expect(job.steps.at(-1)).toBe(cleanup)
 })

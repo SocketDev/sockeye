@@ -76,6 +76,7 @@ jobs:
       # Import the Developer ID Application certificate from the org-level
       # secret. Skipped on ad-hoc runs.
       - name: Import codesign certificate
+        id: import-signing
         if: ${{ !inputs.adhoc }}
         uses: ./.github/actions/repo/import-codesign-certs
         with:
@@ -105,6 +106,7 @@ jobs:
       - name: Store notarytool credentials
         if: ${{ !inputs.adhoc }}
         env:
+          SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
           APPLE_ID: ${{ vars.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
@@ -117,6 +119,8 @@ jobs:
 
       - name: Notarize archive
         if: ${{ !inputs.adhoc }}
+        env:
+          SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
         run: pnpm run notarize --run
           build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
           --keychain-profile sockeye-notary
@@ -151,3 +155,4 @@ jobs:
         uses: ./.github/actions/repo/import-codesign-certs
         with:
           mode: cleanup
+          temporary-directory: ${{ steps.import-signing.outputs.temporary-directory }}

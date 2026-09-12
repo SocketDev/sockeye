@@ -4,22 +4,37 @@ inputs:
   mode:
     description: Import certificates or clean up the temporary keychain.
     default: import
+  temporary-directory:
+    description: Temporary directory returned by the import step, for cleanup.
   p12-file-base64:
     description: Base64-encoded PKCS12 certificates.
   p12-password:
     description: Password for the PKCS12 certificates.
+outputs:
+  temporary-directory:
+    description: Owned temporary directory for cleanup.
+    value: ${{ steps.keychain.outputs.temporary-directory }}
+  keychain:
+    description: Temporary keychain containing signing and notary credentials.
+    value: ${{ steps.keychain.outputs.keychain }}
 runs:
   using: composite
   steps:
     - name: Manage signing keychain
+      id: keychain
       shell: bash
       env:
+        SOCKEYE_SIGNING_TEMP_DIR: ${{ inputs.temporary-directory }}
         SIGNING_ACTION_MODE: ${{ inputs.mode }}
         P12_BASE64: ${{ inputs.p12-file-base64 }}
         P12_PASSWORD: ${{ inputs.p12-password }}
       run: |
         set -euo pipefail
         set +x
+        if [[ "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == *$'\n'* || "$RUNNER_TEMP" == *$'\r'* ]]; then
+          printf '%s\n' 'Invalid runner temporary path; refusing signing action.' >&2
+          exit 1
+        fi
         cleanup_signing_keychain() {
           local directory="${SOCKEYE_SIGNING_TEMP_DIR:-}" result=0 entry basename
           local original=()
@@ -39,7 +54,6 @@ runs:
           rm -f "$directory/certificate.p12"
           if [[ "$result" == 0 ]]; then
             rm -rf "$directory"
-            printf 'SOCKEYE_SIGNING_TEMP_DIR=\nSOCKEYE_SIGNING_KEYCHAIN=\n' >> "$GITHUB_ENV"
             unset SOCKEYE_SIGNING_TEMP_DIR
           fi
           return "$result"
@@ -55,7 +69,6 @@ runs:
         umask 077
         SOCKEYE_SIGNING_TEMP_DIR="$(mktemp -d "$RUNNER_TEMP/sockeye-signing.XXXXXX")"
         trap 'status=$?; if [[ "$status" != 0 ]]; then cleanup_signing_keychain || true; fi; exit "$status"' EXIT
-        printf 'SOCKEYE_SIGNING_TEMP_DIR=%s\n' "$SOCKEYE_SIGNING_TEMP_DIR" >> "$GITHUB_ENV"
         security list-keychains -d user > "$SOCKEYE_SIGNING_TEMP_DIR/search-list.txt"
         original=()
         pattern='^[[:space:]]*"(.*)"[[:space:]]*$'
@@ -70,7 +83,6 @@ runs:
         for entry in "${original[@]}"; do printf '%s\0' "$entry" >> "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp"; done
         mv "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp" "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list"
         keychain="$SOCKEYE_SIGNING_TEMP_DIR/signing.keychain-db"
-        printf 'SOCKEYE_SIGNING_KEYCHAIN=%s\n' "$keychain" >> "$GITHUB_ENV"
         password="$(openssl rand -hex 32)"
         printf '::add-mask::%s\n' "$password"
         security create-keychain -p "$password" "$keychain"
@@ -81,3 +93,4 @@ runs:
         rm -f "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12"
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
         security list-keychains -d user -s "$keychain" "${original[@]}"
+        printf 'temporary-directory=%s\nkeychain=%s\n' "$SOCKEYE_SIGNING_TEMP_DIR" "$keychain" >> "$GITHUB_OUTPUT"

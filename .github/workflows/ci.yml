@@ -189,6 +189,7 @@ jobs:
           payload-token-client-id: ${{ vars.SOCKET_PR_CLIENT_ID }}
           payload-token-private-key: ${{ secrets.SOCKET_PR_APP_PRIVATE_KEY }}
       - name: Run full coverage
+        id: coverage
         uses: ./.github/actions/fleet/run-script
         env:
           # Authenticate build-time GitHub API reads (release listings,
@@ -199,7 +200,7 @@ jobs:
           setup-script: pnpm run build
           main-script: pnpm run cover
       - name: Upload coverage diagnostics
-        if: failure()
+        if: failure() && steps.coverage.outcome == 'failure'
         uses: ./.github/actions/fleet/upload-artifact
         with:
           name: coverage-diagnostics-${{ matrix.os }}

@@ -65,7 +65,7 @@ function runKeychainAction(
       env: {
         PATH: '/usr/bin:/bin',
         RUNNER_TEMP: root,
-        GITHUB_ENV: path.join(root, 'github-env'),
+        GITHUB_OUTPUT: path.join(root, 'github-output'),
         SIGNING_ACTION_MODE: config.mode,
         SIGNING_FAILURE: config.failure ?? '',
         SOCKEYE_SIGNING_TEMP_DIR: config.directory ?? '',
@@ -77,12 +77,12 @@ function runKeychainAction(
 }
 
 function recordedDirectory(root: string): string {
-  const entry = readFileSync(path.join(root, 'github-env'), 'utf8')
+  const entry = readFileSync(path.join(root, 'github-output'), 'utf8')
     .trim()
     .split(/\r?\n/u)
-    .filter(line => line.startsWith('SOCKEYE_SIGNING_TEMP_DIR='))
+    .filter(line => line.startsWith('temporary-directory='))
     .at(-1)!
-  return entry.slice('SOCKEYE_SIGNING_TEMP_DIR='.length)
+  return entry.slice('temporary-directory='.length)
 }
 
 function searchList(root: string): string[] {
@@ -126,7 +126,7 @@ test.each(['create-keychain', 'import', 'set-key-partition-list'])(
     expect(
       readdirSync(root).filter(name => name.startsWith('sockeye-signing.')),
     ).toEqual([])
-    expect(recordedDirectory(root)).toBe('')
+    expect(existsSync(path.join(root, 'github-output'))).toBe(false)
     expect(runKeychainAction(root, { mode: 'cleanup' }).status).toBe(0)
   },
 )
@@ -157,4 +157,12 @@ test('rejects symlink cleanup directories before following them', () => {
   expect(runKeychainAction(root, { mode: 'cleanup', directory }).status).toBe(1)
   expect(existsSync(target)).toBe(true)
   expect(existsSync(path.join(root, 'commands'))).toBe(false)
+})
+
+test('refuses newline-bearing output paths before importing any credentials', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'sockeye-keychain-output-\n'))
+  roots.push(root)
+  expect(runKeychainAction(root, { mode: 'import' }).status).toBe(1)
+  expect(existsSync(path.join(root, 'commands'))).toBe(false)
+  expect(existsSync(path.join(root, 'github-output'))).toBe(false)
 })
