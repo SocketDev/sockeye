@@ -62,8 +62,6 @@ SecAccessControlRef CreateRequiredAccessControl(KeychainError &error) {
 
 KeychainStatus StatusForOsStatus(OSStatus status) {
   switch (status) {
-  case errSecSuccess:
-    return KeychainStatus::kSuccess;
   case errSecItemNotFound:
     return KeychainStatus::kNotFound;
   case errSecAuthFailed:

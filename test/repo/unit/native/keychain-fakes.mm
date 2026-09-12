@@ -7,6 +7,10 @@ NSData *KeychainPolicyFixture() { return [@"example-current-biometry-policy" dat
 void ResetKeychainFake() { keychain_state = {}; }
 
 @implementation SockeyeTestLAContext
+- (instancetype)init {
+  self = [super init];
+  return keychain_state.context_initialization_failure ? nil : self;
+}
 - (LABiometryType)biometryType { return keychain_state.biometry; }
 - (BOOL)canEvaluatePolicy:(LAPolicy)policy error:(NSError **)error {
   assert(policy == LAPolicyDeviceOwnerAuthenticationWithBiometrics);

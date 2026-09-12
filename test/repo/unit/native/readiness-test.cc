@@ -58,6 +58,8 @@ int main() {
   assert(Doctor(fix) == 0);
   assert(repairs == 1);
   policy = KeychainStatus::kInvalidPolicy;
+  assert(Doctor(diagnose) == 5);
+  assert(repairs == 1);
   assert(Doctor(fix) == 0);
   assert(repairs == 2);
   policy = KeychainStatus::kIo;

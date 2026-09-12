@@ -73,6 +73,12 @@ void CheckReadiness() {
   keychain_state.error_domain = @"example.error";
   assert(sockeye::InspectBiometricReadiness(error) == KeychainStatus::kIo);
   ResetKeychainFake();
+  keychain_state.context_initialization_failure = true;
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
+  assert(keychain_state.query_index == 0);
+  assert(keychain_state.evaluations == 0);
+  assert(keychain_state.additions == 0 && keychain_state.updates == 0 && keychain_state.deletions == 0);
+  ResetKeychainFake();
   keychain_state.query_result = ValidItem();
   assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kSuccess);
   assert([keychain_state.last_query[(__bridge id)kSecReturnData] isEqual:@NO]);

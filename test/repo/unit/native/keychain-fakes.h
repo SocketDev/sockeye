@@ -7,6 +7,7 @@
 #include <vector>
 
 struct KeychainFakeState {
+  bool context_initialization_failure = false;
   bool available = true;
   bool approved = true;
   bool policy_failure = false;
