@@ -56,11 +56,23 @@ make sure errors do not echo secret input.
 Manual security tests must use throwaway credentials. Never put a real
 credential value in a fixture, snapshot, command argument, or test log.
 
+## Native coverage
+
+Run all enabled coverage collectors with `pnpm run cover`.
+The native collector instruments C++ and Objective-C++ with Clang source coverage.
+Vitest runs the instrumented binaries and addon through noninteractive tests.
+`llvm-profdata` merges execution profiles, and `llvm-cov` exports LCOV reports.
+
+The native inventory includes `src/sockeye`, the keychain addon, and the macOS keystore implementation.
+Reports live under `.cache/fleet/coverage/lanes/`.
+Tests replace protected framework operations with test doubles.
+Native coverage does not establish that attended Touch ID or enrollment checks passed.
+
 ## SVG assets
 
 GitHub renders repository SVG files more reliably than large inline SVG blocks.
 Keep repository-facing art under `assets/repo/`. The fleet preset owns
-`assets/repo/badges/coverage.svg`; Sockeye owns
+`assets/repo/coverage.svg`; Sockeye owns
 `assets/repo/logomark.svg` and `assets/repo/logomark-inverse.svg`.
 Reference these files from Markdown or HTML. Run the pinned SVGO pass to optimize both glyph variants:
 
