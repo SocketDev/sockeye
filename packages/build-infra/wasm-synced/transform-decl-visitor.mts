@@ -144,8 +144,11 @@ export function buildDeclVisitor(config) {
       if (node.async) {
         const asyncPos = mjsContent.indexOf('async', node.start)
         if (asyncPos !== -1 && asyncPos < node.body.start) {
-          // Remove "async " (6 characters including space)
-          safeRemove(asyncPos, asyncPos + 6)
+          const end =
+            asyncPos +
+            5 +
+            (mjsContent.charCodeAt(asyncPos + 5) === 0x20 ? 1 : 0)
+          safeRemove(asyncPos, end)
         }
       }
 
