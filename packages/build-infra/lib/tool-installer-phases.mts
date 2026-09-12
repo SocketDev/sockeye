@@ -42,8 +42,8 @@ export async function installMissingTool(config) {
   }
 
   // Detect available package managers.
-  const managers = detectPackageManagers()
-  if (!managers.length) {
+  const packageManager = detectPackageManagers()[0]
+  if (!packageManager) {
     logger.warn(`No package manager detected for auto-installing ${tool}`)
     return {
       __proto__: null,
@@ -53,18 +53,6 @@ export async function installMissingTool(config) {
     }
   }
 
-  // Try to install using the first available package manager.
-  const packageManager = managers[0]
-  if (!packageManager) {
-    // Defensive fallback for race conditions
-    logger.error('Package manager became unavailable')
-    return {
-      __proto__: null,
-      available: false,
-      installed: false,
-      packageManager: undefined,
-    }
-  }
   logger.substep(`Attempting to install ${tool} using ${packageManager}`)
 
   const installed = await installTool(tool, packageManager, { autoYes })

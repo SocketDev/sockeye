@@ -267,10 +267,6 @@ export async function getGccVersion(gccPath = 'gcc') {
   try {
     const result = await spawn(gccPath, ['--version'], {})
 
-    if (result.code !== 0) {
-      return undefined
-    }
-
     const stdout = result.stdout || ''
     const match = stdout.match(/gcc.*?(\d+\.\d+\.\d+)/)
     return match ? match[1] : undefined
@@ -300,7 +296,7 @@ export async function installGccApt(version) {
     }
 
     // Install GCC and G++
-    const installResult = await spawn(
+    await spawn(
       sudoPath,
       ['apt-get', 'install', '-y', gccPackage, gxxPackage],
       {
@@ -308,18 +304,13 @@ export async function installGccApt(version) {
       },
     )
 
-    if (installResult.code !== 0) {
-      printError(`Failed to install GCC ${version}`)
-      return false
-    }
-
     // Set as default using update-alternatives
     logger.info(`Setting GCC ${version} as default…`)
 
     const gccPath = `/usr/bin/gcc-${version}`
     const gxxPath = `/usr/bin/g++-${version}`
 
-    const gccAltResult = await spawn(
+    await spawn(
       sudoPath,
       [
         'update-alternatives',
@@ -332,7 +323,7 @@ export async function installGccApt(version) {
       { stdio: 'pipe' },
     )
 
-    const gxxAltResult = await spawn(
+    await spawn(
       sudoPath,
       [
         'update-alternatives',
@@ -344,10 +335,6 @@ export async function installGccApt(version) {
       ],
       { stdio: 'pipe' },
     )
-
-    if (gccAltResult.code !== 0 || gxxAltResult.code !== 0) {
-      logger.warn('Failed to set GCC as default, but installation succeeded')
-    }
 
     return true
   } catch (e) {

@@ -89,11 +89,6 @@ export async function staticVerifyBinary(
         stdio: 'pipe',
       })
 
-      if (fileResult.code !== 0) {
-        logger.warn('Could not run file command, skipping format checks')
-        return true
-      }
-
       fileInfo = fileResult.stdout || ''
       logger.log(`  Binary info: ${fileInfo.trim()}`)
     } catch {
@@ -135,7 +130,7 @@ export async function testBinaryWithDocker(
 
   try {
     // Test 1: Version check
-    let result = await spawn(
+    await spawn(
       'docker',
       [
         'run',
@@ -154,13 +149,8 @@ export async function testBinaryWithDocker(
       },
     )
 
-    if (result.code !== 0) {
-      printError('Docker test failed (version check)')
-      return false
-    }
-
     // Test 2: JavaScript execution
-    result = await spawn(
+    await spawn(
       'docker',
       [
         'run',
@@ -183,13 +173,8 @@ export async function testBinaryWithDocker(
       },
     )
 
-    if (result.code !== 0) {
-      printError('Docker test failed (JavaScript execution)')
-      return false
-    }
-
     // Test 3: Built-in modules
-    result = await spawn(
+    await spawn(
       'docker',
       [
         'run',
@@ -208,11 +193,6 @@ export async function testBinaryWithDocker(
         stdio: 'pipe',
       },
     )
-
-    if (result.code !== 0) {
-      printError('Docker test failed (built-in modules)')
-      return false
-    }
 
     logger.success('All Docker tests passed (Alpine/musl)')
     return true
