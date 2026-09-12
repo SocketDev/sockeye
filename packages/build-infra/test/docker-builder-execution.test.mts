@@ -127,9 +127,15 @@ test.each(['example-builder', 'binpress'])(
       force: true,
     })
     expect(result).toMatchObject({ ok: true, strategy: 'docker' })
-    expect(normalizePath(result.artifactPath)).toContain(
-      `packages/${packageName}/build/dev/out/Final/${packageName}`,
-    )
+    expect(normalizePath(result.artifactPath).split('/').slice(-7)).toEqual([
+      'packages',
+      packageName,
+      'build',
+      'dev',
+      'out',
+      'Final',
+      packageName,
+    ])
     expect(fs.mkdir).toHaveBeenCalledExactlyOnceWith(build.outputDir, {
       recursive: true,
     })
