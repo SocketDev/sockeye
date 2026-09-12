@@ -159,3 +159,17 @@ test('rejects a display-control working directory reached through a clean symlin
   expect(result.stdout).toBe('')
   expect(result.stderr).not.toContain(target)
 })
+
+test('rejects a display-control bound file reached through a clean symlink', () => {
+  const fixture = makeExplainFixture()
+  const target = path.join(fixture.root, 'unsafe\nbound-file')
+  const alias = path.join(fixture.root, 'safe-bound-file')
+  writeFileSync(target, 'example configuration', { mode: 0o600 })
+  symlinkSync(target, alias)
+  const args = [...fixture.args]
+  args.splice(args.indexOf('--'), 0, '--bind-file', alias)
+  const result = runExplain(isolated, 'explain', args)
+  expect(result.status).toBe(2)
+  expect(result.stdout).toBe('')
+  expect(result.stderr).not.toContain(target)
+})

@@ -11,6 +11,7 @@ export const NATIVE_COVERAGE_ROOTS = [
 export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/cli.test.mts',
   'test/repo/integration/portable-core.test.mts',
+  'test/repo/integration/native-failures.test.mts',
   'test/repo/integration/terminal-native.test.mts',
   'test/repo/integration/keychain-framework-native.test.mts',
   'test/repo/integration/one-password-native.test.mts',
@@ -27,6 +28,8 @@ export const NATIVE_COVERAGE_BINARIES = [
   'sockeye-input-policy-test',
   'sockeye-child-process-test',
   'sockeye-portable-core-test',
+  'sockeye-file-identity-failures-test',
+  'sockeye-child-process-failures-test',
   'sockeye-terminal-test',
   'sockeye-keychain-framework-test',
   'sockeye-keystore-framework-test',

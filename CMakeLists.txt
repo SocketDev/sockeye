@@ -63,6 +63,36 @@ if(BUILD_TESTING)
   )
   target_include_directories(sockeye-portable-core-test PRIVATE src)
 
+  add_executable(sockeye-file-identity-failures-test
+    src/sockeye/file-identity.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/file-identity-failures.cc
+  )
+  target_include_directories(sockeye-file-identity-failures-test PRIVATE src)
+  target_compile_definitions(sockeye-file-identity-failures-test PRIVATE
+    realpath=SockeyeFileRealpath open=SockeyeFileOpen close=SockeyeFileClose
+    fstat=SockeyeFileStat read=SockeyeFileRead
+    CC_SHA256_Init=SockeyeFileDigestInit CC_SHA256_Update=SockeyeFileDigestUpdate
+    CC_SHA256_Final=SockeyeFileDigestFinal
+  )
+  add_executable(sockeye-child-process-failures-test
+    src/sockeye/child-process.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/unit/native/child-process-failures.cc
+  )
+  target_include_directories(sockeye-child-process-failures-test PRIVATE src)
+  target_compile_definitions(sockeye-child-process-failures-test PRIVATE
+    realpath=SockeyeChildRealpath open=SockeyeChildOpen close=SockeyeChildClose
+    fstat=SockeyeChildStat pipe=SockeyeChildPipe fcntl=SockeyeChildFcntl
+    write=SockeyeChildWrite waitpid=SockeyeChildWait posix_spawn=SockeyeChildSpawn
+    posix_spawn_file_actions_init=SockeyeChildActionsInit
+    posix_spawn_file_actions_destroy=SockeyeChildActionsDestroy
+    posix_spawn_file_actions_addfchdir=SockeyeChildActionsDirectory
+    posix_spawn_file_actions_addfchdir_np=SockeyeChildActionsDirectoryNp
+    posix_spawn_file_actions_adddup2=SockeyeChildActionsDup
+    posix_spawn_file_actions_addclose=SockeyeChildActionsClose
+  )
+
   add_executable(sockeye-terminal-test
     src/sockeye/terminal.cc
     src/sockeye/input-policy.cc
@@ -183,6 +213,8 @@ if(BUILD_TESTING)
   list(APPEND SOCKEYE_SECURITY_TARGETS
     sockeye-input-policy-test
     sockeye-portable-core-test
+    sockeye-file-identity-failures-test
+    sockeye-child-process-failures-test
     sockeye-terminal-test
     sockeye-keychain-framework-test
     sockeye-keystore-framework-test
