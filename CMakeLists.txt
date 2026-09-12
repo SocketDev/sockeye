@@ -145,6 +145,28 @@ if(BUILD_TESTING)
   )
   target_include_directories(sockeye-doctor-test PRIVATE src)
 
+  add_executable(sockeye-main-effects-test
+    src/sockeye/main.cc
+    src/sockeye/readiness.cc
+    src/sockeye/run-request.cc
+    src/sockeye/file-identity.cc
+    src/sockeye/input-policy.cc
+    src/sockeye/secret-buffer.cc
+    test/repo/integration/native/main-effects.cc
+  )
+  target_include_directories(sockeye-main-effects-test PRIVATE src)
+
+  if(NOT EXISTS "${SOCKEYE_NODE_INCLUDE}/node_api.h")
+    message(FATAL_ERROR "Native addon tests require SOCKEYE_NODE_INCLUDE with node_api.h")
+  endif()
+  add_library(sockeye-addon-test MODULE
+    packages/keychain-addon-builder/src/socketsecurity/keychain-addon-builder/keychain_napi.cc
+    test/repo/integration/native/addon-keystore.cc
+  )
+  target_include_directories(sockeye-addon-test PRIVATE "${SOCKEYE_NODE_INCLUDE}" packages/keystore-infra/src)
+  set_target_properties(sockeye-addon-test PROPERTIES PREFIX "" SUFFIX ".node" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+  target_link_options(sockeye-addon-test PRIVATE -undefined dynamic_lookup)
+
   add_executable(sockeye-keychain-observer
   test/repo/e2e/fixture/keychain/observer.cc
   )
@@ -169,6 +191,8 @@ if(BUILD_TESTING)
     sockeye-readiness-test
     sockeye-preview-isolation-test
     sockeye-doctor-test
+    sockeye-main-effects-test
+    sockeye-addon-test
     sockeye-child-process-test
     sockeye-keychain-observer
     sockeye-keychain-policy-fixture

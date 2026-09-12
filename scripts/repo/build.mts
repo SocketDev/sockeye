@@ -23,6 +23,7 @@ import {
   getBuildMode,
   getCmakeBuildDir,
   getDefaultNativeProfilePattern,
+  getNodeHeaderDirectory,
   getOutputDir,
 } from './paths.mts'
 
@@ -77,6 +78,7 @@ async function main(): Promise<void> {
     `-DCMAKE_OSX_ARCHITECTURES=${architecture}`,
     `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outputDir}`,
     `-DSOCKEYE_VERSION=${version}`,
+    `-DSOCKEYE_NODE_INCLUDE=${getNodeHeaderDirectory()}`,
     `-DSOCKEYE_SANITIZER=${sanitizer}`,
     `-DSOCKEYE_COVERAGE=${mode === 'coverage' ? 'ON' : 'OFF'}`,
     `-DSOCKEYE_COVERAGE_PROFILE_FILE=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? getDefaultNativeProfilePattern(cmakeBuildDir)}`,

@@ -32,7 +32,10 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
 
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
-import { getDefaultNativeProfilePattern } from '../../../scripts/repo/paths.mts'
+import {
+  getDefaultNativeProfilePattern,
+  getNodeHeaderDirectory,
+} from '../../../scripts/repo/paths.mts'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 
 const logger = getDefaultLogger()
@@ -144,11 +147,7 @@ export function resolvePlatformBuild(
 }
 
 async function main() {
-  const nodeInclude = path.join(
-    path.dirname(path.dirname(process.execPath)),
-    'include',
-    'node',
-  )
+  const nodeInclude = getNodeHeaderDirectory()
   if (!existsSync(path.join(nodeInclude, 'node_api.h'))) {
     throw new Error(`node_api.h not found under ${nodeInclude}.`)
   }

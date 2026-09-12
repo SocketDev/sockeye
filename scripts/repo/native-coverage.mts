@@ -18,6 +18,8 @@ export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/readiness.test.mts',
   'test/repo/integration/explain.test.mts',
   'test/repo/integration/doctor.test.mts',
+  'test/repo/integration/main-effects.test.mts',
+  'test/repo/integration/addon-native.test.mts',
   'test/repo/integration/native-test-build.test.mts',
 ]
 export const NATIVE_COVERAGE_BINARIES = [
@@ -33,6 +35,8 @@ export const NATIVE_COVERAGE_BINARIES = [
   'sockeye-readiness-test',
   'sockeye-preview-isolation-test',
   'sockeye-doctor-test',
+  'sockeye-main-effects-test',
+  'sockeye-addon-test.node',
 ]
 export function validateNativeCoverageRoots(roots: string[]): void {
   if (

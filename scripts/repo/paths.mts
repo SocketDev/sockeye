@@ -18,6 +18,14 @@ import {
 
 export const BINARY_NAME = 'sockeye'
 
+export function getNodeHeaderDirectory(): string {
+  return path.join(
+    path.dirname(path.dirname(process.execPath)),
+    'include',
+    'node',
+  )
+}
+
 export const LOCKSTEP_MANIFEST_PATH = segregatedConfigPath(
   REPO_ROOT,
   'lockstep.json',
