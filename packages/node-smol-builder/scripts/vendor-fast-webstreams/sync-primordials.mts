@@ -25,8 +25,9 @@ export function addPrimordialsProtection(content: string, filename: string) {
   const usesNewPromise = /new\s+Promise\s*\(/g.test(content)
   const usesPromiseAll = /Promise\.all\s*\(/g.test(content)
 
+  const injectSettleAll = usesPromiseAll && filename === 'pipe-to.js'
   const needsPrimordials =
-    usesNewPromise || usesPromiseAll || usesPromiseReject || usesPromiseResolve
+    usesNewPromise || injectSettleAll || usesPromiseReject || usesPromiseResolve
 
   if (!needsPrimordials) {
     return content
@@ -43,7 +44,6 @@ export function addPrimordialsProtection(content: string, filename: string) {
   if (usesNewPromise) {
     primordialImports.push('SafePromise')
   }
-  const injectSettleAll = usesPromiseAll && filename === 'pipe-to.js'
   if (injectSettleAll) {
     for (const name of ['PromisePrototypeThen', 'SafePromise']) {
       if (!primordialImports.includes(name)) {
@@ -52,27 +52,22 @@ export function addPrimordialsProtection(content: string, filename: string) {
     }
   }
 
-  // Find insertion point - after 'use strict' and any initial requires
-  // Insert primordials import at the top, right after 'use strict'
-  const useStrictMatch = content.match(/^'use strict'\s*\n/)
-  if (useStrictMatch) {
-    const insertPoint = useStrictMatch[0].length
-    const primordialsComment =
-      '// Use primordials for protection against prototype pollution'
-    const primordialsImport = `const {\n  ${primordialImports.join(',\n  ')},\n} = primordials`
-    // Every element at pipe-to.js's Promise.all call site is a genuine
-    // promise (writer.abort() → SafePromise, reader.cancel() → native,
-    // RESOLVED_UNDEFINED → native), so attaching PromisePrototypeThen
-    // directly is safe and preserves settle-order rejection delivery.
-    const settleAllHelper = injectSettleAll
-      ? `\nfunction settleAllPreservingFirstRejection(promises) {\n  return new SafePromise((resolve, reject) => {\n    let pending = promises.length;\n    if (pending === 0) resolve();\n    const onFulfilled = () => {\n      if (--pending === 0) resolve();\n    };\n    for (let i = 0; i < promises.length; i++) {\n      PromisePrototypeThen(promises[i], onFulfilled, reject);\n    }\n  });\n}\n`
-      : ''
+  const insertPoint = primordialImportOffset(content)
+  const primordialsComment =
+    '// Use primordials for protection against prototype pollution'
+  const primordialsImport = `const {\n  ${primordialImports.join(',\n  ')},\n} = primordials`
+  // Every element at pipe-to.js's Promise.all call site is a genuine
+  // promise (writer.abort() → SafePromise, reader.cancel() → native,
+  // RESOLVED_UNDEFINED → native), so attaching PromisePrototypeThen
+  // directly is safe and preserves settle-order rejection delivery.
+  const settleAllHelper = injectSettleAll
+    ? `\nfunction settleAllPreservingFirstRejection(promises) {\n  return new SafePromise((resolve, reject) => {\n    let pending = promises.length;\n    if (pending === 0) resolve();\n    const onFulfilled = () => {\n      if (--pending === 0) resolve();\n    };\n    for (let i = 0; i < promises.length; i++) {\n      PromisePrototypeThen(promises[i], onFulfilled, reject);\n    }\n  });\n}\n`
+    : ''
 
-    content =
-      content.slice(0, insertPoint) +
-      `\n${primordialsComment}\n${primordialsImport}\n${settleAllHelper}` +
-      content.slice(insertPoint)
-  }
+  content =
+    content.slice(0, insertPoint) +
+    `\n${primordialsComment}\n${primordialsImport}\n${settleAllHelper}` +
+    content.slice(insertPoint)
 
   content = content
     .replace(/Promise\.resolve\s*\(/g, 'PromiseResolve(')
@@ -90,4 +85,10 @@ export function addPrimordialsProtection(content: string, filename: string) {
   }
 
   return content
+}
+
+function primordialImportOffset(content: string): number {
+  // Match a leading strict directive with paired quotes and a semicolon, newline, or end boundary.
+  const directive = content.match(/^(['"])use strict\1[ \t]*(?:;|\r?\n|$)/)
+  return directive?.[0].length ?? 0
 }
