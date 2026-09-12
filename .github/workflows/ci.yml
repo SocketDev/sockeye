@@ -198,3 +198,14 @@ jobs:
         with:
           setup-script: pnpm run build
           main-script: pnpm run cover
+      - name: Upload coverage diagnostics
+        if: failure()
+        uses: ./.github/actions/fleet/upload-artifact
+        with:
+          name: coverage-diagnostics-${{ matrix.os }}
+          path: |
+            .cache/fleet/coverage/test-budget-report.json
+            .cache/fleet/coverage/suite.fast.main.log
+            .cache/fleet/coverage/suite.mid.main.log
+            .cache/fleet/coverage/suite.slow.main.log
+            .cache/fleet/fleet-cover/last-failure-main.log

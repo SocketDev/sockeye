@@ -9,26 +9,20 @@ const io = vi.hoisted(() => ({
 }))
 vi.mock(
   import('../../scripts/binary-released/shared/build-released.mts'),
-  async importOriginal => ({
-    ...(await importOriginal()),
+  () => ({
     buildRelease: io.release,
   }),
 )
 vi.mock(
   import('../../scripts/binary-stripped/shared/build-stripped.mts'),
-  async importOriginal => ({
-    ...(await importOriginal()),
+  () => ({
     buildStripped: io.strip,
   }),
 )
-vi.mock(
-  import('../../scripts/common/shared/parse-build-args.mts'),
-  async importOriginal => ({
-    ...(await importOriginal()),
-    parseBuildArgs: io.parse,
-    calculateCpuCount: () => 2,
-  }),
-)
+vi.mock(import('../../scripts/common/shared/parse-build-args.mts'), () => ({
+  parseBuildArgs: io.parse,
+  calculateCpuCount: () => 2,
+}))
 vi.mock(
   import('../../scripts/common/shared/paths.mts'),
   async importOriginal => ({
@@ -37,13 +31,9 @@ vi.mock(
     getSharedBuildPaths: io.shared,
   }),
 )
-vi.mock(
-  import('local-build-infra/lib/version-metadata'),
-  async importOriginal => ({
-    ...(await importOriginal()),
-    verifyNodeChecksum: async () => ({ valid: true, version: '26.0.0' }),
-  }),
-)
+vi.mock(import('local-build-infra/lib/version-metadata'), () => ({
+  verifyNodeChecksum: async () => ({ valid: true, version: '26.0.0' }),
+}))
 
 test('build-only compilation forwards the checkpoint opt-out and stops before stripping', async () => {
   io.release.mockResolvedValue({ cached: false, isCrossCompiling: false })
