@@ -9,8 +9,8 @@ run-name: Sign macOS for ${{ github.ref_name }}
 #   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12 (secret) — base64 P12
 #   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS (secret) — P12 password
 #   APPLE_APP_SPECIFIC_PASSWORD (secret) — notarytool auth
-#   APPLE_ID (variable) — Apple ID email
-#   APPLE_TEAM_ID (variable) — Developer Program team ID
+#   APPLE_ID (secret) — Apple ID email
+#   APPLE_TEAM_ID (secret) — Developer Program team ID
 #
 # Until those secrets are in place, set adhoc: true on dispatch to build and
 # ad-hoc sign without a certificate. Ad-hoc is good for local testing but not
@@ -70,7 +70,7 @@ jobs:
         with:
           checkout: 'false'
           socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
-          payload-token-client-id: ${{ vars.SOCKET_PR_CLIENT_ID }}
+          payload-token-client-id: ${{ secrets.SOCKET_PR_CLIENT_ID }}
           payload-token-private-key: ${{ secrets.SOCKET_PR_APP_PRIVATE_KEY }}
 
       # Import the Developer ID Application certificate from the org-level
@@ -107,9 +107,9 @@ jobs:
         if: ${{ !inputs.adhoc }}
         env:
           SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
-          APPLE_ID: ${{ vars.APPLE_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           xcrun notarytool store-credentials sockeye-notary \
             --apple-id "$APPLE_ID" \
