@@ -124,9 +124,7 @@ function cachePut(key, value) {
   if (cache.size >= CACHE_SIZE) {
     // Evict oldest entry - SafeMap iterator gives insertion order, O(1)
     const { value: oldest } = IteratorPrototypeNext(MapPrototypeKeys(cache))
-    if (oldest !== undefined) {
-      MapPrototypeDelete(cache, oldest)
-    }
+    MapPrototypeDelete(cache, oldest)
   }
   MapPrototypeSet(cache, key, value)
 }

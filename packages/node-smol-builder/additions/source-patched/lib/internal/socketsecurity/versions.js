@@ -34,7 +34,6 @@ const {
   MapPrototypeGet,
   MapPrototypeKeys,
   MapPrototypeSet,
-  NumberIsNaN,
   NumberParseInt,
   ObjectFreeze,
   RegExpPrototypeExec,
@@ -146,7 +145,7 @@ const PYPI_NUM_PREFIX_REGEX = hardenRegExp(
 // Match a PyPI prerelease at the start: group 1 one of a/alpha/b/beta/c/rc/pre/
 // preview, `\.?` an optional dot separator, `(\d+)?` an optional number (group 2).
 const PYPI_PRE_REGEX = hardenRegExp(
-  /^(a|alpha|b|beta|c|rc|pre|preview)\.?(\d+)?/,
+  /^(alpha|a|beta|b|preview|pre|rc|c)\.?(\d+)?/,
 )
 // Match a PyPI post-release: `(?:^|[._-])` start or a `.`/`_`/`-` separator,
 // group 1 one of post/rev/r, `\.?` optional dot, `(\d+)?` optional number (group 2).
@@ -191,10 +190,7 @@ function parsePrerelease(str) {
   return ArrayPrototypeMap(parts, p => {
     // Only convert to number if entire string is digits (per semver gold standard)
     if (RegExpPrototypeTest(NUMERIC_IDENTIFIER, p)) {
-      const num = parseDigits(p)
-      if (!NumberIsNaN(num)) {
-        return num
-      }
+      return parseDigits(p)
     }
     return p
   })
@@ -437,7 +433,7 @@ function parsePypi(version) {
     // Pre-release: a|alpha|b|beta|c|rc|pre|preview
     const preMatch = RegExpPrototypeExec(PYPI_PRE_REGEX, normalized)
     if (preMatch) {
-      const spec = PYPI_PRE_NORMALIZE[preMatch[1]] || 'rc'
+      const spec = PYPI_PRE_NORMALIZE[preMatch[1]]
       ArrayPrototypePush(prerelease, PYPI_PRE_RANK[spec])
       ArrayPrototypePush(prerelease, preMatch[2] ? parseDigits(preMatch[2]) : 0)
     }
@@ -482,7 +478,7 @@ function parsePypi(version) {
 // Parse NuGet version (1-4 components + prerelease labels + build metadata).
 // NuGet differences from SemVer:
 //   - 4th component (revision) supported
-//   - Fewer prerelease labels = higher precedence (opposite of SemVer)
+//   - Equal-prefix prerelease labels use SemVer ordering.
 //   - Numeric prerelease labels sort before alphabetic
 //   - Case-insensitive label comparison
 function parseNuget(version) {
@@ -701,7 +697,7 @@ function comparePrerelease(a, b) {
 }
 
 // Compare NuGet prerelease labels.
-// Key difference from SemVer: fewer labels = higher precedence.
+// Labels compare case-insensitively, with shorter equal prefixes first.
 function compareNugetPrerelease(a, b) {
   // Both stable (no prerelease) -> equal.
   if (a.length === 0 && b.length === 0) {
@@ -743,9 +739,9 @@ function compareNugetPrerelease(a, b) {
     }
   }
 
-  // NuGet-specific: fewer labels = HIGHER precedence (opposite of SemVer).
+  // Equal-prefix prereleases with fewer labels have lower precedence.
   if (a.length !== b.length) {
-    return a.length < b.length ? 1 : -1
+    return a.length < b.length ? -1 : 1
   }
   return 0
 }
@@ -1318,7 +1314,7 @@ function compileRange(range, ecosystem) {
     // rejected. Hyphen ranges `1.0.0 - 2.0.0` are preserved because `-`
     // isn't in the operator class and isn't touched by the regex.
     const normalized = StringPrototypeReplace(
-      orParts[i],
+      orParts[i] || '*',
       RANGE_OPERATOR_SPACE_REGEX,
       '$1',
     )
