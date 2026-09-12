@@ -1,11 +1,30 @@
-import { expect, test } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
+import path from 'node:path'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import {
   getNativeTestBinaryPath,
+  getBuildMode,
+  getCmakeBuildDir,
   REPO_ROOT,
 } from '../../../scripts/repo/paths.mts'
 
 const binary = getNativeTestBinaryPath('sockeye-main-effects-test')
+beforeAll(() => {
+  const object = path.join(
+    getCmakeBuildDir(getBuildMode(), `${process.platform}-${process.arch}`),
+    'CMakeFiles',
+    'sockeye-main-effects-test.dir',
+    'src',
+    'sockeye',
+    'main.cc.o',
+  )
+  const imports = spawnSync('xcrun', ['nm', '-u', object], { encoding: 'utf8' })
+  expect(imports.status).toBe(0)
+  expect(imports.stdout).not.toMatch(/_(?:setrlimit|signal|umask)\b/u)
+  for (const name of ['Setrlimit', 'Signal', 'Umask']) {
+    expect(imports.stdout).toContain(`_SockeyeMain${name}`)
+  }
+})
 const commands: Record<string, string[]> = {
   set: ['set', 'EXAMPLE_TOKEN'],
   delete: ['delete', 'EXAMPLE_TOKEN'],
@@ -27,6 +46,49 @@ const commands: Record<string, string[]> = {
     'example-argument',
   ],
 }
+
+test.each([
+  ['core-limit-failed', ['core']],
+  ['signal-failed', ['core', 'signal']],
+] as const)(
+  'startup %s refuses before credential operations',
+  (scenario, events) => {
+    const result = spawnSync(binary, commands['delete'], {
+      encoding: 'utf8',
+      timeout: 10_000,
+      env: { ...process.env, SOCKEYE_TEST_SCENARIO: scenario },
+    })
+    expect(result.status).toBe(5)
+    expect(result.stdout).toBe('')
+    expect(
+      [...result.stderr.matchAll(/^startup:(\w+)$/gm)].map(match => match[1]),
+    ).toEqual(events)
+    expect(result.stderr).not.toContain('effect:')
+  },
+)
+
+test('successful startup establishes process restrictions before dispatch', () => {
+  const result = spawnSync(binary, commands['delete'], {
+    encoding: 'utf8',
+    timeout: 10_000,
+    env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
+  })
+  expect(result.status).toBe(0)
+  expect(result.stdout).toBe('')
+  expect(
+    [...result.stderr.matchAll(/^(?:startup|effect):(\w+)$/gm)].map(
+      match => match[1],
+    ),
+  ).toEqual([
+    'core',
+    'signal',
+    'umask',
+    'terminal',
+    'approve',
+    'delete',
+    'invalidate',
+  ])
+})
 
 test.each([
   ['set', 'success', 0, 'input approve store invalidate'],

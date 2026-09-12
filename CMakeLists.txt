@@ -185,6 +185,9 @@ if(BUILD_TESTING)
     test/repo/integration/native/main-effects.cc
   )
   target_include_directories(sockeye-main-effects-test PRIVATE src)
+  target_compile_definitions(sockeye-main-effects-test PRIVATE
+    setrlimit=SockeyeMainSetrlimit signal=SockeyeMainSignal umask=SockeyeMainUmask
+  )
 
   if(NOT EXISTS "${SOCKEYE_NODE_INCLUDE}/node_api.h")
     message(FATAL_ERROR "Native addon tests require SOCKEYE_NODE_INCLUDE with node_api.h")

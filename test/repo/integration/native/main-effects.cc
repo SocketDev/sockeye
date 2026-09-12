@@ -4,10 +4,14 @@
 #include "sockeye/terminal.h"
 
 #include <cassert>
+#include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <sys/resource.h>
+#include <sys/stat.h>
 
 namespace {
 constexpr char kValue[] = "example-placeholder";
@@ -33,6 +37,30 @@ sockeye::KeychainStatus Result(sockeye::KeychainError &error) {
   }
   return error.status;
 }
+}
+extern "C" int SockeyeMainSetrlimit(int resource, const struct rlimit *limit) {
+  assert(resource == RLIMIT_CORE);
+  assert(limit != nullptr && limit->rlim_cur == 0 && limit->rlim_max == 0);
+  std::fputs("startup:core\n", stderr);
+  if (Scenario() == "core-limit-failed") {
+    errno = EPERM;
+    return -1;
+  }
+  return 0;
+}
+extern "C" void (*SockeyeMainSignal(int number, void (*handler)(int)))(int) {
+  assert(number == SIGPIPE && handler == SIG_IGN);
+  std::fputs("startup:signal\n", stderr);
+  if (Scenario() == "signal-failed") {
+    errno = EINVAL;
+    return SIG_ERR;
+  }
+  return SIG_DFL;
+}
+extern "C" mode_t SockeyeMainUmask(mode_t mask) {
+  assert(mask == 0077);
+  std::fputs("startup:umask\n", stderr);
+  return 0022;
 }
 namespace sockeye {
 struct AuthorizationContext::Impl {};

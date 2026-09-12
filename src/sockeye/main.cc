@@ -58,8 +58,6 @@ int ExitForKeychain(const KeychainError &error) {
     return kNotFoundExit;
   case KeychainStatus::kDenied:
     return kDeniedExit;
-  case KeychainStatus::kSuccess:
-    return 0;
   default:
     return kSystemExit;
   }
@@ -258,7 +256,7 @@ bool InitializeProcessSecurity() {
 
 int main(int argc, char **argv) {
   if (!sockeye::InitializeProcessSecurity()) {
-    std::fputs("Sockeye startup refused: core dumps could not be disabled.\n",
+    std::fputs("Sockeye startup refused: process protections could not be initialized.\n",
                stderr);
     return 5;
   }
