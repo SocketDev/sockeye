@@ -22,6 +22,7 @@ import { REPO_ROOT } from '../fleet/paths.mts'
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Build native test artifacts, then run the requested Vitest suites.',
+  heavyJob: 'test',
   help: 'Usage: pnpm test [test-path ...] [vitest-options]\nWith no arguments, run test/repo. Test paths and options pass through to the fleet runner.',
   json: 'result',
 }

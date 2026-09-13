@@ -88,7 +88,8 @@ async function runCodesign(args: string[]): Promise<void> {
 export function signingEntitlements(
   config: Readonly<{ adHoc: boolean; requested: string | undefined }>,
 ): string | undefined {
-  const { adHoc, requested } = { __proto__: null, ...config }
+  const adHoc = config.adHoc
+  const requested = config.requested
   if (adHoc && requested !== undefined) {
     throw new Error(
       'Ad-hoc signing cannot claim Sockeye release entitlements; use Developer ID signing',

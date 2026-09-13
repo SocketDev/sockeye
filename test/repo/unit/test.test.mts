@@ -11,6 +11,10 @@ const entry = fileURLToPath(
   new URL('../../../scripts/repo/test.mts', import.meta.url),
 )
 
+test('requires host admission before preparing native tests', () => {
+  expect(SCRIPT_META.heavyJob).toBe('test')
+})
+
 test('ordinary test children cannot inherit attended selection', () => {
   const environment = { SOCKEYE_INTERACTIVE_TESTS: '1', BUILD_MODE: 'asan' }
   expect(ordinaryTestEnvironment(environment)).toEqual({ BUILD_MODE: 'asan' })

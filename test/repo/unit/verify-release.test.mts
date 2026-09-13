@@ -62,14 +62,14 @@ vi.mock(
 )
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(spawn).mockImplementation(async (_command, args) => ({
+  vi.mocked(spawn).mockResolvedValue({
     cmd: 'example-tool',
-    args,
+    args: [],
     signal: null,
     code: 0,
-    stdout: args.includes('--entitlements') ? validEntitlements : '',
+    stdout: validEntitlements,
     stderr: '',
-  }))
+  })
 })
 
 test('validates standalone CLI notarization without application-only spctl assessment', async () => {
@@ -135,14 +135,14 @@ test.each([0, 2])(
 )
 
 test('fails verification when release entitlements are absent', async () => {
-  vi.mocked(spawn).mockImplementation(async (_command, args) => ({
+  vi.mocked(spawn).mockResolvedValue({
     cmd: 'example-tool',
-    args,
+    args: [],
     signal: null,
     code: 0,
     stdout: '',
     stderr: '',
-  }))
+  })
   expect(await verifyReleaseBinary('/example/sockeye', 'example-cli', [])).toBe(
     false,
   )
