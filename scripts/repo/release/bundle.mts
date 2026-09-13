@@ -145,8 +145,9 @@ function releaseInfoValue(plist: string, key: string): string | undefined {
 
 export function validateReleaseInfoPlist(
   plist: string,
-  expectedVersion?: string | undefined,
+  options: { expectedVersion?: string | undefined } = {},
 ): void {
+  const expectedVersion = options.expectedVersion
   const version = releaseInfoValue(plist, 'CFBundleVersion')
   const shortVersion = releaseInfoValue(plist, 'CFBundleShortVersionString')
   if (

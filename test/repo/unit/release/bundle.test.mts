@@ -78,7 +78,9 @@ test('renders package version without accepting XML injection', () => {
   const plist = releaseInfoPlist('0.2.0')
   expect(plist).toContain('<string>0.2.0</string>')
   expect(() => validateReleaseInfoPlist(plist)).not.toThrow()
-  expect(() => validateReleaseInfoPlist(plist, '0.3.0')).toThrow()
+  expect(() =>
+    validateReleaseInfoPlist(plist, { expectedVersion: '0.3.0' }),
+  ).toThrow()
   expect(() =>
     validateReleaseInfoPlist(plist.replace('dev.socket.sockeye', 'example')),
   ).toThrow()
