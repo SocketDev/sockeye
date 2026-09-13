@@ -8,9 +8,13 @@ import { beforeEach, expect, test, vi } from 'vitest'
 
 import {
   renderEvidenceTable,
+  releaseEntitlementsAreValid,
   verifyReleaseBinary,
   SCRIPT_META,
 } from '../../../scripts/repo/verify-release.mts'
+
+const validEntitlements =
+  '<plist><dict><key>com.apple.application-identifier</key><string>PZRCDQ736X.dev.socket.sockeye</string><key>com.apple.developer.team-identifier</key><string>PZRCDQ736X</string></dict></plist>'
 
 test('describes the entrypoint before processing release targets', () => {
   const result = spawnSync(
@@ -36,6 +40,11 @@ test('describes the entrypoint before processing release targets', () => {
   expect(result.stderr).toBe('')
 })
 
+test('requires the exact release application and team identifiers', () => {
+  expect(releaseEntitlementsAreValid(validEntitlements)).toBe(true)
+  expect(releaseEntitlementsAreValid('<plist><dict/></plist>')).toBe(false)
+})
+
 test('renders release evidence as a padded markdown table', () => {
   expect(
     renderEvidenceTable([{ item: 'SHA-256', evidence: 'example-digest' }]),
@@ -53,14 +62,14 @@ vi.mock(
 )
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(spawn).mockResolvedValue({
+  vi.mocked(spawn).mockImplementation(async (_command, args) => ({
     cmd: 'example-tool',
-    args: [],
+    args,
     signal: null,
     code: 0,
-    stdout: '',
+    stdout: args.includes('--entitlements') ? validEntitlements : '',
     stderr: '',
-  })
+  }))
 })
 
 test('validates standalone CLI notarization without application-only spctl assessment', async () => {
@@ -76,6 +85,10 @@ test('validates standalone CLI notarization without application-only spctl asses
     ],
     [
       '/usr/bin/codesign',
+      ['--display', '--entitlements', ':-', '/example/sockeye'],
+    ],
+    [
+      '/usr/bin/codesign',
       [
         '--verify',
         '--strict',
@@ -85,7 +98,11 @@ test('validates standalone CLI notarization without application-only spctl asses
       ],
     ],
   ])
-  expect(rows.map(row => row.item)).toEqual(['Codesign', 'Notarization'])
+  expect(rows.map(row => row.item)).toEqual([
+    'Codesign',
+    'Entitlements',
+    'Notarization',
+  ])
 })
 
 test('retains Gatekeeper execution assessment for application bundles', async () => {
@@ -98,16 +115,16 @@ test('retains Gatekeeper execution assessment for application bundles', async ()
   ])
 })
 
-test.each([0, 1])(
+test.each([0, 2])(
   'fails verification when check %i fails',
   async failedCheck => {
-    for (const check of [0, 1]) {
+    for (const check of [0, 1, 2]) {
       vi.mocked(spawn).mockResolvedValueOnce({
         cmd: '/usr/bin/codesign',
         args: [],
         signal: null,
         code: check === failedCheck ? 1 : 0,
-        stdout: '',
+        stdout: check === 1 ? validEntitlements : '',
         stderr: '',
       })
     }
@@ -117,6 +134,20 @@ test.each([0, 1])(
   },
 )
 
+test('fails verification when release entitlements are absent', async () => {
+  vi.mocked(spawn).mockImplementation(async (_command, args) => ({
+    cmd: 'example-tool',
+    args,
+    signal: null,
+    code: 0,
+    stdout: '',
+    stderr: '',
+  }))
+  expect(await verifyReleaseBinary('/example/sockeye', 'example-cli', [])).toBe(
+    false,
+  )
+})
+
 test('never treats a rejected notarization process as successful', async () => {
   vi.mocked(spawn)
     .mockResolvedValueOnce({
@@ -125,6 +156,14 @@ test('never treats a rejected notarization process as successful', async () => {
       signal: null,
       code: 0,
       stdout: '',
+      stderr: '',
+    })
+    .mockResolvedValueOnce({
+      cmd: '/usr/bin/codesign',
+      args: [],
+      signal: null,
+      code: 0,
+      stdout: validEntitlements,
       stderr: '',
     })
     .mockRejectedValueOnce(new Error('fixture rejected notarization'))
@@ -147,6 +186,14 @@ test('does not turn failed application assessment into a successful CLI check', 
       cmd: '/usr/sbin/spctl',
       args: [],
       signal: null,
+      code: 0,
+      stdout: validEntitlements,
+      stderr: '',
+    })
+    .mockResolvedValueOnce({
+      cmd: '/usr/sbin/spctl',
+      args: [],
+      signal: null,
       code: 3,
       stdout: '',
       stderr: '',
@@ -154,5 +201,5 @@ test('does not turn failed application assessment into a successful CLI check', 
   expect(
     await verifyReleaseBinary('/example/Sockeye.app', 'example-app', []),
   ).toBe(false)
-  expect(vi.mocked(spawn).mock.calls).toHaveLength(2)
+  expect(vi.mocked(spawn).mock.calls).toHaveLength(3)
 })

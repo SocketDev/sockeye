@@ -31,7 +31,7 @@ import {
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Build the Sockeye executable and keychain addon with the macOS toolchain.',
-  help: 'Usage: pnpm run build\nEnvironment: BUILD_MODE selects the build mode; RELEASE_VERSION overrides the embedded version.',
+  help: 'Usage: pnpm run build\nEnvironment: BUILD_MODE selects the build mode; RELEASE_VERSION overrides the embedded version; SOCKEYE_TARGET_ARCH selects arm64 or x64.',
   json: 'result',
 }
 
@@ -56,7 +56,13 @@ export async function buildSockeye(): Promise<void> {
   const mode = getBuildMode()
   const sanitizer =
     mode === 'asan' ? 'address' : mode === 'ubsan' ? 'undefined' : 'none'
-  const platformArch = `${process.platform}-${process.arch}`
+  const targetArch = getEnvValue('SOCKEYE_TARGET_ARCH') ?? process.arch
+  if (targetArch !== 'arm64' && targetArch !== 'x64') {
+    throw new Error(
+      `Build architecture rejected at SOCKEYE_TARGET_ARCH: saw ${targetArch}; expected arm64 or x64.`,
+    )
+  }
+  const platformArch = `${process.platform}-${targetArch}`
   const cmakeBuildDir = getCmakeBuildDir(mode, platformArch)
   const outputDir = getOutputDir(mode, platformArch)
   const packageJson: { version: string } = JSON.parse(
@@ -64,7 +70,7 @@ export async function buildSockeye(): Promise<void> {
   )
   const version = getEnvValue('RELEASE_VERSION') ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
-  const architecture = process.arch === 'arm64' ? 'arm64' : 'x86_64'
+  const architecture = targetArch === 'arm64' ? 'arm64' : 'x86_64'
   const toolchain =
     mode === 'coverage' ? await ensureNativeCoverageToolchain() : undefined
   const compilerArgs = toolchain

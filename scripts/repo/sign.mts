@@ -16,6 +16,7 @@ import {
  */
 
 import { existsSync } from 'node:fs'
+import path from 'node:path'
 import process from 'node:process'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
@@ -40,6 +41,12 @@ export const SCRIPT_META: ScriptMeta = {
 
 export const SIGNING_IDENTIFIER = 'dev.socket.sockeye'
 export const SIGNING_IDENTITY_ENV = 'SOCKEYE_SIGNING_IDENTITY'
+export const SIGNING_ENTITLEMENTS = path.join(
+  REPO_ROOT,
+  'src',
+  'sockeye',
+  'sockeye.entitlements',
+)
 
 export interface SignPlan {
   entitlements: string | undefined
@@ -78,13 +85,29 @@ async function runCodesign(args: string[]): Promise<void> {
   }
 }
 
+export function signingEntitlements(
+  config: Readonly<{ adHoc: boolean; requested: string | undefined }>,
+): string | undefined {
+  const { adHoc, requested } = { __proto__: null, ...config }
+  if (adHoc && requested !== undefined) {
+    throw new Error(
+      'Ad-hoc signing cannot claim Sockeye release entitlements; use Developer ID signing',
+    )
+  }
+  return adHoc ? undefined : (requested ?? SIGNING_ENTITLEMENTS)
+}
+
 function signingPlans(positionals: string[], values: Record<string, unknown>) {
   const adHoc = values['ad-hoc'] === true
   const execute = adHoc || values['run'] === true
-  const entitlements =
+  const requestedEntitlements =
     typeof values['entitlements'] === 'string'
       ? values['entitlements']
       : undefined
+  const entitlements = signingEntitlements({
+    adHoc,
+    requested: requestedEntitlements,
+  })
   const configuredIdentity =
     typeof values['identity'] === 'string'
       ? values['identity']
@@ -192,7 +215,7 @@ async function main(): Promise<void> {
   }
   if (adHoc) {
     logger.warn(
-      'Ad-hoc signature: good for local Keychain testing, not releasable — rerun with --run and a Developer ID identity for step 5',
+      'Ad-hoc signature: certificate-free signing mechanics only; Data Protection Keychain access requires the Developer ID release signature',
     )
   }
 }

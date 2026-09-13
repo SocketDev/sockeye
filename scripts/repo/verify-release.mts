@@ -49,6 +49,34 @@ export interface CheckOutcome {
   passed: boolean
 }
 
+export const RELEASE_APPLICATION_IDENTIFIER = 'PZRCDQ736X.dev.socket.sockeye'
+export const RELEASE_TEAM_IDENTIFIER = 'PZRCDQ736X'
+
+function releaseEntitlementValue(
+  plist: string,
+  key: string,
+): string | undefined {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  return new RegExp(
+    `<key>\\s*${escaped}\\s*</key>\\s*<string>\\s*([^<]+?)\\s*</string>`,
+    'u',
+  ).exec(plist)?.[1]
+}
+
+export function releaseEntitlementsAreValid(plist: string): boolean {
+  const keys = Array.from(plist.matchAll(/<key>\s*([^<]+?)\s*<\/key>/gu)).map(
+    match => match[1],
+  )
+  return (
+    keys.length === 2 &&
+    new Set(keys).size === 2 &&
+    releaseEntitlementValue(plist, 'com.apple.application-identifier') ===
+      RELEASE_APPLICATION_IDENTIFIER &&
+    releaseEntitlementValue(plist, 'com.apple.developer.team-identifier') ===
+      RELEASE_TEAM_IDENTIFIER
+  )
+}
+
 export function renderEvidenceTable(rows: EvidenceRow[]): string {
   const width = Math.max(...rows.map(row => row.item.length), 'Item'.length)
   const lines = [
@@ -104,6 +132,18 @@ export async function verifyReleaseBinary(
     evidence: `\`${label}\`: ${codesign.passed ? 'passed --verify --deep --strict' : `FAILED (${codesign.detail})`}`,
     item: 'Codesign',
   })
+  const entitlements = await spawn(
+    '/usr/bin/codesign',
+    ['--display', '--entitlements', ':-', binaryPath],
+    { cwd: REPO_ROOT },
+  )
+  const entitlementPlist = `${entitlements.stdout ?? ''}\n${entitlements.stderr ?? ''}`
+  const entitlementsPassed =
+    entitlements.code === 0 && releaseEntitlementsAreValid(entitlementPlist)
+  rows.push({
+    evidence: `\`${label}\`: ${entitlementsPassed ? 'required application and team identifiers present' : 'FAILED — required release entitlements are missing or incorrect'}`,
+    item: 'Entitlements',
+  })
   const isApplication = path.extname(binaryPath).toLowerCase() === '.app'
   const assessment = isApplication
     ? await runCheck('/usr/sbin/spctl', [
@@ -124,7 +164,7 @@ export async function verifyReleaseBinary(
     evidence: `\`${label}\`: ${assessment.passed ? (isApplication ? 'accepted by spctl --assess' : 'passed codesign --check-notarization') : `REJECTED (${assessment.detail})`}`,
     item: isApplication ? 'Gatekeeper' : 'Notarization',
   })
-  return codesign.passed && assessment.passed
+  return codesign.passed && entitlementsPassed && assessment.passed
 }
 
 async function verifyArchive(
@@ -157,14 +197,18 @@ async function verifyArchive(
   }
   const binaries = await findBinaries(scratch)
   const entryCount = (await readdir(scratch, { recursive: true })).length
+  const exactLayout =
+    entryCount === 1 &&
+    binaries.length === 1 &&
+    path.relative(scratch, binaries[0]!) === BINARY_NAME
   rows.push({
     evidence: `\`${name}\`: ${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}, ${binaries.length} \`${BINARY_NAME}\` ${binaries.length === 1 ? 'binary' : 'binaries'}`,
     item: 'Archive',
   })
-  if (binaries.length === 0) {
+  if (!exactLayout) {
     rows.push({
-      evidence: `\`${name}\`: FAILED — no \`${BINARY_NAME}\` binary inside`,
-      item: 'Codesign',
+      evidence: `\`${name}\`: FAILED — expected exactly one root \`${BINARY_NAME}\` binary`,
+      item: 'Archive',
     })
     return false
   }

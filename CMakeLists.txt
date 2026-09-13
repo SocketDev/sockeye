@@ -327,5 +327,5 @@ endif()
 
 add_custom_command(TARGET sockeye POST_BUILD
   COMMAND /usr/bin/codesign --force --identifier dev.socket.sockeye --sign - $<TARGET_FILE:sockeye>
-  COMMENT "Applying an ad-hoc signature for local Keychain testing"
+  COMMENT "Applying an ad-hoc signature for local build execution"
 )

@@ -34,10 +34,15 @@ permissions:
 # build-sign job runs setup-and-install, so nothing is declared here.
 jobs:
   build-sign:
-    name: Build and sign
+    name: 'Build and sign (arch: ${{ matrix.arch }})'
     runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
     env:
       BUILD_MODE: prod
+      SOCKEYE_TARGET_ARCH: ${{ matrix.arch }}
     permissions:
       contents: read
     steps:
@@ -90,16 +95,20 @@ jobs:
         if: ${{ !inputs.adhoc }}
         env:
           SOCKEYE_SIGNING_IDENTITY: 'Developer ID Application: Socket Inc. (PZRCDQ736X)'
-        run: pnpm run sign --run
+        run: pnpm run sign --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+
+      - name: Verify signed binary starts
+        if: ${{ !inputs.adhoc }}
+        run: build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye --help > /dev/null
 
       - name: Sign ad-hoc
         if: ${{ inputs.adhoc }}
-        run: pnpm run sign --ad-hoc --run
+        run: pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
 
       - name: Create archive
         run: |
-          cd build/prod/darwin-arm64/out/Final
-          zip -r -X sockeye-darwin-arm64.zip sockeye
+          cd build/prod/darwin-${{ matrix.arch }}/out/Final
+          zip -r -X sockeye-darwin-${{ matrix.arch }}.zip sockeye
 
       # Notarize (skipped on ad-hoc runs — notarytool needs a
       # Developer ID signature).
@@ -122,7 +131,7 @@ jobs:
         env:
           SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
         run: pnpm run notarize --run
-          build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
+          build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
           --keychain-profile sockeye-notary
           --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
 
@@ -131,24 +140,28 @@ jobs:
         run: |
           codesign --verify --strict --verbose=4 \
             -R '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"' \
-            build/prod/darwin-arm64/out/Final/sockeye
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+
+      - name: Verify release artifact
+        if: ${{ !inputs.adhoc }}
+        run: pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
 
       - name: Verify ad-hoc signature
         if: ${{ inputs.adhoc }}
-        run: codesign --verify --strict --verbose=4 build/prod/darwin-arm64/out/Final/sockeye
+        run: codesign --verify --strict --verbose=4 build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
 
       - name: Compute checksum
         run: |
-          cd build/prod/darwin-arm64/out/Final
-          shasum -a 256 sockeye-darwin-arm64.zip >> sockeye-darwin-arm64.zip.sha256
+          cd build/prod/darwin-${{ matrix.arch }}/out/Final
+          shasum -a 256 sockeye-darwin-${{ matrix.arch }}.zip >> sockeye-darwin-${{ matrix.arch }}.zip.sha256
 
       - name: Upload artifact
         uses: ./.github/actions/fleet/upload-artifact
         with:
-          name: ${{ inputs.adhoc && 'sockeye-darwin-arm64-adhoc' || 'sockeye-darwin-arm64' }}
+          name: sockeye-darwin-${{ matrix.arch }}${{ inputs.adhoc && '-adhoc' || '' }}
           path: |
-            build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip
-            build/prod/darwin-arm64/out/Final/sockeye-darwin-arm64.zip.sha256
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.sha256
 
       - name: Clean up signing keychain
         if: ${{ always() && !inputs.adhoc }}

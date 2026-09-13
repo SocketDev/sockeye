@@ -13,10 +13,11 @@ would affect normal credentials or enrollment. Never use real credentials.
 <details>
 <summary>Build helpers and prepare disposable fixtures</summary>
 
-Build the intended source with `pnpm run build`. Record its full source commit
-and signing class: `unsigned`, `ad-hoc`, or `developer-id`. Confirm the checkout
-has no source changes. Record the tested binary's architecture and signing
-identity independently before collecting observations.
+Use the Developer ID release artifact. Record its full source commit and signing
+class as `developer-id`. Confirm the checkout has no source changes. Record the
+tested binary's architecture and signing identity independently before
+collecting observations. An ad-hoc signature can test certificate-free signing
+mechanics. It cannot pass the Data Protection Keychain lifecycle gate.
 
 The build produces `sockeye-keychain-observer` and, on macOS,
 `sockeye-keychain-policy-fixture` as test helpers. They do not belong in release

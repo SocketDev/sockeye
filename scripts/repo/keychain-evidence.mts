@@ -194,6 +194,9 @@ export function validateKeychainEvidence(
     if (value.status !== 'passed') {
       issues.push(`incomplete:${key}`)
     }
+    if (value.signingClass !== 'developer-id') {
+      issues.push(`release-signing:${key}`)
+    }
   }
   for (const architecture of KEYCHAIN_ARCHITECTURES) {
     for (const testCase of KEYCHAIN_CASES) {

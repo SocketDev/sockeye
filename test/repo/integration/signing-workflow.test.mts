@@ -18,7 +18,13 @@ const workflow = parse(
     'utf8',
   ),
 ) as {
-  jobs: { 'build-sign': { env: Record<string, string>; steps: WorkflowStep[] } }
+  jobs: {
+    'build-sign': {
+      env: Record<string, string>
+      steps: WorkflowStep[]
+      strategy: { matrix: { arch: string[] } }
+    }
+  }
 }
 const job = workflow.jobs['build-sign']
 function signingStep(name: string): WorkflowStep {
@@ -29,6 +35,8 @@ function signingStep(name: string): WorkflowStep {
 
 test('builds and signs production bytes from the immutable triggering commit', () => {
   expect(job.env['BUILD_MODE']).toBe('prod')
+  expect(job.env['SOCKEYE_TARGET_ARCH']).toBe('${{ matrix.arch }}')
+  expect(job.strategy.matrix['arch']).toEqual(['arm64', 'x64'])
   expect(signingStep('Bootstrap checkout').env?.['TRIGGER_REF']).toBe(
     '${{ github.sha }}',
   )
@@ -36,8 +44,15 @@ test('builds and signs production bytes from the immutable triggering commit', (
   expect(
     signingStep('Sign with developer id').env?.['SOCKEYE_SIGNING_IDENTITY'],
   ).toBe('Developer ID Application: Socket Inc. (PZRCDQ736X)')
-  expect(signingStep('Sign with developer id').run).toBe('pnpm run sign --run')
-  expect(signingStep('Sign ad-hoc').run).toBe('pnpm run sign --ad-hoc --run')
+  expect(signingStep('Sign with developer id').run).toContain(
+    'build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
+  )
+  expect(signingStep('Verify signed binary starts').run).toContain(
+    'build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye --help',
+  )
+  expect(signingStep('Sign ad-hoc').run).toContain(
+    'pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
+  )
 })
 
 test('requires public signing and notarization unless ad-hoc mode is explicit', () => {
@@ -47,6 +62,7 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
     'Store notarytool credentials',
     'Notarize archive',
     'Verify developer signature',
+    'Verify release artifact',
   ]) {
     expect(signingStep(name).if).toBe('${{ !inputs.adhoc }}')
   }
@@ -54,18 +70,29 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
     expect(signingStep(name).if).toBe('${{ inputs.adhoc }}')
   }
   expect(signingStep('Upload artifact').with?.['name']).toContain(
-    'sockeye-darwin-arm64-adhoc',
+    'sockeye-darwin-${{ matrix.arch }}',
+  )
+  expect(signingStep('Upload artifact').with?.['name']).toContain('-adhoc')
+})
+
+test('verifies the exact notarized archive before upload', () => {
+  expect(signingStep('Verify release artifact').run).toBe(
+    'pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip',
   )
 })
 
 test('verifies the signed binary with the expected Apple identity and team', () => {
+  const command = signingStep('Verify developer signature').run?.replaceAll(
+    '${{ matrix.arch }}',
+    'arm64',
+  )
   const result = spawnSync(
     '/bin/bash',
     [
       '-euo',
       'pipefail',
       '-c',
-      `codesign() { printf '%s\\n' "$@"; }\n${signingStep('Verify developer signature').run}`,
+      `codesign() { printf '%s\\n' "$@"; }\n${command}`,
     ],
     { encoding: 'utf8' },
   )
@@ -81,14 +108,13 @@ test('verifies the signed binary with the expected Apple identity and team', () 
 })
 
 test('signature verification failure fails the workflow step', () => {
+  const command = signingStep('Verify developer signature').run?.replaceAll(
+    '${{ matrix.arch }}',
+    'arm64',
+  )
   const result = spawnSync(
     '/bin/bash',
-    [
-      '-euo',
-      'pipefail',
-      '-c',
-      `codesign() { return 1; }\n${signingStep('Verify developer signature').run}`,
-    ],
+    ['-euo', 'pipefail', '-c', `codesign() { return 1; }\n${command}`],
     { encoding: 'utf8' },
   )
   expect(result.status).toBe(1)

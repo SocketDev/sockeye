@@ -29,7 +29,7 @@ const records = binaryFiles.flatMap(filename =>
     schemaVersion: 1,
     source,
     os: 'darwin-25.0.0',
-    signingClass: 'ad-hoc',
+    signingClass: 'developer-id',
     testCase,
     outcome: 'expected',
     promptCount: 2,

@@ -5,7 +5,9 @@ import { expect, test } from 'vitest'
 
 import {
   codesignArgs,
+  SIGNING_ENTITLEMENTS,
   SIGNING_IDENTIFIER,
+  signingEntitlements,
   SCRIPT_META,
 } from '../../../scripts/repo/sign.mts'
 
@@ -29,6 +31,22 @@ test('describes the entrypoint before processing release targets', () => {
     name: 'sign.mts',
   })
   expect(result.stderr).toBe('')
+})
+
+test('developer signing defaults to the release entitlement file', () => {
+  expect(signingEntitlements({ adHoc: false, requested: undefined })).toBe(
+    SIGNING_ENTITLEMENTS,
+  )
+  expect(SIGNING_ENTITLEMENTS).toMatch(/src\/sockeye\/sockeye\.entitlements$/u)
+})
+
+test('ad-hoc signing refuses release entitlements', () => {
+  expect(signingEntitlements({ adHoc: true, requested: undefined })).toBe(
+    undefined,
+  )
+  expect(() =>
+    signingEntitlements({ adHoc: true, requested: 'example.plist' }),
+  ).toThrow('Ad-hoc signing cannot claim Sockeye release entitlements')
 })
 
 test('ad-hoc signing retains hardened runtime without a timestamp', () => {
