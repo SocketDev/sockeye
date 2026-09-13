@@ -163,6 +163,7 @@ test.each([
 )
 
 test('build reports missing headers, failed commands, and missing output', async () => {
+  vi.stubEnv('BUILD_MODE', 'dev')
   const header = `${getNodeHeaderDirectory()}/node_api.h`
   io.missing.add(header)
   await expect(buildKeychainAddon()).rejects.toThrow('node_api.h not found')
