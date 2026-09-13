@@ -31,7 +31,7 @@ afterEach(() => vi.resetAllMocks())
 
 test('accepts the exact unexpired Developer ID identity', () => {
   expect(() =>
-    validateReleaseProfile(profile, Date.UTC(2030, 0, 1)),
+    validateReleaseProfile(profile, { now: Date.UTC(2030, 0, 1) }),
   ).not.toThrow()
 })
 
@@ -53,7 +53,9 @@ test.each([
     },
   },
 ])('rejects invalid, expired, development, and unrelated profiles', value => {
-  expect(() => validateReleaseProfile(value, Date.UTC(2030, 0, 1))).toThrow()
+  expect(() =>
+    validateReleaseProfile(value, { now: Date.UTC(2030, 0, 1) }),
+  ).toThrow()
 })
 
 test('renders package version without accepting XML injection', () => {

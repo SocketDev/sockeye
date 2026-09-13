@@ -28,8 +28,9 @@ export function releaseBundlePaths(bundle: string) {
 
 export function validateReleaseProfile(
   profile: unknown,
-  now = Date.now(),
+  options: { now?: number | undefined } = {},
 ): void {
+  const now = options.now ?? Date.now()
   if (!isPlainObject(profile) || !isPlainObject(profile['Entitlements'])) {
     throw new Error(
       'Invalid provisioning profile; expected decoded profile entitlements. Supply a Developer ID profile.',

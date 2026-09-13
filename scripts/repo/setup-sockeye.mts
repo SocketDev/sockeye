@@ -105,8 +105,9 @@ async function installFromRelease(tag: string): Promise<void> {
  */
 export async function installReleaseBundle(
   binaryPath: string,
-  destination = BIN_PATH,
+  options: { destination?: string | undefined } = {},
 ): Promise<void> {
+  const destination = options.destination ?? BIN_PATH
   mkdirSync(path.dirname(destination), { recursive: true })
   const applications = path.join(
     path.dirname(path.dirname(destination)),

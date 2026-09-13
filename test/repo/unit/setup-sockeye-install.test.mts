@@ -4,11 +4,7 @@ import path from 'node:path'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { installReleaseBundle } from '../../../../scripts/repo/setup-sockeye.mts'
-import {
-  RELEASE_BUNDLE_NAME,
-  releaseBundlePaths,
-} from '../../../../scripts/repo/release/bundle.mts'
+import { installReleaseBundle } from '../../../scripts/repo/setup-sockeye.mts'
 
 vi.mock(
   '@socketsecurity/lib-stable/process/spawn/child',
@@ -29,8 +25,12 @@ test.each([0, 1])(
       path.join(os.tmpdir(), 'sockeye-install-test-'),
     )
     try {
-      const source = path.join(scratch, RELEASE_BUNDLE_NAME)
-      const files = releaseBundlePaths(source)
+      const source = path.join(scratch, 'sockeye.app')
+      const files = {
+        binary: path.join(source, 'Contents', 'MacOS', 'sockeye'),
+        info: path.join(source, 'Contents', 'Info.plist'),
+        profile: path.join(source, 'Contents', 'embedded.provisionprofile'),
+      }
       await fs.mkdir(path.dirname(files.binary), { recursive: true })
       await fs.writeFile(files.binary, 'example executable')
       await fs.writeFile(files.profile, 'example profile')
@@ -47,19 +47,22 @@ test.each([0, 1])(
         stderr: '',
       })
       if (code === 0) {
-        await installReleaseBundle(source, destination)
+        await installReleaseBundle(source, { destination })
         expect((await fs.lstat(destination)).isSymbolicLink()).toBe(true)
         const executable = await fs.readlink(destination)
         const bundle = path.resolve(executable, '../../..')
         expect(
-          await fs.readFile(releaseBundlePaths(bundle).profile, 'utf8'),
+          await fs.readFile(
+            path.join(bundle, 'Contents', 'embedded.provisionprofile'),
+            'utf8',
+          ),
         ).toBe('example profile')
         expect(await fs.readFile(destination, 'utf8')).toBe(
           'example executable',
         )
       } else {
         await expect(
-          installReleaseBundle(source, destination),
+          installReleaseBundle(source, { destination }),
         ).rejects.toThrow()
         expect(await fs.readFile(destination, 'utf8')).toBe(
           'previous executable',
