@@ -9,11 +9,13 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import {
   renderEvidenceTable,
   releaseArchiveEntriesAreValid,
+  releaseChecksumMatches,
   releaseEntitlementsAreValid,
   verifyReleaseBinary,
   SCRIPT_META,
 } from '../../../scripts/repo/verify-release.mts'
 import { RELEASE_BUNDLE_ENTRIES } from '../../../scripts/repo/release/bundle.mts'
+import { RELEASE_DESIGNATED_REQUIREMENT } from '../../../scripts/repo/release/bundle.mts'
 
 vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
   ...(await importOriginal<
@@ -86,6 +88,13 @@ test('requires the exact release archive layout', () => {
   ).toBe(false)
 })
 
+test('requires a strict matching SHA-256 sidecar', () => {
+  const digest = 'a'.repeat(64)
+  expect(releaseChecksumMatches(`${digest}  sockeye.zip\n`, digest)).toBe(true)
+  expect(releaseChecksumMatches('not-a-digest', digest)).toBe(false)
+  expect(releaseChecksumMatches('b'.repeat(64), digest)).toBe(false)
+})
+
 vi.mock(
   import('@socketsecurity/lib-stable/process/spawn/child'),
   async importOriginal => ({
@@ -115,7 +124,15 @@ test('validates standalone CLI notarization without application-only spctl asses
   expect(vi.mocked(spawn).mock.calls.map(call => call.slice(0, 2))).toEqual([
     [
       '/usr/bin/codesign',
-      ['--verify', '--deep', '--strict', '--verbose=2', '/example/sockeye'],
+      [
+        '--verify',
+        '--deep',
+        '--strict',
+        '--verbose=2',
+        '-R',
+        RELEASE_DESIGNATED_REQUIREMENT,
+        '/example/sockeye',
+      ],
     ],
     [
       '/usr/bin/codesign',

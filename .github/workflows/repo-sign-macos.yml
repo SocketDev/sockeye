@@ -151,12 +151,10 @@ jobs:
           --keychain-profile sockeye-notary
           --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
 
-      - name: Verify developer signature
-        if: ${{ !inputs.adhoc }}
+      - name: Compute checksum
         run: |
-          codesign --verify --strict --verbose=4 \
-            -R '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"' \
-            build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"
+          cd build/prod/darwin-${{ matrix.arch }}/out/Final
+          shasum -a 256 sockeye-darwin-${{ matrix.arch }}.zip >> sockeye-darwin-${{ matrix.arch }}.zip.sha256
 
       - name: Verify release artifact
         if: ${{ !inputs.adhoc }}
@@ -165,11 +163,6 @@ jobs:
       - name: Verify ad-hoc signature
         if: ${{ inputs.adhoc }}
         run: codesign --verify --strict --verbose=4 build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
-
-      - name: Compute checksum
-        run: |
-          cd build/prod/darwin-${{ matrix.arch }}/out/Final
-          shasum -a 256 sockeye-darwin-${{ matrix.arch }}.zip >> sockeye-darwin-${{ matrix.arch }}.zip.sha256
 
       - name: Upload artifact
         uses: ./.github/actions/fleet/upload-artifact

@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
 import { expect, test } from 'vitest'
 import { parse } from 'yaml'
 
@@ -61,7 +60,6 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
     'Sign with developer id',
     'Store notarytool credentials',
     'Notarize archive',
-    'Verify developer signature',
     'Verify release artifact',
   ]) {
     expect(signingStep(name).if).toBe('${{ !inputs.adhoc }}')
@@ -79,50 +77,6 @@ test('verifies the exact notarized archive before upload', () => {
   expect(signingStep('Verify release artifact').run).toBe(
     'pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip',
   )
-})
-
-test('verifies the signed binary with the expected Apple identity and team', () => {
-  const command = signingStep('Verify developer signature').run?.replaceAll(
-    '${{ matrix.arch }}',
-    'arm64',
-  )
-  const result = spawnSync(
-    '/bin/bash',
-    [
-      '-euo',
-      'pipefail',
-      '-c',
-      `export SOCKEYE_BUNDLE_NAME=sockeye.app\ncodesign() { printf '%s\\n' "$@"; }\n${command}`,
-    ],
-    { encoding: 'utf8' },
-  )
-  expect(result.status).toBe(0)
-  expect(result.stdout.trim().split(/\r?\n/u)).toEqual([
-    '--verify',
-    '--strict',
-    '--verbose=4',
-    '-R',
-    '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"',
-    'build/prod/darwin-arm64/out/Final/sockeye.app',
-  ])
-})
-
-test('signature verification failure fails the workflow step', () => {
-  const command = signingStep('Verify developer signature').run?.replaceAll(
-    '${{ matrix.arch }}',
-    'arm64',
-  )
-  const result = spawnSync(
-    '/bin/bash',
-    [
-      '-euo',
-      'pipefail',
-      '-c',
-      `export SOCKEYE_BUNDLE_NAME=sockeye.app\ncodesign() { return 1; }\n${command}`,
-    ],
-    { encoding: 'utf8' },
-  )
-  expect(result.status).toBe(1)
 })
 
 test('cleans up imported certificates even after a failed signing step', () => {

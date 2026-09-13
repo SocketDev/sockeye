@@ -12,6 +12,7 @@ export const RELEASE_BUNDLE_NAME = `${RELEASE_EXECUTABLE_NAME}.app`
 export const RELEASE_IDENTIFIER = 'dev.socket.sockeye'
 export const RELEASE_TEAM_IDENTIFIER = 'PZRCDQ736X'
 export const RELEASE_SIGNING_IDENTITY = `Developer ID Application: Socket Inc. (${RELEASE_TEAM_IDENTIFIER})`
+export const RELEASE_DESIGNATED_REQUIREMENT = `=anchor apple generic and identifier "${RELEASE_IDENTIFIER}" and certificate leaf[subject.OU] = "${RELEASE_TEAM_IDENTIFIER}" and certificate leaf[subject.CN] = "${RELEASE_SIGNING_IDENTITY}"`
 export const RELEASE_APPLICATION_IDENTIFIER = `${RELEASE_TEAM_IDENTIFIER}.${RELEASE_IDENTIFIER}`
 export const RELEASE_PROFILE_APPLICATION_IDENTIFIERS = [
   RELEASE_APPLICATION_IDENTIFIER,

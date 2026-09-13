@@ -36,6 +36,7 @@ import {
   RELEASE_APPLICATION_IDENTIFIER,
   RELEASE_BUNDLE_ENTRIES,
   RELEASE_BUNDLE_NAME,
+  RELEASE_DESIGNATED_REQUIREMENT,
   RELEASE_TEAM_IDENTIFIER,
   releaseBundlePath,
   releaseBundlePaths,
@@ -97,6 +98,18 @@ export function releaseArchiveEntriesAreValid(
   return (
     entries.length === RELEASE_BUNDLE_ENTRIES.length &&
     RELEASE_BUNDLE_ENTRIES.every(entry => entries.includes(entry))
+  )
+}
+
+export function releaseChecksumMatches(
+  sidecar: string,
+  actual: string,
+): boolean {
+  const expected = sidecar.trim().split(/\s+/u)[0]
+  return (
+    expected !== undefined &&
+    /^[a-f0-9]{64}$/u.test(expected) &&
+    expected === actual
   )
 }
 
@@ -164,6 +177,8 @@ export async function verifyReleaseBinary(
     '--deep',
     '--strict',
     '--verbose=2',
+    '-R',
+    RELEASE_DESIGNATED_REQUIREMENT,
     binaryPath,
   ])
   rows.push({
@@ -210,6 +225,31 @@ async function verifyArchive(
   rows: EvidenceRow[],
 ): Promise<boolean> {
   const name = path.basename(archive)
+  const checksumPath = `${archive}.sha256`
+  if (!existsSync(checksumPath)) {
+    rows.push({
+      evidence: `\`${name}\`: FAILED — checksum sidecar is missing`,
+      item: 'SHA-256',
+    })
+    return false
+  }
+  const actualChecksum = await sha256(archive)
+  if (
+    !releaseChecksumMatches(
+      await readFile(checksumPath, 'utf8'),
+      actualChecksum,
+    )
+  ) {
+    rows.push({
+      evidence: `\`${name}\`: FAILED — checksum does not match its sidecar`,
+      item: 'SHA-256',
+    })
+    return false
+  }
+  rows.push({
+    evidence: `\`${name}\`: sidecar matches \`${actualChecksum}\``,
+    item: 'SHA-256',
+  })
   const extension = path.extname(archive).toLowerCase()
   const isTarball = archive.endsWith('.tar.gz') || extension === '.tgz'
   const listing = isTarball
