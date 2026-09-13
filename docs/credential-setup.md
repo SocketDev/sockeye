@@ -128,3 +128,19 @@ recovery evidence. Its hardware observations remain unverified until recorded
 against the intended binaries on both supported architectures.
 
 </details>
+
+## Release signing prerequisite
+
+Sockeye uses an application bundle to carry its Developer ID provisioning profile.
+The installer keeps that bundle intact and exposes `~/.socket/bin/sockeye` as a symlink.
+
+An Apple Developer account administrator must register `dev.socket.sockeye` for the existing Socket team.
+Create a Developer ID provisioning profile for that identifier and the existing Developer ID Application certificate.
+The profile must authorize the application identifier and team identifier, disable debugging, and remain unexpired.
+
+Store the profile in 1Password. Provision its base64 representation as the repository secret `SOCKEYE_PROVISIONING_PROFILE_BASE64`.
+Local signing uses its file path through `SOCKEYE_PROVISIONING_PROFILE`.
+No new GitHub App permission is required.
+
+The signing workflow validates the profile before embedding it, then verifies executable startup and the notarized bundle.
+A profile alone does not verify biometric behavior. Complete the attended checks after installing the signed release.

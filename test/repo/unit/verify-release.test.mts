@@ -13,6 +13,20 @@ import {
   SCRIPT_META,
 } from '../../../scripts/repo/verify-release.mts'
 
+vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
+  ...(await importOriginal<
+    typeof import('../../../scripts/repo/release/bundle.mts')
+  >()),
+  readReleaseProfile: vi.fn(async () => ({
+    Entitlements: {
+      'com.apple.application-identifier': 'PZRCDQ736X.dev.socket.sockeye',
+      'com.apple.developer.team-identifier': 'PZRCDQ736X',
+    },
+    ExpirationDate: '2035-01-01T00:00:00Z',
+    ProvisionsAllDevices: true,
+  })),
+}))
+
 const validEntitlements =
   '<plist><dict><key>com.apple.application-identifier</key><string>PZRCDQ736X.dev.socket.sockeye</string><key>com.apple.developer.team-identifier</key><string>PZRCDQ736X</string></dict></plist>'
 
@@ -61,7 +75,8 @@ vi.mock(
   }),
 )
 beforeEach(() => {
-  vi.resetAllMocks()
+  vi.clearAllMocks()
+  vi.mocked(spawn).mockReset()
   vi.mocked(spawn).mockResolvedValue({
     cmd: 'example-tool',
     args: [],

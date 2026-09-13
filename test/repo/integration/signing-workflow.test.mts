@@ -48,7 +48,7 @@ test('builds and signs production bytes from the immutable triggering commit', (
     'build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
   )
   expect(signingStep('Verify signed binary starts').run).toContain(
-    'build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye --help',
+    'build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"/Contents/MacOS/sockeye --help',
   )
   expect(signingStep('Sign ad-hoc').run).toContain(
     'pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
@@ -92,7 +92,7 @@ test('verifies the signed binary with the expected Apple identity and team', () 
       '-euo',
       'pipefail',
       '-c',
-      `codesign() { printf '%s\\n' "$@"; }\n${command}`,
+      `export SOCKEYE_BUNDLE_NAME=sockeye.app\ncodesign() { printf '%s\\n' "$@"; }\n${command}`,
     ],
     { encoding: 'utf8' },
   )
@@ -103,7 +103,7 @@ test('verifies the signed binary with the expected Apple identity and team', () 
     '--verbose=4',
     '-R',
     '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"',
-    'build/prod/darwin-arm64/out/Final/sockeye',
+    'build/prod/darwin-arm64/out/Final/sockeye.app',
   ])
 })
 
@@ -114,7 +114,12 @@ test('signature verification failure fails the workflow step', () => {
   )
   const result = spawnSync(
     '/bin/bash',
-    ['-euo', 'pipefail', '-c', `codesign() { return 1; }\n${command}`],
+    [
+      '-euo',
+      'pipefail',
+      '-c',
+      `export SOCKEYE_BUNDLE_NAME=sockeye.app\ncodesign() { return 1; }\n${command}`,
+    ],
     { encoding: 'utf8' },
   )
   expect(result.status).toBe(1)

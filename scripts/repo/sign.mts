@@ -15,7 +15,7 @@ import {
  *   only passed for Developer ID runs.
  */
 
-import { existsSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -30,6 +30,12 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { getBinaryPath, getBuildMode } from './paths.mts'
 
+import {
+  prepareReleaseBundle,
+  RELEASE_BUNDLE_NAME,
+  RELEASE_IDENTIFIER,
+} from './release/bundle.mts'
+
 const logger = getScriptLogger()
 
 export const SCRIPT_META: ScriptMeta = {
@@ -39,7 +45,7 @@ export const SCRIPT_META: ScriptMeta = {
   json: 'result',
 }
 
-export const SIGNING_IDENTIFIER = 'dev.socket.sockeye'
+export const SIGNING_IDENTIFIER = RELEASE_IDENTIFIER
 export const SIGNING_IDENTITY_ENV = 'SOCKEYE_SIGNING_IDENTITY'
 export const SIGNING_ENTITLEMENTS = path.join(
   REPO_ROOT,
@@ -143,6 +149,35 @@ function signingPlans(positionals: string[], values: Record<string, unknown>) {
   return { __proto__: null, adHoc, execute, plans }
 }
 
+async function prepareSigningTarget(
+  target: string,
+  values: Record<string, unknown>,
+): Promise<string> {
+  const profile =
+    typeof values['profile'] === 'string'
+      ? values['profile']
+      : getEnvValue('SOCKEYE_PROVISIONING_PROFILE')
+  if (!profile) {
+    throw new Error(
+      'Sockeye signing requires a Developer ID provisioning profile. Set SOCKEYE_PROVISIONING_PROFILE to the Apple-issued profile path.',
+    )
+  }
+  const manifest: unknown = JSON.parse(
+    readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'),
+  )
+  if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
+    !('version' in manifest) ||
+    typeof manifest.version !== 'string'
+  ) {
+    throw new Error(
+      'Sockeye package version is missing; repair package.json before signing.',
+    )
+  }
+  return prepareReleaseBundle(target, profile, manifest.version)
+}
+
 async function main(): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error(
@@ -156,6 +191,7 @@ async function main(): Promise<void> {
       entitlements: { type: 'string' },
       help: { default: false, type: 'boolean' },
       identity: { type: 'string' },
+      profile: { type: 'string' },
       run: { default: false, type: 'boolean' },
     },
     allowPositionals: true,
@@ -206,6 +242,9 @@ async function main(): Promise<void> {
         `Nothing to sign at ${plan.target}; run "pnpm run build" first`,
       )
     }
+    if (!adHoc) {
+      plan.target = await prepareSigningTarget(plan.target, values)
+    }
     logger.info(
       `Signing ${plan.target} (${adHoc ? 'ad-hoc' : 'Developer ID'})…`,
     )
@@ -213,6 +252,13 @@ async function main(): Promise<void> {
     await runCodesign(codesignArgs(plan))
     await runCodesign(['--verify', '--strict', '--verbose=2', plan.target])
     logger.success(`Signed and verified ${plan.target}`)
+  }
+  const githubEnvironment = getEnvValue('GITHUB_ENV')
+  if (githubEnvironment) {
+    appendFileSync(
+      githubEnvironment,
+      `SOCKEYE_BUNDLE_NAME=${RELEASE_BUNDLE_NAME}\n`,
+    )
   }
   if (adHoc) {
     logger.warn(

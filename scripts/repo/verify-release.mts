@@ -29,6 +29,19 @@ import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { BINARY_NAME, getBinaryPath, getBuildMode } from './paths.mts'
+import {
+  readReleaseProfile,
+  RELEASE_APPLICATION_IDENTIFIER,
+  RELEASE_BUNDLE_NAME,
+  RELEASE_TEAM_IDENTIFIER,
+  releaseBundlePath,
+  releaseBundlePaths,
+  validateReleaseProfile,
+} from './release/bundle.mts'
+export {
+  RELEASE_APPLICATION_IDENTIFIER,
+  RELEASE_TEAM_IDENTIFIER,
+} from './release/bundle.mts'
 
 const logger = getScriptLogger()
 
@@ -48,9 +61,6 @@ export interface CheckOutcome {
   detail: string
   passed: boolean
 }
-
-export const RELEASE_APPLICATION_IDENTIFIER = 'PZRCDQ736X.dev.socket.sockeye'
-export const RELEASE_TEAM_IDENTIFIER = 'PZRCDQ736X'
 
 function releaseEntitlementValue(
   plist: string,
@@ -121,6 +131,11 @@ export async function verifyReleaseBinary(
   label: string,
   rows: EvidenceRow[],
 ): Promise<boolean> {
+  if (path.extname(binaryPath) === '.app') {
+    validateReleaseProfile(
+      await readReleaseProfile(releaseBundlePaths(binaryPath).profile),
+    )
+  }
   const codesign = await runCheck('/usr/bin/codesign', [
     '--verify',
     '--deep',
@@ -197,17 +212,24 @@ async function verifyArchive(
   }
   const binaries = await findBinaries(scratch)
   const entryCount = (await readdir(scratch, { recursive: true })).length
+  const bundle = path.join(scratch, RELEASE_BUNDLE_NAME)
+  const expected = releaseBundlePaths(bundle)
+  const rootEntries = await readdir(scratch)
   const exactLayout =
-    entryCount === 1 &&
-    binaries.length === 1 &&
-    path.relative(scratch, binaries[0]!) === BINARY_NAME
+    rootEntries.length === 1 && rootEntries[0] === RELEASE_BUNDLE_NAME
+  const completeBundle = [
+    binaries.length === 1,
+    binaries[0] === expected.binary,
+    existsSync(expected.profile),
+    existsSync(expected.info),
+  ].every(Boolean)
   rows.push({
     evidence: `\`${name}\`: ${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}, ${binaries.length} \`${BINARY_NAME}\` ${binaries.length === 1 ? 'binary' : 'binaries'}`,
     item: 'Archive',
   })
-  if (!exactLayout) {
+  if (!exactLayout || !completeBundle) {
     rows.push({
-      evidence: `\`${name}\`: FAILED — expected exactly one root \`${BINARY_NAME}\` binary`,
+      evidence: `\`${name}\`: FAILED — expected the provisioned Sockeye application bundle`,
       item: 'Archive',
     })
     return false
@@ -215,7 +237,7 @@ async function verifyArchive(
   let passed = true
   for (const binary of binaries) {
     const label = `${name}!${path.relative(scratch, binary)}`
-    passed = (await verifyReleaseBinary(binary, label, rows)) && passed
+    passed = (await verifyReleaseBinary(bundle, label, rows)) && passed
   }
   return passed
 }
@@ -229,7 +251,14 @@ async function main(): Promise<void> {
   const targets =
     getScriptArgs().length > 0
       ? getScriptArgs()
-      : [getBinaryPath(getBuildMode(), `${process.platform}-${process.arch}`)]
+      : [
+          releaseBundlePath(
+            getBinaryPath(
+              getBuildMode(),
+              `${process.platform}-${process.arch}`,
+            ),
+          ),
+        ]
   for (const target of targets) {
     if (!existsSync(target)) {
       throw new Error(
@@ -258,6 +287,11 @@ async function main(): Promise<void> {
     if (isArchive) {
       passed = (await verifyArchive(target, rows)) && passed
     } else {
+      if (extension !== '.app') {
+        throw new Error(
+          'Release verification requires the provisioned application bundle or its archive. Pass sockeye.app instead of its executable.',
+        )
+      }
       const metadata = await stat(target)
       rows.push({
         evidence: `\`${path.basename(target)}\`: ${metadata.size} bytes`,
@@ -267,10 +301,12 @@ async function main(): Promise<void> {
         (await verifyReleaseBinary(target, path.basename(target), rows)) &&
         passed
     }
-    rows.push({
-      evidence: `\`${path.basename(target)}\` \`${await sha256(target)}\``,
-      item: 'SHA-256',
-    })
+    if ((await stat(target)).isFile()) {
+      rows.push({
+        evidence: `\`${path.basename(target)}\` \`${await sha256(target)}\``,
+        item: 'SHA-256',
+      })
+    }
   }
   rows.push({ evidence: passed ? 'Passed' : 'FAILED', item: 'Result' })
 

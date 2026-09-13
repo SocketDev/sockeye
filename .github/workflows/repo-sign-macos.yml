@@ -91,6 +91,17 @@ jobs:
       - name: Build prod binary
         run: pnpm run build
 
+      - name: Prepare provisioning profile
+        if: ${{ !inputs.adhoc }}
+        env:
+          SOCKEYE_PROFILE_BASE64: ${{ secrets.SOCKEYE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$SOCKEYE_PROFILE_BASE64" || { echo 'A Developer ID provisioning profile for Sockeye is required.' >&2; exit 1; }
+          umask 077
+          printf '%s' "$SOCKEYE_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/sockeye.provisionprofile"
+          echo "SOCKEYE_PROVISIONING_PROFILE=$RUNNER_TEMP/sockeye.provisionprofile" >> "$GITHUB_ENV"
+
       - name: Sign with developer id
         if: ${{ !inputs.adhoc }}
         env:
@@ -99,16 +110,22 @@ jobs:
 
       - name: Verify signed binary starts
         if: ${{ !inputs.adhoc }}
-        run: build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye --help > /dev/null
+        run: build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"/Contents/MacOS/sockeye --help > /dev/null
 
       - name: Sign ad-hoc
         if: ${{ inputs.adhoc }}
         run: pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
 
       - name: Create archive
+        env:
+          SOCKEYE_ADHOC: ${{ inputs.adhoc }}
         run: |
           cd build/prod/darwin-${{ matrix.arch }}/out/Final
-          zip -r -X sockeye-darwin-${{ matrix.arch }}.zip sockeye
+          if [ "$SOCKEYE_ADHOC" != true ]; then
+            ditto -c -k --keepParent "$SOCKEYE_BUNDLE_NAME" sockeye-darwin-${{ matrix.arch }}.zip
+          else
+            zip -r -X sockeye-darwin-${{ matrix.arch }}.zip sockeye
+          fi
 
       # Notarize (skipped on ad-hoc runs — notarytool needs a
       # Developer ID signature).
@@ -140,7 +157,7 @@ jobs:
         run: |
           codesign --verify --strict --verbose=4 \
             -R '=anchor apple generic and identifier "dev.socket.sockeye" and certificate leaf[subject.OU] = "PZRCDQ736X" and certificate leaf[subject.CN] = "Developer ID Application: Socket Inc. (PZRCDQ736X)"' \
-            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+            build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"
 
       - name: Verify release artifact
         if: ${{ !inputs.adhoc }}
@@ -162,6 +179,10 @@ jobs:
           path: |
             build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
             build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.sha256
+
+      - name: Clean up provisioning profile
+        if: ${{ always() }}
+        run: rm -f "$RUNNER_TEMP/sockeye.provisionprofile"
 
       - name: Clean up signing keychain
         if: ${{ always() && !inputs.adhoc }}

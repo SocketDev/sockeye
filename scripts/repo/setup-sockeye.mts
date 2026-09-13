@@ -4,14 +4,12 @@ import {
   getScriptLogger,
 } from '../fleet/process/script-output.mts'
 /**
- * @file Install the Sockeye binary: download from a GitHub release, verify the
- *   checksum, install to ~/.socket/bin, and remove the quarantine attribute so
- *   it executes without the "unidentified developer" prompt.
- *   Usage: node scripts/repo/setup-sockeye.mts [--release <tag>]
+ * Install a verified application bundle and expose its executable through
+ * ~/.socket/bin/sockeye. Preserve the embedded provisioning profile.
  */
 
-import { chmodSync, copyFileSync, existsSync, mkdirSync } from 'node:fs'
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { existsSync, mkdirSync } from 'node:fs'
+import { cp, mkdtemp, readFile, rename, symlink } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -27,6 +25,8 @@ import { abortScript } from '../fleet/process/script-result.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
+import { RELEASE_BUNDLE_NAME, releaseBundlePaths } from './release/bundle.mts'
+
 const logger = getScriptLogger()
 
 const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
@@ -88,41 +88,51 @@ async function installFromRelease(tag: string): Promise<void> {
 
     logger.log('Extracting…')
     const extract = await spawn('unzip', ['-o', zipPath, '-d', tmpDir])
-    const extractedPath = path.join(tmpDir, 'sockeye')
+    const extractedPath = path.join(tmpDir, RELEASE_BUNDLE_NAME)
     if (extract.code !== 0 || !existsSync(extractedPath)) {
       logger.fail(`Extracted binary not found at ${extractedPath}.`)
       abortScript(1)
     }
 
-    await installFrom(extractedPath)
+    await installReleaseBundle(extractedPath)
   } finally {
     await safeDelete(tmpDir)
   }
 }
 
 /**
- * Install a binary to ~/.socket/bin, make it executable, and strip the
- * quarantine attribute so it runs without the Gatekeeper prompt.
+ * Verify the installed application before replacing the public CLI symlink.
  */
-async function installFrom(binaryPath: string): Promise<void> {
-  mkdirSync(BIN_DIR, { recursive: true })
-  copyFileSync(binaryPath, BIN_PATH)
-  chmodSync(BIN_PATH, 0o755)
-
-  // Remove the quarantine attribute that macOS sets on downloaded files.
-  // A locally-built binary does not carry it, but the download path does,
-  // and stripping it unconditionally is harmless.
-  spawnSync('xattr', ['-d', 'com.apple.quarantine', BIN_PATH])
-
-  // Verify the signature on disk.
-  const verify = await spawn('pnpm', ['run', 'verify-release', BIN_PATH])
+export async function installReleaseBundle(
+  binaryPath: string,
+  destination = BIN_PATH,
+): Promise<void> {
+  mkdirSync(path.dirname(destination), { recursive: true })
+  const applications = path.join(
+    path.dirname(path.dirname(destination)),
+    'apps',
+  )
+  mkdirSync(applications, { recursive: true })
+  const installation = await mkdtemp(path.join(applications, 'sockeye-'))
+  const bundle = path.join(installation, RELEASE_BUNDLE_NAME)
+  await cp(binaryPath, bundle, {
+    recursive: true,
+    errorOnExist: true,
+    force: false,
+  })
+  const verify = await spawn('pnpm', ['run', 'verify-release', bundle])
   if (verify.code !== 0) {
-    logger.fail('Installed binary failed release verification.')
+    await safeDelete(installation)
+    logger.fail('Installed application failed release verification.')
     abortScript(1)
   }
+  const link = path.join(installation, 'sockeye-link')
+  await symlink(releaseBundlePaths(bundle).binary, link)
+  await rename(link, destination)
+
   logger.success('Signature, entitlements, and notarization verified.')
 
-  logger.success(`Installed to ${BIN_PATH}`)
+  logger.success(`Installed to ${destination}`)
   logger.log('Usage: sockeye set <CREDENTIAL_NAME>')
   logger.log(
     '       sockeye run --credential <NAME> --cwd <dir> -- <exe> [args]',
