@@ -26,10 +26,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { errorMessage } from 'local-build-infra/lib/error-utils'
-
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
-import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
+import { getScriptLogger } from '../../../scripts/fleet/process/script-output.mts'
 
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
 import {
@@ -37,8 +35,18 @@ import {
   getNodeHeaderDirectory,
 } from '../../../scripts/repo/paths.mts'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
+import { ensureNativeCoverageToolchain } from '../../../scripts/repo/native-toolchain.mts'
+import { isMainModule } from '../../../scripts/fleet/process/is-main-module.mts'
+import { runMain } from '../../../scripts/fleet/process/run-main.mts'
+import type { ScriptMeta } from '../../../scripts/fleet/process/run-main.mts'
 
-const logger = getDefaultLogger()
+export const SCRIPT_META: ScriptMeta = {
+  describe: 'Build the host keychain addon with the selected native toolchain.',
+  help: 'Usage: pnpm --filter local-keychain-addon-builder run build\nEnvironment: BUILD_MODE selects dev, prod, or coverage. Coverage requires pinned LLVM and the macOS SDK.',
+  json: 'result',
+}
+
+const logger = getScriptLogger()
 
 /**
  * Run one compiler/linker invocation, throwing on a non-zero exit. The addon
@@ -146,19 +154,28 @@ export function resolvePlatformBuild(
   )
 }
 
-async function main() {
+export async function buildKeychainAddon(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch,
+) {
   const nodeInclude = getNodeHeaderDirectory()
   if (!existsSync(path.join(nodeInclude, 'node_api.h'))) {
     throw new Error(`node_api.h not found under ${nodeInclude}.`)
   }
 
   const mode = getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
-  const platformArch = `${process.platform}-${process.arch}`
+  const platformArch = `${platform}-${arch}`
   const outDir = getKeychainAddonOutDir(mode, platformArch)
   await mkdir(outDir, { recursive: true })
   const outPath = getKeychainAddonBinaryPath(mode, platformArch)
 
-  const build = resolvePlatformBuild(process.platform, mode)
+  const build = resolvePlatformBuild(platform, mode)
+  if (mode === 'coverage') {
+    const toolchain = await ensureNativeCoverageToolchain()
+    build.compiler = toolchain.clangxx
+    build.compileFlags.push('-isysroot', toolchain.sdk)
+    build.linkFlags.push('-isysroot', toolchain.sdk)
+  }
   const optimize = mode === 'prod' ? '-O2' : '-O0'
   const profileFlag = `-fprofile-instr-generate=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? getDefaultNativeProfilePattern(outDir)}`
   const coverage =
@@ -224,7 +241,6 @@ async function main() {
   logger.success(`Built keychain.node: ${outPath} (${stats.size} bytes)`)
 }
 
-main().catch(e => {
-  logger.error(errorMessage(e))
-  process.exitCode = 1
-})
+if (isMainModule(import.meta.url)) {
+  runMain(buildKeychainAddon, SCRIPT_META)
+}

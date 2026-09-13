@@ -18,10 +18,16 @@ import {
   getOutputDir,
   REPO_ROOT,
 } from './paths.mts'
+import { ensureLlvmCoverageTools } from '../fleet/cover/llvm-toolchain.mts'
+import {
+  createLlvmCoverageManifest,
+  parseLlvmCoverageManifest,
+} from '../fleet/cover/llvm-manifest.mts'
+import { exportLlvmCoverage } from '../fleet/cover/llvm-report.mts'
 import { getKeychainAddonBinaryPath } from '../../packages/keychain-addon-builder/scripts/paths.mts'
 import {
   NATIVE_COVERAGE_BINARIES,
-  nativeLcovForRoot,
+  nativeTranslationUnits,
   nativeVitestArguments,
   nativeVitestEnvironment,
   readNativeTestCounts,
@@ -34,7 +40,7 @@ export const SCRIPT_META: ScriptMeta = {
   help: 'Usage: pnpm run cover:cpp --phase prepare|execute|report --manifest PATH --scratch-dir PATH --path ROOT (repeat)',
   json: 'result',
 }
-interface NativeConfig {
+export interface NativeConfig {
   phase: string
   manifest: string
   scratch: string
@@ -95,6 +101,7 @@ function nativeFiles(config: NativeConfig) {
     __proto__: null,
     state: path.join(opts.scratch, 'sockeye-native-state.json'),
     merged: path.join(opts.scratch, 'sockeye-native.profdata'),
+    inputs: path.join(opts.scratch, 'sockeye-native-inputs.json'),
   }
 }
 function readProfileDirectory(config: NativeConfig): string {
@@ -114,8 +121,27 @@ function readProfileDirectory(config: NativeConfig): string {
   }
   return state.profiles
 }
-async function prepareNativeCoverage(config: NativeConfig): Promise<void> {
+function nativeCoverageObjects(): string[] {
+  const platformArch = `${process.platform}-${process.arch}`
+  return [
+    ...NATIVE_COVERAGE_BINARIES.map(name =>
+      path.join(getOutputDir('coverage', platformArch), name),
+    ),
+    getKeychainAddonBinaryPath('coverage', platformArch),
+  ]
+}
+function nativeCoverageRoots(config: NativeConfig) {
+  return config.roots.map(root => ({
+    __proto__: null,
+    root,
+    requiredSources: nativeTranslationUnits(path.resolve(REPO_ROOT, root)),
+  }))
+}
+export async function prepareNativeCoverage(
+  config: NativeConfig,
+): Promise<void> {
   const opts = { __proto__: null, ...config } as typeof config
+  const tools = await ensureLlvmCoverageTools(REPO_ROOT)
   mkdirSync(opts.scratch, { recursive: true })
   const profiles = path.join(
     opts.scratch,
@@ -128,6 +154,19 @@ async function prepareNativeCoverage(config: NativeConfig): Promise<void> {
     BUILD_MODE: 'coverage',
     SOCKEYE_COVERAGE_PROFILE_FILE: getNativeProfilePattern(profiles),
   })
+  writeFileSync(
+    nativeFiles(config).inputs,
+    JSON.stringify(
+      createLlvmCoverageManifest({
+        toolchainVersion: tools.version,
+        profileDirectory: profiles,
+        objects: nativeCoverageObjects(),
+        sources: nativeCoverageRoots(config).flatMap(
+          root => root.requiredSources,
+        ),
+      }),
+    ),
+  )
   const common = [
     '--manifest',
     opts.manifest,
@@ -155,7 +194,9 @@ async function prepareNativeCoverage(config: NativeConfig): Promise<void> {
     }),
   )
 }
-async function executeNativeCoverage(config: NativeConfig): Promise<void> {
+export async function executeNativeCoverage(
+  config: NativeConfig,
+): Promise<void> {
   const profiles = readProfileDirectory(config)
   await nativeCommand(
     process.execPath,
@@ -172,7 +213,9 @@ async function executeNativeCoverage(config: NativeConfig): Promise<void> {
     `Native Vitest: ${counts.failed} tests failed out of ${counts.total}\n`,
   )
 }
-async function reportNativeCoverage(config: NativeConfig): Promise<void> {
+export async function reportNativeCoverage(
+  config: NativeConfig,
+): Promise<void> {
   const opts = { __proto__: null, ...config } as typeof config
   readNativeTestCounts(
     readFileSync(
@@ -187,31 +230,31 @@ async function reportNativeCoverage(config: NativeConfig): Promise<void> {
   if (!profiles.length) {
     throw new Error('Native coverage has no instrumented execution profiles')
   }
-  await nativeCommand('xcrun', [
-    'llvm-profdata',
-    'merge',
-    '-sparse',
-    ...profiles,
-    '-o',
-    nativeFiles(config).merged,
-  ])
-  const platformArch = `${process.platform}-${process.arch}`
-  const binaries = NATIVE_COVERAGE_BINARIES.map(name =>
-    path.join(getOutputDir('coverage', platformArch), name),
-  )
-  binaries.push(getKeychainAddonBinaryPath('coverage', platformArch))
-  const lcov = await nativeCommand('xcrun', [
-    'llvm-cov',
-    'export',
-    '-format=lcov',
-    `-instr-profile=${nativeFiles(config).merged}`,
-    binaries[0]!,
-    ...binaries.slice(1).flatMap(binary => ['-object', binary]),
-  ])
-  for (const [index, root] of opts.roots.entries()) {
+  const tools = await ensureLlvmCoverageTools(REPO_ROOT)
+  const reports = await exportLlvmCoverage({
+    tools,
+    manifest: parseLlvmCoverageManifest(
+      readFileSync(nativeFiles(config).inputs, 'utf8'),
+    ),
+    repoRoot: REPO_ROOT,
+    profiles,
+    objects: nativeCoverageObjects(),
+    mergedProfile: nativeFiles(config).merged,
+    roots: nativeCoverageRoots(config),
+  })
+  const rootReports = opts.roots.map(root => {
+    const report = reports.get(root)
+    if (report === undefined) {
+      throw new Error(
+        `Native coverage report is incomplete. Where: ${root}. Saw no exporter output; wanted one LCOV report per configured root. Fix: regenerate every configured production root.`,
+      )
+    }
+    return report
+  })
+  for (const [index, report] of rootReports.entries()) {
     writeFileSync(
       path.join(opts.scratch, `sockeye-native-${index}.lcov`),
-      nativeLcovForRoot(lcov, path.resolve(REPO_ROOT, root)),
+      report,
     )
   }
 }

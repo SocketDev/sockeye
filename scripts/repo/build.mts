@@ -18,6 +18,7 @@ import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
+import { ensureNativeCoverageToolchain } from './native-toolchain.mts'
 import {
   getBinaryPath,
   getBuildMode,
@@ -46,7 +47,7 @@ async function run(command: string, args: string[]): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
+export async function buildSockeye(): Promise<void> {
   if (process.platform !== 'darwin') {
     throw new Error(
       `Sockeye build refused on ${process.platform}; the current release contract requires macOS Touch ID`,
@@ -64,11 +65,23 @@ async function main(): Promise<void> {
   const version = getEnvValue('RELEASE_VERSION') ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
   const architecture = process.arch === 'arm64' ? 'arm64' : 'x86_64'
+  const toolchain =
+    mode === 'coverage' ? await ensureNativeCoverageToolchain() : undefined
+  const compilerArgs = toolchain
+    ? [
+        '--fresh',
+        `-DCMAKE_CXX_COMPILER=${toolchain.clangxx}`,
+        `-DCMAKE_OBJCXX_COMPILER=${toolchain.clangxx}`,
+        `-DCMAKE_OSX_SYSROOT=${toolchain.sdk}`,
+        `-DFLEET_LLVM_COVERAGE_VERSION=${toolchain.version}`,
+      ]
+    : []
 
   mkdirSync(cmakeBuildDir, { recursive: true })
   mkdirSync(outputDir, { recursive: true })
   logger.info(`Building Sockeye ${version} (${mode}, ${platformArch})…`)
   await run('cmake', [
+    ...compilerArgs,
     '-S',
     REPO_ROOT,
     '-B',
@@ -94,13 +107,10 @@ async function main(): Promise<void> {
   const metadata = await stat(binaryPath)
   logger.success(`Built ${binaryPath} (${metadata.size} bytes)`)
 
-  // The keychain addon is the test suite's other build artifact: the addon
-  // test requires keychain.node on disk, so `pnpm run build` (the test job's
-  // setup) must produce it, not just the daemon.
   logger.info('Building the keychain addon…')
   await run('node', ['packages/keychain-addon-builder/scripts/build.mts'])
 }
 
 if (isMainModule(import.meta.url)) {
-  runMain(main, SCRIPT_META)
+  runMain(buildSockeye, SCRIPT_META)
 }

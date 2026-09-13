@@ -59,9 +59,16 @@ credential value in a fixture, snapshot, command argument, or test log.
 ## Native coverage
 
 Run all enabled coverage collectors with `pnpm run cover`.
-The native collector instruments C++ and Objective-C++ with Clang source coverage.
+The native collector uses the fleet-pinned LLVM archive for C++ and Objective-C++ coverage.
+Clang, Clang++, `llvm-profdata`, and `llvm-cov` must have matching versions.
+Coverage builds use the macOS SDK and shared CMake instrumentation.
 Vitest runs the instrumented binaries and addon through noninteractive tests.
 `llvm-profdata` merges execution profiles, and `llvm-cov` exports LCOV reports.
+
+The cumulative report combines JavaScript and native covered and total counts.
+Type coverage remains separate.
+`.cache/fleet/coverage/coverage-aggregate.json` records the cumulative result and each language's measurement unit.
+`cover.cumulativeCoverageThreshold` in `.config/repo/socket-wheelhouse.json` enforces the cumulative minimum.
 
 The native inventory includes `src/sockeye`, the keychain addon, and the macOS keystore implementation.
 Reports live under `.cache/fleet/coverage/lanes/`.

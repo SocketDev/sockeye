@@ -11,6 +11,9 @@
       "packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm"
     ]
   },
+  "cover": {
+    "cumulativeCoverageThreshold": 99.5
+  },
   "repoName": "sockeye",
   "bundle": {
     "ref": "fleet-pack-011e1c67ce8860fdf7dca52a45e1a8d6620379e6",
@@ -52,10 +55,27 @@
   },
   "vitest": {
     "lanes": {
+      "fast": ["test/fleet/**", "test/repo/unit/**"],
       "mid": [
+        "packages/keychain-addon-builder/test/build-toolchain.test.mts",
         "packages/build-infra/test/build-pipeline.test.mts",
         "packages/build-infra/test/checkpoint-manager.test.mts",
-        "packages/build-infra/test/checkpoint-signature-validation.test.mts"
+        "packages/build-infra/test/checkpoint-signature-validation.test.mts",
+        "test/repo/unit/agent-ci.test.mts",
+        "test/repo/unit/builder-public-helpers.test.mts",
+        "test/repo/unit/check/build-requirements-are-valid.test.mts",
+        "test/repo/unit/build-toolchain.test.mts",
+        "test/repo/unit/cover-cpp-phases.test.mts",
+        "test/repo/unit/fetch-session.test.mts",
+        "test/repo/unit/keychain-evidence-is-complete.test.mts",
+        "test/repo/unit/native-coverage.test.mts",
+        "test/repo/unit/native-security-tests-are-wired.test.mts",
+        "test/repo/unit/native-toolchain.test.mts",
+        "test/repo/unit/one-password-metadata.test.mts",
+        "test/repo/unit/optimize-svg.test.mts",
+        "test/repo/unit/request-preview-is-isolated.test.mts",
+        "test/repo/unit/setup-credential-authorization.test.mts",
+        "test/repo/unit/setup-credential/references.test.mts"
       ],
       "slow": [
         "**/test/**/integration/**",
