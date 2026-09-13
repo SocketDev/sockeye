@@ -986,11 +986,17 @@ function bundlesVendoredDeps(raw) {
   return isPlainObject(build) && build['bundlesVendoredDeps'] === true
 }
 function publishesCrates(raw) {
+  return publishesRegistry(raw, 'crates-registry')
+}
+function publishesNpm(raw) {
+  return publishesRegistry(raw, 'npm-registry')
+}
+function publishesRegistry(raw, registry) {
   const channels = [raw['build']]
   const secondaries = raw['secondaries']
   if (Array.isArray(secondaries)) channels.push(...secondaries)
   return channels.some(
-    channel => isPlainObject(channel) && channel['from'] === 'crates-registry',
+    channel => isPlainObject(channel) && channel['from'] === registry,
   )
 }
 /**
@@ -1009,6 +1015,8 @@ function configFlagHolds(flag, raw) {
       return githubReleaseEnabled(raw)
     case 'hasCratesRegistry':
       return publishesCrates(raw)
+    case 'hasNpmRegistry':
+      return publishesNpm(raw)
     case 'hasGhcr':
       return publishesToGhcr(raw)
     case 'hasNapi':
@@ -2484,6 +2492,143 @@ function spliceRepoHookEntry(settings, event, matcher, hook) {
 }
 
 //#endregion
+//#region scripts/repo/gen/bootstrap/src/workflow-moves.mts
+function workflowScalar(value) {
+  const scalar = value.trim()
+  if (/[\\#,]|''/u.test(scalar))
+    throw new Error(
+      'Cannot migrate escaped or commented workflow metadata; simplify the scalar before retrying',
+    )
+  if (/^[>|&*!{\[]/u.test(scalar))
+    throw new Error(
+      'Cannot migrate complex workflow metadata; use a scalar name before retrying',
+    )
+  const quote = scalar.charCodeAt(0)
+  if (quote === 34 || quote === 39) {
+    if (scalar.charCodeAt(scalar.length - 1) !== quote)
+      throw new Error(
+        'Cannot migrate workflow metadata with trailing syntax; retain both files and resolve the name',
+      )
+    return scalar.slice(1, -1)
+  }
+  return scalar
+}
+function rewriteMovedWorkflow(content, destination) {
+  const stem = destination
+    .slice(destination.lastIndexOf('/') + 1)
+    .replace(/\.ya?ml$/u, '')
+  const separator = stem.indexOf('-')
+  if (separator < 1 && stem !== 'ci')
+    throw new Error('Workflow destination needs a type-description filename')
+  const current =
+    stem === 'ci'
+      ? 'ci'
+      : `${stem.slice(0, separator)}: ${stem.slice(separator + 1).replaceAll('-', ' ')}`
+  const blocks = parseYamlKeyBlocks(content)
+  const names = blocks.filter(block => block.key === 'name')
+  if (names.length !== 1)
+    throw new Error('Workflow migration requires one top-level name')
+  const previous = workflowScalar(names[0].lines[0].slice(5))
+  for (const block of blocks) {
+    if (block.key !== 'name' && block.key !== 'run-name') continue
+    if (
+      block.lines
+        .slice(1)
+        .some(line => line.trim() && !line.trim().startsWith('#'))
+    )
+      throw new Error('Workflow migration requires single-line name metadata')
+    const value = workflowScalar(block.lines[0].slice(block.key.length + 1))
+    const expression = block.key === 'run-name' ? value.indexOf('${{') : -1
+    const suffix = expression < 0 ? '' : ` ${value.slice(expression)}`
+    block.lines[0] = `${block.key}: ${JSON.stringify(current + suffix)}`
+  }
+  return {
+    content: blocks
+      .flatMap(block => [...block.head, ...block.lines])
+      .join('\n'),
+    name: {
+      previous,
+      current,
+    },
+  }
+}
+function rewriteWorkflowMoveReferences(content, names) {
+  if (/^["']on["']:/mu.test(content) && content.includes('workflow_run'))
+    throw new Error(
+      'Cannot migrate quoted trigger metadata; use a block on key before retrying',
+    )
+  const blocks = parseYamlKeyBlocks(content)
+  let changed = false
+  for (const block of blocks) {
+    if (block.key === 'jobs')
+      block.lines = block.lines.map(line => {
+        const match =
+          /^(\s+uses:\s*)(["']?)(\.\/\.github\/workflows\/[^\s"']+)\2\s*$/u.exec(
+            line,
+          )
+        if (!match) return line
+        const replacement = names.find(
+          name => `./${name.sourcePath}` === match[3],
+        )
+        if (!replacement?.destinationPath) return line
+        changed = true
+        return `${match[1]}${JSON.stringify(`./${replacement.destinationPath}`)}`
+      })
+    if (block.key !== 'on') continue
+    if (
+      block.lines[0].slice(3).trim() &&
+      block.lines[0].includes('workflow_run')
+    )
+      throw new Error(
+        'Cannot migrate inline workflow triggers; use block metadata before retrying',
+      )
+    let workflowRunIndent = -1
+    let listIndent = -1
+    block.lines = block.lines.map(line => {
+      const indent = line.length - line.trimStart().length
+      if (/^\s+workflow_run:\s*\S/u.test(line))
+        throw new Error(
+          'Cannot migrate inline workflow_run metadata; use a block before retrying',
+        )
+      if (/^\s+workflow_run:\s*$/u.test(line)) {
+        workflowRunIndent = indent
+        return line
+      }
+      if (line.trim() && indent <= workflowRunIndent) workflowRunIndent = -1
+      if (workflowRunIndent < 0) return line
+      const match = /^(\s+workflows:\s*)(.*)$/u.exec(line)
+      if (match) {
+        listIndent = indent
+        const value = match[2].trim()
+        if (!value) return line
+        const list = value.startsWith('[') && value.endsWith(']')
+        const values = list ? value.slice(1, -1).split(',') : [value]
+        let matched = false
+        const rewritten = values.map(item => {
+          const scalar = workflowScalar(item)
+          const replacement = names.find(name => name.previous === scalar)
+          if (replacement) matched = true
+          return JSON.stringify(replacement?.current ?? scalar)
+        })
+        if (!matched) return line
+        changed = true
+        return match[1] + (list ? `[${rewritten.join(', ')}]` : rewritten[0])
+      }
+      if (line.trim() && indent <= listIndent) listIndent = -1
+      const item = listIndent >= 0 ? /^(\s+-\s+)(.*)$/u.exec(line) : void 0
+      if (!item) return line
+      const scalar = workflowScalar(item[2])
+      const replacement = names.find(name => name.previous === scalar)
+      if (replacement) changed = true
+      return replacement ? item[1] + JSON.stringify(replacement.current) : line
+    })
+  }
+  return changed
+    ? blocks.flatMap(block => [...block.head, ...block.lines]).join('\n')
+    : content
+}
+
+//#endregion
 //#region scripts/repo/gen/bootstrap/src/install-prune.mts
 /**
  * @file Installer-side manifest SYNC-PRUNE: the three operations that make a
@@ -2498,13 +2643,25 @@ function spliceRepoHookEntry(settings, event, matcher, hook) {
  *   re-export of it) is unchanged. Dep-0, same invariant as install.mts (node:
  *   builtins only, never socket-lib).
  */
+function resolveMovedPath(root, relative) {
+  const candidate = path.resolve(root, relative)
+  if (
+    path.isAbsolute(relative) ||
+    path.win32.isAbsolute(relative) ||
+    !isInsidePath(root, candidate)
+  )
+    throw new Error(
+      'Cannot migrate outside the repository. Wanted a contained relative file path. Correct movedPaths before retrying.',
+    )
+  return candidate
+}
 /**
  * Apply the manifest's per-repo-owned file MOVES (`movedPaths`) — the rename
  * half of relocating a file the fleet does NOT byte-mirror. A plain tombstone
  * would delete the member's only copy with nothing in the bundle to re-create
  * it (the file is repo-owned; the bundle never ships it), so the move renames
- * `from` → `to` when `to` is absent — repo-owned content survives
- * byte-for-byte — and deletes a stale `from` leftover once `to` exists. Runs
+ * `from` → `to` when `to` is absent and removes identical duplicates. Workflow
+ * metadata follows the destination name; job bodies remain repo-owned. Runs
  * BEFORE removeTombstonedPaths. Idempotent: a missing `from` is a no-op.
  * Belt: a move whose `from` the current manifest ships a file at/under is
  * skipped, so a bad producer entry can never displace freshly placed payload.
@@ -2516,7 +2673,8 @@ function applyMovedPaths(dest, manifest, options) {
   const shipped = Object.keys(manifest.files).map(rel =>
     normalizeBundlePath(rel),
   )
-  let moved = 0
+  const plans = []
+  const workflowNames = []
   for (let i = 0, { length } = movedPaths; i < length; i += 1) {
     const entry = movedPaths[i]
     const from = normalizeBundlePath(entry.from)
@@ -2534,17 +2692,89 @@ function applyMovedPaths(dest, manifest, options) {
       )
     )
       continue
-    const fromAbs = path.join(dest, from)
+    const fromAbs = resolveMovedPath(dest, from)
+    const toAbs = resolveMovedPath(dest, to)
+    if (fromAbs === toAbs)
+      throw new Error(
+        'Cannot migrate a file onto itself. Correct movedPaths before retrying; the source was retained.',
+      )
+    if (
+      plans.some(plan =>
+        [plan.from, plan.to].some(
+          filename => filename === fromAbs || filename === toAbs,
+        ),
+      )
+    )
+      throw new Error(
+        'Cannot migrate overlapping file moves. Correct movedPaths before retrying; all source files were retained.',
+      )
     if (!existsSync(fromAbs)) continue
-    const toAbs = path.join(dest, to)
-    if (existsSync(toAbs)) rm(fromAbs, dest)
-    else {
-      mkdirSync(path.dirname(toAbs), { recursive: true })
-      renameSync(fromAbs, toAbs)
+    for (const filename of [fromAbs, toAbs]) {
+      let current = filename
+      while (current !== path.resolve(dest)) {
+        if (existsSync(current) && lstatSync(current).isSymbolicLink())
+          throw new Error(
+            'Cannot migrate through a symbolic link; both copies were retained',
+          )
+        const parent = path.dirname(current)
+        if (parent === current)
+          throw new Error('Cannot migrate outside the repository boundary')
+        current = parent
+      }
     }
-    moved += 1
+    if (!lstatSync(fromAbs).isFile())
+      throw new Error('Cannot migrate a non-file source; source was retained')
+    const workflow =
+      from.startsWith('.github/workflows/') &&
+      to.startsWith('.github/workflows/')
+        ? rewriteMovedWorkflow(readFileSync(fromAbs, 'utf8'), to)
+        : void 0
+    if (existsSync(toAbs)) {
+      if (
+        !lstatSync(fromAbs).isFile() ||
+        !lstatSync(toAbs).isFile() ||
+        (!readFileSync(fromAbs).equals(readFileSync(toAbs)) &&
+          (!workflow || readFileSync(toAbs, 'utf8') !== workflow.content))
+      )
+        throw new Error(
+          `Cannot migrate repo-owned file. Where: ${from} -> ${to}. Saw different existing contents; wanted an absent destination or identical files. Merge both files before retrying; both copies were retained.`,
+        )
+    }
+    if (workflow)
+      workflowNames.push({
+        ...workflow.name,
+        sourcePath: from,
+        destinationPath: to,
+      })
+    plans.push({
+      from: fromAbs,
+      to: toAbs,
+      exists: existsSync(toAbs),
+      workflow,
+    })
   }
-  return moved
+  const updates = /* @__PURE__ */ new Map()
+  if (workflowNames.length) {
+    const directory = path.join(dest, '.github/workflows')
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (!entry.isFile() || !/\.ya?ml$/u.test(entry.name)) continue
+      const filename = path.join(directory, entry.name)
+      const plan = plans.find(item => item.from === filename)
+      if (!plan && plans.some(item => item.to === filename)) continue
+      const content = plan?.workflow?.content ?? readFileSync(filename, 'utf8')
+      const updated = rewriteWorkflowMoveReferences(content, workflowNames)
+      if (plan?.workflow || updated !== content)
+        updates.set(plan?.to ?? filename, updated)
+    }
+  }
+  for (const plan of plans)
+    if (plan.exists) rm(plan.from, dest)
+    else {
+      mkdirSync(path.dirname(plan.to), { recursive: true })
+      renameSync(plan.from, plan.to)
+    }
+  for (const [filename, content] of updates) writeFileSync(filename, content)
+  return plans.length
 }
 /**
  * Delete the manifest's TOMBSTONED paths (`removedPaths`) — files or whole
@@ -3325,13 +3555,7 @@ function ghcrBasicAuthHeader(env) {
  * token can be obtained.
  */
 async function getGhcrToken(repo, registry, httpFn = httpGet) {
-  const primary = await httpFn(ghcrTokenUrl(repo, registry), {
-    headers: { accept: 'application/json' },
-  })
-  const primaryToken =
-    primary.status >= 200 && primary.status < 300
-      ? tokenFromBody(primary.body)
-      : void 0
+  const primaryToken = await getAnonymousGhcrToken(repo, registry, { httpFn })
   if (primaryToken) return primaryToken
   const header = firstHeader(
     (await httpFn(`https://${registry}/v2/`)).headers['www-authenticate'],
@@ -3366,6 +3590,15 @@ async function getGhcrToken(repo, registry, httpFn = httpGet) {
     throw new Error(`Cannot obtain a GHCR pull token.
   Where: ${challenge.realm} for repo ${repo}\n  Saw:   HTTP ${res.status} with no token in the body, anonymously or with the workflow token\n  Fix:   make the package public, or give the job a token with read:packages on it.`)
   return token
+}
+async function getAnonymousGhcrToken(repo, registry, options) {
+  const response = await (options?.httpFn ?? httpGet)(
+    ghcrTokenUrl(repo, registry),
+    { headers: { accept: 'application/json' } },
+  )
+  return response.status >= 200 && response.status < 300
+    ? tokenFromBody(response.body)
+    : void 0
 }
 /**
  * GET one manifest by tag or digest. Resolves a multi-arch index to its first
@@ -4259,6 +4492,7 @@ export {
   firstHeader,
   fleetPackOwnedPaths,
   fleetTrackedAllowlist,
+  getAnonymousGhcrToken,
   getGhcrToken,
   ghcrBasicAuthHeader,
   ghcrBundleRepo,

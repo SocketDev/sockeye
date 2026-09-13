@@ -1,5 +1,5 @@
-name: 🧹 Sweep jobs
-run-name: Sweep jobs
+name: 'sweep: jobs'
+run-name: 'sweep: jobs'
 
 # Reclaims GitHub Actions storage on a weekly cadence, in two steps.
 #

@@ -1,5 +1,5 @@
-name: 🟢 Get green
-run-name: Get green
+name: 'fix: get green'
+run-name: 'fix: get green'
 
 on:
   workflow_dispatch:
