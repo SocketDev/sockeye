@@ -121,7 +121,7 @@ jobs:
         run: |
           cd build/prod/darwin-${{ matrix.arch }}/out/Final
           if [ "$SOCKEYE_ADHOC" != true ]; then
-            ditto -c -k --norsrc --keepParent "$SOCKEYE_BUNDLE_NAME" sockeye-darwin-${{ matrix.arch }}.zip
+            zip -r -X sockeye-darwin-${{ matrix.arch }}.zip "$SOCKEYE_BUNDLE_NAME"
           else
             zip -r -X sockeye-darwin-${{ matrix.arch }}.zip sockeye
           fi

@@ -88,7 +88,7 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
 
 test('verifies the exact notarized archive before upload', () => {
   expect(signingStep('Create archive').run).toContain(
-    'ditto -c -k --norsrc --keepParent',
+    'zip -r -X sockeye-darwin-${{ matrix.arch }}.zip "$SOCKEYE_BUNDLE_NAME"',
   )
   expect(signingStep('Verify release artifact').run).toBe(
     'pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip',
