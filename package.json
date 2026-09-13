@@ -115,7 +115,7 @@
     "update:pnpm": "node scripts/fleet/update/pnpm.mts",
     "audit:consumer-source": "node scripts/fleet/audit/consumer-source.mts",
     "ai:odai:diagnose": "node scripts/fleet/ai/odai/run.mts diagnose",
-    "update:chrome": "node scripts/fleet/ai/odai/run.mts verify-chrome",
+    "update:chrome": "node scripts/fleet/update/chrome.mts",
     "setup:ci:local": "node scripts/fleet/ci/local/setup.mts",
     "setup:ci:remote": "node scripts/fleet/ci/remote/setup.mts",
     "mcp:schemas:check": "node scripts/fleet/mcp/schemas.mts check",
@@ -129,7 +129,8 @@
     "lockstep:assist": "node scripts/fleet/lockstep/assist/run.mts",
     "mcp:1password": "node scripts/fleet/mcp/1password/run.mts",
     "remote:github:release": "node scripts/fleet/release/github/remote.mts",
-    "worktree:create": "node scripts/fleet/worktree/create/run.mts"
+    "worktree:create": "node scripts/fleet/worktree/create/run.mts",
+    "github:browser": "node scripts/fleet/browser/github-auth.mts"
   },
   "devDependencies": {
     "@bcoe/v8-coverage": "catalog:",
