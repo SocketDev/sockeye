@@ -112,9 +112,18 @@ test('places the CLI and signed profile together in a complete application', asy
       args: [],
       code: 0,
       signal: null,
-      stdout: JSON.stringify(profile.Entitlements),
+      stdout: RELEASE_APPLICATION_IDENTIFIER,
       stderr: '',
     })
+    vi.mocked(spawn).mockResolvedValueOnce({
+      cmd: 'plutil',
+      args: [],
+      code: 0,
+      signal: null,
+      stdout: RELEASE_TEAM_IDENTIFIER,
+      stderr: '',
+    })
+    vi.mocked(spawn).mockRejectedValueOnce(new Error('field is absent'))
     vi.mocked(spawn).mockResolvedValueOnce({
       cmd: 'plutil',
       args: [],

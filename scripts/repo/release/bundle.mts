@@ -89,37 +89,55 @@ export async function readReleaseProfile(profile: string): Promise<unknown> {
   try {
     const plist = path.join(scratch, 'profile.plist')
     await fs.writeFile(plist, decoded.stdout, { mode: 0o600 })
-    async function field(key: string, format: string): Promise<string> {
+    async function field(
+      key: string,
+      options: { required?: boolean | undefined } = {},
+    ): Promise<string | undefined> {
       let converted: Awaited<ReturnType<typeof spawn>>
       try {
         converted = await spawn('/usr/bin/plutil', [
           '-extract',
           key,
-          format,
+          'raw',
           '-o',
           '-',
           plist,
         ])
       } catch {
+        if (options.required === false) {
+          return undefined
+        }
         throw new Error(
           `Provisioning profile field ${key} is missing or invalid. Supply a Developer ID profile.`,
         )
       }
       if (!converted.stdout) {
+        if (options.required === false) {
+          return undefined
+        }
         throw new Error(
           `Provisioning profile field ${key} is missing or invalid. Supply a Developer ID profile.`,
         )
       }
       return converted.stdout.toString().trim()
     }
-    const entitlements: unknown = JSON.parse(
-      await field('Entitlements', 'json'),
+    const applicationIdentifier = await field(
+      'Entitlements.com\\.apple\\.application-identifier',
     )
+    const teamIdentifier = await field(
+      'Entitlements.com\\.apple\\.developer\\.team-identifier',
+    )
+    const getTaskAllow = await field('Entitlements.get-task-allow', {
+      required: false,
+    })
     return {
-      Entitlements: entitlements,
-      ExpirationDate: await field('ExpirationDate', 'raw'),
-      ProvisionsAllDevices:
-        (await field('ProvisionsAllDevices', 'raw')) === 'true',
+      Entitlements: {
+        'com.apple.application-identifier': applicationIdentifier,
+        'com.apple.developer.team-identifier': teamIdentifier,
+        'get-task-allow': getTaskAllow === 'true',
+      },
+      ExpirationDate: await field('ExpirationDate'),
+      ProvisionsAllDevices: (await field('ProvisionsAllDevices')) === 'true',
     }
   } finally {
     await safeDelete(scratch)
