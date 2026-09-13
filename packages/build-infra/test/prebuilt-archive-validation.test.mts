@@ -26,7 +26,7 @@ vi.mock(import('@socketsecurity/lib-stable/fs/safe'), async importOriginal => ({
   safeDelete: archive.remove,
 }))
 vi.mock(
-  import('../../../scripts/fleet/build-infra/lib/release-checksums/core.mts'),
+  import('../../../scripts/fleet/build/infra/lib/release-checksums/core.mts'),
   async importOriginal => ({
     ...(await importOriginal()),
     verifyReleaseChecksum: archive.checksum,

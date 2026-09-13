@@ -1,1 +1,1 @@
-export * from '../../../scripts/fleet/build-infra/lib/release-checksums/producer.mts'
+export * from '../../../scripts/fleet/build/infra/lib/release-checksums/producer.mts'

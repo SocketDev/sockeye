@@ -36,7 +36,7 @@ import { downloadReleaseAsset } from '@socketsecurity/lib-stable/releases/github
 import { SOCKET_BTM_REPO } from '@socketsecurity/lib-stable/releases/socket-btm'
 
 import { errorMessage } from '../lib/error-utils.mts'
-import { parseChecksums } from '../../../scripts/fleet/build-infra/lib/release-checksums/core.mts'
+import { parseChecksums } from '../../../scripts/fleet/build/infra/lib/release-checksums/core.mts'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 
 const logger = getDefaultLogger()

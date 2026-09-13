@@ -1,8 +1,8 @@
 import { statSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import manifest from '../package.json' with { type: 'json' }
-import * as canonicalCore from '../../../scripts/fleet/build-infra/lib/release-checksums/core.mts'
-import * as canonicalProducer from '../../../scripts/fleet/build-infra/lib/release-checksums/producer.mts'
+import * as canonicalCore from '../../../scripts/fleet/build/infra/lib/release-checksums/core.mts'
+import * as canonicalProducer from '../../../scripts/fleet/build/infra/lib/release-checksums/producer.mts'
 
 test.each(Object.entries(manifest.exports))(
   'package export %s resolves to an existing file',
