@@ -43,7 +43,7 @@ test('guides explicit account, vault, and item selection without reading secret 
   )
   expect(selected).toEqual({
     account: ACCOUNT,
-    reference: `op://${VAULT}/${ITEM}/credentials/private%20key`,
+    reference: `op://${VAULT}/${ITEM}/credentials/private key`,
   })
   expect(read.mock.calls.map(call => call[1])).toEqual([
     ['account', 'list', '--format', 'json'],
@@ -110,6 +110,9 @@ test('metadata parsing rejects terminal controls, malformed entries, and oversiz
 test('field references accept only one field and optional section', () => {
   expect(onePasswordFieldReference(VAULT, ITEM, 'password')).toBe(
     `op://${VAULT}/${ITEM}/password`,
+  )
+  expect(onePasswordFieldReference(VAULT, ITEM, 'Client ID')).toBe(
+    `op://${VAULT}/${ITEM}/Client ID`,
   )
   for (const field of [
     '',

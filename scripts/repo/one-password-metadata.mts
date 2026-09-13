@@ -191,7 +191,9 @@ export function onePasswordFieldReference(
   ) {
     return undefined
   }
-  const reference = `op://${vault}/${item}/${segments.map(encodeURIComponent).join('/')}`
+  const reference = `op://${vault}/${item}/${segments
+    .map(segment => encodeURIComponent(segment).replaceAll('%20', ' '))
+    .join('/')}`
   return Buffer.byteLength(reference) <= 2048 ? reference : undefined
 }
 
