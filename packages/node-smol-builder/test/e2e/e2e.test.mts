@@ -1,5 +1,6 @@
 /**
  * @file End-to-end tests for complete build pipeline.
+ *   runner-collection: opt-in lane
  *   Tests the entire flow:
  *
  *   1. Build node-smol binary (all checkpoints)
