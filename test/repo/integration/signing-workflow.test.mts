@@ -11,6 +11,15 @@ interface WorkflowStep {
   with?: Record<string, string>
 }
 
+interface WorkflowJob {
+  env?: Record<string, string>
+  if?: string
+  needs?: string
+  permissions?: Record<string, string>
+  steps: WorkflowStep[]
+  strategy?: { matrix: { arch: string[] } }
+}
+
 const workflow = parse(
   readFileSync(
     new URL('../../../.github/workflows/repo-sign-macos.yml', import.meta.url),
@@ -18,24 +27,28 @@ const workflow = parse(
   ),
 ) as {
   jobs: {
-    'build-sign': {
-      env: Record<string, string>
-      steps: WorkflowStep[]
-      strategy: { matrix: { arch: string[] } }
-    }
+    'build-sign': WorkflowJob
+    'release-assets': WorkflowJob
   }
 }
 const job = workflow.jobs['build-sign']
+const releaseJob = workflow.jobs['release-assets']
 function signingStep(name: string): WorkflowStep {
   const step = job.steps.find(candidate => candidate.name === name)
   if (!step) throw new Error(`Missing signing workflow step: ${name}`)
   return step
 }
 
+function releaseStep(name: string): WorkflowStep {
+  const step = releaseJob.steps.find(candidate => candidate.name === name)
+  if (!step) throw new Error(`Missing release workflow step: ${name}`)
+  return step
+}
+
 test('builds and signs production bytes from the immutable triggering commit', () => {
-  expect(job.env['BUILD_MODE']).toBe('prod')
-  expect(job.env['SOCKEYE_TARGET_ARCH']).toBe('${{ matrix.arch }}')
-  expect(job.strategy.matrix['arch']).toEqual(['arm64', 'x64'])
+  expect(job.env?.['BUILD_MODE']).toBe('prod')
+  expect(job.env?.['SOCKEYE_TARGET_ARCH']).toBe('${{ matrix.arch }}')
+  expect(job.strategy?.matrix['arch']).toEqual(['arm64', 'x64'])
   expect(signingStep('Bootstrap checkout').env?.['TRIGGER_REF']).toBe(
     '${{ github.sha }}',
   )
@@ -93,4 +106,44 @@ test('cleans up imported certificates even after a failed signing step', () => {
     )
   }
   expect(job.steps.at(-1)).toBe(cleanup)
+})
+
+test('publishes one tag release after both signed artifacts verify', () => {
+  expect(releaseJob.needs).toBe('build-sign')
+  expect(releaseJob.if).toBe(
+    "${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}",
+  )
+  expect(releaseJob.permissions).toEqual({ contents: 'read' })
+  expect(releaseStep('Download signed artifacts').with).toEqual({
+    path: 'release-assets',
+  })
+  for (const [arch, label] of [
+    ['arm64', 'ARM64'],
+    ['x64', 'x64'],
+  ]) {
+    expect(releaseStep(`Verify ${label} release artifact`).run).toBe(
+      `pnpm run verify-release release-assets/sockeye-darwin-${arch}/sockeye-darwin-${arch}.zip`,
+    )
+  }
+  const release = releaseStep('Cut immutable GitHub release')
+  expect(release.with?.['tag']).toBe('${{ github.ref_name }}')
+  expect(release.with?.['dry-run']).toBe('false')
+  expect(release.with?.['assets']).toBe(
+    [
+      'release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip',
+      'release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.sha256',
+      'release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip',
+      'release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.sha256',
+    ].join('\n') + '\n',
+  )
+  expect(release.with?.['token']).toBe('${{ steps.release-app.outputs.token }}')
+})
+
+test('reads public Apple identity from variables', () => {
+  const credentials = signingStep('Store notarytool credentials')
+  expect(credentials.env?.['APPLE_ID']).toBe('${{ vars.APPLE_ID }}')
+  expect(credentials.env?.['APPLE_TEAM_ID']).toBe('${{ vars.APPLE_TEAM_ID }}')
+  expect(credentials.env?.['APPLE_APP_SPECIFIC_PASSWORD']).toBe(
+    '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
+  )
 })
