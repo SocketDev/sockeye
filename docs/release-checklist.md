@@ -14,7 +14,7 @@ release commit.
 | Process identity | Executable launch race is closed or explicitly accepted with independent review.                                      | Open                                                   |
 | Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                                  | Sanitizers pass; 15-minute fuzz evidence recorded      |
 | Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                        | Open                                                   |
-| Signing          | Hardened-runtime Developer ID signature verifies on the final archive.                                                | ARM64 CI validation passed; release recheck required   |
+| Signing          | Hardened-runtime Developer ID signature and provisioning profile verify on both final archives.                       | App-wrapper release validation required                |
 | Notarization     | Apple accepts the archive; binaries pass online ticket verification. Staple supported DMG and PKG outputs.            | ARM64 CI validation passed; release recheck required   |
 | Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                      | Open                                                   |
 | Installation     | The installer downloads through the shared helper, verifies the checksum, installs atomically, and rejects tampering. | Open                                                   |

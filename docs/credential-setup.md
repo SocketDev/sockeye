@@ -138,7 +138,7 @@ An Apple Developer account administrator must register `dev.socket.sockeye` for 
 Create a Developer ID provisioning profile for that identifier and the existing Developer ID Application certificate.
 The profile must authorize the application identifier and team identifier, disable debugging, and remain unexpired.
 
-Store the profile in 1Password. Provision its base64 representation as the repository secret `SOCKEYE_PROVISIONING_PROFILE_BASE64`.
+Store the profile in 1Password. Provision its base64 representation as the repository secret `APPLE_DEVELOPER_ID_PROVISIONING_PROFILE`.
 Local signing uses its file path through `SOCKEYE_PROVISIONING_PROFILE`.
 No new GitHub App permission is required.
 

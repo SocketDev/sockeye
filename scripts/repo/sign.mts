@@ -8,11 +8,11 @@ import {
  * @file Sign Sockeye release binaries with the hardened runtime
  *   (release-checklist step 5). Dry-run is the default and prints the exact
  *   codesign invocations with their preconditions. `--run` executes them and
- *   requires a Developer ID Application identity via `--identity` or
- *   `SOCKEYE_SIGNING_IDENTITY`. `--ad-hoc` really signs with the ad-hoc
- *   identity (no certificate needed) so the flow is verifiable locally;
- *   ad-hoc signatures cannot carry a secure timestamp, so `--timestamp` is
- *   only passed for Developer ID runs.
+ *   uses the canonical Developer ID Application identity unless `--identity` or
+ *   `SOCKEYE_SIGNING_IDENTITY` overrides it. `--ad-hoc` signs with the ad-hoc
+ *   identity (no certificate needed) so the flow is verifiable locally; ad-hoc
+ *   signatures cannot carry a secure timestamp, so `--timestamp` is only passed
+ *   for Developer ID runs.
  */
 
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
@@ -34,6 +34,7 @@ import {
   prepareReleaseBundle,
   RELEASE_BUNDLE_NAME,
   RELEASE_IDENTIFIER,
+  RELEASE_SIGNING_IDENTITY,
   releaseBundlePath,
 } from './release/bundle.mts'
 
@@ -42,7 +43,7 @@ const logger = getScriptLogger()
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Sign Sockeye binaries with the hardened runtime; print commands unless execution is requested.',
-  help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with a Developer ID Application identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    identity (default: $SOCKEYE_SIGNING_IDENTITY)\n  --entitlements <p>   entitlements plist\n  --profile <p>        Developer ID provisioning profile\n\nPaths default to the built binary for the current mode.',
+  help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with the canonical Developer ID identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    override the canonical identity\n  --entitlements <p>   entitlements plist\n  --profile <p>        Developer ID provisioning profile\n\nPaths default to the built binary for the current mode.',
   json: 'result',
 }
 
@@ -119,7 +120,7 @@ function signingPlans(positionals: string[], values: Record<string, unknown>) {
   const configuredIdentity =
     typeof values['identity'] === 'string'
       ? values['identity']
-      : getEnvValue(SIGNING_IDENTITY_ENV)
+      : (getEnvValue(SIGNING_IDENTITY_ENV) ?? RELEASE_SIGNING_IDENTITY)
   const targets =
     positionals.length > 0
       ? positionals.map(String)
@@ -130,15 +131,7 @@ function signingPlans(positionals: string[], values: Record<string, unknown>) {
       `Entitlements file not found at ${entitlements}; pass an existing plist to --entitlements`,
     )
   }
-  if (!adHoc && execute && configuredIdentity === undefined) {
-    throw new Error(
-      `No signing identity: pass --identity or set ${SIGNING_IDENTITY_ENV} to the Developer ID Application identity in the login keychain, or use --ad-hoc for a local certificate-free run`,
-    )
-  }
-
-  const identity = adHoc
-    ? '-'
-    : (configuredIdentity ?? `$${SIGNING_IDENTITY_ENV}`)
+  const identity = adHoc ? '-' : configuredIdentity
   const plans: SignPlan[] = targets.map(target => ({
     __proto__: null,
     entitlements,
@@ -204,8 +197,7 @@ async function main(): Promise<void> {
     logger.log('  default              dry run: print the exact codesign calls')
     logger.log('  --run                execute with the Developer ID identity')
     logger.log('  --ad-hoc             execute with the ad-hoc identity (-)')
-    logger.log('  --identity <name>    Developer ID Application identity')
-    logger.log(`                       (default: $${SIGNING_IDENTITY_ENV})`)
+    logger.log('  --identity <name>    override the canonical release identity')
     logger.log('  --entitlements <p>   entitlements plist to embed')
     logger.log('')
     logger.log('  paths default to the built binary for the current mode')
@@ -225,7 +217,7 @@ async function main(): Promise<void> {
     logger.log('')
     logger.log('Preconditions:')
     logger.log(
-      `  - the Developer ID Application certificate named by $${SIGNING_IDENTITY_ENV} is in the login keychain`,
+      `  - the ${RELEASE_SIGNING_IDENTITY} certificate is in the login keychain`,
     )
     logger.log(
       '  - SOCKEYE_PROVISIONING_PROFILE names the matching Developer ID profile',

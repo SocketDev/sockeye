@@ -11,6 +11,7 @@ import {
   RELEASE_TEAM_IDENTIFIER,
   releaseBundlePaths,
   releaseInfoPlist,
+  validateReleaseInfoPlist,
   validateReleaseProfile,
 } from '../../../../scripts/repo/release/bundle.mts'
 
@@ -32,6 +33,21 @@ afterEach(() => vi.resetAllMocks())
 test('accepts the exact unexpired Developer ID identity', () => {
   expect(() =>
     validateReleaseProfile(profile, { now: Date.UTC(2030, 0, 1) }),
+  ).not.toThrow()
+})
+
+test('accepts the fleet wildcard Developer ID profile identity', () => {
+  expect(() =>
+    validateReleaseProfile(
+      {
+        ...profile,
+        Entitlements: {
+          ...profile.Entitlements,
+          'com.apple.application-identifier': 'PZRCDQ736X.dev.socket.*',
+        },
+      },
+      { now: Date.UTC(2030, 0, 1) },
+    ),
   ).not.toThrow()
 })
 
@@ -59,7 +75,13 @@ test.each([
 })
 
 test('renders package version without accepting XML injection', () => {
-  expect(releaseInfoPlist('0.2.0')).toContain('<string>0.2.0</string>')
+  const plist = releaseInfoPlist('0.2.0')
+  expect(plist).toContain('<string>0.2.0</string>')
+  expect(() => validateReleaseInfoPlist(plist)).not.toThrow()
+  expect(() => validateReleaseInfoPlist(plist, '0.3.0')).toThrow()
+  expect(() =>
+    validateReleaseInfoPlist(plist.replace('dev.socket.sockeye', 'example')),
+  ).toThrow()
   expect(() => releaseInfoPlist('0.2.0</string>')).toThrow()
 })
 

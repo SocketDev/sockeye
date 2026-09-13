@@ -44,7 +44,7 @@ async function main(): Promise<number> {
   const diagnosticsStatus = runDiagnosticsCheck()
   const previewStatus = runRequestPreviewCheck()
   const nativeSecurityStatus = runNativeSecurityTestsCheck()
-  const keychainEvidenceStatus = runKeychainEvidenceCheck({
+  const keychainEvidenceStatus = await runKeychainEvidenceCheck({
     args: process.argv.includes('--json') ? ['--json'] : [],
   })
   const requirementStatus = runBuildRequirementsCheck()

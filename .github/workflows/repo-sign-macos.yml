@@ -9,6 +9,7 @@ run-name: Sign macOS for ${{ github.ref_name }}
 #   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12 (secret) — base64 P12
 #   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS (secret) — P12 password
 #   APPLE_APP_SPECIFIC_PASSWORD (secret) — notarytool auth
+#   APPLE_DEVELOPER_ID_PROVISIONING_PROFILE (secret) — base64 profile
 #   APPLE_ID (secret) — Apple ID email
 #   APPLE_TEAM_ID (secret) — Developer Program team ID
 #
@@ -94,7 +95,7 @@ jobs:
       - name: Prepare provisioning profile
         if: ${{ !inputs.adhoc }}
         env:
-          SOCKEYE_PROFILE_BASE64: ${{ secrets.SOCKEYE_PROVISIONING_PROFILE_BASE64 }}
+          SOCKEYE_PROFILE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_PROVISIONING_PROFILE }}
         run: |
           set -euo pipefail
           test -n "$SOCKEYE_PROFILE_BASE64" || { echo 'A Developer ID provisioning profile for Sockeye is required.' >&2; exit 1; }
@@ -104,8 +105,6 @@ jobs:
 
       - name: Sign with developer id
         if: ${{ !inputs.adhoc }}
-        env:
-          SOCKEYE_SIGNING_IDENTITY: 'Developer ID Application: Socket Inc. (PZRCDQ736X)'
         run: pnpm run sign --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
 
       - name: Verify signed binary starts

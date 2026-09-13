@@ -1,5 +1,8 @@
 import crypto from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
+import path from 'node:path'
+
+import { RELEASE_BUNDLE_NAME, releaseBundlePaths } from './release/bundle.mts'
 
 export const KEYCHAIN_CASES = [
   'fresh-set',
@@ -40,8 +43,15 @@ export interface KeychainArtifact {
   binaryHash: string
 }
 
+export function keychainArtifactBinaryPath(filename: string): string {
+  return statSync(filename).isDirectory() &&
+    path.basename(filename) === RELEASE_BUNDLE_NAME
+    ? releaseBundlePaths(filename).binary
+    : filename
+}
+
 export function readKeychainArtifact(filename: string): KeychainArtifact {
-  const bytes = readFileSync(filename)
+  const bytes = readFileSync(keychainArtifactBinaryPath(filename))
   if (bytes.length < 32 || bytes.readUInt32LE(0) !== 0xfe_ed_fa_cf) {
     throw new Error(
       'Artifact rejected at binary header: expected thin 64-bit Mach-O. Supply each architecture binary separately.',

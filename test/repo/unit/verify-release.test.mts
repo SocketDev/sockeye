@@ -8,10 +8,12 @@ import { beforeEach, expect, test, vi } from 'vitest'
 
 import {
   renderEvidenceTable,
+  releaseArchiveEntriesAreValid,
   releaseEntitlementsAreValid,
   verifyReleaseBinary,
   SCRIPT_META,
 } from '../../../scripts/repo/verify-release.mts'
+import { RELEASE_BUNDLE_ENTRIES } from '../../../scripts/repo/release/bundle.mts'
 
 vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
   ...(await importOriginal<
@@ -25,6 +27,13 @@ vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
     ExpirationDate: '2035-01-01T00:00:00Z',
     ProvisionsAllDevices: true,
   })),
+  readReleaseInfoPlist: vi.fn(async () =>
+    (
+      await importOriginal<
+        typeof import('../../../scripts/repo/release/bundle.mts')
+      >()
+    ).releaseInfoPlist('0.2.0'),
+  ),
 }))
 
 const validEntitlements =
@@ -65,6 +74,16 @@ test('renders release evidence as a padded markdown table', () => {
   ).toBe(
     '| Item    | Evidence |\n| ------- | -------- |\n| SHA-256 | example-digest |',
   )
+})
+
+test('requires the exact release archive layout', () => {
+  expect(releaseArchiveEntriesAreValid(RELEASE_BUNDLE_ENTRIES)).toBe(true)
+  expect(
+    releaseArchiveEntriesAreValid([
+      ...RELEASE_BUNDLE_ENTRIES,
+      'sockeye.app/Contents/unexpected',
+    ]),
+  ).toBe(false)
 })
 
 vi.mock(

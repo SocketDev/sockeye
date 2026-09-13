@@ -43,7 +43,7 @@ test('builds and signs production bytes from the immutable triggering commit', (
   expect(signingStep('Build prod binary').run).toBe('pnpm run build')
   expect(
     signingStep('Sign with developer id').env?.['SOCKEYE_SIGNING_IDENTITY'],
-  ).toBe('Developer ID Application: Socket Inc. (PZRCDQ736X)')
+  ).toBeUndefined()
   expect(signingStep('Sign with developer id').run).toContain(
     'build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
   )

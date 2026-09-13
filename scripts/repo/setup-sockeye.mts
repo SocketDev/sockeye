@@ -25,7 +25,11 @@ import { abortScript } from '../fleet/process/script-result.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
-import { RELEASE_BUNDLE_NAME, releaseBundlePaths } from './release/bundle.mts'
+import {
+  RELEASE_BUNDLE_NAME,
+  releaseAssetName,
+  releaseBundlePaths,
+} from './release/bundle.mts'
 
 const logger = getScriptLogger()
 
@@ -37,8 +41,9 @@ const ARCH = process.arch
  * Download from a GitHub release, verify, and install.
  */
 async function installFromRelease(tag: string): Promise<void> {
-  const assetName = `sockeye-darwin-${ARCH}.zip`
-  const downloadUrl = `https://github.com/SocketDev/sockeye/releases/download/${tag}/${assetName}`
+  const assetName = releaseAssetName(ARCH)
+  const releasePath = tag === 'latest' ? 'latest/download' : `download/${tag}`
+  const downloadUrl = `https://github.com/SocketDev/sockeye/releases/${releasePath}/${assetName}`
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'sockeye-install-'))
   const zipPath = path.join(tmpDir, assetName)
   try {

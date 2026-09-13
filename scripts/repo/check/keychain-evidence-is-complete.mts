@@ -15,6 +15,8 @@ import {
   readKeychainArtifact,
   validateKeychainEvidence,
 } from '../keychain-evidence.mts'
+import { verifyReleaseBinary } from '../verify-release.mts'
+import type { EvidenceRow } from '../verify-release.mts'
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
@@ -73,26 +75,65 @@ export function checkKeychainTooling(root: string): string[] {
   return issues
 }
 
-export function checkKeychainEvidenceArguments(args: string[]): string[] {
-  if (args[0] === '--') {
-    return checkKeychainEvidenceArguments(args.slice(1))
-  }
+interface KeychainEvidenceCheckConfig {
+  verifyBinary?:
+    | ((binary: string, label: string, rows: EvidenceRow[]) => Promise<boolean>)
+    | undefined
+}
+
+interface KeychainEvidenceInputs {
+  armBinary: string
+  directory: string
+  intelBinary: string
+  source: string
+}
+
+function keychainEvidenceInputs(
+  args: string[],
+): KeychainEvidenceInputs | undefined {
   if (
     args.length !== 7 ||
     args[1] !== '--binary' ||
     args[3] !== '--binary' ||
     args[5] !== '--source'
   ) {
+    return undefined
+  }
+  const { 0: directory, 2: armBinary, 4: intelBinary, 6: source } = args
+  return armBinary && directory && intelBinary && source
+    ? ({
+        __proto__: null,
+        armBinary,
+        directory,
+        intelBinary,
+        source,
+      } as KeychainEvidenceInputs)
+    : undefined
+}
+
+export async function checkKeychainEvidenceArguments(
+  args: string[],
+  options: KeychainEvidenceCheckConfig = {},
+): Promise<string[]> {
+  const config = { __proto__: null, ...options }
+  if (args[0] === '--') {
+    return checkKeychainEvidenceArguments(args.slice(1), config)
+  }
+  const inputs = keychainEvidenceInputs(args)
+  if (!inputs) {
     return ['arguments']
   }
-  const [directory, , armBinary, , intelBinary, , source] = args
-  if (!directory || !armBinary || !intelBinary || !source) {
-    return ['arguments']
-  }
+  const { armBinary, directory, intelBinary, source } = inputs
   const artifacts = [
     readKeychainArtifact(armBinary),
     readKeychainArtifact(intelBinary),
   ]
+  const verifyBinary = config.verifyBinary ?? verifyReleaseBinary
+  for (const binary of [armBinary, intelBinary]) {
+    if (!(await verifyBinary(binary, path.basename(binary), []))) {
+      return [`artifact-verification:${path.basename(binary)}`]
+    }
+  }
   const values: unknown[] = []
   for (const filename of readdirSync(directory)) {
     if (!filename.endsWith('.json')) {
@@ -109,15 +150,15 @@ export function checkKeychainEvidenceArguments(args: string[]): string[] {
   return validateKeychainEvidence(values, artifacts, source)
 }
 
-export function runKeychainEvidenceCheck(
+export async function runKeychainEvidenceCheck(
   options: { args?: string[] | undefined } = {},
-): number {
+): Promise<number> {
   const argv = options.args ?? process.argv.slice(2)
   const json = isJsonRequested(argv)
   const args = argv.filter(arg => arg !== '--json')
   try {
     const issues = args.length
-      ? checkKeychainEvidenceArguments(args)
+      ? await checkKeychainEvidenceArguments(args)
       : checkKeychainTooling(REPO_ROOT)
     if (issues.length) {
       process.stderr.write(

@@ -49,18 +49,23 @@ function evidenceArguments(directory: string): string[] {
   ]
 }
 
-test('strict filesystem check hashes artifacts and validates full observations', () => {
+const verification = { verifyBinary: async () => true }
+
+test('strict filesystem check hashes artifacts and validates full observations', async () => {
   const directory = path.join(root, 'valid')
   mkdirSync(directory)
   writeFileSync(
     path.join(directory, 'observations.json'),
     JSON.stringify(records),
   )
-  expect(checkKeychainEvidenceArguments(evidenceArguments(directory))).toEqual(
-    [],
-  )
+  await expect(
+    checkKeychainEvidenceArguments(evidenceArguments(directory), verification),
+  ).resolves.toEqual([])
   expect(
-    checkKeychainEvidenceArguments(['--', ...evidenceArguments(directory)]),
+    await checkKeychainEvidenceArguments(
+      ['--', ...evidenceArguments(directory)],
+      verification,
+    ),
   ).toEqual([])
   writeFileSync(
     path.join(directory, 'observations.json'),
@@ -69,13 +74,33 @@ test('strict filesystem check hashes artifacts and validates full observations',
     ),
   )
   expect(
-    checkKeychainEvidenceArguments(evidenceArguments(directory)),
+    await checkKeychainEvidenceArguments(
+      evidenceArguments(directory),
+      verification,
+    ),
   ).not.toEqual([])
   writeFileSync(path.join(directory, 'observations.json'), '{}')
   expect(
-    checkKeychainEvidenceArguments(evidenceArguments(directory)),
+    await checkKeychainEvidenceArguments(
+      evidenceArguments(directory),
+      verification,
+    ),
   ).not.toEqual([])
-  expect(checkKeychainEvidenceArguments([])).not.toEqual([])
+  expect(await checkKeychainEvidenceArguments([], verification)).not.toEqual([])
+})
+
+test('strict evidence rejects binaries that fail release verification', async () => {
+  const directory = path.join(root, 'invalid-signature')
+  mkdirSync(directory)
+  writeFileSync(
+    path.join(directory, 'observations.json'),
+    JSON.stringify(records),
+  )
+  await expect(
+    checkKeychainEvidenceArguments(evidenceArguments(directory), {
+      verifyBinary: async () => false,
+    }),
+  ).resolves.toContain('artifact-verification:arm64')
 })
 
 test('artifact parsing rejects non-Mach-O and unsupported CPU headers', () => {

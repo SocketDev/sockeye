@@ -22,6 +22,7 @@ import path from 'node:path'
 import process from 'node:process'
 
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
+import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -30,12 +31,15 @@ import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { BINARY_NAME, getBinaryPath, getBuildMode } from './paths.mts'
 import {
+  readReleaseInfoPlist,
   readReleaseProfile,
   RELEASE_APPLICATION_IDENTIFIER,
+  RELEASE_BUNDLE_ENTRIES,
   RELEASE_BUNDLE_NAME,
   RELEASE_TEAM_IDENTIFIER,
   releaseBundlePath,
   releaseBundlePaths,
+  validateReleaseInfoPlist,
   validateReleaseProfile,
 } from './release/bundle.mts'
 export {
@@ -87,6 +91,15 @@ export function releaseEntitlementsAreValid(plist: string): boolean {
   )
 }
 
+export function releaseArchiveEntriesAreValid(
+  entries: readonly string[],
+): boolean {
+  return (
+    entries.length === RELEASE_BUNDLE_ENTRIES.length &&
+    RELEASE_BUNDLE_ENTRIES.every(entry => entries.includes(entry))
+  )
+}
+
 export function renderEvidenceTable(rows: EvidenceRow[]): string {
   const width = Math.max(...rows.map(row => row.item.length), 'Item'.length)
   const lines = [
@@ -126,12 +139,22 @@ async function findBinaries(root: string): Promise<string[]> {
     .map(entry => path.join(entry.parentPath, entry.name))
 }
 
+async function archiveEntries(root: string): Promise<string[]> {
+  const entries = await readdir(root, { recursive: true, withFileTypes: true })
+  return entries.map(entry =>
+    normalizePath(path.relative(root, path.join(entry.parentPath, entry.name))),
+  )
+}
+
 export async function verifyReleaseBinary(
   binaryPath: string,
   label: string,
   rows: EvidenceRow[],
 ): Promise<boolean> {
   if (path.extname(binaryPath) === '.app') {
+    validateReleaseInfoPlist(
+      await readReleaseInfoPlist(releaseBundlePaths(binaryPath).info),
+    )
     validateReleaseProfile(
       await readReleaseProfile(releaseBundlePaths(binaryPath).profile),
     )
@@ -210,13 +233,12 @@ async function verifyArchive(
     })
     return false
   }
+  const entries = await archiveEntries(scratch)
   const binaries = await findBinaries(scratch)
-  const entryCount = (await readdir(scratch, { recursive: true })).length
+  const entryCount = entries.length
   const bundle = path.join(scratch, RELEASE_BUNDLE_NAME)
   const expected = releaseBundlePaths(bundle)
-  const rootEntries = await readdir(scratch)
-  const exactLayout =
-    rootEntries.length === 1 && rootEntries[0] === RELEASE_BUNDLE_NAME
+  const exactLayout = releaseArchiveEntriesAreValid(entries)
   const completeBundle = [
     binaries.length === 1,
     binaries[0] === expected.binary,

@@ -101,15 +101,16 @@ against the exact intended artifacts:
 
 ```sh
 pnpm run check:keychain-evidence -- /absolute/evidence/directory \
-  --binary /absolute/arm64/sockeye --binary /absolute/x64/sockeye \
+  --binary /absolute/arm64/sockeye.app --binary /absolute/x64/sockeye.app \
   --source 0123456789012345678901234567890123456789
 ```
 
 Supply separate thin Mach-O binaries. The checker reads their CPU headers and
 hashes their bytes. It requires every case exactly once for each architecture,
 the supplied source commit, matching hashes, and passing observations.
-This validates evidence consistency; it does not authenticate operator claims
-or independently verify signing identity.
+This validates evidence consistency and independently verifies each supplied
+artifact's Developer ID signature, release entitlements, and notarization.
+It does not authenticate the operator's attended observations.
 
 With no arguments, the checker validates tooling and documented coverage only.
 Preflight uses that mode. It does not close the release gate. Follow-up
