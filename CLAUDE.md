@@ -12,7 +12,7 @@
 - 🚨 Local main is canonical: origin ahead by own/bot squash commits ≠ newer truth. [`parallel-claude-sessions`](docs/fleet/agents.md/parallel-claude-sessions.md)
 - 🚨 Active-edits ledger coordinates concurrent actors: a path another live actor wrote within 5 min is blocked, as are open-ended wait promises. [`parallel-claude-sessions`](docs/fleet/agents.md/parallel-claude-sessions.md)
 - Keep repo paths local. Only validated Wheelhouse commit-cascade may cross repos. [`parallel-claude-sessions`](docs/fleet/agents.md/parallel-claude-sessions.md)
-- Companion sessions are quick checks, blocked past a 1-min budget. [`parallel-claude-sessions`](docs/fleet/agents.md/parallel-claude-sessions.md)
+- 🚨 Use `pnpm run worktree:create`. [`parallel-claude-sessions`](docs/fleet/agents.md/parallel-claude-sessions.md)
 - Never hard-code `main` in scripts: resolve the default branch via `git symbolic-ref`, fall back `main` → `master`. [`default-branch-resolution`](docs/fleet/agents.md/default-branch-resolution.md)
 - 🚨 Write no real customer name, private repo, Linear ref, or Slack thread on a public surface. [`public-surface-hygiene`](docs/fleet/agents.md/public-surface-hygiene.md) [`pull-request-target`](docs/fleet/agents.md/pull-request-target.md)
 - Root `README.md` follows the fleet skeleton - 5 level-2 sections in order, every member. [`public-surface-hygiene`](docs/fleet/agents.md/public-surface-hygiene.md)
