@@ -16,8 +16,8 @@
   },
   "repoName": "sockeye",
   "bundle": {
-    "ref": "fleet-pack-011e1c67ce8860fdf7dca52a45e1a8d6620379e6",
-    "cascadeSha": "011e1c67ce8860fdf7dca52a45e1a8d6620379e6"
+    "ref": "fleet-pack-9f7dd0e35374dc149d457ceaa188b385772de3bc",
+    "cascadeSha": "9f7dd0e35374dc149d457ceaa188b385772de3bc"
   },
   "repo": {
     "type": "mono"

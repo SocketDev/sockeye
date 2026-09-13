@@ -17,11 +17,21 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-test('reuses an existing fleet payload without launching a fetch', () => {
+test('runs the bootstrap fetcher to verify an existing fleet payload', () => {
   vi.mocked(existsSync).mockReturnValue(true)
-  expect(planFetch('.')).toEqual({ action: 'present' })
+  vi.mocked(spawnSync).mockReturnValue({ status: 0 } as ReturnType<
+    typeof spawnSync
+  >)
+  expect(planFetch('.')).toEqual({
+    action: 'ensure',
+    fleet: 'scripts/repo/bootstrap/fleet.mjs',
+  })
   expect(ensurePayload('.')).toBe(0)
-  expect(spawnSync).not.toHaveBeenCalled()
+  expect(spawnSync).toHaveBeenCalledWith(
+    process.execPath,
+    ['scripts/repo/bootstrap/fleet.mjs', '--quiet'],
+    { cwd: '.', encoding: 'utf8' },
+  )
 })
 
 test('reports a missing fetcher without launching a child', () => {
@@ -30,8 +40,8 @@ test('reports a missing fetcher without launching a child', () => {
   expect(spawnSync).not.toHaveBeenCalled()
 })
 
-test('selects the bootstrap fetcher when only the payload is missing', () => {
+test('reuses an existing payload when the bootstrap fetcher is missing', () => {
   vi.mocked(existsSync).mockReturnValueOnce(false).mockReturnValueOnce(true)
-  expect(planFetch('.')).toMatchObject({ action: 'fetch' })
+  expect(planFetch('.')).toEqual({ action: 'present' })
   expect(spawnSync).not.toHaveBeenCalled()
 })
