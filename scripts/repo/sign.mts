@@ -34,6 +34,7 @@ import {
   prepareReleaseBundle,
   RELEASE_BUNDLE_NAME,
   RELEASE_IDENTIFIER,
+  releaseBundlePath,
 } from './release/bundle.mts'
 
 const logger = getScriptLogger()
@@ -41,7 +42,7 @@ const logger = getScriptLogger()
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Sign Sockeye binaries with the hardened runtime; print commands unless execution is requested.',
-  help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with a Developer ID Application identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    identity (default: $SOCKEYE_SIGNING_IDENTITY)\n  --entitlements <p>   entitlements plist\n\nPaths default to the built binary for the current mode.',
+  help: 'Usage: pnpm run sign [options] [paths…]\n\n  --run                sign with a Developer ID Application identity\n  --ad-hoc             sign with the ad-hoc identity\n  --identity <name>    identity (default: $SOCKEYE_SIGNING_IDENTITY)\n  --entitlements <p>   entitlements plist\n  --profile <p>        Developer ID provisioning profile\n\nPaths default to the built binary for the current mode.',
   json: 'result',
 }
 
@@ -215,15 +216,19 @@ async function main(): Promise<void> {
 
   if (!execute) {
     logger.info('Dry run — no signature is written. Exact invocations:')
-    for (let i = 0, { length } = plans; i < length; i += 1) {
+    for (const plan of plans) {
+      const target = adHoc ? plan.target : releaseBundlePath(plan.target)
       logger.log(
-        `  ${displayCommand('/usr/bin/codesign', codesignArgs(plans[i]!))}`,
+        `  ${displayCommand('/usr/bin/codesign', codesignArgs({ ...plan, target }))}`,
       )
     }
     logger.log('')
     logger.log('Preconditions:')
     logger.log(
       `  - the Developer ID Application certificate named by $${SIGNING_IDENTITY_ENV} is in the login keychain`,
+    )
+    logger.log(
+      '  - SOCKEYE_PROVISIONING_PROFILE names the matching Developer ID profile',
     )
     logger.log('  - each target path exists (run "pnpm run build" first)')
     logger.log(
