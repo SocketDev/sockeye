@@ -3,6 +3,7 @@
  */
 
 import { createRequire } from 'node:module'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -70,6 +71,10 @@ export function releaseNotaryEvidencePaths(output: string) {
     receipt: `${output}.notary-receipt.json`,
     submission: `${output}.notary-submission.zip`,
   }
+}
+
+export function releaseNotaryReceiptScratchPrefix(): string {
+  return path.join(os.tmpdir(), 'sockeye-receipt-')
 }
 
 export function releaseNotaryWorkingPaths(output: string, nonce: string) {

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import os from 'node:os'
 
 import { expect, test } from 'vitest'
 
@@ -10,6 +11,7 @@ import {
   releaseBundlePaths,
   releaseChecksumPath,
   releaseNotaryEvidencePaths,
+  releaseNotaryReceiptScratchPrefix,
   releaseNotaryWorkingPaths,
   releaseProfileInspectionPaths,
   releaseProfilePath,
@@ -45,6 +47,12 @@ test('keeps temporary notarization output beside the final archive', () => {
     finalSidecar: '/example/.sockeye-darwin-arm64.zip.example-nonce.zip.sha256',
     unresolved: `${output}.notary-unresolved.json`,
   })
+})
+
+test('constructs the notary receipt extraction prefix once', () => {
+  expect(releaseNotaryReceiptScratchPrefix()).toBe(
+    path.join(os.tmpdir(), 'sockeye-receipt-'),
+  )
 })
 
 test('keeps profile inspection files in one temporary directory', () => {

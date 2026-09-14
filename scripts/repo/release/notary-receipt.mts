@@ -1,7 +1,5 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
@@ -9,7 +7,11 @@ import { isPlainObject } from '@socketsecurity/lib-stable/objects/predicates'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { REPO_ROOT } from '../../fleet/paths.mts'
-import { releaseBundleDirectoryPath, releaseBundlePaths } from '../paths.mts'
+import {
+  releaseBundleDirectoryPath,
+  releaseBundlePaths,
+  releaseNotaryReceiptScratchPrefix,
+} from '../paths.mts'
 import {
   readReleaseCertificateSha256,
   readReleaseProfile,
@@ -222,11 +224,11 @@ export async function readReleaseArchiveIdentity(
       `Receipt archive rejected at ${archive}; expected the exact safe Sockeye bundle layout. Rebuild the release archive.`,
     )
   }
-  const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'sockeye-receipt-'))
+  const scratch = await fs.mkdtemp(releaseNotaryReceiptScratchPrefix())
   try {
     const result = await spawn(
-      '/usr/bin/ditto',
-      ['-x', '-k', '--norsrc', archive, scratch],
+      '/usr/bin/unzip',
+      ['-q', archive, '-d', scratch],
       { cwd: REPO_ROOT },
     )
     if (result.code !== 0) {

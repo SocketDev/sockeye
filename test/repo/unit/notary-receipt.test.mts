@@ -52,7 +52,7 @@ function archiveMetadata(entries: readonly string[]): string {
 
 function mockArchiveExtraction(entries: readonly string[]): void {
   vi.mocked(spawn).mockImplementation((async (command, args = []) => {
-    if (command === '/usr/bin/ditto') {
+    if (command === '/usr/bin/unzip' && args[0] === '-q') {
       const bundle = releaseBundleDirectoryPath(args.at(-1)!)
       const files = releaseBundlePaths(bundle)
       await fs.mkdir(path.dirname(files.binary), { recursive: true })
@@ -66,7 +66,7 @@ function mockArchiveExtraction(entries: readonly string[]): void {
       signal: null,
       stderr: '',
       stdout:
-        command === '/usr/bin/unzip'
+        command === '/usr/bin/unzip' && args[0] === '-Z1'
           ? entries.join('\n')
           : command === '/usr/bin/zipinfo'
             ? archiveMetadata(entries)
@@ -112,6 +112,10 @@ test('rejects an archive before extraction when it has an extra member', async (
     'expected the exact safe Sockeye bundle layout',
   )
   expect(
-    vi.mocked(spawn).mock.calls.some(call => call[0] === '/usr/bin/ditto'),
+    vi
+      .mocked(spawn)
+      .mock.calls.some(
+        call => call[0] === '/usr/bin/unzip' && call[1]?.[0] === '-q',
+      ),
   ).toBe(false)
 })
