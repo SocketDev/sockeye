@@ -10,13 +10,22 @@ inputs:
     description: Base64-encoded PKCS12 certificates.
   p12-password:
     description: Password for the PKCS12 certificates.
+  apple-id:
+    description: Apple account used by notarytool.
+  app-specific-password:
+    description: App-specific password used by notarytool.
+  team-id:
+    description: Apple Developer Program team identifier.
 outputs:
   temporary-directory:
     description: Owned temporary directory for cleanup.
     value: ${{ steps.keychain.outputs.temporary-directory }}
   keychain:
-    description: Temporary keychain containing signing and notary credentials.
+    description: Temporary keychain containing signing credentials.
     value: ${{ steps.keychain.outputs.keychain }}
+  notary-keychain:
+    description: Temporary unsearched keychain containing notary credentials.
+    value: ${{ steps.keychain.outputs.notary-keychain }}
 runs:
   using: composite
   steps:
@@ -28,6 +37,9 @@ runs:
         SIGNING_ACTION_MODE: ${{ inputs.mode }}
         P12_BASE64: ${{ inputs.p12-file-base64 }}
         P12_PASSWORD: ${{ inputs.p12-password }}
+        APPLE_ID: ${{ inputs.apple-id }}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ inputs.app-specific-password }}
+        APPLE_TEAM_ID: ${{ inputs.team-id }}
       run: |
         set -euo pipefail
         set +x
@@ -51,6 +63,9 @@ runs:
           if [[ -e "$directory/signing.keychain-db" ]]; then
             security delete-keychain "$directory/signing.keychain-db" || result=$?
           fi
+          if [[ -e "$directory/notary.keychain-db" ]]; then
+            security delete-keychain "$directory/notary.keychain-db" || result=$?
+          fi
           rm -f "$directory/certificate.p12"
           if [[ "$result" == 0 ]]; then
             rm -rf "$directory"
@@ -62,8 +77,8 @@ runs:
           cleanup_signing_keychain
           exit 0
         fi
-        if [[ "$SIGNING_ACTION_MODE" != import || -z "$P12_BASE64" ]]; then
-          printf '%s\n' 'Signing import requires import mode and PKCS12 certificate data.' >&2
+        if [[ "$SIGNING_ACTION_MODE" != import || -z "$P12_BASE64" || -z "$APPLE_ID" || -z "$APPLE_APP_SPECIFIC_PASSWORD" || -z "$APPLE_TEAM_ID" ]]; then
+          printf '%s\n' 'Signing import requires certificate and notarization credentials.' >&2
           exit 1
         fi
         umask 077
@@ -83,14 +98,23 @@ runs:
         for entry in "${original[@]}"; do printf '%s\0' "$entry" >> "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp"; done
         mv "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list.tmp" "$SOCKEYE_SIGNING_TEMP_DIR/original-search-list"
         keychain="$SOCKEYE_SIGNING_TEMP_DIR/signing.keychain-db"
+        notary_keychain="$SOCKEYE_SIGNING_TEMP_DIR/notary.keychain-db"
         password="$(openssl rand -hex 32)"
         printf '::add-mask::%s\n' "$password"
         security create-keychain -p "$password" "$keychain"
+        security create-keychain -p "$password" "$notary_keychain"
         security set-keychain-settings -lut 21600 "$keychain"
+        security set-keychain-settings -lut 21600 "$notary_keychain"
         security unlock-keychain -p "$password" "$keychain"
+        security unlock-keychain -p "$password" "$notary_keychain"
         printf '%s' "$P12_BASE64" | base64 --decode > "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12"
         security import "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
         rm -f "$SOCKEYE_SIGNING_TEMP_DIR/certificate.p12"
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
+        xcrun notarytool store-credentials sockeye-notary \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+          --team-id "$APPLE_TEAM_ID" \
+          --keychain "$notary_keychain"
         security list-keychains -d user -s "$keychain" "${original[@]}"
-        printf 'temporary-directory=%s\nkeychain=%s\n' "$SOCKEYE_SIGNING_TEMP_DIR" "$keychain" >> "$GITHUB_OUTPUT"
+        printf 'temporary-directory=%s\nkeychain=%s\nnotary-keychain=%s\n' "$SOCKEYE_SIGNING_TEMP_DIR" "$keychain" "$notary_keychain" >> "$GITHUB_OUTPUT"

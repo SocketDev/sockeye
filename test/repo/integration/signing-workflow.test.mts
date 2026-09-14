@@ -71,7 +71,6 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
   for (const name of [
     'Import codesign certificate',
     'Sign with developer id',
-    'Store notarytool credentials',
     'Notarize, staple, and package application',
     'Verify release artifact',
   ]) {
@@ -122,12 +121,17 @@ test('cleans up imported certificates even after a failed signing step', () => {
   expect(cleanup.with?.['temporary-directory']).toBe(
     '${{ steps.import-signing.outputs.temporary-directory }}',
   )
-  const credentials = signingStep('Store notarytool credentials')
+  const credentials = signingStep('Import codesign certificate')
   const notarize = signingStep('Notarize, staple, and package application')
-  expect(credentials.env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBeUndefined()
-  expect(credentials.run).not.toContain('--keychain')
+  expect(credentials.with?.['apple-id']).toBe('${{ vars.APPLE_ID }}')
+  expect(credentials.with?.['app-specific-password']).toBe(
+    '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
+  )
+  expect(credentials.with?.['team-id']).toBe('${{ vars.APPLE_TEAM_ID }}')
   expect(notarize.env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBeUndefined()
-  expect(notarize.run).not.toContain('--keychain "')
+  expect(notarize.run).toContain(
+    '--keychain "${{ steps.import-signing.outputs.notary-keychain }}"',
+  )
   expect(job.steps.at(-1)).toBe(cleanup)
 })
 
@@ -182,10 +186,10 @@ test('publishes one tag release after both signed artifacts verify', () => {
 })
 
 test('reads public Apple identity from variables', () => {
-  const credentials = signingStep('Store notarytool credentials')
-  expect(credentials.env?.['APPLE_ID']).toBe('${{ vars.APPLE_ID }}')
-  expect(credentials.env?.['APPLE_TEAM_ID']).toBe('${{ vars.APPLE_TEAM_ID }}')
-  expect(credentials.env?.['APPLE_APP_SPECIFIC_PASSWORD']).toBe(
+  const credentials = signingStep('Import codesign certificate')
+  expect(credentials.with?.['apple-id']).toBe('${{ vars.APPLE_ID }}')
+  expect(credentials.with?.['team-id']).toBe('${{ vars.APPLE_TEAM_ID }}')
+  expect(credentials.with?.['app-specific-password']).toBe(
     '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
   )
 })

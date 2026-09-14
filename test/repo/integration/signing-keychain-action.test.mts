@@ -51,6 +51,10 @@ security() {
   esac
   if [[ "$command" == "$SIGNING_FAILURE" ]]; then return 73; fi
 }
+xcrun() {
+  printf 'xcrun %s\n' "$*" >> "$RUNNER_TEMP/commands"
+  if [[ "\${1:-}" == notarytool && "\${2:-}" == store-credentials && "$SIGNING_FAILURE" == store-credentials ]]; then return 73; fi
+}
 `
 
 function runKeychainAction(
@@ -71,18 +75,25 @@ function runKeychainAction(
         SOCKEYE_SIGNING_TEMP_DIR: config.directory ?? '',
         P12_BASE64: Buffer.from('example-p12-bytes').toString('base64'),
         P12_PASSWORD: 'not-a-real-password',
+        APPLE_ID: 'octocat@example.com',
+        APPLE_APP_SPECIFIC_PASSWORD: 'not-a-real-notary-password',
+        APPLE_TEAM_ID: 'EXAMPLE123',
       },
     },
   )
 }
 
 function recordedDirectory(root: string): string {
+  return recordedOutput(root, 'temporary-directory')
+}
+
+function recordedOutput(root: string, name: string): string {
   const entry = readFileSync(path.join(root, 'github-output'), 'utf8')
     .trim()
     .split(/\r?\n/u)
-    .filter(line => line.startsWith('temporary-directory='))
+    .filter(line => line.startsWith(`${name}=`))
     .at(-1)!
-  return entry.slice('temporary-directory='.length)
+  return entry.slice(name.length + 1)
 }
 
 function searchList(root: string): string[] {
@@ -102,21 +113,34 @@ test('imports with a temporary keychain and restores the exact original list on 
   const result = runKeychainAction(root, { mode: 'import' })
   expect(result.status).toBe(0)
   const directory = recordedDirectory(root)
+  const notaryKeychain = recordedOutput(root, 'notary-keychain')
   expect(existsSync(path.join(directory, 'certificate.p12'))).toBe(false)
+  expect(notaryKeychain).toBe(path.join(directory, 'notary.keychain-db'))
+  expect(existsSync(notaryKeychain)).toBe(true)
   expect(searchList(root)).toEqual([
     path.join(directory, 'signing.keychain-db'),
     ...original,
   ])
+  expect(searchList(root)).not.toContain(notaryKeychain)
+  expect(readFileSync(path.join(root, 'commands'), 'utf8')).toContain(
+    `--keychain ${notaryKeychain}`,
+  )
   expect(result.stdout).toContain(
     '::add-mask::example-generated-keychain-password',
   )
   expect(result.stdout).not.toContain('not-a-real-password')
+  expect(result.stdout).not.toContain('not-a-real-notary-password')
   expect(runKeychainAction(root, { mode: 'cleanup', directory }).status).toBe(0)
   expect(searchList(root)).toEqual(original)
   expect(existsSync(directory)).toBe(false)
 })
 
-test.each(['create-keychain', 'import', 'set-key-partition-list'])(
+test.each([
+  'create-keychain',
+  'import',
+  'set-key-partition-list',
+  'store-credentials',
+])(
   'restores the search list and deletes temporary material after %s failure',
   failure => {
     const root = keychainFixture()
