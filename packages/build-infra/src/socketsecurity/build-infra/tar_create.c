@@ -18,9 +18,11 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
+#include <fcntl.h>
 #define PATH_SEP '\\'
 #include "socketsecurity/build-infra/posix_compat.h"
 #else
+#include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
 #define PATH_SEP '/'
@@ -265,11 +267,54 @@ static int tar_add_file(tar_buffer_t *buf, const char *base_path,
     char full_path[MAX_PATH_LEN];
     snprintf(full_path, sizeof(full_path), "%s%c%s", base_path, PATH_SEP, rel_path);
 
-    /* Get file info */
-    struct stat st;
-    if (stat(full_path, &st) != 0) {
-        fprintf(stderr, "Error: Cannot stat file: %s (errno: %d - %s)\n",
+#ifdef _WIN32
+    int source_fd = _open(full_path, _O_RDONLY | _O_BINARY | _O_NOINHERIT);
+#else
+    int source_fd = open(full_path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+#endif
+    if (source_fd < 0) {
+        fprintf(stderr, "Error: Cannot open file: %s (errno: %d - %s)\n",
                 full_path, errno, strerror(errno));
+        return TAR_ERROR_READ_FAILED;
+    }
+
+#ifdef _WIN32
+    struct _stat64 st;
+    if (_fstat64(source_fd, &st) != 0) {
+        _close(source_fd);
+#else
+    struct stat st;
+    if (fstat(source_fd, &st) != 0) {
+        close(source_fd);
+#endif
+        fprintf(stderr, "Error: Cannot inspect file: %s (errno: %d - %s)\n",
+                full_path, errno, strerror(errno));
+        return TAR_ERROR_READ_FAILED;
+    }
+
+#ifdef _WIN32
+    if ((st.st_mode & _S_IFMT) != _S_IFREG) {
+        _close(source_fd);
+#else
+    if (!S_ISREG(st.st_mode)) {
+        close(source_fd);
+#endif
+        fprintf(stderr, "Error: Refusing non-regular file in TAR input: %s\n",
+                full_path);
+        return TAR_ERROR_READ_FAILED;
+    }
+
+#ifdef _WIN32
+    FILE *fp = _fdopen(source_fd, "rb");
+#else
+    FILE *fp = fdopen(source_fd, "rb");
+#endif
+    if (!fp) {
+#ifdef _WIN32
+        _close(source_fd);
+#else
+        close(source_fd);
+#endif
         return TAR_ERROR_READ_FAILED;
     }
 
@@ -281,12 +326,14 @@ static int tar_add_file(tar_buffer_t *buf, const char *base_path,
     /* Validate file size before casting to size_t */
     if (st.st_size < 0) {
         fprintf(stderr, "Error: Invalid file size (negative): %s\n", full_path);
+        fclose(fp);
         return TAR_ERROR_READ_FAILED;
     }
     if ((uint64_t)st.st_size > SIZE_MAX) {
         fprintf(stderr, "Error: File too large for TAR archive: %s (%lld bytes)\n",
                 full_path, (long long)st.st_size);
         fprintf(stderr, "  SIZE_MAX on this platform: %zu\n", SIZE_MAX);
+        fclose(fp);
         return TAR_ERROR_READ_FAILED;
     }
 
@@ -295,18 +342,16 @@ static int tar_add_file(tar_buffer_t *buf, const char *base_path,
     /* Create header */
     uint8_t header[TAR_BLOCK_SIZE];
     int rc = tar_create_header(header, tar_path, 0, file_size, st.st_mtime, st.st_mode);
-    if (rc != TAR_OK) return rc;
+    if (rc != TAR_OK) {
+        fclose(fp);
+        return rc;
+    }
 
     /* Append header */
     rc = tar_buffer_append(buf, header, TAR_BLOCK_SIZE);
-    if (rc != TAR_OK) return rc;
-
-    /* Read and append file content */
-    FILE *fp = fopen(full_path, "rb");
-    if (!fp) {
-        fprintf(stderr, "Error: Cannot open file: %s (errno: %d - %s)\n",
-                full_path, errno, strerror(errno));
-        return TAR_ERROR_READ_FAILED;
+    if (rc != TAR_OK) {
+        fclose(fp);
+        return rc;
     }
 
     rc = tar_buffer_grow(buf, file_size);
@@ -317,12 +362,15 @@ static int tar_add_file(tar_buffer_t *buf, const char *base_path,
 
     size_t bytes_read = fread(buf->data + buf->size, 1, file_size, fp);
     int fread_errno = ferror(fp) ? errno : 0;
-    fclose(fp);
 
     if (bytes_read != file_size) {
-        // Re-stat to detect if file changed (TOCTOU race detection)
+#ifdef _WIN32
+        struct _stat64 st_after;
+        if (_fstat64(source_fd, &st_after) == 0 && st_after.st_size != st.st_size) {
+#else
         struct stat st_after;
-        if (stat(full_path, &st_after) == 0 && st_after.st_size != st.st_size) {
+        if (fstat(source_fd, &st_after) == 0 && st_after.st_size != st.st_size) {
+#endif
             fprintf(stderr, "Error: File size changed during archiving: %s (was %lld bytes, now %lld bytes)\n",
                     full_path, (long long)st.st_size, (long long)st_after.st_size);
             fprintf(stderr, "  This indicates the file was modified while creating the TAR archive.\n");
@@ -333,9 +381,11 @@ static int tar_add_file(tar_buffer_t *buf, const char *base_path,
             fprintf(stderr, "Error: Failed to read file: %s (read %zu of %zu bytes)\n",
                     full_path, bytes_read, file_size);
         }
+        fclose(fp);
         return TAR_ERROR_READ_FAILED;
     }
 
+    fclose(fp);
     buf->size += bytes_read;
 
     /* Pad to block boundary */
@@ -384,8 +434,16 @@ static int tar_add_directory_recursive(tar_buffer_t *buf, const char *base_path,
         snprintf(full_path, sizeof(full_path), "%s", base_path);
     }
 
-    DIR *dir = opendir(full_path);
+    int directory_fd =
+        open(full_path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+    if (directory_fd < 0) {
+        fprintf(stderr, "Error: Cannot open directory: %s (errno: %d - %s)\n",
+                full_path, errno, strerror(errno));
+        return TAR_ERROR_NOT_DIRECTORY;
+    }
+    DIR *dir = fdopendir(directory_fd);
     if (!dir) {
+        close(directory_fd);
         fprintf(stderr, "Error: Cannot open directory: %s (errno: %d - %s)\n",
                 full_path, errno, strerror(errno));
         return TAR_ERROR_NOT_DIRECTORY;
@@ -436,13 +494,18 @@ static int tar_add_directory_recursive(tar_buffer_t *buf, const char *base_path,
 
         /* Get entry info */
         struct stat st;
-        if (stat(entry_full_path, &st) != 0) {
+        if (lstat(entry_full_path, &st) != 0) {
             fprintf(stderr, "Warning: Cannot stat: %s (errno: %d - %s, skipping)\n",
                     entry_full_path, errno, strerror(errno));
             continue;
         }
 
-        if (S_ISDIR(st.st_mode)) {
+        if (S_ISLNK(st.st_mode)) {
+            fprintf(stderr, "Error: Refusing symbolic link in TAR input: %s\n",
+                    entry_full_path);
+            rc = TAR_ERROR_READ_FAILED;
+            break;
+        } else if (S_ISDIR(st.st_mode)) {
             /* Add directory entry */
             rc = tar_add_directory_entry(buf, entry_rel_path, st.st_mtime, st.st_mode);
             if (rc != TAR_OK) break;
