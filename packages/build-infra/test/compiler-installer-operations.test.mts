@@ -53,6 +53,7 @@ test('rejects malformed versions and parses distribution suffixes', () => {
     patch: 0,
   })
   expect(parseVersion('unknown')).toBeUndefined()
+  expect(parseVersion(`${'1'.repeat(100_000)}.2.3`)).toBeUndefined()
   expect(compareVersions('unknown', '12.2.0')).toBeNaN()
   expect(compareVersions('12.2.0', 'unknown')).toBeNaN()
 })
