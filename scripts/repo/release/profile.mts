@@ -13,7 +13,7 @@ export async function decodeReleaseProfileCms(
       '-inform',
       'der',
       '-in',
-      profile,
+      path.resolve(profile),
       '-noverify',
     ])
   } catch {

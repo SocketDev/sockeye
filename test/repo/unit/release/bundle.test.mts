@@ -49,7 +49,7 @@ test('decodes profiles without mutable keychain state', async () => {
     stdout: command === '/usr/bin/openssl' ? '<plist/>' : '',
   })) as typeof spawn)
   await expect(
-    decodeReleaseProfileCms('/example/profile.provisionprofile'),
+    decodeReleaseProfileCms('example/profile.provisionprofile'),
   ).resolves.toBe('<plist/>')
   expect(vi.mocked(spawn)).toHaveBeenCalledWith('/usr/bin/openssl', [
     'smime',
@@ -57,7 +57,7 @@ test('decodes profiles without mutable keychain state', async () => {
     '-inform',
     'der',
     '-in',
-    '/example/profile.provisionprofile',
+    path.resolve('example/profile.provisionprofile'),
     '-noverify',
   ])
 })
