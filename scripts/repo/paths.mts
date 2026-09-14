@@ -89,6 +89,7 @@ export function releaseProfileInspectionPaths(directory: string) {
   return {
     __proto__: null,
     plist: path.join(directory, 'profile.plist'),
+    profile: path.join(directory, 'embedded.provisionprofile'),
   }
 }
 

@@ -237,7 +237,8 @@ export async function readReleaseProfile(profile: string): Promise<unknown> {
   const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'sockeye-profile-'))
   try {
     const inspection = releaseProfileInspectionPaths(scratch)
-    const decoded = await decodeReleaseProfileCms(profile)
+    await fs.copyFile(profile, inspection.profile)
+    const decoded = await decodeReleaseProfileCms(inspection.profile)
     const plist = inspection.plist
     await fs.writeFile(plist, decoded, { mode: 0o600 })
     const certificateXml = await extractReleaseProfileField(
