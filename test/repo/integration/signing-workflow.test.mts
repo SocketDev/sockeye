@@ -122,14 +122,12 @@ test('cleans up imported certificates even after a failed signing step', () => {
   expect(cleanup.with?.['temporary-directory']).toBe(
     '${{ steps.import-signing.outputs.temporary-directory }}',
   )
-  for (const name of [
-    'Store notarytool credentials',
-    'Notarize, staple, and package application',
-  ]) {
-    expect(signingStep(name).env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBe(
-      '${{ steps.import-signing.outputs.keychain }}',
-    )
-  }
+  const credentials = signingStep('Store notarytool credentials')
+  const notarize = signingStep('Notarize, staple, and package application')
+  expect(credentials.env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBeUndefined()
+  expect(credentials.run).not.toContain('--keychain')
+  expect(notarize.env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBeUndefined()
+  expect(notarize.run).not.toContain('--keychain "')
   expect(job.steps.at(-1)).toBe(cleanup)
 })
 

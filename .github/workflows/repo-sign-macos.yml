@@ -126,7 +126,6 @@ jobs:
       - name: Store notarytool credentials
         if: ${{ !inputs.adhoc }}
         env:
-          SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
           APPLE_ID: ${{ vars.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
@@ -134,18 +133,14 @@ jobs:
           xcrun notarytool store-credentials sockeye-notary \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
+            --team-id "$APPLE_TEAM_ID"
 
       - name: Notarize, staple, and package application
         if: ${{ !inputs.adhoc }}
-        env:
-          SOCKEYE_SIGNING_KEYCHAIN: ${{ steps.import-signing.outputs.keychain }}
         run: pnpm run notarize --run
           --bundle build/prod/darwin-${{ matrix.arch }}/out/Final/$SOCKEYE_BUNDLE_NAME
           --output build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
           --keychain-profile sockeye-notary
-          --keychain "$SOCKEYE_SIGNING_KEYCHAIN"
 
       - name: Compute checksum
         run: |
