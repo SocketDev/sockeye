@@ -24,6 +24,8 @@ export const RELEASE_BUNDLE_ENTRIES = [
   `${RELEASE_BUNDLE_NAME}/Contents/Info.plist`,
   `${RELEASE_BUNDLE_NAME}/Contents/MacOS`,
   `${RELEASE_BUNDLE_NAME}/Contents/MacOS/${RELEASE_EXECUTABLE_NAME}`,
+  `${RELEASE_BUNDLE_NAME}/Contents/_CodeSignature`,
+  `${RELEASE_BUNDLE_NAME}/Contents/_CodeSignature/CodeResources`,
   `${RELEASE_BUNDLE_NAME}/Contents/embedded.provisionprofile`,
 ] as const
 
