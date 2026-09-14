@@ -70,8 +70,37 @@ int main(int argc, char** argv) {
     memset(bytes, 0, sizeof(bytes));
     if (!reader || fread(bytes, 1, 4, reader) != 4 || fclose(reader) != 0 ||
         strcmp(bytes, "keep") != 0) return 13;
+    struct stat replacement_stat;
+    std::string bad_output = root + "/bad-output";
+    if (lstat(bad_output.c_str(), &replacement_stat) != 0 ||
+        !S_ISLNK(replacement_stat.st_mode)) return 14;
+    unlink(bad_output.c_str());
     unlink(held.c_str());
     rmdir(swapped.directory);
+
+    binject::reserved_temp_file ancestor_swapped;
+    if (binject::create_temp_file((root + "/ancestor-swapped").c_str(),
+                                  &ancestor_swapped) != 0) return 15;
+    if (binject::write_temp_file(&ancestor_swapped,
+                                 reinterpret_cast<const uint8_t*>("held"), 4) != BINJECT_OK) return 16;
+    std::string held_directory = std::string(ancestor_swapped.directory) + ".held";
+    if (rename(ancestor_swapped.directory, held_directory.c_str()) != 0 ||
+        mkdir(ancestor_swapped.directory, 0700) != 0) return 17;
+    writer = fopen(ancestor_swapped.path, "wb");
+    if (!writer || fwrite("swap", 1, 4, writer) != 4 || fclose(writer) != 0) return 18;
+    std::string ancestor_output = root + "/ancestor-output";
+    if (binject::atomic_rename(&ancestor_swapped, ancestor_output.c_str()) != BINJECT_OK) return 19;
+    reader = fopen(ancestor_output.c_str(), "rb");
+    memset(bytes, 0, sizeof(bytes));
+    if (!reader || fread(bytes, 1, 4, reader) != 4 || fclose(reader) != 0 ||
+        strcmp(bytes, "held") != 0) return 20;
+    reader = fopen(ancestor_swapped.path, "rb");
+    memset(bytes, 0, sizeof(bytes));
+    if (!reader || fread(bytes, 1, 4, reader) != 4 || fclose(reader) != 0 ||
+        strcmp(bytes, "swap") != 0) return 21;
+    unlink(ancestor_swapped.path);
+    rmdir(ancestor_swapped.directory);
+    rmdir(held_directory.c_str());
 #endif
     return 0;
 }

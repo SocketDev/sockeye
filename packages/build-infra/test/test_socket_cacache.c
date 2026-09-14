@@ -22,9 +22,32 @@
 #include <ftw.h>
 
 static const char *g_swap_victim;
+static int g_swap_parent;
 static char g_swapped_file[1024];
+static char g_swapped_directory[1024];
 
 static void swap_staged_file(const char *path) {
+    if (g_swap_parent) {
+        const char *separator = strrchr(path, '/');
+        if (!separator) return;
+        size_t directory_length = (size_t)(separator - path);
+        if (directory_length >= sizeof(g_swapped_directory) - 6) return;
+        memcpy(g_swapped_directory, path, directory_length);
+        g_swapped_directory[directory_length] = '\0';
+        memcpy(g_swapped_directory + directory_length, ".held", 6);
+        memcpy(g_swapped_file, path, strlen(path) + 1);
+        char source_directory[1024];
+        memcpy(source_directory, path, directory_length);
+        source_directory[directory_length] = '\0';
+        if (rename(source_directory, g_swapped_directory) != 0 ||
+            mkdir(source_directory, 0700) != 0) return;
+        FILE *replacement = fopen(path, "wb");
+        if (replacement) {
+            fwrite("swap", 1, 4, replacement);
+            fclose(replacement);
+        }
+        return;
+    }
     if (!g_swap_victim) return;
     snprintf(g_swapped_file, sizeof(g_swapped_file), "%s.held", path);
     if (rename(path, g_swapped_file) == 0) symlink(g_swap_victim, path);
@@ -111,10 +134,42 @@ static int test_atomic_write_rejects_swapped_staging_file(void) {
         strcmp(content, "keep") == 0;
     if (file) fclose(file);
     struct stat st;
-    int output_missing = lstat(output, &st) != 0 && errno == ENOENT;
+    int replacement_is_symlink = lstat(output, &st) == 0 &&
+        S_ISLNK(st.st_mode);
     unlink(g_swapped_file);
     rmrf(root);
-    return write_result != 0 && intact && output_missing ? 0 : -1;
+    return write_result != 0 && intact && replacement_is_symlink
+        ? 0
+        : -1;
+}
+
+static int test_atomic_write_binds_staging_directory(void) {
+    char root[] = "/tmp/cacache-write-parent-swap-XXXXXX";
+    if (!mkdtemp(root)) return -1;
+    char cache_dir[512], output[512];
+    snprintf(cache_dir, sizeof(cache_dir), "%s/_cacache", root);
+    if (mkdir(cache_dir, 0700) != 0) return -1;
+    setenv("SOCKET_CACACHE_DIR", cache_dir, 1);
+    snprintf(output, sizeof(output), "%s/output", cache_dir);
+    g_swap_parent = 1;
+    int write_result = write_file_atomically(
+        output, (const uint8_t *)"safe", 4, 0644);
+    g_swap_parent = 0;
+    FILE *file = fopen(output, "rb");
+    char content[5] = {0};
+    int output_is_safe = file && fread(content, 1, 4, file) == 4 &&
+        strcmp(content, "safe") == 0;
+    if (file) fclose(file);
+    file = fopen(g_swapped_file, "rb");
+    memset(content, 0, sizeof(content));
+    int replacement_is_intact = file && fread(content, 1, 4, file) == 4 &&
+        strcmp(content, "swap") == 0;
+    if (file) fclose(file);
+    rmrf(root);
+    rmrf(g_swapped_directory);
+    return write_result == 0 && output_is_safe && replacement_is_intact
+        ? 0
+        : -1;
 }
 
 static int dir_exists(const char *path) {
@@ -840,6 +895,7 @@ int main(void) {
 
     RUN_TEST("rmrf-does-not-follow-symlinks",    test_rmrf_does_not_follow_symlinks);
     RUN_TEST("atomic-write-rejects-swapped-staging-file", test_atomic_write_rejects_swapped_staging_file);
+    RUN_TEST("atomic-write-binds-staging-directory", test_atomic_write_binds_staging_directory);
     RUN_TEST("normal-roundtrip",                test_normal_roundtrip);
     RUN_TEST("error-nonexistent-key",           test_error_nonexistent_key);
     RUN_TEST("di01-integrity-verification",     test_di01_integrity_verification);

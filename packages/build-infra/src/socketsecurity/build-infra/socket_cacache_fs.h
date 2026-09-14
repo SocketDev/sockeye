@@ -172,25 +172,47 @@ static int write_file_atomically(const char *path, const uint8_t *data, size_t l
     char tmp_path[1024];
     FILE *f;
 #if !defined(_WIN32)
-    if (scache_staging_dir(staging, sizeof(staging)) == 0) {
-        create_parent_directories(staging);
-        mkdir(staging, 0700);
-        int staging_fd = open(staging,
-                              O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
-        if (staging_fd < 0) return -1;
-        if (fchmod(staging_fd, 0700) != 0) {
-            close(staging_fd);
-            return -1;
-        }
-        close(staging_fd);
-        snprintf(tmp_path, sizeof(tmp_path), "%s/tmp-XXXXXX", staging);
-    } else {
-        snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.XXXXXX", path);
+    int source_directory_fd = -1;
+    if (scache_staging_dir(staging, sizeof(staging)) != 0) return -1;
+    create_parent_directories(staging);
+    mkdir(staging, 0700);
+    source_directory_fd = open(
+        staging, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+    if (source_directory_fd < 0) return -1;
+    if (fchmod(source_directory_fd, 0700) != 0) {
+        close(source_directory_fd);
+        return -1;
     }
+    snprintf(tmp_path, sizeof(tmp_path), "%s/tmp-XXXXXX", staging);
     int fd = mkstemp(tmp_path);
-    if (fd < 0) return -1;
+    if (fd < 0) {
+        close(source_directory_fd);
+        return -1;
+    }
+    const char *source_name = strrchr(tmp_path, '/');
+    source_name = source_name ? source_name + 1 : tmp_path;
+    struct stat created_identity;
+    struct stat named_identity;
+    if (fstat(fd, &created_identity) != 0) {
+        close(fd);
+        close(source_directory_fd);
+        return -1;
+    }
+    if (fstatat(source_directory_fd, source_name, &named_identity,
+                AT_SYMLINK_NOFOLLOW) != 0 ||
+        created_identity.st_dev != named_identity.st_dev ||
+        created_identity.st_ino != named_identity.st_ino) {
+        close(fd);
+        close(source_directory_fd);
+        return -1;
+    }
     f = fdopen(fd, "wb");
-    if (!f) { close(fd); unlink(tmp_path); return -1; }
+    if (!f) {
+        unlinkat(source_directory_fd, source_name, 0);
+        close(fd);
+        close(source_directory_fd);
+        return -1;
+    }
 #else
     (void)mode;
     if (scache_staging_dir(staging, sizeof(staging)) == 0) {
@@ -240,32 +262,40 @@ static int write_file_atomically(const char *path, const uint8_t *data, size_t l
 #endif
     size_t written = fwrite(data, 1, len, f);
     if (written != len) {
+#if !defined(_WIN32)
+        unlinkat(source_directory_fd, source_name, 0);
+        fclose(f);
+        close(source_directory_fd);
+#else
         fclose(f);
         unlink(tmp_path);
+#endif
         return -1;
     }
 #if !defined(_WIN32)
     struct stat staged_identity;
     if (fflush(f) != 0 || fchmod(fd, (mode_t)mode) != 0 ||
         fsync(fd) != 0 || fstat(fd, &staged_identity) != 0) {
+        unlinkat(source_directory_fd, source_name, 0);
         fclose(f);
-        unlink(tmp_path);
+        close(source_directory_fd);
         return -1;
     }
 #if defined(SCACHE_TEST_BEFORE_RENAME)
     SCACHE_TEST_BEFORE_RENAME(tmp_path);
 #endif
-    if (rename(tmp_path, path) == 0) {
+    if (renameat(source_directory_fd, source_name, AT_FDCWD, path) == 0) {
         struct stat destination_identity;
         int matches = lstat(path, &destination_identity) == 0 &&
             staged_identity.st_dev == destination_identity.st_dev &&
             staged_identity.st_ino == destination_identity.st_ino;
         int close_result = fclose(f);
-        if (!matches) unlink(path);
+        close(source_directory_fd);
         return matches && close_result == 0 ? 0 : -1;
     }
+    unlinkat(source_directory_fd, source_name, 0);
     fclose(f);
-    unlink(tmp_path);
+    close(source_directory_fd);
 #else
 #if defined(SCACHE_TEST_BEFORE_RENAME)
     SCACHE_TEST_BEFORE_RENAME(tmp_path);
