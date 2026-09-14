@@ -87,7 +87,10 @@ void CheckReadiness() {
   assert(query_context.interactionNotAllowed);
   assert(sockeye::InspectCredentialPolicy(invalid_utf8, error) == KeychainStatus::kIo);
   for (OSStatus status : {errSecItemNotFound, errSecAuthFailed}) {
-    ResetKeychainFake(); keychain_state.query_statuses = {status};
+    ResetKeychainFake();
+    keychain_state.query_statuses = status == errSecItemNotFound
+        ? std::vector<OSStatus>{status, status}
+        : std::vector<OSStatus>{status};
     assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == (status == errSecItemNotFound ? KeychainStatus::kNotFound : KeychainStatus::kIo));
   }
   ResetKeychainFake(); keychain_state.query_statuses = {errSecMissingEntitlement};
@@ -98,6 +101,11 @@ void CheckReadiness() {
   assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
   ResetKeychainFake(); keychain_state.query_result = @{};
   assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
+  ResetKeychainFake();
+  keychain_state.query_statuses = {errSecItemNotFound, errSecSuccess};
+  keychain_state.query_result = ValidItem();
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kInvalidPolicy);
+  assert(keychain_state.query_index == 2);
   ResetKeychainFake();
   NSMutableDictionary *item = ValidItem(); item[(__bridge id)kSecAttrGeneric] = @"wrong marker";
   keychain_state.query_result = item;

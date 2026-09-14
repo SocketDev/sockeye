@@ -150,6 +150,27 @@ KeychainStatus InspectCredentialPolicy(std::string_view identifier,
     CFTypeRef result = nullptr;
     const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
     CFRelease(required);
+    if (status == errSecItemNotFound) {
+      NSMutableDictionary *different_policy_query = BaseQuery(identifier);
+      different_policy_query[(__bridge id)kSecUseAuthenticationContext] = context;
+      different_policy_query[(__bridge id)kSecMatchLimit] =
+          (__bridge id)kSecMatchLimitOne;
+      different_policy_query[(__bridge id)kSecReturnAttributes] = @YES;
+      different_policy_query[(__bridge id)kSecReturnData] = @NO;
+      CFTypeRef different_policy_result = nullptr;
+      const OSStatus different_policy_status = SecItemCopyMatching(
+          (__bridge CFDictionaryRef)different_policy_query,
+          &different_policy_result);
+      if (different_policy_result != nullptr) {
+        CFRelease(different_policy_result);
+      }
+      if (different_policy_status == errSecSuccess) {
+        [context invalidate];
+        SetError(error, KeychainStatus::kInvalidPolicy, 0,
+                 "Credential policy differs from the required current-biometry device-only policy.");
+        return error.status;
+      }
+    }
     [context invalidate];
     if (status != errSecSuccess || result == nullptr ||
         CFGetTypeID(result) != CFDictionaryGetTypeID()) {
