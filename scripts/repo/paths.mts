@@ -92,6 +92,10 @@ export function releaseProfileInspectionPaths(directory: string) {
   }
 }
 
+export function releaseProfilePath(profile: string): string {
+  return path.resolve(profile)
+}
+
 export function getNodeHeaderDirectory(): string {
   return path.join(
     path.dirname(path.dirname(process.execPath)),

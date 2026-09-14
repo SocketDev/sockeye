@@ -2,6 +2,8 @@ import path from 'node:path'
 
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
+import { releaseProfilePath } from '../paths.mts'
+
 export async function decodeReleaseProfileCms(
   profile: string,
 ): Promise<string> {
@@ -13,7 +15,7 @@ export async function decodeReleaseProfileCms(
       '-inform',
       'der',
       '-in',
-      path.resolve(profile),
+      releaseProfilePath(profile),
       '-noverify',
     ])
   } catch {

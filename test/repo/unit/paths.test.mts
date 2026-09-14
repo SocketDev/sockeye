@@ -12,6 +12,7 @@ import {
   releaseNotaryEvidencePaths,
   releaseNotaryWorkingPaths,
   releaseProfileInspectionPaths,
+  releaseProfilePath,
 } from '../../../scripts/repo/paths.mts'
 
 test('constructs every public release path from one archive reference', () => {
@@ -50,4 +51,10 @@ test('keeps profile inspection files in one temporary directory', () => {
   expect(releaseProfileInspectionPaths('/example/inspection')).toEqual({
     plist: '/example/inspection/profile.plist',
   })
+})
+
+test('normalizes a release profile path once', () => {
+  expect(releaseProfilePath('example/profile.provisionprofile')).toBe(
+    path.resolve('example/profile.provisionprofile'),
+  )
 })
