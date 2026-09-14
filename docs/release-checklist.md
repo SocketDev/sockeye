@@ -14,8 +14,8 @@ release commit.
 | Process identity | Executable launch race is closed or explicitly accepted with independent review.                                 | Open                                                   |
 | Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                             | Sanitizers pass; 15-minute fuzz evidence recorded      |
 | Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                   | Open                                                   |
-| Signing          | The Developer ID leaf certificate matches each embedded profile. The profile authorizes the exact signed claims. | Final two-architecture validation required             |
-| Notarization     | Apple accepts each submission. Each final ZIP contains an application with a validated stapled ticket.           | Final two-architecture validation required             |
+| Signing          | The Developer ID leaf certificate matches each embedded profile. The profile authorizes the exact signed claims. | ARM64 and x64 validation passed at `1e57cc0c`          |
+| Notarization     | Apple accepts each submission. Each final ZIP contains an application with a validated stapled ticket.           | ARM64 and x64 validation passed at `1e57cc0c`          |
 | Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                 | Open                                                   |
 | Installation     | The installer verifies the checksum, exact release version, full bundle, signature, profile, and stapled ticket. | Automated checks pass; clean-machine test remains open |
 | Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                  | Bridge and name-set tests pass; interactive smoke open |
@@ -44,6 +44,25 @@ Publishing is user-gated. Local development commits and dry runs must not create
 a public release.
 
 ## Recorded evidence
+
+### 2026-09-14 two-architecture signing validation
+
+The [signing workflow](https://github.com/SocketDev/sockeye/actions/runs/34814574533)
+built, signed, notarized, stapled, verified, and uploaded both macOS archives.
+The workflow restored and deleted its temporary signing keychains.
+
+Independent verification matched each checksum and receipt to the source,
+architecture, workflow run, notary submission, and final archive.
+`codesign`, Gatekeeper, and stapler validation passed for both archives.
+
+| Architecture | Archive SHA-256                                                    |
+| ------------ | ------------------------------------------------------------------ |
+| ARM64        | `4954378ddde59033cb7ab926ba432151924c101bc7ae1d614b39c025ca4df946` |
+| x64          | `a4fead777f56cc996d6211e0f7d585b21582f020439cfb5a427a456616d6d11f` |
+
+The source was `1e57cc0cfb1b58930e9c0c2a780a1ba624bec940`.
+No public release was created.
+Attended Keychain, clean-machine installation, and release-version gates remain open.
 
 ### 2026-09-11 ARM64 signing validation
 
