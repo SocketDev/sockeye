@@ -62,6 +62,11 @@ test('builds and signs production bytes from the immutable triggering commit', (
   expect(signingStep('Verify signed binary starts').run).toContain(
     'build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"/Contents/MacOS/sockeye --help',
   )
+  expect(signingStep('Detach signing keychain').with).toEqual({
+    mode: 'detach',
+    'temporary-directory':
+      '${{ steps.import-signing.outputs.temporary-directory }}',
+  })
   expect(signingStep('Sign ad-hoc').run).toContain(
     'pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye',
   )

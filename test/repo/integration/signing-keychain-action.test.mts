@@ -130,6 +130,10 @@ test('imports with a temporary keychain and restores the exact original list on 
   )
   expect(result.stdout).not.toContain('not-a-real-password')
   expect(result.stdout).not.toContain('not-a-real-notary-password')
+  expect(runKeychainAction(root, { mode: 'detach', directory }).status).toBe(0)
+  expect(searchList(root)).toEqual(original)
+  expect(existsSync(path.join(directory, 'signing.keychain-db'))).toBe(true)
+  expect(existsSync(notaryKeychain)).toBe(true)
   expect(runKeychainAction(root, { mode: 'cleanup', directory }).status).toBe(0)
   expect(searchList(root)).toEqual(original)
   expect(existsSync(directory)).toBe(false)
@@ -161,17 +165,28 @@ test('cleanup without an imported keychain does not touch security', () => {
   expect(existsSync(path.join(root, 'commands'))).toBe(false)
 })
 
-test.each([
-  'sockeye-signing.example/../../other',
-  'sockeye-signing.ABC123/nested',
-])('rejects non-owned cleanup paths before security calls: %s', suffix => {
+test('detach requires an imported keychain directory', () => {
   const root = keychainFixture()
-  expect(
-    runKeychainAction(root, { mode: 'cleanup', directory: `${root}/${suffix}` })
-      .status,
-  ).toBe(1)
+  expect(runKeychainAction(root, { mode: 'detach' }).status).toBe(1)
   expect(existsSync(path.join(root, 'commands'))).toBe(false)
 })
+
+test.each(['cleanup', 'detach'])(
+  '%s rejects non-owned paths before security calls',
+  mode => {
+    for (const suffix of [
+      'sockeye-signing.example/../../other',
+      'sockeye-signing.ABC123/nested',
+    ]) {
+      const root = keychainFixture()
+      expect(
+        runKeychainAction(root, { mode, directory: `${root}/${suffix}` })
+          .status,
+      ).toBe(1)
+      expect(existsSync(path.join(root, 'commands'))).toBe(false)
+    }
+  },
+)
 
 test('rejects symlink cleanup directories before following them', () => {
   const root = keychainFixture()

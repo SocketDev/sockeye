@@ -1,8 +1,8 @@
 name: Import code-signing certificates
-description: Import certificates into an isolated temporary keychain and restore the original search list during cleanup.
+description: Import certificates into isolated temporary keychains and restore the original search list before notarization.
 inputs:
   mode:
-    description: Import certificates or clean up the temporary keychain.
+    description: Import certificates, detach the signing keychain, or clean up temporary keychains.
     default: import
   temporary-directory:
     description: Temporary directory returned by the import step, for cleanup.
@@ -47,19 +47,24 @@ runs:
           printf '%s\n' 'Invalid runner temporary path; refusing signing action.' >&2
           exit 1
         fi
-        cleanup_signing_keychain() {
-          local directory="${SOCKEYE_SIGNING_TEMP_DIR:-}" result=0 entry basename
+        restore_signing_search_list() {
+          local directory="${SOCKEYE_SIGNING_TEMP_DIR:-}" entry basename
           local original=()
           if [[ -z "$directory" ]]; then return 0; fi
           basename="${directory#"$RUNNER_TEMP"/}"
           if [[ "$directory" != "$RUNNER_TEMP/$basename" || ! "$basename" =~ ^sockeye-signing\.[A-Za-z0-9]{6}$ || -L "$directory" || ! -d "$directory" ]]; then
-            printf '%s\n' 'Invalid signing temporary directory; refusing cleanup.' >&2
+            printf '%s\n' 'Invalid signing temporary directory; refusing keychain operation.' >&2
             return 1
           fi
           if [[ -f "$directory/original-search-list" ]]; then
             while IFS= read -r -d '' entry; do original+=("$entry"); done < "$directory/original-search-list"
-            security list-keychains -d user -s "${original[@]}" || result=$?
+            security list-keychains -d user -s "${original[@]}"
           fi
+        }
+        cleanup_signing_keychain() {
+          local directory="${SOCKEYE_SIGNING_TEMP_DIR:-}" result=0
+          if [[ -z "$directory" ]]; then return 0; fi
+          restore_signing_search_list || result=$?
           if [[ -e "$directory/signing.keychain-db" ]]; then
             security delete-keychain "$directory/signing.keychain-db" || result=$?
           fi
@@ -73,6 +78,14 @@ runs:
           fi
           return "$result"
         }
+        if [[ "$SIGNING_ACTION_MODE" == detach ]]; then
+          if [[ -z "${SOCKEYE_SIGNING_TEMP_DIR:-}" ]]; then
+            printf '%s\n' 'Signing detach requires the imported temporary directory.' >&2
+            exit 1
+          fi
+          restore_signing_search_list
+          exit 0
+        fi
         if [[ "$SIGNING_ACTION_MODE" == cleanup ]]; then
           cleanup_signing_keychain
           exit 0

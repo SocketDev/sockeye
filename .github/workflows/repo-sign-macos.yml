@@ -114,6 +114,13 @@ jobs:
         if: ${{ !inputs.adhoc }}
         run: build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"/Contents/MacOS/sockeye --help > /dev/null
 
+      - name: Detach signing keychain
+        if: ${{ !inputs.adhoc }}
+        uses: ./.github/actions/repo/import-codesign-certs
+        with:
+          mode: detach
+          temporary-directory: ${{ steps.import-signing.outputs.temporary-directory }}
+
       - name: Sign ad-hoc
         if: ${{ inputs.adhoc }}
         run: pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
