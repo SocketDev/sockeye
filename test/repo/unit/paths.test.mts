@@ -48,7 +48,6 @@ test('keeps temporary notarization output beside the final archive', () => {
 
 test('keeps profile inspection files in one temporary directory', () => {
   expect(releaseProfileInspectionPaths('/example/inspection')).toEqual({
-    keychain: '/example/inspection/inspection.keychain-db',
     plist: '/example/inspection/profile.plist',
   })
 })

@@ -39,48 +39,48 @@ const profile = {
 
 afterEach(() => vi.resetAllMocks())
 
-test('decodes profiles through an isolated temporary keychain', async () => {
+test('decodes profiles without mutable keychain state', async () => {
   vi.mocked(spawn).mockImplementation((async (command, args = []) => ({
     args,
     cmd: command,
-    code: 0,
+    code: command === '/usr/bin/openssl' ? 0 : 1,
     signal: null,
     stderr: '',
-    stdout: args[0] === 'cms' ? '<plist/>' : '',
+    stdout: command === '/usr/bin/openssl' ? '<plist/>' : '',
   })) as typeof spawn)
   await expect(
-    decodeReleaseProfileCms(
-      '/example/profile.provisionprofile',
-      '/example/inspection.keychain-db',
-    ),
+    decodeReleaseProfileCms('/example/profile.provisionprofile'),
   ).resolves.toBe('<plist/>')
-  expect(vi.mocked(spawn).mock.calls.map(call => call[1]?.[0])).toEqual([
-    'create-keychain',
-    'unlock-keychain',
-    'cms',
-    'delete-keychain',
+  expect(vi.mocked(spawn)).toHaveBeenCalledWith('/usr/bin/openssl', [
+    'smime',
+    '-verify',
+    '-inform',
+    'der',
+    '-in',
+    '/example/profile.provisionprofile',
+    '-noverify',
   ])
-  expect(vi.mocked(spawn).mock.calls[2]?.[1]).toContain(
-    '/example/inspection.keychain-db',
-  )
 })
 
-test('deletes the inspection keychain after profile decoding fails', async () => {
+test('fails closed when CMS verification fails', async () => {
   vi.mocked(spawn).mockImplementation((async (command, args = []) => ({
     args,
     cmd: command,
-    code: args[0] === 'cms' ? 1 : 0,
+    code: 1,
     signal: null,
     stderr: '',
     stdout: '',
   })) as typeof spawn)
   await expect(
-    decodeReleaseProfileCms(
-      '/example/profile.provisionprofile',
-      '/example/inspection.keychain-db',
-    ),
-  ).rejects.toThrow('security rejected the CMS data')
-  expect(vi.mocked(spawn).mock.calls.at(-1)?.[1]?.[0]).toBe('delete-keychain')
+    decodeReleaseProfileCms('/example/profile.provisionprofile'),
+  ).rejects.toThrow('CMS verification rejected the signed payload')
+})
+
+test('fails closed when the CMS verifier cannot start', async () => {
+  vi.mocked(spawn).mockRejectedValue(new Error('example process failure'))
+  await expect(
+    decodeReleaseProfileCms('/example/profile.provisionprofile'),
+  ).rejects.toThrow('CMS verification rejected the signed payload')
 })
 
 test('accepts the exact unexpired Developer ID identity', () => {
