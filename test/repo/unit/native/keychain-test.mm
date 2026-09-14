@@ -9,7 +9,7 @@ constexpr char kIdentifier[] = "SOCKET_TEST_TOKEN";
 constexpr char kValue[] = "example-fixture-value";
 const std::string invalid_utf8(1, static_cast<char>(0xff));
 NSMutableDictionary *ValidItem() {
-  return [@{(__bridge id)kSecAttrAccessControl: KeychainPolicyFixture(),
+  return [@{(__bridge id)kSecAttrAccessControl: KeychainReturnedPolicyFixture(),
             (__bridge id)kSecAttrGeneric: [@"sockeye:v1:biometry-current-set" dataUsingEncoding:NSUTF8StringEncoding],
             (__bridge id)kSecValueData: [NSData dataWithBytes:kValue length:sizeof(kValue) - 1]} mutableCopy];
 }
@@ -20,6 +20,7 @@ void Authenticate(sockeye::AuthorizationContext &context) {
 }
 void CheckRead(NSDictionary *item, sockeye::KeychainStatus expected) {
   ResetKeychainFake();
+  keychain_state.require_access_control_query = true;
   keychain_state.query_result = item;
   sockeye::AuthorizationContext context;
   Authenticate(context);

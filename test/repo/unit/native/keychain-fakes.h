@@ -12,6 +12,7 @@ struct KeychainFakeState {
   bool approved = true;
   bool policy_failure = false;
   bool policy_error_object = false;
+  bool require_access_control_query = false;
   LABiometryType biometry = LABiometryTypeTouchID;
   NSInteger error_code = LAErrorBiometryNotAvailable;
   NSString *error_domain = LAErrorDomain;
@@ -32,6 +33,7 @@ struct KeychainFakeState {
 };
 extern KeychainFakeState keychain_state;
 NSData *KeychainPolicyFixture();
+NSData *KeychainReturnedPolicyFixture();
 void ResetKeychainFake();
 
 @interface SockeyeTestLAContext : NSObject

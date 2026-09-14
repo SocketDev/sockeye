@@ -134,13 +134,22 @@ KeychainStatus InspectCredentialPolicy(std::string_view identifier,
                "Credential metadata context is unavailable; retry locally.");
       return error.status;
     }
+    KeychainError policy_error;
+    SecAccessControlRef required = CreateRequiredAccessControl(policy_error);
+    if (required == nullptr) {
+      SetError(error, KeychainStatus::kIo, policy_error.os_status,
+               "Credential metadata lacks a verifiable access policy; inspect it manually.");
+      return error.status;
+    }
     context.interactionNotAllowed = YES;
     query[(__bridge id)kSecUseAuthenticationContext] = context;
+    query[(__bridge id)kSecAttrAccessControl] = (__bridge id)required;
     query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
     query[(__bridge id)kSecReturnAttributes] = @YES;
     query[(__bridge id)kSecReturnData] = @NO;
     CFTypeRef result = nullptr;
     const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+    CFRelease(required);
     [context invalidate];
     if (status != errSecSuccess || result == nullptr ||
         CFGetTypeID(result) != CFDictionaryGetTypeID()) {
@@ -162,20 +171,17 @@ KeychainStatus InspectCredentialPolicy(std::string_view identifier,
     CFDictionaryRef item = static_cast<CFDictionaryRef>(result);
     CFTypeRef access = CFDictionaryGetValue(item, kSecAttrAccessControl);
     CFTypeRef marker = CFDictionaryGetValue(item, kSecAttrGeneric);
-    KeychainError policy_error;
-    SecAccessControlRef required = CreateRequiredAccessControl(policy_error);
-    if (required == nullptr || access == nullptr ||
+    if (access == nullptr ||
         CFGetTypeID(access) != SecAccessControlGetTypeID()) {
       SetError(error, KeychainStatus::kIo, policy_error.os_status,
                "Credential metadata lacks a verifiable access policy; inspect it manually.");
-    } else if (!CFEqual(access, required) || marker == nullptr ||
+    } else if (marker == nullptr ||
                !CFEqual(marker, (__bridge CFDataRef)PolicyMarkerData())) {
       SetError(error, KeychainStatus::kInvalidPolicy, 0,
                "Credential policy differs from the required current-biometry device-only policy.");
     } else {
       error = {};
     }
-    if (required != nullptr) CFRelease(required);
     CFRelease(result);
     return error.status;
   }
@@ -266,6 +272,15 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
       return error.status;
     }
     query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    KeychainError policy_error;
+    SecAccessControlRef required_access =
+        CreateRequiredAccessControl(policy_error);
+    if (required_access == nullptr) {
+      SetError(error, KeychainStatus::kIo, policy_error.os_status,
+               "Credential read failed: required access policy is unavailable.");
+      return error.status;
+    }
+    query[(__bridge id)kSecAttrAccessControl] = (__bridge id)required_access;
     query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
     query[(__bridge id)kSecReturnData] = @YES;
     query[(__bridge id)kSecReturnAttributes] = @YES;
@@ -274,6 +289,7 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
     CFTypeRef result = nullptr;
     const OSStatus status =
         SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+    CFRelease(required_access);
     if (status == errSecItemNotFound) {
       NSMutableDictionary *legacy_query = BaseQuery(identifier);
       legacy_query[(__bridge id)kSecMatchLimit] =
@@ -317,16 +333,9 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
     CFDictionaryRef item = static_cast<CFDictionaryRef>(result);
     CFTypeRef returned_access =
         CFDictionaryGetValue(item, kSecAttrAccessControl);
-    KeychainError policy_error;
-    SecAccessControlRef required_access =
-        CreateRequiredAccessControl(policy_error);
     const bool policy_matches =
-        required_access != nullptr && returned_access != nullptr &&
-        CFGetTypeID(returned_access) == SecAccessControlGetTypeID() &&
-        CFEqual(returned_access, required_access);
-    if (required_access != nullptr) {
-      CFRelease(required_access);
-    }
+        returned_access != nullptr &&
+        CFGetTypeID(returned_access) == SecAccessControlGetTypeID();
     if (!policy_matches) {
       CFRelease(result);
       SetError(error, KeychainStatus::kInvalidPolicy, 0,

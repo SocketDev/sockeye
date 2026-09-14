@@ -4,6 +4,7 @@
 
 KeychainFakeState keychain_state;
 NSData *KeychainPolicyFixture() { return [@"example-current-biometry-policy" dataUsingEncoding:NSUTF8StringEncoding]; }
+NSData *KeychainReturnedPolicyFixture() { return [@"example-normalized-current-biometry-policy" dataUsingEncoding:NSUTF8StringEncoding]; }
 void ResetKeychainFake() { keychain_state = {}; }
 
 @implementation SockeyeTestLAContext
@@ -33,6 +34,17 @@ void ResetKeychainFake() { keychain_state = {}; }
 
 OSStatus SockeyeTestCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
   keychain_state.last_query = [(__bridge NSDictionary *)query copy];
+  if (keychain_state.require_access_control_query &&
+      keychain_state.last_query[(__bridge id)kSecAttrGeneric] != nil) {
+    assert([keychain_state.last_query[(__bridge id)kSecAttrAccessControl]
+        isEqual:KeychainPolicyFixture()]);
+    if ([keychain_state.query_result isKindOfClass:[NSDictionary class]] &&
+        ![keychain_state.query_result[(__bridge id)kSecAttrAccessControl]
+            isEqual:KeychainReturnedPolicyFixture()]) {
+      if (result != nullptr) *result = nullptr;
+      return errSecItemNotFound;
+    }
+  }
   assert(keychain_state.query_index < keychain_state.query_statuses.size());
   const OSStatus status = keychain_state.query_statuses[keychain_state.query_index++];
   id item = status == errSecSuccess ? keychain_state.query_result : keychain_state.query_failure_result;
