@@ -6,20 +6,20 @@ release commit.
 
 ## Current gate status
 
-| Gate             | Required evidence                                                                                                     | Status                                                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Threat model     | Reviewed `docs/threat-model.md` matches the release code.                                                             | In progress                                            |
-| CLI contract     | Vitest negative tests pass without opening Keychain UI.                                                               | Passing locally                                        |
-| Keychain policy  | Fresh-item, update, cancel, missing-item, changed-biometry, and policy-mismatch tests on clean macOS accounts.        | Open                                                   |
-| Process identity | Executable launch race is closed or explicitly accepted with independent review.                                      | Open                                                   |
-| Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                                  | Sanitizers pass; 15-minute fuzz evidence recorded      |
-| Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                        | Open                                                   |
-| Signing          | Hardened-runtime Developer ID signature and provisioning profile verify on both final archives.                       | App-wrapper release validation required                |
-| Notarization     | Apple accepts the archive; binaries pass online ticket verification. Staple supported DMG and PKG outputs.            | ARM64 CI validation passed; release recheck required   |
-| Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                      | Open                                                   |
-| Installation     | The installer downloads through the shared helper, verifies the checksum, installs atomically, and rejects tampering. | Open                                                   |
-| Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                       | Bridge and name-set tests pass; interactive smoke open |
-| Platform scope   | Linux and Windows artifacts do not ship without an equivalent biometric design.                                       | Enforced by macOS-only build                           |
+| Gate             | Required evidence                                                                                                | Status                                                 |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Threat model     | Reviewed `docs/threat-model.md` matches the release code.                                                        | In progress                                            |
+| CLI contract     | Vitest negative tests pass without opening Keychain UI.                                                          | Passing locally                                        |
+| Keychain policy  | Fresh-item, update, cancel, missing-item, changed-biometry, and policy-mismatch tests on clean macOS accounts.   | Open                                                   |
+| Process identity | Executable launch race is closed or explicitly accepted with independent review.                                 | Open                                                   |
+| Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                             | Sanitizers pass; 15-minute fuzz evidence recorded      |
+| Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                   | Open                                                   |
+| Signing          | The Developer ID leaf certificate matches each embedded profile. The profile authorizes the exact signed claims. | Final two-architecture validation required             |
+| Notarization     | Apple accepts each submission. Each final ZIP contains an application with a validated stapled ticket.           | Final two-architecture validation required             |
+| Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                 | Open                                                   |
+| Installation     | The installer verifies the checksum, exact release version, full bundle, signature, profile, and stapled ticket. | Automated checks pass; clean-machine test remains open |
+| Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                  | Bridge and name-set tests pass; interactive smoke open |
+| Platform scope   | Linux and Windows artifacts do not ship without an equivalent biometric design.                                  | Enforced by macOS-only build                           |
 
 ## Release sequence
 
@@ -28,16 +28,17 @@ release commit.
 3. Review the final threat model and binary diff independently.
 4. Build in CI from the reviewed commit.
 5. Run the signing workflow in the authorized repository against the reviewed
-   commit. It signs and notarizes the exact archive. ZIP contents require online
-   ticket verification; staple supported DMG and PKG outputs.
-6. Produce SHA-256 checksums and provenance for every archive:
-   `pnpm run verify-release <archive>` runs signature, online notarization,
-   archive-listing, and SHA-256 checks for real and emits the evidence rows in
-   this document's table format; provenance comes from CI attestations.
-7. Create the immutable GitHub release through the fleet release workflow.
-8. Install through the shared download helper on a clean macOS machine.
-9. Repeat the Touch ID, Keychain policy, and exact-child smoke tests against the
-   installed binary.
+   commit. It signs the application before it creates the submission ZIP.
+6. Require an accepted submission ID and inspect the Apple notarization log.
+   Staple the accepted ticket to the application and validate the ticket.
+7. Package the stapled application with `ditto --norsrc`. Extract it into a
+   new directory and validate its ticket before publication.
+8. Produce one SHA-256 sidecar for each final archive. Run
+   `pnpm run verify-release --expected-version <version> <archive>`.
+9. Create the immutable GitHub release through the fleet release workflow.
+10. Install through the shared download helper on a clean macOS machine.
+11. Repeat the Touch ID, Keychain policy, and exact-child smoke tests against the
+    installed binary.
 
 Publishing is user-gated. Local development commits and dry runs must not create
 a public release.

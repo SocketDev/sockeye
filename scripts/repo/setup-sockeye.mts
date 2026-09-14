@@ -19,6 +19,7 @@ import {
   spawnSync,
 } from '@socketsecurity/lib-stable/process/spawn/child'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
+import { isPlainObject } from '@socketsecurity/lib-stable/objects/predicates'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { abortScript } from '../fleet/process/script-result.mts'
@@ -26,10 +27,12 @@ import { runMain } from '../fleet/process/run-main.mts'
 
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import {
-  RELEASE_BUNDLE_NAME,
   releaseAssetName,
+  releaseBundleDirectoryPath,
   releaseBundlePaths,
-} from './release/bundle.mts'
+  releaseChecksumPath,
+} from './paths.mts'
+import { releaseChecksumMatches } from './release/bundle.mts'
 
 const logger = getScriptLogger()
 
@@ -40,43 +43,49 @@ const ARCH = process.arch
 /**
  * Download from a GitHub release, verify, and install.
  */
-async function installFromRelease(tag: string): Promise<void> {
+export async function installFromRelease(tag: string): Promise<void> {
+  const releaseTag = await resolveReleaseTag(tag)
+  const expectedVersion =
+    /^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/u.exec(releaseTag)
+      ?.groups?.['version']
   const assetName = releaseAssetName(ARCH)
-  const releasePath = tag === 'latest' ? 'latest/download' : `download/${tag}`
+  const releasePath = `download/${releaseTag}`
   const downloadUrl = `https://github.com/SocketDev/sockeye/releases/${releasePath}/${assetName}`
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'sockeye-install-'))
   const zipPath = path.join(tmpDir, assetName)
   try {
-    logger.log(`Downloading ${assetName} from ${tag}...`)
+    logger.log(`Downloading ${assetName} from ${releaseTag}...`)
     const dl = await spawn('curl', ['-fsSL', '-o', zipPath, downloadUrl])
     if (dl.code !== 0) {
       logger.fail(
-        `Download failed. Check that ${tag} exists and carries ${assetName}.`,
+        `Download failed. Check that ${releaseTag} exists and carries ${assetName}.`,
       )
       abortScript(1)
     }
 
     logger.log('Verifying checksum…')
-    const checksumPath = `${zipPath}.sha256`
+    const checksumPath = releaseChecksumPath(zipPath)
     const checksum = await spawn('curl', [
       '-fsSL',
       '-o',
       checksumPath,
-      `${downloadUrl}.sha256`,
+      releaseChecksumPath(downloadUrl),
     ])
     if (checksum.code !== 0) {
       logger.fail('Checksum download failed. The release cannot be verified.')
       abortScript(1)
     }
-    const expected = (await readFile(checksumPath, 'utf8'))
-      .trim()
-      .split(/\s+/)[0]
+    const sidecar = await readFile(checksumPath, 'utf8')
     const hash = spawnSync('shasum', ['-a', '256', zipPath])
     const actual = (typeof hash.stdout === 'string' ? hash.stdout : '')
       .trim()
       .split(/\s+/)[0]
-    if (!expected || hash.status !== 0 || actual !== expected) {
-      logger.fail(`Checksum mismatch. Saw: ${actual}. Want: ${expected}.`)
+    if (
+      hash.status !== 0 ||
+      actual === undefined ||
+      !releaseChecksumMatches(sidecar, actual, assetName)
+    ) {
+      logger.fail(`Checksum mismatch for ${assetName}.`)
       abortScript(1)
     }
     logger.success('Checksum verified.')
@@ -84,6 +93,9 @@ async function installFromRelease(tag: string): Promise<void> {
     const releaseVerification = await spawn('pnpm', [
       'run',
       'verify-release',
+      ...(expectedVersion === undefined
+        ? []
+        : ['--expected-version', expectedVersion]),
       zipPath,
     ])
     if (releaseVerification.code !== 0) {
@@ -93,16 +105,48 @@ async function installFromRelease(tag: string): Promise<void> {
 
     logger.log('Extracting…')
     const extract = await spawn('unzip', ['-o', zipPath, '-d', tmpDir])
-    const extractedPath = path.join(tmpDir, RELEASE_BUNDLE_NAME)
+    const extractedPath = releaseBundleDirectoryPath(tmpDir)
     if (extract.code !== 0 || !existsSync(extractedPath)) {
       logger.fail(`Extracted binary not found at ${extractedPath}.`)
       abortScript(1)
     }
 
-    await installReleaseBundle(extractedPath)
+    await installReleaseBundle(extractedPath, { expectedVersion })
   } finally {
     await safeDelete(tmpDir)
   }
+}
+
+export async function resolveReleaseTag(tag: string): Promise<string> {
+  if (tag !== 'latest') {
+    if (/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(tag)) {
+      return tag
+    }
+    throw new Error(
+      `Release tag rejected at ${tag}; expected vX.Y.Z. Pass an immutable published tag.`,
+    )
+  }
+  const result = await spawn('curl', [
+    '-fsSL',
+    'https://api.github.com/repos/SocketDev/sockeye/releases/latest',
+  ])
+  let metadata: unknown
+  try {
+    metadata = JSON.parse(result.stdout ?? '')
+  } catch {
+    metadata = undefined
+  }
+  const releaseTag = isPlainObject(metadata) ? metadata['tag_name'] : undefined
+  if (
+    result.code !== 0 ||
+    typeof releaseTag !== 'string' ||
+    !/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(releaseTag)
+  ) {
+    throw new Error(
+      'Latest release lookup failed; expected a versioned GitHub release. Pass an explicit release tag.',
+    )
+  }
+  return releaseTag
 }
 
 /**
@@ -110,9 +154,15 @@ async function installFromRelease(tag: string): Promise<void> {
  */
 export async function installReleaseBundle(
   binaryPath: string,
-  options: { destination?: string | undefined } = {},
+  options: {
+    destination?: string | undefined
+    expectedVersion?: string | undefined
+  } = {},
 ): Promise<void> {
-  const destination = options.destination ?? BIN_PATH
+  const { destination = BIN_PATH, expectedVersion } = {
+    __proto__: null,
+    ...options,
+  } as typeof options
   mkdirSync(path.dirname(destination), { recursive: true })
   const applications = path.join(
     path.dirname(path.dirname(destination)),
@@ -120,13 +170,20 @@ export async function installReleaseBundle(
   )
   mkdirSync(applications, { recursive: true })
   const installation = await mkdtemp(path.join(applications, 'sockeye-'))
-  const bundle = path.join(installation, RELEASE_BUNDLE_NAME)
+  const bundle = releaseBundleDirectoryPath(installation)
   await cp(binaryPath, bundle, {
     recursive: true,
     errorOnExist: true,
     force: false,
   })
-  const verify = await spawn('pnpm', ['run', 'verify-release', bundle])
+  const verify = await spawn('pnpm', [
+    'run',
+    'verify-release',
+    ...(expectedVersion === undefined
+      ? []
+      : ['--expected-version', expectedVersion]),
+    bundle,
+  ])
   if (verify.code !== 0) {
     await safeDelete(installation)
     logger.fail('Installed application failed release verification.')

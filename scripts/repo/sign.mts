@@ -28,14 +28,17 @@ import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
-import { getBinaryPath, getBuildMode } from './paths.mts'
+import {
+  getBinaryPath,
+  getBuildMode,
+  RELEASE_BUNDLE_NAME,
+  releaseBundlePath,
+} from './paths.mts'
 
 import {
   prepareReleaseBundle,
-  RELEASE_BUNDLE_NAME,
   RELEASE_IDENTIFIER,
   RELEASE_SIGNING_IDENTITY,
-  releaseBundlePath,
 } from './release/bundle.mts'
 
 const logger = getScriptLogger()

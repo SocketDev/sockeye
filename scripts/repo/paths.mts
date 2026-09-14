@@ -17,6 +17,73 @@ import {
 } from '../fleet/paths.mts'
 
 export const BINARY_NAME = 'sockeye'
+export const RELEASE_BUNDLE_NAME = `${BINARY_NAME}.app`
+export const RELEASE_BUNDLE_ENTRIES = [
+  RELEASE_BUNDLE_NAME,
+  `${RELEASE_BUNDLE_NAME}/Contents`,
+  `${RELEASE_BUNDLE_NAME}/Contents/CodeResources`,
+  `${RELEASE_BUNDLE_NAME}/Contents/Info.plist`,
+  `${RELEASE_BUNDLE_NAME}/Contents/MacOS`,
+  `${RELEASE_BUNDLE_NAME}/Contents/MacOS/${BINARY_NAME}`,
+  `${RELEASE_BUNDLE_NAME}/Contents/_CodeSignature`,
+  `${RELEASE_BUNDLE_NAME}/Contents/_CodeSignature/CodeResources`,
+  `${RELEASE_BUNDLE_NAME}/Contents/embedded.provisionprofile`,
+] as const
+export const RELEASE_BUNDLE_DIRECTORY_ENTRIES = [
+  RELEASE_BUNDLE_NAME,
+  `${RELEASE_BUNDLE_NAME}/Contents`,
+  `${RELEASE_BUNDLE_NAME}/Contents/MacOS`,
+  `${RELEASE_BUNDLE_NAME}/Contents/_CodeSignature`,
+] as const
+
+export function releaseAssetName(architecture: string): string {
+  return `${BINARY_NAME}-darwin-${architecture}.zip`
+}
+
+export function releaseBundlePath(binary: string): string {
+  return releaseBundleDirectoryPath(path.dirname(binary))
+}
+
+export function releaseBundleDirectoryPath(directory: string): string {
+  return path.join(directory, RELEASE_BUNDLE_NAME)
+}
+
+export function releaseBundlePaths(bundle: string) {
+  const contents = path.join(bundle, 'Contents')
+  return {
+    __proto__: null,
+    binary: path.join(contents, 'MacOS', BINARY_NAME),
+    contents,
+    info: path.join(contents, 'Info.plist'),
+    profile: path.join(contents, 'embedded.provisionprofile'),
+  }
+}
+
+export function releaseChecksumPath(archive: string): string {
+  return `${archive}.sha256`
+}
+
+export function releaseNotaryEvidencePaths(output: string) {
+  return {
+    __proto__: null,
+    log: `${output}.notary-log.json`,
+    receipt: `${output}.notary-receipt.json`,
+    submission: `${output}.notary-submission.zip`,
+  }
+}
+
+export function releaseNotaryWorkingPaths(output: string, nonce: string) {
+  const finalArchive = path.join(
+    path.dirname(output),
+    `.${path.basename(output)}.${nonce}.zip`,
+  )
+  return {
+    __proto__: null,
+    finalArchive,
+    finalSidecar: releaseChecksumPath(finalArchive),
+    unresolved: `${output}.notary-unresolved.json`,
+  }
+}
 
 export function getNodeHeaderDirectory(): string {
   return path.join(
