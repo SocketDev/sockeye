@@ -9,12 +9,14 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import {
   renderEvidenceTable,
   releaseArchiveEntriesAreValid,
+  releaseArchiveMemberTypesAreValid,
   releaseChecksumMatches,
   releaseEntitlementsAreValid,
+  verifyNotaryReceipt,
   verifyReleaseBinary,
   SCRIPT_META,
 } from '../../../scripts/repo/verify-release.mts'
-import { RELEASE_BUNDLE_ENTRIES } from '../../../scripts/repo/release/bundle.mts'
+import { RELEASE_BUNDLE_ENTRIES } from '../../../scripts/repo/paths.mts'
 import { RELEASE_DESIGNATED_REQUIREMENT } from '../../../scripts/repo/release/bundle.mts'
 
 vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
@@ -22,11 +24,14 @@ vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
     typeof import('../../../scripts/repo/release/bundle.mts')
   >()),
   readReleaseProfile: vi.fn(async () => ({
+    DeveloperCertificates: ['A'.repeat(64)],
     Entitlements: {
       'com.apple.application-identifier': 'PZRCDQ736X.dev.socket.sockeye',
       'com.apple.developer.team-identifier': 'PZRCDQ736X',
+      'keychain-access-groups': ['PZRCDQ736X.*'],
     },
     ExpirationDate: '2035-01-01T00:00:00Z',
+    Platform: ['OSX'],
     ProvisionsAllDevices: true,
   })),
   readReleaseInfoPlist: vi.fn(async () =>
@@ -36,6 +41,7 @@ vi.mock('../../../scripts/repo/release/bundle.mts', async importOriginal => ({
       >()
     ).releaseInfoPlist('0.2.0'),
   ),
+  validateReleaseBundleMetadata: vi.fn(async () => {}),
 }))
 
 const validEntitlements =
@@ -78,8 +84,24 @@ test('renders release evidence as a padded markdown table', () => {
   )
 })
 
+test('reports when optional receipt evidence is not supplied', async () => {
+  const rows: import('../../../scripts/repo/verify-release.mts').EvidenceRow[] =
+    []
+  await expect(
+    verifyNotaryReceipt({}, ['/example/release.zip'], rows),
+  ).resolves.toBe(true)
+  expect(rows).toEqual([{ evidence: 'Not supplied', item: 'Receipt' }])
+})
+
 test('requires the exact release archive layout', () => {
   expect(releaseArchiveEntriesAreValid(RELEASE_BUNDLE_ENTRIES)).toBe(true)
+  const preStaple = RELEASE_BUNDLE_ENTRIES.filter(
+    entry => entry !== 'sockeye.app/Contents/CodeResources',
+  )
+  expect(releaseArchiveEntriesAreValid(preStaple, { stapled: false })).toBe(
+    true,
+  )
+  expect(releaseArchiveEntriesAreValid(preStaple)).toBe(false)
   expect(
     releaseArchiveEntriesAreValid([
       ...RELEASE_BUNDLE_ENTRIES,
@@ -88,11 +110,42 @@ test('requires the exact release archive layout', () => {
   ).toBe(false)
 })
 
+test('allows directories and files but rejects archive symlinks', () => {
+  expect(
+    releaseArchiveMemberTypesAreValid(
+      ['sockeye.app/', 'sockeye.app/Contents/Info.plist'],
+      'drwxr-xr-x  2.1 unx 0 bx 0 stor example sockeye.app/\n-rw-r--r--  2.1 unx 1 bx 1 stor example sockeye.app/Contents/Info.plist',
+    ),
+  ).toBe(true)
+  expect(
+    releaseArchiveMemberTypesAreValid(
+      ['sockeye.app/', 'sockeye.app/Contents/Info.plist'],
+      'drwxr-xr-x  2.1 unx 0 bx 0 stor example sockeye.app/\nlrwxr-xr-x  2.1 unx 1 bx 1 stor example sockeye.app/Contents/Info.plist',
+    ),
+  ).toBe(false)
+})
+
 test('requires a strict matching SHA-256 sidecar', () => {
   const digest = 'a'.repeat(64)
-  expect(releaseChecksumMatches(`${digest}  sockeye.zip\n`, digest)).toBe(true)
-  expect(releaseChecksumMatches('not-a-digest', digest)).toBe(false)
-  expect(releaseChecksumMatches('b'.repeat(64), digest)).toBe(false)
+  expect(
+    releaseChecksumMatches(`${digest}  sockeye.zip\n`, digest, 'sockeye.zip'),
+  ).toBe(true)
+  expect(releaseChecksumMatches('not-a-digest', digest, 'sockeye.zip')).toBe(
+    false,
+  )
+  expect(releaseChecksumMatches('b'.repeat(64), digest, 'sockeye.zip')).toBe(
+    false,
+  )
+  expect(
+    releaseChecksumMatches(
+      `${digest}  sockeye.zip\n${digest}  stale.zip\n`,
+      digest,
+      'sockeye.zip',
+    ),
+  ).toBe(false)
+  expect(
+    releaseChecksumMatches(`${digest}  stale.zip\n`, digest, 'sockeye.zip'),
+  ).toBe(false)
 })
 
 vi.mock(
@@ -105,14 +158,19 @@ vi.mock(
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(spawn).mockReset()
-  vi.mocked(spawn).mockResolvedValue({
-    cmd: 'example-tool',
-    args: [],
+  vi.mocked(spawn).mockImplementation((async (cmd, args = []) => ({
+    cmd,
+    args,
     signal: null,
     code: 0,
-    stdout: validEntitlements,
+    stdout:
+      cmd === '/usr/bin/shasum'
+        ? `${'a'.repeat(64)}  certificate0\n`
+        : args.includes('--entitlements')
+          ? validEntitlements
+          : '',
     stderr: '',
-  })
+  })) as typeof spawn)
 })
 
 test('validates standalone CLI notarization without application-only spctl assessment', async () => {
@@ -160,9 +218,17 @@ test('retains Gatekeeper execution assessment for application bundles', async ()
   expect(
     await verifyReleaseBinary('/example/Sockeye.app', 'example-app', []),
   ).toBe(true)
-  expect(vi.mocked(spawn).mock.calls.at(-1)?.slice(0, 2)).toEqual([
+  expect(
+    vi.mocked(spawn).mock.calls.map(call => call.slice(0, 2)),
+  ).toContainEqual([
     '/usr/sbin/spctl',
     ['--assess', '--type', 'execute', '--verbose', '/example/Sockeye.app'],
+  ])
+  expect(
+    vi.mocked(spawn).mock.calls.map(call => call.slice(0, 2)),
+  ).toContainEqual([
+    '/usr/bin/xcrun',
+    ['stapler', 'validate', '/example/Sockeye.app'],
   ])
 })
 
@@ -224,33 +290,21 @@ test('never treats a rejected notarization process as successful', async () => {
 })
 
 test('does not turn failed application assessment into a successful CLI check', async () => {
-  vi.mocked(spawn)
-    .mockResolvedValueOnce({
-      cmd: '/usr/bin/codesign',
-      args: [],
-      signal: null,
-      code: 0,
-      stdout: '',
-      stderr: '',
-    })
-    .mockResolvedValueOnce({
-      cmd: '/usr/sbin/spctl',
-      args: [],
-      signal: null,
-      code: 0,
-      stdout: validEntitlements,
-      stderr: '',
-    })
-    .mockResolvedValueOnce({
-      cmd: '/usr/sbin/spctl',
-      args: [],
-      signal: null,
-      code: 3,
-      stdout: '',
-      stderr: '',
-    })
+  vi.mocked(spawn).mockImplementation((async (cmd, args = []) => ({
+    cmd,
+    args,
+    signal: null,
+    code: cmd === '/usr/sbin/spctl' ? 3 : 0,
+    stdout:
+      cmd === '/usr/bin/shasum'
+        ? `${'a'.repeat(64)}  certificate0\n`
+        : args.includes('--entitlements')
+          ? validEntitlements
+          : '',
+    stderr: '',
+  })) as typeof spawn)
   expect(
     await verifyReleaseBinary('/example/Sockeye.app', 'example-app', []),
   ).toBe(false)
-  expect(vi.mocked(spawn).mock.calls).toHaveLength(3)
+  expect(vi.mocked(spawn).mock.calls).toHaveLength(4)
 })

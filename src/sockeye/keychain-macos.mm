@@ -78,6 +78,14 @@ KeychainStatus StatusForOsStatus(OSStatus status) {
 void SetOsError(KeychainError &error, OSStatus status,
                 std::string_view operation) {
   const KeychainStatus mapped = StatusForOsStatus(status);
+  if (status == errSecMissingEntitlement) {
+    SetError(error, mapped, static_cast<int>(status),
+             std::string(operation) +
+                 " failed because the signed application, embedded profile, "
+                 "and Keychain access group do not match. Install the complete "
+                 "notarized Sockeye application bundle.");
+    return;
+  }
   SetError(error, mapped, static_cast<int>(status),
            std::string(operation) + " failed in macOS Keychain.");
 }
@@ -137,8 +145,18 @@ KeychainStatus InspectCredentialPolicy(std::string_view identifier,
     if (status != errSecSuccess || result == nullptr ||
         CFGetTypeID(result) != CFDictionaryGetTypeID()) {
       if (result != nullptr) CFRelease(result);
-      SetError(error, status == errSecItemNotFound ? KeychainStatus::kNotFound : KeychainStatus::kIo,
-               static_cast<int>(status), "Credential metadata could not be verified without authentication.");
+      if (status == errSecMissingEntitlement) {
+        SetOsError(error, status, "Credential metadata inspection");
+      } else if (status != errSecSuccess) {
+        SetError(error,
+                 status == errSecItemNotFound ? KeychainStatus::kNotFound
+                                              : KeychainStatus::kIo,
+                 static_cast<int>(status),
+                 "Credential metadata could not be verified without authentication.");
+      } else {
+        SetError(error, KeychainStatus::kIo, static_cast<int>(status),
+                 "Credential metadata could not be verified without authentication.");
+      }
       return error.status;
     }
     CFDictionaryRef item = static_cast<CFDictionaryRef>(result);

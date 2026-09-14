@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
-import { RELEASE_BUNDLE_NAME, releaseBundlePaths } from './release/bundle.mts'
+import { RELEASE_BUNDLE_NAME, releaseBundlePaths } from './paths.mts'
 
 export const KEYCHAIN_CASES = [
   'fresh-set',
@@ -65,7 +65,7 @@ export function readKeychainArtifact(filename: string): KeychainArtifact {
   }
   return {
     architecture: cpu === 0x01_00_00_0c ? 'arm64' : 'x64',
-    binaryHash: crypto.createHash('sha256').update(bytes).digest('hex'),
+    binaryHash: crypto.hash('sha256', bytes),
   }
 }
 

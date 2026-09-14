@@ -4,7 +4,10 @@ import path from 'node:path'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { installReleaseBundle } from '../../../scripts/repo/setup-sockeye.mts'
+import {
+  installReleaseBundle,
+  resolveReleaseTag,
+} from '../../../scripts/repo/setup-sockeye.mts'
 
 vi.mock(
   '@socketsecurity/lib-stable/process/spawn/child',
@@ -17,6 +20,29 @@ vi.mock(
 )
 
 afterEach(() => vi.resetAllMocks())
+
+test('resolves latest to an explicit versioned GitHub release', async () => {
+  vi.mocked(spawn).mockResolvedValue({
+    args: [],
+    cmd: 'curl',
+    code: 0,
+    signal: null,
+    stderr: '',
+    stdout: '{"tag_name":"v1.2.3"}',
+  })
+  await expect(resolveReleaseTag('latest')).resolves.toBe('v1.2.3')
+  await expect(resolveReleaseTag('v2.0.0')).resolves.toBe('v2.0.0')
+  await expect(resolveReleaseTag('example')).rejects.toThrow()
+  vi.mocked(spawn).mockResolvedValue({
+    args: [],
+    cmd: 'curl',
+    code: 0,
+    signal: null,
+    stderr: '',
+    stdout: '{"tag_name":"latest"}',
+  })
+  await expect(resolveReleaseTag('latest')).rejects.toThrow()
+})
 
 test.each([0, 1])(
   'keeps the bundle intact and replaces the CLI only after verification returns %s',
@@ -47,7 +73,10 @@ test.each([0, 1])(
         stderr: '',
       })
       if (code === 0) {
-        await installReleaseBundle(source, { destination })
+        await installReleaseBundle(source, {
+          destination,
+          expectedVersion: '1.2.3',
+        })
         expect((await fs.lstat(destination)).isSymbolicLink()).toBe(true)
         const executable = await fs.readlink(destination)
         const bundle = path.resolve(executable, '../../..')
@@ -62,12 +91,22 @@ test.each([0, 1])(
         )
       } else {
         await expect(
-          installReleaseBundle(source, { destination }),
+          installReleaseBundle(source, {
+            destination,
+            expectedVersion: '1.2.3',
+          }),
         ).rejects.toThrow()
         expect(await fs.readFile(destination, 'utf8')).toBe(
           'previous executable',
         )
       }
+      expect(vi.mocked(spawn).mock.calls[0]?.[1]).toEqual([
+        'run',
+        'verify-release',
+        '--expected-version',
+        '1.2.3',
+        expect.stringMatching(/sockeye\.app$/u),
+      ])
     } finally {
       await fs.rm(scratch, { recursive: true, force: true })
     }

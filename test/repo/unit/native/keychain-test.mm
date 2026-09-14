@@ -89,6 +89,10 @@ void CheckReadiness() {
     ResetKeychainFake(); keychain_state.query_statuses = {status};
     assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == (status == errSecItemNotFound ? KeychainStatus::kNotFound : KeychainStatus::kIo));
   }
+  ResetKeychainFake(); keychain_state.query_statuses = {errSecMissingEntitlement};
+  assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
+  assert(error.os_status == errSecMissingEntitlement);
+  assert(error.detail.find("signed application") != std::string::npos);
   ResetKeychainFake(); keychain_state.query_result = @"invalid item";
   assert(sockeye::InspectCredentialPolicy(kIdentifier, error) == KeychainStatus::kIo);
   ResetKeychainFake(); keychain_state.query_result = @{};
@@ -113,12 +117,16 @@ void CheckCredentialReads() {
     CheckRead(item, KeychainStatus::kIo);
   }
   item = ValidItem(); [item removeObjectForKey:(__bridge id)kSecValueData]; CheckRead(item, KeychainStatus::kIo);
-  for (OSStatus status : {errSecAuthFailed, errSecInteractionNotAllowed, errSecUserCanceled, errSecNotAvailable, errSecParam}) {
+  for (OSStatus status : {errSecAuthFailed, errSecInteractionNotAllowed, errSecUserCanceled, errSecNotAvailable, errSecParam, errSecMissingEntitlement}) {
     ResetKeychainFake(); keychain_state.query_statuses = {status};
     sockeye::AuthorizationContext context; Authenticate(context);
     sockeye::SecretBuffer output; sockeye::KeychainError error;
-    const auto expected = status == errSecNotAvailable ? KeychainStatus::kUnavailable : status == errSecParam ? KeychainStatus::kIo : KeychainStatus::kDenied;
+    const auto expected = status == errSecNotAvailable ? KeychainStatus::kUnavailable : (status == errSecParam || status == errSecMissingEntitlement) ? KeychainStatus::kIo : KeychainStatus::kDenied;
     assert(sockeye::ReadCredential(context, kIdentifier, output, error) == expected);
+    if (status == errSecMissingEntitlement) {
+      assert(error.os_status == errSecMissingEntitlement);
+      assert(error.detail.find("signed application") != std::string::npos);
+    }
   }
   for (OSStatus legacy : {errSecSuccess, errSecItemNotFound}) {
     ResetKeychainFake(); keychain_state.query_statuses = {errSecItemNotFound, legacy}; keychain_state.query_result = ValidItem();

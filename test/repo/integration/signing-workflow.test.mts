@@ -72,7 +72,7 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
     'Import codesign certificate',
     'Sign with developer id',
     'Store notarytool credentials',
-    'Notarize archive',
+    'Notarize, staple, and package application',
     'Verify release artifact',
   ]) {
     expect(signingStep(name).if).toBe('${{ !inputs.adhoc }}')
@@ -80,19 +80,38 @@ test('requires public signing and notarization unless ad-hoc mode is explicit', 
   for (const name of ['Sign ad-hoc', 'Verify ad-hoc signature']) {
     expect(signingStep(name).if).toBe('${{ inputs.adhoc }}')
   }
-  expect(signingStep('Upload artifact').with?.['name']).toContain(
+  expect(signingStep('Upload signed artifact').with?.['name']).toContain(
     'sockeye-darwin-${{ matrix.arch }}',
   )
-  expect(signingStep('Upload artifact').with?.['name']).toContain('-adhoc')
+  expect(signingStep('Upload signed artifact').with?.['path']).toContain(
+    '.zip.notary-receipt.json',
+  )
+  expect(signingStep('Upload signed artifact').with?.['path']).toContain(
+    '.zip.notary-submission.zip',
+  )
+  expect(signingStep('Upload signed artifact').with?.['path']).toContain(
+    '.zip.notary-log.json',
+  )
+  expect(signingStep('Upload ad-hoc artifact').with?.['name']).toContain(
+    '-adhoc',
+  )
 })
 
 test('verifies the exact notarized archive before upload', () => {
-  expect(signingStep('Create archive').run).toContain(
-    'zip -r -X sockeye-darwin-${{ matrix.arch }}.zip "$SOCKEYE_BUNDLE_NAME"',
+  const packaging = signingStep('Notarize, staple, and package application')
+  expect(packaging.run).toContain(
+    '--bundle build/prod/darwin-${{ matrix.arch }}/out/Final/$SOCKEYE_BUNDLE_NAME',
+  )
+  expect(packaging.run).toContain(
+    '--output build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip',
   )
   expect(signingStep('Verify release artifact').run).toBe(
     'pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip',
   )
+  expect(signingStep('Compute checksum').run).toContain(
+    '> sockeye-darwin-${{ matrix.arch }}.zip.sha256',
+  )
+  expect(signingStep('Compute checksum').run).not.toContain('>>')
 })
 
 test('cleans up imported certificates even after a failed signing step', () => {
@@ -103,7 +122,10 @@ test('cleans up imported certificates even after a failed signing step', () => {
   expect(cleanup.with?.['temporary-directory']).toBe(
     '${{ steps.import-signing.outputs.temporary-directory }}',
   )
-  for (const name of ['Store notarytool credentials', 'Notarize archive']) {
+  for (const name of [
+    'Store notarytool credentials',
+    'Notarize, staple, and package application',
+  ]) {
     expect(signingStep(name).env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBe(
       '${{ steps.import-signing.outputs.keychain }}',
     )
@@ -124,8 +146,25 @@ test('publishes one tag release after both signed artifacts verify', () => {
     ['arm64', 'ARM64'],
     ['x64', 'x64'],
   ]) {
-    expect(releaseStep(`Verify ${label} release artifact`).run).toBe(
-      `pnpm run verify-release release-assets/sockeye-darwin-${arch}/sockeye-darwin-${arch}.zip`,
+    const verification = releaseStep(`Verify ${label} release artifact`)
+    expect(verification.run).toContain(`--expected-version "\${RELEASE_TAG#v}"`)
+    expect(verification.run).toContain(`--expected-architecture ${arch}`)
+    expect(verification.run).toContain(
+      `--receipt release-assets/sockeye-darwin-${arch}/sockeye-darwin-${arch}.zip.notary-receipt.json`,
+    )
+    expect(verification.run).toContain(
+      `--submission release-assets/sockeye-darwin-${arch}/sockeye-darwin-${arch}.zip.notary-submission.zip`,
+    )
+    expect(verification.run).toContain(
+      `--notary-log release-assets/sockeye-darwin-${arch}/sockeye-darwin-${arch}.zip.notary-log.json`,
+    )
+    expect(verification.env?.['RELEASE_TAG']).toBe('${{ github.ref_name }}')
+    expect(verification.env?.['SOURCE_SHA']).toBe('${{ github.sha }}')
+    expect(verification.env?.['RUN_ID']).toBe('${{ github.run_id }}')
+    expect(verification.env?.['RUN_ATTEMPT']).toBe('${{ github.run_attempt }}')
+    expect(verification.env?.['REPOSITORY']).toBe('${{ github.repository }}')
+    expect(verification.env?.['WORKFLOW_REF']).toBe(
+      '${{ github.workflow_ref }}',
     )
   }
   const release = releaseStep('Cut immutable GitHub release')
@@ -135,8 +174,10 @@ test('publishes one tag release after both signed artifacts verify', () => {
     [
       'release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip',
       'release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.sha256',
+      'release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-receipt.json',
       'release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip',
       'release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.sha256',
+      'release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-receipt.json',
     ].join('\n') + '\n',
   )
   expect(release.with?.['token']).toBe('${{ steps.release-app.outputs.token }}')
