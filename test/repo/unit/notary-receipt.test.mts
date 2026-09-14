@@ -11,7 +11,10 @@ import {
   releaseBundleDirectoryPath,
   releaseBundlePaths,
 } from '../../../scripts/repo/paths.mts'
-import { readReleaseArchiveIdentity } from '../../../scripts/repo/release/notary-receipt.mts'
+import {
+  readReleaseArchiveIdentity,
+  writeCompletedNotaryReceipt,
+} from '../../../scripts/repo/release/notary-receipt.mts'
 
 vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
   spawn: vi.fn(),
@@ -87,6 +90,44 @@ test('reads identity only after validating and extracting the exact archive', as
       '5701d5d8a5f1e3af1dab9a177ebfc7256267eae1e0d29ef5c58213cc67f6a903',
     profileUuid: '87654321-4321-4321-4321-cba987654321',
   })
+})
+
+test('writes the verified bundle identity without extracting the archive again', async () => {
+  const receipt = path.join(scratch, 'receipt.json')
+  const identity = {
+    binarySha256: 'a'.repeat(64),
+    certificateSha256: 'B'.repeat(64),
+    profileSha256: 'c'.repeat(64),
+    profileUuid: '87654321-4321-4321-4321-cba987654321',
+  }
+  vi.mocked(spawn).mockResolvedValue({
+    args: ['-productVersion'],
+    cmd: '/usr/bin/sw_vers',
+    code: 0,
+    signal: null,
+    stderr: '',
+    stdout: '15.0\n',
+  })
+  await writeCompletedNotaryReceipt(receipt, {
+    archiveSha256: 'd'.repeat(64),
+    assessmentResult: 'accepted',
+    bundleIdentity: identity,
+    codesignResult: 'passed',
+    logSha256: 'e'.repeat(64),
+    stapleResult: 'validated',
+    submissionId: '12345678-1234-1234-1234-123456789abc',
+    submissionSha256: 'f'.repeat(64),
+  })
+  expect(JSON.parse(await fs.readFile(receipt, 'utf8'))).toMatchObject({
+    binarySha256: { source: 'measured', value: identity.binarySha256 },
+    certificateSha256: {
+      source: 'measured',
+      value: identity.certificateSha256,
+    },
+    profileSha256: { source: 'measured', value: identity.profileSha256 },
+    profileUuid: { source: 'measured', value: identity.profileUuid },
+  })
+  expect(spawn).toHaveBeenCalledOnce()
 })
 
 test('accepts the exact retained pre-staple submission layout', async () => {

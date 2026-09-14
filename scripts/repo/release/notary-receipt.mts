@@ -252,9 +252,9 @@ export async function writeNotaryReceipt(
 export async function writeCompletedNotaryReceipt(
   filename: string,
   evidence: {
-    archive: string
     archiveSha256: string
     assessmentResult: string
+    bundleIdentity: ReleaseBundleIdentity
     codesignResult: string
     logSha256: string
     stapleResult: string
@@ -262,7 +262,6 @@ export async function writeCompletedNotaryReceipt(
     submissionSha256: string
   },
 ): Promise<void> {
-  const identity = await readReleaseArchiveIdentity(evidence.archive)
   const macos = await spawn('/usr/bin/sw_vers', ['-productVersion'])
   const imported = (name: string) =>
     releaseEvidenceField(getEnvValue(name), 'imported')
@@ -276,8 +275,8 @@ export async function writeCompletedNotaryReceipt(
       ),
       archiveSha256: measured(evidence.archiveSha256),
       assessmentResult: measured(evidence.assessmentResult),
-      binarySha256: measured(identity.binarySha256),
-      certificateSha256: measured(identity.certificateSha256),
+      binarySha256: measured(evidence.bundleIdentity.binarySha256),
+      certificateSha256: measured(evidence.bundleIdentity.certificateSha256),
       codesignResult: measured(evidence.codesignResult),
       completedAt: measured(new Date().toISOString()),
       githubRepository: imported('GITHUB_REPOSITORY'),
@@ -286,8 +285,8 @@ export async function writeCompletedNotaryReceipt(
       githubWorkflowRef: imported('GITHUB_WORKFLOW_REF'),
       logSha256: measured(evidence.logSha256),
       macosVersion: measured(`${macos.stdout ?? ''}`.trim()),
-      profileSha256: measured(identity.profileSha256),
-      profileUuid: measured(identity.profileUuid),
+      profileSha256: measured(evidence.bundleIdentity.profileSha256),
+      profileUuid: measured(evidence.bundleIdentity.profileUuid),
       sourceSha: imported('GITHUB_SHA'),
       stapleResult: measured(evidence.stapleResult),
       status: 'complete',

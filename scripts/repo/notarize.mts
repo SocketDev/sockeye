@@ -254,9 +254,9 @@ export async function notarizeReleaseBundle(
     await fs.rename(finalArchive, output)
     try {
       await writeCompletedNotaryReceipt(receiptPath, {
-        archive: output,
         archiveSha256,
         assessmentResult: 'accepted',
+        bundleIdentity,
         codesignResult: 'passed',
         logSha256: log.sha256,
         stapleResult: 'validated',
