@@ -15,7 +15,9 @@ import {
   RELEASE_BUNDLE_NAME,
   releaseBundlePath,
   releaseBundlePaths,
+  releaseProfileInspectionPaths,
 } from '../paths.mts'
+import { decodeReleaseProfileCms } from './profile.mts'
 
 export const RELEASE_DISPLAY_NAME = 'Sockeye'
 export const RELEASE_EXECUTABLE_NAME = BINARY_NAME
@@ -232,23 +234,12 @@ export function validateReleaseProfile(
 }
 
 export async function readReleaseProfile(profile: string): Promise<unknown> {
-  let decoded: Awaited<ReturnType<typeof spawn>>
-  try {
-    decoded = await spawn('/usr/bin/security', ['cms', '-D', '-i', profile])
-  } catch {
-    throw new Error(
-      'Provisioning profile decoding failed; supply an Apple-issued Developer ID provisioning profile.',
-    )
-  }
-  if (decoded.code !== 0 || !decoded.stdout) {
-    throw new Error(
-      'Provisioning profile decoding failed; supply an Apple-issued Developer ID provisioning profile.',
-    )
-  }
   const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'sockeye-profile-'))
   try {
-    const plist = path.join(scratch, 'profile.plist')
-    await fs.writeFile(plist, decoded.stdout, { mode: 0o600 })
+    const inspection = releaseProfileInspectionPaths(scratch)
+    const decoded = await decodeReleaseProfileCms(profile, inspection.keychain)
+    const plist = inspection.plist
+    await fs.writeFile(plist, decoded, { mode: 0o600 })
     const certificateXml = await extractReleaseProfileField(
       plist,
       'DeveloperCertificates',

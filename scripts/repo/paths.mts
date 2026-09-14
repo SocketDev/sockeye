@@ -85,6 +85,14 @@ export function releaseNotaryWorkingPaths(output: string, nonce: string) {
   }
 }
 
+export function releaseProfileInspectionPaths(directory: string) {
+  return {
+    __proto__: null,
+    keychain: path.join(directory, 'inspection.keychain-db'),
+    plist: path.join(directory, 'profile.plist'),
+  }
+}
+
 export function getNodeHeaderDirectory(): string {
   return path.join(
     path.dirname(path.dirname(process.execPath)),

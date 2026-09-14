@@ -19,6 +19,7 @@ import {
   validateReleaseInfoPlist,
   validateReleaseProfile,
 } from '../../../../scripts/repo/release/bundle.mts'
+import { decodeReleaseProfileCms } from '../../../../scripts/repo/release/profile.mts'
 
 vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
   spawn: vi.fn(),
@@ -37,6 +38,50 @@ const profile = {
 }
 
 afterEach(() => vi.resetAllMocks())
+
+test('decodes profiles through an isolated temporary keychain', async () => {
+  vi.mocked(spawn).mockImplementation((async (command, args = []) => ({
+    args,
+    cmd: command,
+    code: 0,
+    signal: null,
+    stderr: '',
+    stdout: args[0] === 'cms' ? '<plist/>' : '',
+  })) as typeof spawn)
+  await expect(
+    decodeReleaseProfileCms(
+      '/example/profile.provisionprofile',
+      '/example/inspection.keychain-db',
+    ),
+  ).resolves.toBe('<plist/>')
+  expect(vi.mocked(spawn).mock.calls.map(call => call[1]?.[0])).toEqual([
+    'create-keychain',
+    'unlock-keychain',
+    'cms',
+    'delete-keychain',
+  ])
+  expect(vi.mocked(spawn).mock.calls[2]?.[1]).toContain(
+    '/example/inspection.keychain-db',
+  )
+})
+
+test('deletes the inspection keychain after profile decoding fails', async () => {
+  vi.mocked(spawn).mockImplementation((async (command, args = []) => ({
+    args,
+    cmd: command,
+    code: args[0] === 'cms' ? 1 : 0,
+    signal: null,
+    stderr: '',
+    stdout: '',
+  })) as typeof spawn)
+  await expect(
+    decodeReleaseProfileCms(
+      '/example/profile.provisionprofile',
+      '/example/inspection.keychain-db',
+    ),
+  ).rejects.toThrow('security rejected the CMS data')
+  expect(vi.mocked(spawn).mock.calls.at(-1)?.[1]?.[0]).toBe('delete-keychain')
+})
 
 test('accepts the exact unexpired Developer ID identity', () => {
   expect(() =>

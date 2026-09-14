@@ -11,6 +11,7 @@ import {
   releaseChecksumPath,
   releaseNotaryEvidencePaths,
   releaseNotaryWorkingPaths,
+  releaseProfileInspectionPaths,
 } from '../../../scripts/repo/paths.mts'
 
 test('constructs every public release path from one archive reference', () => {
@@ -42,5 +43,12 @@ test('keeps temporary notarization output beside the final archive', () => {
     finalArchive: '/example/.sockeye-darwin-arm64.zip.example-nonce.zip',
     finalSidecar: '/example/.sockeye-darwin-arm64.zip.example-nonce.zip.sha256',
     unresolved: `${output}.notary-unresolved.json`,
+  })
+})
+
+test('keeps profile inspection files in one temporary directory', () => {
+  expect(releaseProfileInspectionPaths('/example/inspection')).toEqual({
+    keychain: '/example/inspection/inspection.keychain-db',
+    plist: '/example/inspection/profile.plist',
   })
 })
