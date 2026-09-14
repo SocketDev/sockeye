@@ -11,6 +11,7 @@ import {
   releaseBundleDirectoryPath,
   releaseBundlePaths,
 } from '../../../scripts/repo/paths.mts'
+import { readReleaseProfile } from '../../../scripts/repo/release/bundle.mts'
 import {
   readReleaseArchiveIdentity,
   writeCompletedNotaryReceipt,
@@ -82,6 +83,10 @@ test('reads identity only after validating and extracting the exact archive', as
   const archive = path.join(scratch, 'release.zip')
   await fs.writeFile(archive, 'archive')
   mockArchiveExtraction(RELEASE_BUNDLE_ENTRIES)
+  vi.mocked(readReleaseProfile).mockImplementationOnce(async () => {
+    await new Promise(resolve => setTimeout(resolve, 50))
+    return { UUID: '87654321-4321-4321-4321-cba987654321' }
+  })
   await expect(readReleaseArchiveIdentity(archive)).resolves.toEqual({
     binarySha256:
       '19fef6b53215305c7dd44bcbe8a08eccc897ca7742e78fdc4301facb980c114f',

@@ -236,7 +236,7 @@ export async function readReleaseArchiveIdentity(
         `Receipt archive extraction failed at ${archive}; expected the verified release ZIP. Re-run release verification.`,
       )
     }
-    return readReleaseBundleIdentity(releaseBundleDirectoryPath(scratch))
+    return await readReleaseBundleIdentity(releaseBundleDirectoryPath(scratch))
   } finally {
     await safeDelete(scratch)
   }
