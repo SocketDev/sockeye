@@ -1,7 +1,7 @@
 name: CI fix app token
 description: >-
   Mint a short-lived Release App installation token for default-branch CI
-  repair. The fixed scope permits repository content and workflow updates.
+  repair. The fixed scope permits repository content updates.
 
 inputs:
   client-id:
@@ -33,7 +33,7 @@ runs:
         APP_PRIVATE_KEY: ${{ inputs.private-key }}
         CLIENT_ID: ${{ inputs.client-id }}
         OWNER: ${{ inputs.owner || github.repository_owner }}
-        PERMISSIONS: '{"contents":"write","workflows":"write"}'
+        PERMISSIONS: '{"contents":"write"}'
         REPOSITORIES: ${{ inputs.repositories }}
         GITHUB_ACTION_PATH: ${{ github.action_path }}
       run: node "${GITHUB_ACTION_PATH}/mint-app-installation-token.mjs"
