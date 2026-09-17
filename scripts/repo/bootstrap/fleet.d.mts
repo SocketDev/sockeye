@@ -171,6 +171,19 @@ export declare function sha256Hex(buf: Buffer): string;
  */
 export declare function pullFleetBundleTarball(config: PullBundleConfig): Promise<string>;
 //#endregion
+//#region scripts/repo/gen/bootstrap/src/workflow-jobs.d.mts
+interface WorkflowJobMigration {
+  id: string;
+  sha256: string;
+  replacementId: string;
+  replacement?: string | undefined;
+}
+interface WorkflowFileMove {
+  from: string;
+  to: string;
+  workflowJob?: WorkflowJobMigration | undefined;
+}
+//#endregion
 //#region template/base/universal/scripts/fleet/lib/conditional-config.d.mts
 type ConfigFlag = 'bundlesVendoredDeps' | 'hasCodeql' | 'hasCratesRegistry' | 'hasGhcr' | 'hasGithubRelease' | 'hasNapi' | 'hasNpmRegistry' | 'hasPrebakes' | 'hasRust' | 'isGithubAction';
 //#endregion
@@ -201,10 +214,7 @@ export interface FleetFileManifest {
     files: readonly string[];
   }> | undefined;
   files: Record<string, string>;
-  movedPaths?: ReadonlyArray<{
-    from: string;
-    to: string;
-  }> | undefined;
+  movedPaths?: ReadonlyArray<WorkflowFileMove> | undefined;
   removedPaths?: readonly string[] | undefined;
   segments?: ReadonlyArray<{
     path: string;
@@ -342,10 +352,7 @@ export declare const HYBRID_BUNDLE_PATHS: ReadonlySet<string>;
 export interface BundleManifest extends Pick<FleetFileManifest, 'capabilityScopedFiles' | 'conditionalScopedFiles' | 'shapeScopedFiles'> {
   readonly files: Record<string, string>;
   readonly generatedPaths?: readonly string[] | undefined;
-  readonly movedPaths?: ReadonlyArray<{
-    from: string;
-    to: string;
-  }> | undefined;
+  readonly movedPaths?: ReadonlyArray<WorkflowFileMove> | undefined;
   readonly removedPaths?: readonly string[] | undefined;
   readonly segments?: readonly SegmentEntry[] | undefined;
   readonly settingsSegment?: SettingsSegmentEntry | undefined;
@@ -624,6 +631,8 @@ export declare function fetchBundleSource(config: {
  * Returns the count of paths acted on (renamed or cleaned up).
  */
 export declare function applyMovedPaths(dest: string, manifest: FleetFileManifest, options?: {
+  allowChangedPaths?: ((paths: readonly string[]) => boolean) | undefined;
+  changedPaths?: Set<string> | undefined;
   preservedPaths?: ReadonlySet<string> | undefined;
 } | undefined): number;
 /**
