@@ -181,7 +181,11 @@
     "browser:verify-installed": "node scripts/fleet/browser/bridge/verify-installed.mts",
     "npm:trust:browser": "node scripts/fleet/registry-infra/npm/settings/trusted-publisher/browser.mts",
     "ai-balancer:doctor": "node scripts/fleet/ai/balancer/doctor.mts",
-    "ai-balancer:savings": "node scripts/fleet/ai-balancer-savings.mts"
+    "ai-balancer:savings": "node scripts/fleet/ai-balancer-savings.mts",
+    "jev:benchmark": "node scripts/fleet/ai/eval/cli.mts",
+    "jev:events": "node scripts/fleet/ai/balancer/events/cli.mts",
+    "review:comments": "node scripts/fleet/review-comments.mts",
+    "browser:advice": "node scripts/fleet/browser/agent/jev/run.mts"
   },
   "devDependencies": {
     "@bcoe/v8-coverage": "catalog:",

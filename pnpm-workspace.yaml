@@ -592,6 +592,6 @@ tasks:
 trustPolicyExcludePrune: true
 peerDependencyRules:
   allowedVersions:
-    '@socketsecurity/lib>typescript': 7.1.0-dev.20260909.1
-    '@socketsecurity/registry>typescript': 7.1.0-dev.20260909.1
-    mcp-tada>typescript: 7.1.0-dev.20260909.1
+    '@socketsecurity/lib>typescript': 7.1.0-dev.20260910.1
+    '@socketsecurity/registry>typescript': 7.1.0-dev.20260910.1
+    mcp-tada>typescript: 7.1.0-dev.20260910.1
