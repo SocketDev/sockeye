@@ -42,7 +42,7 @@ const expected = {
   runId: '12345',
   source: 'd'.repeat(40),
   workflowRef:
-    'example/repository/.github/workflows/repo-sign-macos.yml@refs/tags/v0.2.0',
+    'example/repository/.github/workflows/release-sign-macos.yml@refs/tags/v0.2.0',
 }
 
 let scratch = ''

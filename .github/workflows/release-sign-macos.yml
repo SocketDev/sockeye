@@ -1,5 +1,5 @@
-name: 🔏 Sign macOS
-run-name: Sign macOS for ${{ github.ref_name }}
+name: 'release: sign macos'
+run-name: 'release: sign macos for ${{ github.ref_name }}'
 
 # Repo-owned workflow: builds, signs, and notarizes the Sockeye binary for
 # macOS. Uses the fleet checkout + setup actions (under .github/actions/fleet/)
@@ -135,11 +135,13 @@ jobs:
       # Developer ID signature).
       - name: Notarize, staple, and package application
         if: ${{ !inputs.adhoc }}
+        env:
+          NOTARY_KEYCHAIN: ${{ steps.import-signing.outputs.notary-keychain }}
         run: pnpm run notarize --run
           --bundle build/prod/darwin-${{ matrix.arch }}/out/Final/$SOCKEYE_BUNDLE_NAME
           --output build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
           --keychain-profile sockeye-notary
-          --keychain "${{ steps.import-signing.outputs.notary-keychain }}"
+          --keychain "$NOTARY_KEYCHAIN"
 
       - name: Compute checksum
         run: |

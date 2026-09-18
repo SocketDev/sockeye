@@ -19,7 +19,7 @@ interface Job {
 }
 const workflow = parse(
   readFileSync(
-    new URL('../../../.github/workflows/ci.yml', import.meta.url),
+    new URL('../../../.github/workflows/ci-gates.yml', import.meta.url),
     'utf8',
   ),
 ) as { jobs: Record<string, Job> }

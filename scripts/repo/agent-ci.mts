@@ -43,7 +43,7 @@ import {
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Launch one Local CI workflow through the Sockeye credential broker.',
-  help: `Usage: pnpm run ci:sockeye -- run --workflow .github/workflows/ci.yml [--repository <absolute-path>] [--var NAME=value] [--quiet] [--pause-on-failure] [--github-token] [--json]
+  help: `Usage: pnpm run ci:sockeye -- run --workflow .github/workflows/ci-gates.yml [--repository <absolute-path>] [--var NAME=value] [--quiet] [--pause-on-failure] [--github-token] [--json]
 Supply each declared public workflow variable with --var NAME=value. Secret values come from Sockeye Keychain storage after Touch ID.
 The bridge rejects other workflow selectors, environment files, and secret override or variable-file flags.`,
   json: 'result',

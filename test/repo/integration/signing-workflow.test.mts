@@ -22,7 +22,10 @@ interface WorkflowJob {
 
 const workflow = parse(
   readFileSync(
-    new URL('../../../.github/workflows/repo-sign-macos.yml', import.meta.url),
+    new URL(
+      '../../../.github/workflows/release-sign-macos.yml',
+      import.meta.url,
+    ),
     'utf8',
   ),
 ) as {
@@ -133,10 +136,10 @@ test('cleans up imported certificates even after a failed signing step', () => {
     '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
   )
   expect(credentials.with?.['team-id']).toBe('${{ vars.APPLE_TEAM_ID }}')
-  expect(notarize.env?.['SOCKEYE_SIGNING_KEYCHAIN']).toBeUndefined()
-  expect(notarize.run).toContain(
-    '--keychain "${{ steps.import-signing.outputs.notary-keychain }}"',
+  expect(notarize.env?.['NOTARY_KEYCHAIN']).toBe(
+    '${{ steps.import-signing.outputs.notary-keychain }}',
   )
+  expect(notarize.run).toContain('--keychain "$NOTARY_KEYCHAIN"')
   expect(job.steps.at(-1)).toBe(cleanup)
 })
 

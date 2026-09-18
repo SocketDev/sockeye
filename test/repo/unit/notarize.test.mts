@@ -271,7 +271,7 @@ test('binds completed receipts to the archive, source, and architecture', () => 
     githubRunId: imported('123'),
     githubRepository: imported('SocketDev/sockeye'),
     githubWorkflowRef: imported(
-      'SocketDev/sockeye/.github/workflows/repo-sign-macos.yml@refs/tags/v1.2.3',
+      'SocketDev/sockeye/.github/workflows/release-sign-macos.yml@refs/tags/v1.2.3',
     ),
     logSha256: measured(digest),
     macosVersion: measured('14.5'),
@@ -296,7 +296,7 @@ test('binds completed receipts to the archive, source, and architecture', () => 
     githubRunId: '123',
     githubRepository: 'SocketDev/sockeye',
     githubWorkflowRef:
-      'SocketDev/sockeye/.github/workflows/repo-sign-macos.yml@refs/tags/v1.2.3',
+      'SocketDev/sockeye/.github/workflows/release-sign-macos.yml@refs/tags/v1.2.3',
     logSha256: digest,
     sourceSha: 'b'.repeat(40),
     submissionSha256: digest,

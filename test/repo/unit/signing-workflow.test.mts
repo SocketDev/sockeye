@@ -28,7 +28,7 @@ test('selects only the run for the exact source revision', () => {
         },
       ],
       sha,
-      1,
+      { minimumRunId: 1 },
     ),
   ).toEqual({
     databaseId: 2,
@@ -48,7 +48,7 @@ test('selects only the run for the exact source revision', () => {
         },
       ],
       sha,
-      2,
+      { minimumRunId: 2 },
     ),
   ).toBeUndefined()
 })

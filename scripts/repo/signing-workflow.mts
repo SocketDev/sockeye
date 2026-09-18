@@ -16,7 +16,7 @@ import {
 import { REPO_ROOT } from '../fleet/paths.mts'
 
 const logger = getScriptLogger()
-const WORKFLOW = 'repo-sign-macos.yml'
+const WORKFLOW = 'release-sign-macos.yml'
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
@@ -59,14 +59,15 @@ export async function runGh(args: string[]): Promise<string> {
       `GitHub command failed during ${args.slice(0, 2).join(' ')}. Run pnpm run gh:auth and retry.`,
     )
   }
-  return `${result.stdout ?? ''}`
+  return result.stdout ?? ''
 }
 
 export function selectSigningWorkflowRun(
   value: unknown,
   expectedSha: string,
-  minimumRunId = 0,
+  options: { minimumRunId?: number | undefined } = {},
 ): WorkflowRun | undefined {
+  const minimumRunId = options.minimumRunId ?? 0
   if (!Array.isArray(value)) {
     return undefined
   }
@@ -82,11 +83,23 @@ export function selectSigningWorkflowRun(
   if (!isPlainObject(candidate)) {
     return undefined
   }
+  const databaseId = candidate['databaseId']
+  const headSha = candidate['headSha']
+  const status = candidate['status']
+  const url = candidate['url']
+  if (
+    typeof databaseId !== 'number' ||
+    typeof headSha !== 'string' ||
+    typeof status !== 'string' ||
+    typeof url !== 'string'
+  ) {
+    return undefined
+  }
   return {
-    databaseId: candidate['databaseId'] as number,
-    headSha: candidate['headSha'] as string,
-    status: candidate['status'] as string,
-    url: candidate['url'] as string,
+    databaseId,
+    headSha,
+    status,
+    url,
   }
 }
 
@@ -138,7 +151,7 @@ export async function waitForDispatchedRun(
     const selected = selectSigningWorkflowRun(
       await listSigningWorkflowRuns(repository, branch),
       expectedSha,
-      minimumRunId,
+      { minimumRunId },
     )
     if (selected !== undefined) {
       return selected
@@ -166,24 +179,19 @@ export async function main(): Promise<ScriptResult> {
   )
   const defaultBranch = repositoryMetadata['defaultBranchRef']
   const repository = repositoryMetadata['nameWithOwner']
-  if (
-    typeof defaultBranch !== 'object' ||
-    defaultBranch === null ||
-    typeof repository !== 'string'
-  ) {
+  if (!isPlainObject(defaultBranch) || typeof repository !== 'string') {
     throw new Error(
       'GitHub repository lookup failed; expected a repository name and default branch. Run pnpm run gh:auth and retry.',
     )
   }
-  const branch =
-    values['ref'] ?? (defaultBranch as Record<string, unknown>)['name']
+  const branch = values['ref'] ?? defaultBranch['name']
   if (typeof branch !== 'string' || branch.length === 0) {
     throw new Error(
       'GitHub repository lookup failed; expected a nonempty target branch. Pass --ref or repair the repository default branch.',
     )
   }
   const local = await spawn('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT })
-  const localSha = `${local.stdout ?? ''}`.trim()
+  const localSha = (local.stdout ?? '').trim()
   const remote = parseJsonObject(
     await runGh(['api', `repos/${repository}/git/ref/heads/${branch}`]),
     'branch lookup',
@@ -197,7 +205,7 @@ export async function main(): Promise<ScriptResult> {
       `Signing dispatch refused for ${branch}; local HEAD is ${localSha || 'unavailable'} and the remote branch is ${typeof remoteSha === 'string' ? remoteSha : 'unavailable'}. Push the exact commit before dispatch.`,
     )
   }
-  if (values['run'] !== true) {
+  if (!values['run']) {
     logger.info(
       `Signing workflow target is ${repository}@${branch} (${localSha}).`,
     )
@@ -215,7 +223,7 @@ export async function main(): Promise<ScriptResult> {
     '--ref',
     branch,
     '-f',
-    `adhoc=${values['adhoc'] === true ? 'true' : 'false'}`,
+    `adhoc=${values['adhoc'] ? 'true' : 'false'}`,
   ])
   const run = await waitForDispatchedRun(
     repository,
