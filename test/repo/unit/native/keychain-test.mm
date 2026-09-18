@@ -5,7 +5,7 @@
 #include <string>
 
 namespace {
-constexpr char kIdentifier[] = "SOCKET_TEST_TOKEN";
+constexpr char kIdentifier[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 constexpr char kValue[] = "example-fixture-value";
 const std::string invalid_utf8(1, static_cast<char>(0xff));
 NSMutableDictionary *ValidItem() {
@@ -173,12 +173,12 @@ void CheckCredentialWrites() {
   assert(value.Assign(kValue, sizeof(kValue) - 1));
   assert(sockeye::StoreCredential(context, invalid_utf8, value, error) == KeychainStatus::kIo);
   assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kSuccess);
-  assert(keychain_state.updates == 1 && keychain_state.additions == 0);
+  assert(keychain_state.updates == 0 && keychain_state.additions == 1);
   assert([keychain_state.last_item[(__bridge id)kSecAttrAccessControl] isEqual:KeychainPolicyFixture()]);
   assert([keychain_state.last_item[(__bridge id)kSecValueData] length] == sizeof(kValue) - 1);
-  keychain_state.update_status = errSecItemNotFound;
-  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kSuccess);
-  assert(keychain_state.additions == 1);
+  assert([keychain_state.last_item[(__bridge id)kSecAttrAccount] isEqual:@"binding:v1:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"]);
+  keychain_state.add_status = errSecDuplicateItem;
+  assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kConflict);
   keychain_state.add_status = errSecAuthFailed;
   assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
   keychain_state.policy_failure = true;

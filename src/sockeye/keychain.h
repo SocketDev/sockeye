@@ -12,6 +12,7 @@ namespace sockeye {
 enum class KeychainStatus {
   kSuccess,
   kDenied,
+  kConflict,
   kInvalidPolicy,
   kIo,
   kNotFound,
@@ -24,49 +25,49 @@ struct KeychainError {
   std::string detail;
 };
 
-KeychainStatus InspectBiometricReadiness(KeychainError &error);
-KeychainStatus InspectCredentialPolicy(std::string_view identifier,
-                                      KeychainError &error);
+KeychainStatus InspectBiometricReadiness(KeychainError& error);
+KeychainStatus InspectCredentialPolicy(std::string_view binding_id,
+                                       KeychainError& error);
 
 class AuthorizationContext final {
 public:
   AuthorizationContext();
   ~AuthorizationContext();
 
-  AuthorizationContext(const AuthorizationContext &) = delete;
-  AuthorizationContext &operator=(const AuthorizationContext &) = delete;
-  AuthorizationContext(AuthorizationContext &&) = delete;
-  AuthorizationContext &operator=(AuthorizationContext &&) = delete;
+  AuthorizationContext(const AuthorizationContext&) = delete;
+  AuthorizationContext& operator=(const AuthorizationContext&) = delete;
+  AuthorizationContext(AuthorizationContext&&) = delete;
+  AuthorizationContext& operator=(AuthorizationContext&&) = delete;
 
-  bool Authenticate(std::string_view reason, KeychainError &error);
+  bool Authenticate(std::string_view reason, KeychainError& error);
   void Invalidate();
 
 private:
   struct Impl;
   std::unique_ptr<Impl> impl_;
 
-  friend KeychainStatus DeleteCredential(AuthorizationContext &context,
-                                         std::string_view identifier,
-                                         KeychainError &error);
-  friend KeychainStatus ReadCredential(AuthorizationContext &context,
-                                       std::string_view identifier,
-                                       SecretBuffer &output,
-                                       KeychainError &error);
-  friend KeychainStatus StoreCredential(AuthorizationContext &context,
-                                        std::string_view identifier,
-                                        const SecretBuffer &value,
-                                        KeychainError &error);
+  friend KeychainStatus DeleteCredential(AuthorizationContext& context,
+                                         std::string_view binding_id,
+                                         KeychainError& error);
+  friend KeychainStatus ReadCredential(AuthorizationContext& context,
+                                       std::string_view binding_id,
+                                       SecretBuffer& output,
+                                       KeychainError& error);
+  friend KeychainStatus StoreCredential(AuthorizationContext& context,
+                                        std::string_view binding_id,
+                                        const SecretBuffer& value,
+                                        KeychainError& error);
 };
 
-KeychainStatus DeleteCredential(AuthorizationContext &context,
-                                std::string_view identifier,
-                                KeychainError &error);
-KeychainStatus ReadCredential(AuthorizationContext &context,
-                              std::string_view identifier, SecretBuffer &output,
-                              KeychainError &error);
-KeychainStatus StoreCredential(AuthorizationContext &context,
-                               std::string_view identifier,
-                               const SecretBuffer &value, KeychainError &error);
+KeychainStatus DeleteCredential(AuthorizationContext& context,
+                                std::string_view binding_id,
+                                KeychainError& error);
+KeychainStatus ReadCredential(AuthorizationContext& context,
+                              std::string_view binding_id, SecretBuffer& output,
+                              KeychainError& error);
+KeychainStatus StoreCredential(AuthorizationContext& context,
+                               std::string_view binding_id,
+                               const SecretBuffer& value, KeychainError& error);
 
 } // namespace sockeye
 

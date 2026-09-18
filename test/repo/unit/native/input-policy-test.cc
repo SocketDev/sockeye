@@ -7,6 +7,7 @@ int main() {
   using sockeye::AppendCanonicalField;
   using sockeye::HasDisplayControl;
   using sockeye::IsCompleteSecretInput;
+  using sockeye::IsCredentialBindingId;
   using sockeye::IsEnvironmentName;
   using sockeye::IsOnePasswordReference;
   using sockeye::VisibleArgument;
@@ -14,6 +15,10 @@ int main() {
   assert(IsEnvironmentName("SOCKET_RELEASE_CLIENT_ID"));
   assert(!IsEnvironmentName("socket-release-client-id"));
   assert(!IsEnvironmentName(std::string(128, 'A')));
+  assert(IsCredentialBindingId(
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+  assert(!IsCredentialBindingId(
+      "0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef"));
   assert(IsOnePasswordReference("op://Personal/release-key/password"));
   assert(!IsOnePasswordReference("https://Personal/release-key/password"));
   assert(!IsOnePasswordReference("op://Personal/release\nkey/password"));
@@ -30,7 +35,8 @@ int main() {
   assert(manifest.substr(0, 6) == "arg:3:");
 
   [[maybe_unused]] const unsigned char valid[] = {'s', 'e', 'c', 'r', 'e', 't'};
-  [[maybe_unused]] const unsigned char with_nul[] = {'s', 'e', '\0', 'r', 'e', 't'};
+  [[maybe_unused]] const unsigned char with_nul[] = {'s', 'e', '\0',
+                                                     'r', 'e', 't'};
   assert(IsCompleteSecretInput(valid, sizeof(valid), true, false));
   assert(!IsCompleteSecretInput(valid, sizeof(valid), false, false));
   assert(!IsCompleteSecretInput(valid, sizeof(valid), true, true));

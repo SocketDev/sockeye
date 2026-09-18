@@ -19,6 +19,18 @@ bool IsEnvironmentName(std::string_view value) {
   return true;
 }
 
+bool IsCredentialBindingId(std::string_view value) {
+  if (value.size() != kCredentialBindingIdBytes)
+    return false;
+  for (const char character : value) {
+    if (!((character >= '0' && character <= '9') ||
+          (character >= 'a' && character <= 'f'))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool IsOnePasswordReference(std::string_view value) {
   return value.size() > 5 && value.size() <= kMaxOnePasswordReferenceBytes &&
          value.starts_with("op://") && !HasDisplayControl(value);
@@ -55,7 +67,7 @@ std::string VisibleArgument(std::string_view value) {
   return output;
 }
 
-void AppendCanonicalField(std::string &manifest, std::string_view name,
+void AppendCanonicalField(std::string& manifest, std::string_view name,
                           std::string_view value) {
   manifest += name;
   manifest += ':';
@@ -65,7 +77,7 @@ void AppendCanonicalField(std::string &manifest, std::string_view name,
   manifest += '\n';
 }
 
-bool IsCompleteSecretInput(const unsigned char *data, std::size_t size,
+bool IsCompleteSecretInput(const unsigned char* data, std::size_t size,
                            bool saw_terminator, bool trailing_bytes) {
   return saw_terminator && !trailing_bytes && size > 0 &&
          std::memchr(data, '\0', size) == nullptr;

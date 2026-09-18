@@ -12,6 +12,7 @@ namespace {
 
 NSString *const kService = @"dev.socket.sockeye.credentials";
 NSString *const kPolicyMarker = @"sockeye:v1:biometry-current-set";
+NSString *const kBindingAccountPrefix = @"binding:v1:";
 
 void SetError(KeychainError &error, KeychainStatus status, int os_status,
               std::string detail) {
@@ -30,11 +31,13 @@ NSData *PolicyMarkerData() {
   return [kPolicyMarker dataUsingEncoding:NSUTF8StringEncoding];
 }
 
-NSMutableDictionary *BaseQuery(std::string_view identifier) {
-  NSString *account = MakeString(identifier);
-  if (account == nil) {
+NSMutableDictionary *BaseQuery(std::string_view binding_id) {
+  if (!IsCredentialBindingId(binding_id)) {
     return nil;
   }
+  NSString *binding = MakeString(binding_id);
+  if (binding == nil) return nil;
+  NSString *account = [kBindingAccountPrefix stringByAppendingString:binding];
   NSMutableDictionary *query = [NSMutableDictionary dictionary];
   query[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
   query[(__bridge id)kSecAttrService] = kService;
@@ -120,14 +123,14 @@ KeychainStatus InspectBiometricReadiness(KeychainError &error) {
   }
 }
 
-KeychainStatus InspectCredentialPolicy(std::string_view identifier,
+KeychainStatus InspectCredentialPolicy(std::string_view binding_id,
                                       KeychainError &error) {
   @autoreleasepool {
-    if (!IsEnvironmentName(identifier)) {
-      SetError(error, KeychainStatus::kIo, 0, "Credential name is invalid.");
+    if (!IsCredentialBindingId(binding_id)) {
+      SetError(error, KeychainStatus::kIo, 0, "Credential binding is invalid.");
       return error.status;
     }
-    NSMutableDictionary *query = BaseQuery(identifier);
+    NSMutableDictionary *query = BaseQuery(binding_id);
     LAContext *context = [[LAContext alloc] init];
     if (query == nil || context == nil) {
       SetError(error, KeychainStatus::kIo, 0,
@@ -151,7 +154,7 @@ KeychainStatus InspectCredentialPolicy(std::string_view identifier,
     const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
     CFRelease(required);
     if (status == errSecItemNotFound) {
-      NSMutableDictionary *different_policy_query = BaseQuery(identifier);
+      NSMutableDictionary *different_policy_query = BaseQuery(binding_id);
       different_policy_query[(__bridge id)kSecUseAuthenticationContext] = context;
       different_policy_query[(__bridge id)kSecMatchLimit] =
           (__bridge id)kSecMatchLimitOne;
@@ -277,7 +280,7 @@ void AuthorizationContext::Invalidate() {
 }
 
 KeychainStatus ReadCredential(AuthorizationContext &context,
-                              std::string_view identifier, SecretBuffer &output,
+                              std::string_view binding_id, SecretBuffer &output,
                               KeychainError &error) {
   @autoreleasepool {
     if (!context.impl_->authenticated || !output.IsLocked()) {
@@ -286,10 +289,10 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
                "context is required.");
       return error.status;
     }
-    NSMutableDictionary *query = BaseQuery(identifier);
+    NSMutableDictionary *query = BaseQuery(binding_id);
     if (query == nil) {
       SetError(error, KeychainStatus::kIo, 0,
-               "Credential read failed: identifier is not valid UTF-8.");
+               "Credential read failed: binding is invalid.");
       return error.status;
     }
     query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
@@ -312,7 +315,7 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
         SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
     CFRelease(required_access);
     if (status == errSecItemNotFound) {
-      NSMutableDictionary *legacy_query = BaseQuery(identifier);
+      NSMutableDictionary *legacy_query = BaseQuery(binding_id);
       legacy_query[(__bridge id)kSecMatchLimit] =
           (__bridge id)kSecMatchLimitOne;
       legacy_query[(__bridge id)kSecReturnAttributes] = @YES;
@@ -396,7 +399,7 @@ KeychainStatus ReadCredential(AuthorizationContext &context,
 }
 
 KeychainStatus StoreCredential(AuthorizationContext &context,
-                               std::string_view identifier,
+                               std::string_view binding_id,
                                const SecretBuffer &value,
                                KeychainError &error) {
   @autoreleasepool {
@@ -407,13 +410,11 @@ KeychainStatus StoreCredential(AuthorizationContext &context,
                "locked-memory value is required.");
       return error.status;
     }
-    NSMutableDictionary *query = BaseQuery(identifier);
-    if (query == nil) {
+    if (BaseQuery(binding_id) == nil) {
       SetError(error, KeychainStatus::kIo, 0,
-               "Credential store failed: identifier is not valid UTF-8.");
+               "Credential store failed: binding is invalid.");
       return error.status;
     }
-    query[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
 
     SecAccessControlRef access = CreateRequiredAccessControl(error);
     if (access == nullptr) {
@@ -424,22 +425,18 @@ KeychainStatus StoreCredential(AuthorizationContext &context,
         [NSData dataWithBytesNoCopy:const_cast<unsigned char *>(value.Data())
                              length:value.Size()
                        freeWhenDone:NO];
-    NSMutableDictionary *updates = [NSMutableDictionary dictionary];
-    updates[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
-    updates[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
-    updates[(__bridge id)kSecValueData] = secret;
-
-    OSStatus status = SecItemUpdate((__bridge CFDictionaryRef)query,
-                                    (__bridge CFDictionaryRef)updates);
-    if (status == errSecItemNotFound) {
-      NSMutableDictionary *item = BaseQuery(identifier);
-      item[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
-      item[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
-      item[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
-      item[(__bridge id)kSecValueData] = secret;
-      status = SecItemAdd((__bridge CFDictionaryRef)item, nullptr);
-    }
+    NSMutableDictionary *item = BaseQuery(binding_id);
+    item[(__bridge id)kSecAttrAccessControl] = (__bridge id)access;
+    item[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    item[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
+    item[(__bridge id)kSecValueData] = secret;
+    const OSStatus status = SecItemAdd((__bridge CFDictionaryRef)item, nullptr);
     CFRelease(access);
+    if (status == errSecDuplicateItem) {
+      SetError(error, KeychainStatus::kConflict, static_cast<int>(status),
+               "Credential store refused: the selected protected binding already exists.");
+      return error.status;
+    }
     if (status != errSecSuccess) {
       SetOsError(error, status, "Credential store");
       return error.status;
@@ -450,7 +447,7 @@ KeychainStatus StoreCredential(AuthorizationContext &context,
 }
 
 KeychainStatus DeleteCredential(AuthorizationContext &context,
-                                std::string_view identifier,
+                                std::string_view binding_id,
                                 KeychainError &error) {
   @autoreleasepool {
     if (!context.impl_->authenticated) {
@@ -459,10 +456,10 @@ KeychainStatus DeleteCredential(AuthorizationContext &context,
           "Credential delete refused: an authenticated context is required.");
       return error.status;
     }
-    NSMutableDictionary *query = BaseQuery(identifier);
+    NSMutableDictionary *query = BaseQuery(binding_id);
     if (query == nil) {
       SetError(error, KeychainStatus::kIo, 0,
-               "Credential delete failed: identifier is not valid UTF-8.");
+               "Credential delete failed: binding is invalid.");
       return error.status;
     }
     query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();

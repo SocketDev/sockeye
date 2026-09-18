@@ -10,6 +10,7 @@ import { parseArgs } from 'node:util'
 export type CredentialSource = 'keychain' | 'one-password'
 
 export function parseCredentialSetupArgs(args: readonly string[]): {
+  bindingId: string
   identifier: string
   source: 'one-password' | undefined
 } {
@@ -18,23 +19,29 @@ export function parseCredentialSetupArgs(args: readonly string[]): {
       args: [...args],
       strict: true,
       allowPositionals: true,
-      options: { source: { type: 'string' } },
+      options: { binding: { type: 'string' }, source: { type: 'string' } },
     })
     const identifier = positionals[0]
+    const bindingId = values.binding
     if (
       positionals.length !== 1 ||
       identifier === undefined ||
       !/^[A-Z_][A-Z0-9_]{0,126}$/u.test(identifier) ||
+      !isCredentialBindingId(bindingId) ||
       (values.source !== undefined && values.source !== 'one-password')
     ) {
       throw new Error('Invalid credential setup arguments.')
     }
-    return { identifier, source: values.source }
+    return { bindingId, identifier, source: values.source }
   } catch {
     throw new Error(
-      'Invalid credential setup arguments. Use one uppercase credential name and optional --source one-password.',
+      'Invalid credential setup arguments. Use one uppercase credential name, one opaque binding ID, and optional --source one-password.',
     )
   }
+}
+
+export function isCredentialBindingId(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value)
 }
 
 export interface CredentialSourceChoice {

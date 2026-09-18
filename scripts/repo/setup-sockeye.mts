@@ -40,6 +40,10 @@ const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
 const BIN_PATH = path.join(BIN_DIR, 'sockeye')
 const ARCH = process.arch
 
+export function getInstalledSockeyeBinaryPath(): string {
+  return BIN_PATH
+}
+
 /**
  * Download from a GitHub release, verify, and install.
  */
@@ -196,9 +200,9 @@ export async function installReleaseBundle(
   logger.success('Signature, entitlements, and notarization verified.')
 
   logger.success(`Installed to ${destination}`)
-  logger.log('Usage: sockeye set <CREDENTIAL_NAME>')
+  logger.log('Usage: sockeye set <CREDENTIAL_NAME> --binding <BINDING_ID>')
   logger.log(
-    '       sockeye run --credential <NAME> --cwd <dir> -- <exe> [args]',
+    '       sockeye run --credential <NAME> --binding <BINDING_ID> --cwd <dir> -- <exe> [args]',
   )
 }
 

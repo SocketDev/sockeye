@@ -6,6 +6,8 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { getBinaryPath, getBuildMode } from '../../../scripts/repo/paths.mts'
 
+const binding = 'a'.repeat(64)
+
 test('public preview works with stdin closed and an empty parent environment', () => {
   const binary = getBinaryPath(
     getBuildMode(),
@@ -17,6 +19,8 @@ test('public preview works with stdin closed and an empty parent environment', (
       'explain',
       '--credential',
       'EXAMPLE_TOKEN',
+      '--binding',
+      binding,
       '--cwd',
       process.cwd(),
       '--',

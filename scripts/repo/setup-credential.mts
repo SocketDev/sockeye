@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { getScriptArgs, scriptStdio } from '../fleet/process/script-output.mts'
 /**
- * @file Human-only credential setup with Socket Lib prompts.
- *   Usage: `pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY`
- *   This process handles names and a non-secret 1Password reference only. The
- *   native Sockeye executable reads either terminal input or 1Password stdout,
- *   then puts the secret directly into Touch-ID-protected Keychain storage.
+ * @file Human-only credential setup with Socket Lib prompts. Usage: `pnpm run
+ *   setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY --binding
+ *   <opaque-binding-id>` This process handles names and a non-secret 1Password
+ *   reference only. The native Sockeye executable reads either terminal input
+ *   or 1Password stdout, then puts the secret directly into Touch-ID-protected
+ *   Keychain storage.
  */
 
 import { constants, existsSync, realpathSync } from 'node:fs'
@@ -25,7 +26,7 @@ import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/run-main.mts'
 import type { ScriptMeta } from '../fleet/process/run-main.mts'
-import { getBinaryPath, getBuildMode } from './paths.mts'
+import { getInstalledSockeyeBinaryPath } from './setup-sockeye.mts'
 import {
   credentialSourceChoices,
   isCredentialSource,
@@ -47,11 +48,17 @@ import {
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
-  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> [--source one-password]\nRequires a foreground terminal and Touch ID. Guided import selects an account and vault, searches item names, then requests the field reference. Successful imports save only the account and field reference in private local state for explicit reuse. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
+  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> --binding <OPAQUE_BINDING_ID> [--source one-password]\nRequires a foreground terminal and Touch ID. The caller validates the binding against trusted local credential metadata before invoking this command. Guided import selects an account and vault, searches item names, then requests the field reference. Successful imports save only the account and field reference under the opaque binding ID in private local state for explicit reuse. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
   json: 'result',
 }
 
 const ONE_PASSWORD_PATHS = ['/opt/homebrew/bin/op', '/usr/local/bin/op']
+const REQUIRED_SOCKEYE_CAPABILITIES = [
+  'sockeye-capabilities-v1',
+  'credential-bindings: sha256-64-lowercase-hex',
+  'credential-verify: attended-protected-readback-v1',
+  'credential-storage: keychain-biometry-current-set-device-only',
+]
 
 async function findOnePassword(): Promise<string | undefined> {
   for (
@@ -76,13 +83,26 @@ async function runNative(
 ): Promise<void> {
   const opts = { __proto__: null, ...options } as NonNullable<typeof options>
   const account = opts.account
-  const binary = getBinaryPath(
-    getBuildMode(),
-    `${process.platform}-${process.arch}`,
-  )
+  const binary = getInstalledSockeyeBinaryPath()
   if (!existsSync(binary)) {
     throw new Error(
-      `Sockeye is not built. Run "pnpm run build" first (${binary}).`,
+      `Installed Sockeye is unavailable. Run "pnpm run setup:sockeye --release <tag>" first (${binary}).`,
+    )
+  }
+  const capabilities = await spawn(binary, ['capabilities'], { stdio: 'pipe' })
+  const advertised = new Set(
+    typeof capabilities.stdout === 'string'
+      ? capabilities.stdout.trim().split(/\r?\n/u)
+      : [],
+  )
+  if (
+    capabilities.code !== 0 ||
+    REQUIRED_SOCKEYE_CAPABILITIES.some(
+      capability => !advertised.has(capability),
+    )
+  ) {
+    throw new Error(
+      'Installed Sockeye does not support protected credential bindings. Install a reviewed release with "pnpm run setup:sockeye --release <tag>".',
     )
   }
   const result = await spawn(binary, args, {
@@ -155,10 +175,13 @@ export async function authorizeOnePasswordAccount(
 
 export async function chooseOnePasswordReference(
   executable: string,
-  options: { credentialName?: string | undefined } = {},
+  options: {
+    bindingId?: string | undefined
+    credentialName?: string | undefined
+  } = {},
 ): Promise<OnePasswordSelection | undefined> {
-  const saved = options.credentialName
-    ? await readSavedReference(options.credentialName)
+  const saved = options.bindingId
+    ? await readSavedReference(options.bindingId)
     : undefined
   const method = await select(
     {
@@ -214,7 +237,11 @@ export async function chooseOnePasswordReference(
 export async function setupCredential(
   args: readonly string[],
 ): Promise<number> {
-  const { identifier, source: requestedSource } = parseCredentialSetupArgs(args)
+  const {
+    bindingId,
+    identifier,
+    source: requestedSource,
+  } = parseCredentialSetupArgs(args)
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error('Credential setup requires a foreground terminal.')
@@ -238,7 +265,7 @@ export async function setupCredential(
     return 130
   }
   if (source === 'keychain') {
-    await runNative(['set', identifier])
+    await runNative(['set', identifier, '--binding', bindingId])
     return 0
   }
 
@@ -246,6 +273,7 @@ export async function setupCredential(
     return 130
   }
   const selected = await chooseOnePasswordReference(executable, {
+    bindingId,
     credentialName: identifier,
   })
   if (!selected) {
@@ -262,11 +290,18 @@ export async function setupCredential(
   if (approved !== true) {
     return 130
   }
-  await runNative(['import-1password', identifier, selected.reference], {
-    account: selected.account,
-  })
+  await runNative(
+    [
+      'import-1password',
+      identifier,
+      selected.reference,
+      '--binding',
+      bindingId,
+    ],
+    { account: selected.account },
+  )
   try {
-    await writeSavedReference(identifier, selected)
+    await writeSavedReference(bindingId, selected)
   } catch {
     throw new Error(
       'Credential imported into Keychain, but its reference metadata was not saved. Repair the private Sockeye state directory before reusing the reference.',

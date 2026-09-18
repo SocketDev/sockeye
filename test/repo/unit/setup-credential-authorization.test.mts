@@ -32,9 +32,8 @@ vi.mock('node:fs/promises', async original => ({
 vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
   spawn: mocks.spawn,
 }))
-vi.mock('../../../scripts/repo/paths.mts', () => ({
-  getBinaryPath: () => '/example/sockeye',
-  getBuildMode: () => 'release',
+vi.mock('../../../scripts/repo/setup-sockeye.mts', () => ({
+  getInstalledSockeyeBinaryPath: () => '/example/installed/sockeye',
 }))
 vi.mock('@socketsecurity/lib-stable/secrets/one-password', () => ({
   authorizeOnePasswordTerminal: mocks.authorize,
@@ -71,6 +70,8 @@ import {
   setupCredential,
 } from '../../../scripts/repo/setup-credential.mts'
 
+const binding = 'a'.repeat(64)
+
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.readSaved.mockResolvedValue(undefined)
@@ -78,6 +79,15 @@ beforeEach(() => {
   mocks.which.mockReturnValue('/example/op')
   mocks.realpath.mockReturnValue('/example/canonical/op')
   mocks.authorize.mockResolvedValue({ status: 'authorized' })
+  mocks.spawn.mockImplementation(async (_binary, args) =>
+    args[0] === 'capabilities'
+      ? {
+          code: 0,
+          stdout:
+            'sockeye-capabilities-v1\ncredential-bindings: sha256-64-lowercase-hex\ncredential-verify: attended-protected-readback-v1\ncredential-storage: keychain-biometry-current-set-device-only\n',
+        }
+      : { code: 0 },
+  )
   vi.spyOn(process.stderr, 'write').mockReturnValue(true)
 })
 afterEach(() => vi.restoreAllMocks())
@@ -168,6 +178,7 @@ test('guided selection receives the requested credential name for ranking', asyn
   mocks.choose.mockResolvedValue('guided')
   mocks.metadata.mockResolvedValue(undefined)
   await chooseOnePasswordReference('/example/op', {
+    bindingId: binding,
     credentialName: 'EXAMPLE_API_TOKEN',
   })
   expect(mocks.metadata).toHaveBeenCalledWith(
@@ -204,7 +215,13 @@ test('required 1Password source refuses missing CLI without direct-entry fallbac
   )
   await withTerminal(async () => {
     await expect(
-      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+      setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
     ).rejects.toThrow()
   })
   expect(mocks.choose).not.toHaveBeenCalled()
@@ -221,11 +238,12 @@ test.each([false, true])(
       reference: 'op://examplevault/exampleitem/password',
     })
     mocks.confirm.mockResolvedValue(approved)
-    mocks.spawn.mockResolvedValue({ code: 0 })
     await withTerminal(async () => {
       expect(
         await setupCredential([
           'EXAMPLE_API_TOKEN',
+          '--binding',
+          binding,
           '--source',
           'one-password',
         ]),
@@ -234,24 +252,28 @@ test.each([false, true])(
     expect(mocks.choose).toHaveBeenCalledTimes(1)
     if (approved) {
       expect(mocks.spawn).toHaveBeenCalledWith(
-        '/example/sockeye',
+        '/example/installed/sockeye',
+        ['capabilities'],
+        { stdio: 'pipe' },
+      )
+      expect(mocks.spawn).toHaveBeenCalledWith(
+        '/example/installed/sockeye',
         [
           'import-1password',
           'EXAMPLE_API_TOKEN',
           'op://examplevault/exampleitem/password',
+          '--binding',
+          binding,
         ],
         expect.objectContaining({
           stdio: 'inherit',
           env: expect.objectContaining({ OP_ACCOUNT: 'exampleaccount' }),
         }),
       )
-      expect(mocks.writeSaved).toHaveBeenCalledExactlyOnceWith(
-        'EXAMPLE_API_TOKEN',
-        {
-          account: 'exampleaccount',
-          reference: 'op://examplevault/exampleitem/password',
-        },
-      )
+      expect(mocks.writeSaved).toHaveBeenCalledExactlyOnceWith(binding, {
+        account: 'exampleaccount',
+        reference: 'op://examplevault/exampleitem/password',
+      })
     } else {
       expect(mocks.spawn).not.toHaveBeenCalled()
       expect(mocks.writeSaved).not.toHaveBeenCalled()
@@ -265,11 +287,48 @@ test('required 1Password source preserves canceled reference selection', async (
   mocks.metadata.mockResolvedValue(undefined)
   await withTerminal(async () => {
     expect(
-      await setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+      await setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
     ).toBe(130)
   })
   expect(mocks.confirm).not.toHaveBeenCalled()
   expect(mocks.spawn).not.toHaveBeenCalled()
+})
+
+test('stops before import when the installed binary lacks binding support', async () => {
+  mocks.access.mockResolvedValue(undefined)
+  mocks.choose.mockResolvedValue('guided')
+  mocks.metadata.mockResolvedValue({
+    account: 'exampleaccount',
+    reference: 'op://examplevault/exampleitem/password',
+  })
+  mocks.confirm.mockResolvedValue(true)
+  mocks.spawn.mockResolvedValue({
+    code: 0,
+    stdout: 'sockeye-capabilities-v1\n',
+  })
+  await withTerminal(async () => {
+    await expect(
+      setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
+    ).rejects.toThrow('does not support protected credential bindings')
+  })
+  expect(mocks.spawn).toHaveBeenCalledExactlyOnceWith(
+    '/example/installed/sockeye',
+    ['capabilities'],
+    { stdio: 'pipe' },
+  )
+  expect(mocks.writeSaved).not.toHaveBeenCalled()
 })
 
 test('saved references still require explicit selection and account authorization', async () => {
@@ -281,7 +340,7 @@ test('saved references still require explicit selection and account authorizatio
   mocks.choose.mockResolvedValue('saved')
   expect(
     await chooseOnePasswordReference('/example/op', {
-      credentialName: 'EXAMPLE_API_TOKEN',
+      bindingId: binding,
     }),
   ).toEqual(selection)
   expect(mocks.authorize).toHaveBeenCalledExactlyOnceWith({
@@ -298,7 +357,7 @@ test('canceling saved reference selection does not authorize', async () => {
   mocks.choose.mockResolvedValue(undefined)
   expect(
     await chooseOnePasswordReference('/example/op', {
-      credentialName: 'EXAMPLE_API_TOKEN',
+      bindingId: binding,
     }),
   ).toBeUndefined()
   expect(mocks.authorize).not.toHaveBeenCalled()
@@ -312,10 +371,22 @@ test('failed native import never saves reference metadata', async () => {
     reference: 'op://examplevault/exampleitem/password',
   })
   mocks.confirm.mockResolvedValue(true)
-  mocks.spawn.mockResolvedValue({ code: 1 })
+  mocks.spawn
+    .mockResolvedValueOnce({
+      code: 0,
+      stdout:
+        'sockeye-capabilities-v1\ncredential-bindings: sha256-64-lowercase-hex\ncredential-verify: attended-protected-readback-v1\ncredential-storage: keychain-biometry-current-set-device-only\n',
+    })
+    .mockResolvedValueOnce({ code: 1 })
   await withTerminal(async () => {
     await expect(
-      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+      setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
     ).rejects.toThrow()
   })
   expect(mocks.writeSaved).not.toHaveBeenCalled()
@@ -331,7 +402,13 @@ test('declining a saved reference import authorizes its account but never mutate
   mocks.confirm.mockResolvedValue(false)
   await withTerminal(async () => {
     expect(
-      await setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+      await setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
     ).toBe(130)
   })
   expect(mocks.authorize).toHaveBeenCalledExactlyOnceWith({
@@ -354,7 +431,13 @@ test('rejects malformed selected metadata before confirmation or native import',
   })
   await withTerminal(async () => {
     await expect(
-      setupCredential(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
+      setupCredential([
+        'EXAMPLE_API_TOKEN',
+        '--binding',
+        binding,
+        '--source',
+        'one-password',
+      ]),
     ).rejects.toThrow()
   })
   expect(mocks.confirm).not.toHaveBeenCalled()

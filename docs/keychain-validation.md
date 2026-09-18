@@ -36,7 +36,7 @@ environment files, evidence, logs, or test notes.
 For an approved run, use this manifest with absolute build paths:
 
 ```sh
-sockeye run --credential SOCKEYE_TEST_LIFECYCLE_TOKEN \
+sockeye run --credential SOCKEYE_TEST_LIFECYCLE_TOKEN --binding <binding-id> \
   --cwd /absolute/test/directory -- /absolute/build/sockeye-keychain-observer initial
 ```
 

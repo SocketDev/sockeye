@@ -6,16 +6,19 @@ import process from 'node:process'
 
 import { getSocketAppStateDir } from '@socketsecurity/lib-stable/paths/socket'
 
-import { isOnePasswordReference } from '../setup-credential-contract.mts'
+import {
+  isCredentialBindingId,
+  isOnePasswordReference,
+} from '../setup-credential-contract.mts'
 import type { OnePasswordSelection } from '../one-password-metadata.mts'
 
 const MAX_REFERENCE_BYTES = 4096
 
-function referenceFile(identifier: string, directory: string): string {
-  if (!/^[A-Z_][A-Z0-9_]{0,126}$/u.test(identifier)) {
-    throw new Error('Saved reference requires an uppercase credential name.')
+function referenceFile(bindingId: string, directory: string): string {
+  if (!isCredentialBindingId(bindingId)) {
+    throw new Error('Saved reference requires an opaque credential binding ID.')
   }
-  return path.join(directory, `${identifier}.json`)
+  return path.join(directory, `${bindingId}.json`)
 }
 
 export function validateSavedReference(value: unknown): OnePasswordSelection {
@@ -64,11 +67,11 @@ async function assertReferenceDirectory(directory: string): Promise<void> {
 }
 
 export async function readSavedReference(
-  identifier: string,
+  bindingId: string,
   options: { directory?: string | undefined } = {},
 ): Promise<OnePasswordSelection | undefined> {
   const directory = referenceDirectory(options.directory)
-  const file = referenceFile(identifier, directory)
+  const file = referenceFile(bindingId, directory)
   try {
     await assertReferenceDirectory(directory)
     const handle = await fs.open(
@@ -115,19 +118,19 @@ export async function readSavedReference(
 }
 
 export async function writeSavedReference(
-  identifier: string,
+  bindingId: string,
   selection: OnePasswordSelection,
   options: { directory?: string | undefined } = {},
 ): Promise<void> {
   const directory = referenceDirectory(options.directory)
-  const file = referenceFile(identifier, directory)
+  const file = referenceFile(bindingId, directory)
   const contents = JSON.stringify(validateSavedReference(selection))
   await fs.mkdir(directory, { recursive: true, mode: 0o700 })
   await assertReferenceDirectory(directory)
-  await readSavedReference(identifier, { directory })
+  await readSavedReference(bindingId, { directory })
   const temporary = path.join(
     directory,
-    `.${identifier}.${crypto.randomUUID()}.tmp`,
+    `.${bindingId}.${crypto.randomUUID()}.tmp`,
   )
   let created = false
   try {

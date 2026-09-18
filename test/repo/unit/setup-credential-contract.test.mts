@@ -7,6 +7,8 @@ import {
   parseCredentialSetupArgs,
 } from '../../../scripts/repo/setup-credential-contract.mts'
 
+const binding = 'a'.repeat(64)
+
 describe('credential setup policy', () => {
   test('prefers 1Password when it is available and falls back to Keychain', () => {
     expect(credentialSourceChoices(false)).toEqual([
@@ -29,9 +31,22 @@ describe('credential setup policy', () => {
 
 test('parses a required 1Password source without a secret value', () => {
   expect(
-    parseCredentialSetupArgs(['EXAMPLE_API_TOKEN', '--source', 'one-password']),
-  ).toEqual({ identifier: 'EXAMPLE_API_TOKEN', source: 'one-password' })
-  expect(parseCredentialSetupArgs(['EXAMPLE_API_TOKEN'])).toEqual({
+    parseCredentialSetupArgs([
+      'EXAMPLE_API_TOKEN',
+      '--binding',
+      binding,
+      '--source',
+      'one-password',
+    ]),
+  ).toEqual({
+    bindingId: binding,
+    identifier: 'EXAMPLE_API_TOKEN',
+    source: 'one-password',
+  })
+  expect(
+    parseCredentialSetupArgs(['EXAMPLE_API_TOKEN', '--binding', binding]),
+  ).toEqual({
+    bindingId: binding,
     identifier: 'EXAMPLE_API_TOKEN',
     source: undefined,
   })
@@ -39,6 +54,7 @@ test('parses a required 1Password source without a secret value', () => {
 test.each([
   [],
   ['EXAMPLE_API_TOKEN', 'value'],
+  ['EXAMPLE_API_TOKEN', '--binding', 'A'.repeat(64)],
   ['lowercase'],
   ['EXAMPLE_API_TOKEN', '--source', 'keychain'],
   ['EXAMPLE_API_TOKEN', '--source'],

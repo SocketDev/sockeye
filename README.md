@@ -40,7 +40,7 @@ Store a credential from an attached terminal. Sockeye hides the input; press
 Control-D when the value is complete.
 
 ```sh
-sockeye set SOCKET_RELEASE_CLIENT_ID
+sockeye set SOCKET_RELEASE_CLIENT_ID --binding <binding-id-from-profile>
 ```
 
 For a guided Keychain or one-time 1Password import, use
@@ -55,7 +55,7 @@ arguments, and optional bound files:
 
 ```sh
 sockeye run \
-  --credential SOCKET_RELEASE_APP_PRIVATE_KEY \
+  --credential SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile> \
   --pass-env SOCKET_RELEASE_CLIENT_ID \
   --bind-file /absolute/path/to/runner.mjs \
   --cwd /absolute/path/to/repository \

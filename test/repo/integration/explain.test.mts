@@ -27,6 +27,7 @@ const production = getBinaryPath(
   `${process.platform}-${process.arch}`,
 )
 const isolated = getNativeTestBinaryPath('sockeye-preview-isolation-test')
+const binding = 'a'.repeat(64)
 
 function makeExplainFixture(): {
   root: string
@@ -49,6 +50,8 @@ function makeExplainFixture(): {
     args: [
       '--credential',
       'EXAMPLE_TOKEN',
+      '--binding',
+      binding,
       '--pass-env',
       'EXAMPLE_CONFIG',
       '--bind-file',
@@ -115,8 +118,17 @@ test('run preparation is fresh and the forbidden authorization detector is activ
 test.each(
   [
     [],
-    ['--credential', 'bad-name'],
-    ['--credential', 'EXAMPLE_TOKEN', '--credential', 'EXAMPLE_TOKEN'],
+    ['--credential', 'bad-name', '--binding', binding],
+    [
+      '--credential',
+      'EXAMPLE_TOKEN',
+      '--binding',
+      binding,
+      '--credential',
+      'EXAMPLE_TOKEN',
+      '--binding',
+      binding,
+    ],
     ['--unexpected', 'value'],
   ].map(args => ({ args })),
 )('rejects invalid preview arguments before effects: $args', ({ args }) => {

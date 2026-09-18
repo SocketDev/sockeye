@@ -9,6 +9,10 @@ import {
 } from '../../../scripts/repo/paths.mts'
 
 const binary = getNativeTestBinaryPath('sockeye-main-effects-test')
+const binding = 'a'.repeat(64)
+const importBinding = 'b'.repeat(64)
+const deleteBinding = 'c'.repeat(64)
+const verifyBinding = 'd'.repeat(64)
 beforeAll(() => {
   const object = path.join(
     getCmakeBuildDir(getBuildMode(), `${process.platform}-${process.arch}`),
@@ -26,19 +30,26 @@ beforeAll(() => {
   }
 })
 const commands: Record<string, string[]> = {
-  set: ['set', 'EXAMPLE_TOKEN'],
-  delete: ['delete', 'EXAMPLE_TOKEN'],
+  set: ['set', 'EXAMPLE_TOKEN', '--binding', binding],
+  delete: ['delete', 'EXAMPLE_TOKEN', '--binding', deleteBinding],
+  verify: ['verify', 'EXAMPLE_TOKEN', '--binding', verifyBinding],
   import: [
     'import-1password',
     'EXAMPLE_TOKEN',
     'op://example-vault/example-item/password',
+    '--binding',
+    importBinding,
   ],
   run: [
     'run',
     '--credential',
     'EXAMPLE_TOKEN',
+    '--binding',
+    '0'.repeat(64),
     '--credential',
     'SECOND_TOKEN',
+    '--binding',
+    '1'.repeat(64),
     '--cwd',
     REPO_ROOT,
     '--',
@@ -91,20 +102,61 @@ test('successful startup establishes process restrictions before dispatch', () =
 })
 
 test.each([
-  ['set', 'success', 0, 'input approve store invalidate'],
+  ['set', `Store Sockeye credential EXAMPLE_TOKEN binding ${binding}`],
+  [
+    'import',
+    `Import Sockeye credential EXAMPLE_TOKEN binding ${importBinding} from 1Password`,
+  ],
+  [
+    'delete',
+    `Delete Sockeye credential EXAMPLE_TOKEN binding ${deleteBinding}`,
+  ],
+  [
+    'verify',
+    `Verify Sockeye credential EXAMPLE_TOKEN binding ${verifyBinding}`,
+  ],
+] as const)(
+  '%s identifies its binding in the authorization reason',
+  (command, reason) => {
+    const result = spawnSync(binary, commands[command], {
+      encoding: 'utf8',
+      timeout: 10_000,
+      env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
+    })
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stderr).toContain(`reason:${reason}`)
+  },
+)
+
+test.each([
+  ['set', 'success', 0, 'input approve read store read invalidate policy'],
   ['set', 'input-failed', 2, 'input'],
   ['set', 'denied', 4, 'input approve'],
-  ['set', 'io', 5, 'input approve store invalidate'],
+  ['set', 'io', 5, 'input approve read store invalidate'],
   ['delete', 'success', 0, 'terminal approve delete invalidate'],
   ['delete', 'no-terminal', 4, 'terminal'],
   ['delete', 'denied', 4, 'terminal approve'],
   ['delete', 'missing', 3, 'terminal approve delete invalidate'],
   ['delete', 'operation-denied', 4, 'terminal approve delete invalidate'],
-  ['import', 'success', 0, 'terminal approve provider store invalidate'],
+  ['verify', 'success', 0, 'terminal approve read invalidate policy'],
+  ['verify', 'no-terminal', 4, 'terminal'],
+  ['verify', 'denied', 4, 'terminal approve'],
+  ['verify', 'missing', 3, 'terminal approve read invalidate'],
+  [
+    'import',
+    'success',
+    0,
+    'terminal approve provider read store read invalidate policy',
+  ],
   ['import', 'no-terminal', 4, 'terminal'],
   ['import', 'denied', 4, 'terminal approve'],
   ['import', 'provider-failed', 5, 'terminal approve provider invalidate'],
-  ['import', 'unavailable', 5, 'terminal approve provider store invalidate'],
+  [
+    'import',
+    'unavailable',
+    5,
+    'terminal approve provider read store invalidate',
+  ],
   ['run', 'success', 23, 'approve read read invalidate launch'],
   ['run', 'denied', 4, 'approve'],
   ['run', 'missing', 3, 'approve read invalidate'],
@@ -127,14 +179,23 @@ test.each([
 )
 
 test.each([
-  ['set', 'invalid-name'],
-  ['delete', 'invalid-name'],
+  ['set', 'invalid-name', '--binding', binding],
+  ['delete', 'invalid-name', '--binding', deleteBinding],
+  ['verify', 'invalid-name', '--binding', verifyBinding],
   [
     'import-1password',
     'invalid-name',
     'op://example-vault/example-item/password',
+    '--binding',
+    importBinding,
   ],
-  ['import-1password', 'EXAMPLE_TOKEN', 'invalid-reference'],
+  [
+    'import-1password',
+    'EXAMPLE_TOKEN',
+    'invalid-reference',
+    '--binding',
+    importBinding,
+  ],
   ['run'],
 ])('invalid command %j has no effects', (...args) => {
   const result = spawnSync(binary, args, { encoding: 'utf8', timeout: 10_000 })

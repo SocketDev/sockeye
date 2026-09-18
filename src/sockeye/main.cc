@@ -19,10 +19,10 @@
 #include "sockeye/input-policy.h"
 #include "sockeye/keychain.h"
 #include "sockeye/one-password.h"
+#include "sockeye/readiness.h"
+#include "sockeye/run-request.h"
 #include "sockeye/secret-buffer.h"
 #include "sockeye/terminal.h"
-#include "sockeye/run-request.h"
-#include "sockeye/readiness.h"
 
 #ifndef SOCKEYE_VERSION
 #define SOCKEYE_VERSION "0.0.0"
@@ -35,24 +35,36 @@ constexpr int kUsageExit = 2;
 constexpr int kNotFoundExit = 3;
 constexpr int kDeniedExit = 4;
 constexpr int kSystemExit = 5;
-void PrintUsage(FILE *stream) {
+void PrintUsage(FILE* stream) {
   std::fprintf(
-      stream, "usage:\n"
-              "  sockeye set <CREDENTIAL_NAME>\n"
-              "  sockeye import-1password <CREDENTIAL_NAME> <OP_REFERENCE>\n"
-              "  sockeye delete <CREDENTIAL_NAME>\n"
-              "  sockeye run --credential <NAME> [--credential <NAME> ...]\n"
-              "    [--pass-env <NAME> ...] [--bind-file <ABSOLUTE_PATH> ...]\n"
-              "    --cwd <ABSOLUTE_PATH> -- <ABSOLUTE_EXECUTABLE> [ARG ...]\n\n"
-              "  sockeye doctor [--credential <NAME>] [--fix]\n"
-              "  sockeye explain <same options as run>\n\n"
-              "Sockeye has no command that returns credential plaintext. The "
-              "run command\n"
-              "authenticates one exact child manifest and passes credentials "
-              "only to it.\n");
+      stream,
+      "usage:\n"
+      "  sockeye set <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
+      "  sockeye import-1password <CREDENTIAL_NAME> <OP_REFERENCE> --binding "
+      "<BINDING_ID>\n"
+      "  sockeye delete <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
+      "  sockeye verify <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
+      "  sockeye run --credential <NAME> --binding <BINDING_ID> [... ]\n"
+      "    [--pass-env <NAME> ...] [--bind-file <ABSOLUTE_PATH> ...]\n"
+      "    --cwd <ABSOLUTE_PATH> -- <ABSOLUTE_EXECUTABLE> [ARG ...]\n\n"
+      "  sockeye doctor [--credential <NAME> --binding <BINDING_ID>] [--fix]\n"
+      "  sockeye capabilities\n"
+      "  sockeye explain <same options as run>\n\n"
+      "Sockeye has no command that returns credential plaintext. The "
+      "run command\n"
+      "authenticates one exact child manifest and passes credentials "
+      "only to it.\n");
 }
 
-int ExitForKeychain(const KeychainError &error) {
+void PrintCapabilities(FILE* stream) {
+  std::fputs("sockeye-capabilities-v1\n"
+             "credential-bindings: sha256-64-lowercase-hex\n"
+             "credential-verify: attended-protected-readback-v1\n"
+             "credential-storage: keychain-biometry-current-set-device-only\n",
+             stream);
+}
+
+int ExitForKeychain(const KeychainError& error) {
   switch (error.status) {
   case KeychainStatus::kNotFound:
     return kNotFoundExit;
@@ -63,7 +75,7 @@ int ExitForKeychain(const KeychainError &error) {
   }
 }
 
-void PrintKeychainError(const KeychainError &error) {
+void PrintKeychainError(const KeychainError& error) {
   std::fprintf(stderr, "%s", error.detail.c_str());
   if (error.os_status != 0) {
     std::fprintf(stderr, " (OS status %d)", error.os_status);
@@ -71,11 +83,77 @@ void PrintKeychainError(const KeychainError &error) {
   std::fputc('\n', stderr);
 }
 
-int RunSet(std::string_view identifier) {
-  if (!IsEnvironmentName(identifier)) {
-    std::fputs(
-        "Credential store rejected: name must match [A-Z_][A-Z0-9_]{0,126}.\n",
-        stderr);
+bool CredentialValuesMatch(const SecretBuffer& left,
+                           const SecretBuffer& right) {
+  if (left.Size() != right.Size())
+    return false;
+  unsigned char difference = 0;
+  for (std::size_t index = 0; index < left.Size(); ++index) {
+    difference |=
+        static_cast<unsigned char>(left.Data()[index] ^ right.Data()[index]);
+  }
+  return difference == 0;
+}
+
+int StoreAndVerifyCredential(AuthorizationContext& context,
+                             std::string_view binding_id,
+                             const SecretBuffer& value, KeychainError& error) {
+  SecretBuffer existing;
+  const KeychainStatus existing_status =
+      ReadCredential(context, binding_id, existing, error);
+  if (existing_status == KeychainStatus::kSuccess) {
+    const bool matches = CredentialValuesMatch(existing, value);
+    existing.Clear();
+    if (matches)
+      return 0;
+    error = {KeychainStatus::kConflict, 0,
+             "Credential store refused: the selected binding already holds a "
+             "different value. Use an approved rotation operation."};
+    PrintKeychainError(error);
+    return kSystemExit;
+  }
+  existing.Clear();
+  if (existing_status != KeychainStatus::kNotFound) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  const KeychainStatus store_status =
+      StoreCredential(context, binding_id, value, error);
+  if (store_status != KeychainStatus::kSuccess) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  SecretBuffer verified;
+  const KeychainStatus verify_status =
+      ReadCredential(context, binding_id, verified, error);
+  const bool matches = verify_status == KeychainStatus::kSuccess &&
+                       CredentialValuesMatch(verified, value);
+  verified.Clear();
+  if (!matches) {
+    if (verify_status == KeychainStatus::kSuccess) {
+      error = {KeychainStatus::kIo, 0,
+               "Credential store verification failed: protected readback "
+               "differs from the imported value."};
+    }
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  return 0;
+}
+
+int VerifyStoredCredentialPolicy(std::string_view binding_id,
+                                 KeychainError& error) {
+  if (InspectCredentialPolicy(binding_id, error) == KeychainStatus::kSuccess) {
+    return 0;
+  }
+  PrintKeychainError(error);
+  return error.status == KeychainStatus::kDenied ? kDeniedExit : kSystemExit;
+}
+
+int RunSet(std::string_view identifier, std::string_view binding_id) {
+  if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
+    std::fputs("Credential store rejected: name or binding is invalid.\n",
+               stderr);
     return kUsageExit;
   }
   SecretBuffer value;
@@ -87,32 +165,31 @@ int RunSet(std::string_view identifier) {
 
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason =
-      "Store Sockeye credential " + std::string(identifier);
+  const std::string reason = "Store Sockeye credential " +
+                             std::string(identifier) + " binding " +
+                             std::string(binding_id);
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
   }
-  const KeychainStatus status =
-      StoreCredential(context, identifier, value, error);
+  const int result =
+      StoreAndVerifyCredential(context, binding_id, value, error);
   context.Invalidate();
   value.Clear();
-  if (status != KeychainStatus::kSuccess) {
-    PrintKeychainError(error);
-    return ExitForKeychain(error);
-  }
-  return 0;
+  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
 }
 
-int RunOnePasswordImport(std::string_view identifier, std::string_view reference) {
-  if (!IsEnvironmentName(identifier)) {
-    std::fputs(
-        "Credential store rejected: name must match [A-Z_][A-Z0-9_]{0,126}.\n",
-        stderr);
+int RunOnePasswordImport(std::string_view identifier,
+                         std::string_view reference,
+                         std::string_view binding_id) {
+  if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
+    std::fputs("Credential store rejected: name or binding is invalid.\n",
+               stderr);
     return kUsageExit;
   }
   if (!IsOnePasswordReference(reference)) {
-    std::fputs("1Password import rejected: reference must be a printable op:// reference.\n",
+    std::fputs("1Password import rejected: reference must be a printable op:// "
+               "reference.\n",
                stderr);
     return kUsageExit;
   }
@@ -124,8 +201,9 @@ int RunOnePasswordImport(std::string_view identifier, std::string_view reference
 
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason =
-      "Import Sockeye credential " + std::string(identifier) + " from 1Password";
+  const std::string reason = "Import Sockeye credential " +
+                             std::string(identifier) + " binding " +
+                             std::string(binding_id) + " from 1Password";
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
@@ -137,22 +215,17 @@ int RunOnePasswordImport(std::string_view identifier, std::string_view reference
     std::fprintf(stderr, "%s\n", import_error.c_str());
     return kSystemExit;
   }
-  const KeychainStatus status =
-      StoreCredential(context, identifier, value, error);
+  const int result =
+      StoreAndVerifyCredential(context, binding_id, value, error);
   context.Invalidate();
   value.Clear();
-  if (status != KeychainStatus::kSuccess) {
-    PrintKeychainError(error);
-    return ExitForKeychain(error);
-  }
-  return 0;
+  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
 }
 
-int RunDelete(std::string_view identifier) {
-  if (!IsEnvironmentName(identifier)) {
-    std::fputs(
-        "Credential delete rejected: name must match [A-Z_][A-Z0-9_]{0,126}.\n",
-        stderr);
+int RunDelete(std::string_view identifier, std::string_view binding_id) {
+  if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
+    std::fputs("Credential delete rejected: name or binding is invalid.\n",
+               stderr);
     return kUsageExit;
   }
   std::string terminal_error;
@@ -162,13 +235,14 @@ int RunDelete(std::string_view identifier) {
   }
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason =
-      "Delete Sockeye credential " + std::string(identifier);
+  const std::string reason = "Delete Sockeye credential " +
+                             std::string(identifier) + " binding " +
+                             std::string(binding_id);
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
   }
-  const KeychainStatus status = DeleteCredential(context, identifier, error);
+  const KeychainStatus status = DeleteCredential(context, binding_id, error);
   context.Invalidate();
   if (status != KeychainStatus::kSuccess) {
     PrintKeychainError(error);
@@ -177,18 +251,50 @@ int RunDelete(std::string_view identifier) {
   return 0;
 }
 
-int ExplainRunRequest(int argc, char **argv) {
+int RunVerify(std::string_view identifier, std::string_view binding_id) {
+  if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
+    std::fputs("Credential verify rejected: name or binding is invalid.\n",
+               stderr);
+    return kUsageExit;
+  }
+  std::string terminal_error;
+  if (!HasForegroundTerminal(terminal_error)) {
+    std::fprintf(stderr, "%s\n", terminal_error.c_str());
+    return kDeniedExit;
+  }
+  AuthorizationContext context;
+  KeychainError error;
+  const std::string reason = "Verify Sockeye credential " +
+                             std::string(identifier) + " binding " +
+                             std::string(binding_id);
+  if (!context.Authenticate(reason, error)) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  SecretBuffer value;
+  const KeychainStatus status = ReadCredential(context, binding_id, value, error);
+  value.Clear();
+  context.Invalidate();
+  if (status != KeychainStatus::kSuccess) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  return VerifyStoredCredentialPolicy(binding_id, error);
+}
+
+int ExplainRunRequest(int argc, char** argv) {
   RunOptions options;
   std::string error;
   if (!PrepareRunRequest(argc, argv, options, error)) {
     std::fprintf(stderr, "%s\n", error.c_str());
     return kUsageExit;
   }
-  RenderRunRequest(stdout, options, DigestText(CanonicalRunManifest(options)), true);
+  RenderRunRequest(stdout, options, DigestText(CanonicalRunManifest(options)),
+                   true);
   return 0;
 }
 
-int RunApprovedChild(int argc, char **argv) {
+int RunApprovedChild(int argc, char** argv) {
   RunOptions options;
   std::string parse_error;
   if (!PrepareRunRequest(argc, argv, options, parse_error)) {
@@ -204,10 +310,9 @@ int RunApprovedChild(int argc, char **argv) {
   KeychainError keychain_error;
   const std::string child_name = options.executable.canonical_path.substr(
       options.executable.canonical_path.find_last_of('/') + 1);
-  const std::string reason = "Sockeye " + manifest_digest.substr(0, 16) +
-                             ": run " + child_name + " with " +
-                             std::to_string(options.credential_names.size()) +
-                             " credential(s)";
+  const std::string reason =
+      "Sockeye " + manifest_digest.substr(0, 16) + ": run " + child_name +
+      " with " + std::to_string(options.credentials.size()) + " credential(s)";
   if (!context.Authenticate(reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);
@@ -215,18 +320,18 @@ int RunApprovedChild(int argc, char **argv) {
 
   std::vector<std::unique_ptr<SecretBuffer>> values;
   std::vector<CredentialValue> credentials;
-  values.reserve(options.credential_names.size());
-  credentials.reserve(options.credential_names.size());
-  for (const std::string &identifier : options.credential_names) {
+  values.reserve(options.credentials.size());
+  credentials.reserve(options.credentials.size());
+  for (const CredentialRequest& credential : options.credentials) {
     auto value = std::make_unique<SecretBuffer>();
     const KeychainStatus status =
-        ReadCredential(context, identifier, *value, keychain_error);
+        ReadCredential(context, credential.binding_id, *value, keychain_error);
     if (status != KeychainStatus::kSuccess) {
       context.Invalidate();
       PrintKeychainError(keychain_error);
       return ExitForKeychain(keychain_error);
     }
-    credentials.push_back({identifier, value.get()});
+    credentials.push_back({credential.identifier, value.get()});
     values.push_back(std::move(value));
   }
   context.Invalidate();
@@ -244,7 +349,8 @@ int RunApprovedChild(int argc, char **argv) {
 
 bool InitializeProcessSecurity() {
   const struct rlimit no_core = {0, 0};
-  if (setrlimit(RLIMIT_CORE, &no_core) != 0 || signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+  if (setrlimit(RLIMIT_CORE, &no_core) != 0 ||
+      signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
     return false;
   }
   umask(0077);
@@ -254,9 +360,10 @@ bool InitializeProcessSecurity() {
 } // namespace
 } // namespace sockeye
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (!sockeye::InitializeProcessSecurity()) {
-    std::fputs("Sockeye startup refused: process protections could not be initialized.\n",
+    std::fputs("Sockeye startup refused: process protections could not be "
+               "initialized.\n",
                stderr);
     return 5;
   }
@@ -269,17 +376,29 @@ int main(int argc, char **argv) {
     sockeye::PrintUsage(stdout);
     return 0;
   }
-  if (argc == 3 && std::strcmp(argv[1], "set") == 0) {
-    return sockeye::RunSet(argv[2]);
+  if (argc == 2 && std::strcmp(argv[1], "capabilities") == 0) {
+    sockeye::PrintCapabilities(stdout);
+    return 0;
   }
-  if (argc == 4 && std::strcmp(argv[1], "import-1password") == 0) {
-    return sockeye::RunOnePasswordImport(argv[2], argv[3]);
+  if (argc == 5 && std::strcmp(argv[1], "set") == 0 &&
+      std::strcmp(argv[3], "--binding") == 0) {
+    return sockeye::RunSet(argv[2], argv[4]);
   }
-  if (argc == 3 && std::strcmp(argv[1], "delete") == 0) {
-    return sockeye::RunDelete(argv[2]);
+  if (argc == 6 && std::strcmp(argv[1], "import-1password") == 0 &&
+      std::strcmp(argv[4], "--binding") == 0) {
+    return sockeye::RunOnePasswordImport(argv[2], argv[3], argv[5]);
+  }
+  if (argc == 5 && std::strcmp(argv[1], "delete") == 0 &&
+      std::strcmp(argv[3], "--binding") == 0) {
+    return sockeye::RunDelete(argv[2], argv[4]);
+  }
+  if (argc == 5 && std::strcmp(argv[1], "verify") == 0 &&
+      std::strcmp(argv[3], "--binding") == 0) {
+    return sockeye::RunVerify(argv[2], argv[4]);
   }
   if (argc >= 2 && std::strcmp(argv[1], "doctor") == 0) {
-    return sockeye::RunDoctorCommand(argc, argv, SOCKEYE_VERSION, sockeye::RunSet);
+    return sockeye::RunDoctorCommand(argc, argv, SOCKEYE_VERSION,
+                                     sockeye::RunSet);
   }
   if (argc >= 2 && std::strcmp(argv[1], "explain") == 0) {
     return sockeye::ExplainRunRequest(argc, argv);

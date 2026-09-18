@@ -19,6 +19,7 @@ const binaryPath = getBinaryPath(
   getBuildMode(),
   `${process.platform}-${process.arch}`,
 )
+const binding = 'a'.repeat(64)
 
 describe('Sockeye CLI', () => {
   test('runs the native malformed and boundary byte policy checks', () => {
@@ -57,6 +58,15 @@ describe('Sockeye CLI', () => {
     expect(help.stdout).not.toContain('sockeye get')
   })
 
+  test('reports binding support without authorizing or reading credentials', () => {
+    const result = spawnSync(binaryPath, ['capabilities'], { encoding: 'utf8' })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe(
+      'sockeye-capabilities-v1\ncredential-bindings: sha256-64-lowercase-hex\ncredential-verify: attended-protected-readback-v1\ncredential-storage: keychain-biometry-current-set-device-only',
+    )
+    expect(result.stderr).toBe('')
+  })
+
   test('does not expose a raw get command', () => {
     const result = spawnSync(binaryPath, ['get', 'SOCKET_TEST_TOKEN'], {
       encoding: 'utf8',
@@ -67,10 +77,14 @@ describe('Sockeye CLI', () => {
 
   test('rejects malformed credential names before reading stdin', () => {
     const canary = 'sockeye-secret-canary'
-    const result = spawnSync(binaryPath, ['set', 'bad-name'], {
-      encoding: 'utf8',
-      input: canary,
-    })
+    const result = spawnSync(
+      binaryPath,
+      ['set', 'bad-name', '--binding', binding],
+      {
+        encoding: 'utf8',
+        input: canary,
+      },
+    )
     expect(result.status).toBe(2)
     expect(`${result.stdout}${result.stderr}`).not.toContain(canary)
   })
@@ -78,7 +92,13 @@ describe('Sockeye CLI', () => {
   test('rejects malformed 1Password imports before authentication', () => {
     const result = spawnSync(
       binaryPath,
-      ['import-1password', 'SOCKET_TEST_TOKEN', 'https://not-a-reference'],
+      [
+        'import-1password',
+        'SOCKET_TEST_TOKEN',
+        'https://not-a-reference',
+        '--binding',
+        binding,
+      ],
       { encoding: 'utf8' },
     )
     expect(result.status).toBe(2)
@@ -92,8 +112,12 @@ describe('Sockeye CLI', () => {
         'run',
         '--credential',
         'SOCKET_TEST_TOKEN',
+        '--binding',
+        binding,
         '--credential',
         'SOCKET_TEST_TOKEN',
+        '--binding',
+        binding,
         '--cwd',
         process.cwd(),
         '--',
@@ -110,6 +134,8 @@ describe('Sockeye CLI', () => {
         'run',
         '--credential',
         'SOCKET_*',
+        '--binding',
+        binding,
         '--cwd',
         process.cwd(),
         '--',
@@ -128,6 +154,8 @@ describe('Sockeye CLI', () => {
         'run',
         '--credential',
         'SOCKET_TEST_TOKEN',
+        '--binding',
+        binding,
         '--cwd',
         process.cwd(),
         '--',
@@ -144,6 +172,8 @@ describe('Sockeye CLI', () => {
         'run',
         '--credential',
         'SOCKET_TEST_TOKEN',
+        '--binding',
+        binding,
         '--cwd',
         '.',
         '--',

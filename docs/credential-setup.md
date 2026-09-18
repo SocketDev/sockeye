@@ -7,7 +7,7 @@ print the secret, or offer a command that reads it back.
 Run this from a real terminal after building Sockeye:
 
 ```sh
-pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY
+pnpm run setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile>
 ```
 
 Add `--source one-password` to require an attended 1Password import. This mode
@@ -26,11 +26,12 @@ Setup shows the account, reference, and destination credential before import.
 The native Sockeye process reads the selected value and stores it in Keychain.
 The setup process lists metadata only; it does not read secret fields.
 Successful imports save the account and field reference in private local state
-under `~/.socket/_state/sockeye/one-password/`. These files contain no credential
-values. Setup offers saved references as an explicit choice. Reuse still requires
-account authorization and import confirmation. Invalid or unsafe metadata stops
-setup until its private file is repaired. A metadata write failure reports that
-the credential was imported but the reference was not saved.
+under `~/.socket/_state/sockeye/one-password/`, keyed by the opaque binding ID.
+These files contain no credential values. Setup offers saved references as an
+explicit choice. Reuse still requires account authorization and import
+confirmation. Invalid or unsafe metadata stops setup until its private file is
+repaired. A metadata write failure reports that the credential was imported but
+the reference was not saved.
 
 The selected account remains pinned during import. Service-account and Connect
 environment settings cannot silently select another credential source.
@@ -56,7 +57,7 @@ command completes successfully. To replace a stored credential, run the same
 setup command again. To remove it, use:
 
 ```sh
-sockeye delete SOCKET_RELEASE_APP_PRIVATE_KEY
+sockeye delete SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile>
 ```
 
 Use the built binary path if `sockeye` is not installed on your shell PATH.
@@ -68,7 +69,7 @@ workflow variable.
 Use `sockeye explain` with the same arguments as `sockeye run`:
 
 ```sh
-sockeye explain --credential SOCKET_RELEASE_APP_PRIVATE_KEY \
+sockeye explain --credential SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile> \
   --cwd "$PWD" -- /usr/bin/true
 ```
 
@@ -90,7 +91,7 @@ Run `sockeye doctor` to check terminal and biometric availability. To check one
 credential's policy metadata, run:
 
 ```sh
-sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY
+sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile>
 ```
 
 The check does not read the credential value or request authentication.
@@ -99,7 +100,7 @@ Healthy metadata does not prove that a later credential read will succeed.
 To repair a missing item or an observed policy mismatch, run:
 
 ```sh
-sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY --fix
+sockeye doctor --credential SOCKET_RELEASE_APP_PRIVATE_KEY --binding <binding-id-from-profile> --fix
 ```
 
 Repair uses the existing attended setup operation. Enter the original value

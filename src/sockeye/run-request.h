@@ -10,19 +10,24 @@
 
 namespace sockeye {
 
+struct CredentialRequest {
+  std::string binding_id;
+  std::string identifier;
+};
+
 struct RunOptions {
   std::vector<FileIdentity> bound_files;
   std::vector<std::string> child_arguments;
-  std::vector<std::string> credential_names;
+  std::vector<CredentialRequest> credentials;
   FileIdentity executable;
   std::vector<std::string> passed_environment;
   DirectoryIdentity working_directory;
 };
 
-bool PrepareRunRequest(int argc, char **argv, RunOptions &options,
-                       std::string &error);
-std::string CanonicalRunManifest(const RunOptions &options);
-void RenderRunRequest(FILE *stream, const RunOptions &options,
+bool PrepareRunRequest(int argc, char** argv, RunOptions& options,
+                       std::string& error);
+std::string CanonicalRunManifest(const RunOptions& options);
+void RenderRunRequest(FILE* stream, const RunOptions& options,
                       std::string_view digest, bool preview);
 
 } // namespace sockeye

@@ -2,6 +2,8 @@ import { expect, test } from 'vitest'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getNativeTestBinaryPath } from '../../../scripts/repo/paths.mts'
 
+const binding = 'a'.repeat(64)
+
 test.each([
   ['ready', [], 0, 0, 0, 0],
   ['missing', [], 5, 0, 0, 0],
@@ -19,7 +21,14 @@ test.each([
   (scenario, flags, status, approvals, inputs, writes) => {
     const result = spawnSync(
       getNativeTestBinaryPath('sockeye-doctor-test'),
-      ['doctor', '--credential', 'EXAMPLE_TOKEN', ...flags],
+      [
+        'doctor',
+        '--credential',
+        'EXAMPLE_TOKEN',
+        '--binding',
+        binding,
+        ...flags,
+      ],
       {
         encoding: 'utf8',
         timeout: 10_000,
@@ -32,6 +41,6 @@ test.each([
     )
     expect(result.stdout).not.toContain('example-placeholder')
     if (status === 0 && writes === 1)
-      expect(result.stderr).toContain('metadata=2')
+      expect(result.stderr).toContain('metadata=3')
   },
 )
