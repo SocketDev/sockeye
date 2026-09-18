@@ -53,16 +53,14 @@ export function releaseArchiveMemberTypesAreValid(
     .filter(line => /^[bcdlps-][rwx-]{9}\s/u.test(line))
   return (
     rows.length === entries.length &&
-    entries.every((entry, index) =>
-      RELEASE_BUNDLE_DIRECTORY_ENTRIES.includes(
-        normalizePath(entry).replace(
-          /\/$/u,
-          '',
-        ) as (typeof RELEASE_BUNDLE_DIRECTORY_ENTRIES)[number],
+    entries.every((entry, index) => {
+      const normalized = normalizePath(entry).replace(/\/$/u, '')
+      return RELEASE_BUNDLE_DIRECTORY_ENTRIES.some(
+        directory => directory === normalized,
       )
         ? rows[index]?.startsWith('d')
-        : rows[index]?.startsWith('-'),
-    )
+        : rows[index]?.startsWith('-')
+    })
   )
 }
 
@@ -109,9 +107,13 @@ export function releasePlistStrings(xml: string | undefined): string[] {
 export async function extractReleaseProfileField(
   plist: string,
   key: string,
-  format: 'raw' | 'xml1' = 'raw',
-  required = true,
+  options: {
+    format?: 'raw' | 'xml1' | undefined
+    required?: boolean | undefined
+  } = {},
 ): Promise<string | undefined> {
+  const format = options.format ?? 'raw'
+  const required = options.required ?? true
   try {
     const result = await spawn('/usr/bin/plutil', [
       '-extract',
@@ -244,7 +246,7 @@ export async function readReleaseProfile(profile: string): Promise<unknown> {
     const certificateXml = await extractReleaseProfileField(
       plist,
       'DeveloperCertificates',
-      'xml1',
+      { format: 'xml1' },
     )
     const certificateData = Array.from(
       certificateXml!.matchAll(/<data>\s*([A-Za-z0-9+/=\s]+?)\s*<\/data>/gu),
@@ -267,32 +269,32 @@ export async function readReleaseProfile(profile: string): Promise<unknown> {
           await extractReleaseProfileField(
             plist,
             'Entitlements.com\\.apple\\.security\\.get-task-allow',
-            'xml1',
-            false,
+            { format: 'xml1', required: false },
           ),
         ),
         'get-task-allow': releasePlistBoolean(
           await extractReleaseProfileField(
             plist,
             'Entitlements.get-task-allow',
-            'xml1',
-            false,
+            { format: 'xml1', required: false },
           ),
         ),
         'keychain-access-groups': releasePlistStrings(
           await extractReleaseProfileField(
             plist,
             'Entitlements.keychain-access-groups',
-            'xml1',
+            { format: 'xml1' },
           ),
         ),
       },
       ExpirationDate: await extractReleaseProfileField(plist, 'ExpirationDate'),
       Platform: releasePlistStrings(
-        await extractReleaseProfileField(plist, 'Platform', 'xml1'),
+        await extractReleaseProfileField(plist, 'Platform', { format: 'xml1' }),
       ),
       ProvisionsAllDevices: releasePlistBoolean(
-        await extractReleaseProfileField(plist, 'ProvisionsAllDevices', 'xml1'),
+        await extractReleaseProfileField(plist, 'ProvisionsAllDevices', {
+          format: 'xml1',
+        }),
       ),
       UUID: await extractReleaseProfileField(plist, 'UUID'),
     }

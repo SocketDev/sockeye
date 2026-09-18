@@ -312,7 +312,7 @@ export async function main(): Promise<void> {
   const profile = configuredProfile ?? `$${NOTARY_PROFILE_ENV}`
   const bundle = path.resolve(values['bundle'])
   const output = path.resolve(values['output'])
-  if (values['run'] !== true) {
+  if (!values['run']) {
     const submission = path.join('$TMPDIR', 'sockeye-notary', 'submission.zip')
     logger.log('Dry run; no files or remote state changed.')
     logger.log(

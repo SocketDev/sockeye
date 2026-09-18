@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     { encoding: 'utf8', stdio: 'pipe' },
   )
   if (compiled.status !== 0) {
-    throw new Error(String(compiled.stderr))
+    throw new Error(compiled.stderr)
   }
 })
 
@@ -92,7 +92,7 @@ describe.skipIf(process.platform !== 'win32')(
         encoding: 'utf8',
         stdio: 'pipe',
       })
-      expect(result.status, String(result.stderr)).toBe(0)
+      expect(result.status, result.stderr).toBe(0)
     })
   },
 )

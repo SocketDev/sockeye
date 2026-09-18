@@ -263,10 +263,7 @@ export async function verifyArchive(
   })
   if (
     metadata.code !== 0 ||
-    !releaseArchiveMemberTypesAreValid(
-      listedEntries,
-      `${metadata.stdout ?? ''}`,
-    )
+    !releaseArchiveMemberTypesAreValid(listedEntries, metadata.stdout ?? '')
   ) {
     rows.push({
       evidence: `\`${name}\`: FAILED - archive contains an unsafe member type`,

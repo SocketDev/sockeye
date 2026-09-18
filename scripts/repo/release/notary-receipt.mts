@@ -284,7 +284,7 @@ export async function writeCompletedNotaryReceipt(
       githubRunId: imported('GITHUB_RUN_ID'),
       githubWorkflowRef: imported('GITHUB_WORKFLOW_REF'),
       logSha256: measured(evidence.logSha256),
-      macosVersion: measured(`${macos.stdout ?? ''}`.trim()),
+      macosVersion: measured((macos.stdout ?? '').trim()),
       profileSha256: measured(evidence.bundleIdentity.profileSha256),
       profileUuid: measured(evidence.bundleIdentity.profileUuid),
       sourceSha: imported('GITHUB_SHA'),
