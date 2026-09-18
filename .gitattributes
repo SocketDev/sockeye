@@ -127,14 +127,14 @@ test/fleet/common/fixture linguist-generated=true
 test/fleet/e2e/comment-voice.test.mts linguist-generated=true
 test/fleet/integration/comment-voice.test.mts linguist-generated=true
 test/fleet/nock-loopback-passthrough.test.mts linguist-generated=true
-test/fleet/registry-infra/cargo/placeholder.test.mts linguist-generated=true
-test/fleet/registry-infra/npm/placeholder.test.mts linguist-generated=true
 test/fleet/scripts/setup.mts linguist-generated=true
 test/fleet/unit/ci/gates/run.test.mts linguist-generated=true
 test/fleet/unit/comment-voice.test.mts linguist-generated=true
 test/fleet/unit/fix/plan.test.mts linguist-generated=true
 test/fleet/unit/fix/run.test.mts linguist-generated=true
 test/fleet/unit/lockstep/emit-mirror-globs.test.mts linguist-generated=true
+test/fleet/unit/registry-infra/cargo/placeholder.test.mts linguist-generated=true
+test/fleet/unit/registry-infra/npm/placeholder.test.mts linguist-generated=true
 *.patch whitespace=-blank-at-eol,-space-before-tab
 # </fleet>
 # <repo>
