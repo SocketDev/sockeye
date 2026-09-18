@@ -5,6 +5,8 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+export * from '../../../scripts/fleet/paths.mts'
+
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
 export const KEYCHAIN_CLI_BINARY_NAME = 'socket-keychain'

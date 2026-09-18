@@ -16,6 +16,10 @@
  * annotation can't lengthen the soak.
  */
 
+import { SOAK_DAYS } from '../../../scripts/fleet/constants/soak.mts'
+
+export { SOAK_DAYS }
+
 // (?:#|\/\/): comment marker; published:\s*(\d{4}-\d{2}-\d{2}): published date capture;
 // \s*\|\s*removable:\s*\d{4}-\d{2}-\d{2}: pipe-separated removable date
 const ANNOTATION_RE =
@@ -30,8 +34,6 @@ const MS_PER_DAY = 86_400_000
  * (10080 minutes = 7 days). Never reduce without `Allow trust-downgrade
  * bypass`.
  */
-export const SOAK_DAYS = 7
-
 const SOAK_MS = SOAK_DAYS * MS_PER_DAY
 
 /**

@@ -1,6 +1,8 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+export * from '../../../scripts/fleet/paths.mts'
+
 export const CURL_PACKAGE_ROOT = path.resolve(
   fileURLToPath(new URL('../', import.meta.url)),
 )

@@ -9,6 +9,8 @@ import process from 'node:process'
 
 import { fileURLToPath } from 'node:url'
 
+export * from '../../../scripts/fleet/paths.mts'
+
 import { BUILD_STAGES } from 'local-build-infra/lib/constants'
 import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
 

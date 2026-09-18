@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 
 import { getCurrentPlatformArch } from 'local-build-infra/lib/platform-mappings'
 
+export * from '../../../scripts/fleet/paths.mts'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
