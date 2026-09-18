@@ -293,11 +293,14 @@ jobs:
           if [ -z "${NUMBER}" ]; then
             printf "" | node scripts/fleet/weekly-update/pr-body-cli.mts \
               "${BODY_ARGS[@]}" "${LINE_ARGS[@]}" > /tmp/pr-body.md
-            NUMBER="$(gh api --method POST "repos/${REPOSITORY}/pulls" \
+            if ! NUMBER="$(gh api --method POST "repos/${REPOSITORY}/pulls" \
               -f "head=${BRANCH}" \
               -f "base=${BASE}" \
               -f 'title=chore(deps): rolling dependency update' \
-              -F body=@/tmp/pr-body.md --jq .number)"
+              -F body=@/tmp/pr-body.md --jq .number)"; then
+              printf '%s\n' "${NUMBER}" >&2
+              exit 1
+            fi
             gh api --method POST "repos/${REPOSITORY}/issues/${NUMBER}/labels" \
               -f 'labels[]=dependencies' -f 'labels[]=automation' --silent
           else
