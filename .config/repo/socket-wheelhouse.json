@@ -15,10 +15,6 @@
     "cumulativeCoverageThreshold": 99.5
   },
   "repoName": "sockeye",
-  "bundle": {
-    "ref": "fleet-pack-765f1d4e74f6ebf418984daa19696ce15b1bd9d4",
-    "cascadeSha": "765f1d4e74f6ebf418984daa19696ce15b1bd9d4"
-  },
   "repo": {
     "type": "mono"
   },
