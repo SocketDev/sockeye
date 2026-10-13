@@ -36,6 +36,14 @@ and checksum-verified installer remain release gates; see the
 
 ## Usage
 
+### Documentation
+
+- [Command and user guide](docs/commands.md): credential operations, exact child
+  launches, local CI, and common errors.
+- [Security model](docs/security-model.md): trust boundaries and protections.
+- [Credential setup](docs/credential-setup.md): attended storage workflows.
+- [Threat model](docs/threat-model.md): scoped threats and remaining risks.
+
 Store a credential from an attached terminal. Sockeye hides the input; press
 Control-D when the value is complete.
 
