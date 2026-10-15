@@ -35,6 +35,10 @@ KeychainStatus StoreCredential(AuthorizationContext &, std::string_view,
                                const SecretBuffer &, KeychainError &) {
   RejectForbiddenEffect();
 }
+KeychainStatus ReplaceCredential(AuthorizationContext &, std::string_view,
+                                 const SecretBuffer &, KeychainError &) {
+  RejectForbiddenEffect();
+}
 bool ReadOnePasswordReference(std::string_view, SecretBuffer &, std::string &) {
   RejectForbiddenEffect();
 }

@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "sockeye/child-process.h"
+#include "sockeye/github.h"
 #include "sockeye/input-policy.h"
 #include "sockeye/keychain.h"
 #include "sockeye/one-password.h"
@@ -42,6 +43,8 @@ void PrintUsage(FILE* stream) {
       "  sockeye set <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
       "  sockeye import-1password <CREDENTIAL_NAME> <OP_REFERENCE> --binding "
       "<BINDING_ID>\n"
+      "  sockeye gh-run --credential GH_TOKEN --binding <BINDING_ID> [... ]\n"
+      "    [--pass-env <NAME> ...] --cwd <ABSOLUTE_PATH> -- <COMMAND> [ARG ...]\n"
       "  sockeye delete <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
       "  sockeye verify <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
       "  sockeye run --credential <NAME> --binding <BINDING_ID> [... ]\n"
@@ -148,6 +151,49 @@ int VerifyStoredCredentialPolicy(std::string_view binding_id,
   }
   PrintKeychainError(error);
   return error.status == KeychainStatus::kDenied ? kDeniedExit : kSystemExit;
+}
+
+int StoreOrReplaceAndVerifyCredential(AuthorizationContext& context,
+                                      std::string_view binding_id,
+                                      const SecretBuffer& value,
+                                      KeychainError& error) {
+  SecretBuffer existing;
+  const KeychainStatus existing_status =
+      ReadCredential(context, binding_id, existing, error);
+  KeychainStatus store_status = KeychainStatus::kIo;
+  if (existing_status == KeychainStatus::kSuccess) {
+    const bool matches = CredentialValuesMatch(existing, value);
+    existing.Clear();
+    store_status = matches
+                       ? KeychainStatus::kSuccess
+                       : ReplaceCredential(context, binding_id, value, error);
+  } else if (existing_status == KeychainStatus::kNotFound) {
+    store_status = StoreCredential(context, binding_id, value, error);
+  } else {
+    existing.Clear();
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  if (store_status != KeychainStatus::kSuccess) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  SecretBuffer verified;
+  const KeychainStatus verify_status =
+      ReadCredential(context, binding_id, verified, error);
+  const bool matches = verify_status == KeychainStatus::kSuccess &&
+                       CredentialValuesMatch(verified, value);
+  verified.Clear();
+  if (!matches) {
+    if (verify_status == KeychainStatus::kSuccess) {
+      error = {KeychainStatus::kIo, 0,
+               "Credential replacement verification failed: protected "
+               "readback differs from the active GitHub CLI value."};
+    }
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+  return VerifyStoredCredentialPolicy(binding_id, error);
 }
 
 int RunSet(std::string_view identifier, std::string_view binding_id) {
@@ -294,7 +340,7 @@ int ExplainRunRequest(int argc, char** argv) {
   return 0;
 }
 
-int RunApprovedChild(int argc, char** argv) {
+int RunApprovedChild(int argc, char** argv, bool refresh_github_token = false) {
   RunOptions options;
   std::string parse_error;
   if (!PrepareRunRequest(argc, argv, options, parse_error)) {
@@ -316,6 +362,39 @@ int RunApprovedChild(int argc, char** argv) {
   if (!context.Authenticate(reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);
+  }
+
+  SecretBuffer active_github_token;
+  if (refresh_github_token) {
+    if (options.credentials.size() != 1 ||
+        options.credentials.front().identifier != "GH_TOKEN") {
+      context.Invalidate();
+      std::fputs(
+          "GitHub credential run refused: exactly one GH_TOKEN binding is required.\n",
+          stderr);
+      return kUsageExit;
+    }
+    std::string import_error;
+    if (!ReadNativeGitHubToken(active_github_token, import_error)) {
+      context.Invalidate();
+      std::fprintf(stderr, "%s\n", import_error.c_str());
+      return kSystemExit;
+    }
+    if (!ValidateGitHubToken(active_github_token, import_error)) {
+      context.Invalidate();
+      active_github_token.Clear();
+      std::fprintf(stderr, "%s\n", import_error.c_str());
+      return kSystemExit;
+    }
+    const int store_result = StoreOrReplaceAndVerifyCredential(
+        context, options.credentials.front().binding_id, active_github_token,
+        keychain_error);
+    if (store_result != 0) {
+      context.Invalidate();
+      active_github_token.Clear();
+      return store_result;
+    }
+    active_github_token.Clear();
   }
 
   std::vector<std::unique_ptr<SecretBuffer>> values;
@@ -405,6 +484,9 @@ int main(int argc, char** argv) {
   }
   if (argc >= 3 && std::strcmp(argv[1], "run") == 0) {
     return sockeye::RunApprovedChild(argc, argv);
+  }
+  if (argc >= 3 && std::strcmp(argv[1], "gh-run") == 0) {
+    return sockeye::RunApprovedChild(argc, argv, true);
   }
   sockeye::PrintUsage(stderr);
   return sockeye::kUsageExit;

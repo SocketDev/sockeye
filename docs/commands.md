@@ -42,6 +42,12 @@ The child receives only requested credentials and explicitly passed
 environment variables. `ENVRYPT_PRIVATE_KEY` uses Envrypt's one-use pipe
 instead of the child environment.
 
+Fleet's GitHub wrapper uses `sockeye gh-run` for native CLI credentials. It
+reads `gh`'s active `github.com` token privately and validates it with the
+GitHub API. It updates the protected Sockeye binding only when the token
+changes. It launches the exact child and leaves `gh`'s configured storage
+unchanged.
+
 ## Local CI
 
 Use the repository bridge to derive credential names from one workflow:

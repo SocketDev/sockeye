@@ -83,6 +83,14 @@ storage for values that are safe to display.
 
 </details>
 
+### Protected GitHub CLI commands
+
+Fleet GitHub commands use `sockeye gh-run` through the `credentials:gh`
+wrapper. Sockeye reads the active `github.com` token from `gh` without printing
+it. It validates the token with GitHub and stores a protected copy. It updates
+that copy only when the active token changes. It leaves `gh`'s credential
+storage unchanged.
+
 ### Local CI
 
 The repository bridge derives the exact `secrets.NAME` and `vars.NAME`

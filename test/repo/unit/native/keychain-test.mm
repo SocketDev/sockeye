@@ -181,6 +181,16 @@ void CheckCredentialWrites() {
   assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kConflict);
   keychain_state.add_status = errSecAuthFailed;
   assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  assert(sockeye::ReplaceCredential(context, kIdentifier, value, error) == KeychainStatus::kSuccess);
+  assert(keychain_state.updates == 1);
+  assert(keychain_state.last_query[(__bridge id)kSecAttrGeneric] != nil);
+  assert([keychain_state.last_item[(__bridge id)kSecValueData] length] == sizeof(kValue) - 1);
+  keychain_state.update_status = errSecItemNotFound;
+  assert(sockeye::ReplaceCredential(context, kIdentifier, value, error) == KeychainStatus::kNotFound);
+  keychain_state.update_status = errSecAuthFailed;
+  assert(sockeye::ReplaceCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
+  keychain_state.update_status = errSecSuccess;
+  assert(sockeye::ReplaceCredential(context, invalid_utf8, value, error) == KeychainStatus::kIo);
   keychain_state.policy_failure = true;
   for (bool with_error : {false, true}) {
     keychain_state.policy_error_object = with_error;

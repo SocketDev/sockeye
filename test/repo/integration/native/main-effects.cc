@@ -117,6 +117,15 @@ KeychainStatus StoreCredential(AuthorizationContext&, std::string_view name,
   Event("store");
   return Result(error);
 }
+KeychainStatus ReplaceCredential(AuthorizationContext&, std::string_view name,
+                                 const SecretBuffer& value,
+                                 KeychainError& error) {
+  assert(authorized && (name == kSetBinding || name == kImportBinding));
+  assert(value.Size() == sizeof(kValue) - 1 &&
+         std::memcmp(value.Data(), kValue, value.Size()) == 0);
+  Event("replace");
+  return Result(error);
+}
 KeychainStatus ReadCredential(AuthorizationContext&, std::string_view name,
                               SecretBuffer& value, KeychainError& error) {
   assert(authorized);
