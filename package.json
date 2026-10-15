@@ -72,6 +72,7 @@
     "fmt:js": "node scripts/fleet/format.mts",
     "lint:js": "node scripts/fleet/lint.mts",
     "gh:auth": "node scripts/fleet/gh-auth.mts",
+    "git:commit-paths": "node scripts/fleet/git/commit/named-paths.mts",
     "offload:model": "node scripts/fleet/offload-model.mts",
     "setup:offload-providers": "node scripts/fleet/setup/offload-providers.mts",
     "sync-global-hooks": "node scripts/fleet/sync-global-hooks.mts",

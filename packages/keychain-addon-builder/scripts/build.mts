@@ -37,8 +37,8 @@ import {
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { ensureNativeCoverageToolchain } from '../../../scripts/repo/native-toolchain.mts'
 import { isMainModule } from '../../../scripts/fleet/process/is-main-module.mts'
-import { runMain } from '../../../scripts/fleet/process/run-main.mts'
-import type { ScriptMeta } from '../../../scripts/fleet/process/run-main.mts'
+import { runMain } from '../../../scripts/fleet/process/main/run.mts'
+import type { ScriptMeta } from '../../../scripts/fleet/process/main/run.mts'
 
 export const SCRIPT_META: ScriptMeta = {
   describe: 'Build the host keychain addon with the selected native toolchain.',

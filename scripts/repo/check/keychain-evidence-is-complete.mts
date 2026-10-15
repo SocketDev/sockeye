@@ -4,8 +4,8 @@ import process from 'node:process'
 
 import { REPO_ROOT } from '../../fleet/paths.mts'
 import { isMainModule } from '../../fleet/process/is-main-module.mts'
-import { isJsonRequested, runMain } from '../../fleet/process/run-main.mts'
-import type { ScriptMeta } from '../../fleet/process/run-main.mts'
+import { isJsonRequested, runMain } from '../../fleet/process/main/run.mts'
+import type { ScriptMeta } from '../../fleet/process/main/run.mts'
 import { ordinaryTestEnvironment } from '../test.mts'
 import { keychainSuiteAllowed } from '../test-keychain-interactive.mts'
 import {
