@@ -10,8 +10,8 @@ run-name: 'release: sign macos for ${{ github.ref_name }}'
 #   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS (secret) - P12 password
 #   APPLE_APP_SPECIFIC_PASSWORD (secret) - notarytool auth
 #   APPLE_DEVELOPER_ID_PROVISIONING_PROFILE (secret) - base64 profile
-#   APPLE_ID (variable) - Apple ID email
-#   APPLE_TEAM_ID (variable) - Developer Program team ID
+#   APPLE_ID (secret) - Apple ID email
+#   APPLE_TEAM_ID (secret) - Developer Program team ID
 #
 # Until those secrets are in place, set adhoc: true on dispatch to build and
 # ad-hoc sign without a certificate. Ad-hoc is good for local testing but not
@@ -88,9 +88,9 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12 }}
           p12-password: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS }}
-          apple-id: ${{ vars.APPLE_ID }}
+          apple-id: ${{ secrets.APPLE_ID }}
           app-specific-password: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          team-id: ${{ vars.APPLE_TEAM_ID }}
+          team-id: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Build prod binary
         run: pnpm run build

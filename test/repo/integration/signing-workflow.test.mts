@@ -131,11 +131,11 @@ test('cleans up imported certificates even after a failed signing step', () => {
   )
   const credentials = signingStep('Import codesign certificate')
   const notarize = signingStep('Notarize, staple, and package application')
-  expect(credentials.with?.['apple-id']).toBe('${{ vars.APPLE_ID }}')
+  expect(credentials.with?.['apple-id']).toBe('${{ secrets.APPLE_ID }}')
   expect(credentials.with?.['app-specific-password']).toBe(
     '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
   )
-  expect(credentials.with?.['team-id']).toBe('${{ vars.APPLE_TEAM_ID }}')
+  expect(credentials.with?.['team-id']).toBe('${{ secrets.APPLE_TEAM_ID }}')
   expect(notarize.env?.['NOTARY_KEYCHAIN']).toBe(
     '${{ steps.import-signing.outputs.notary-keychain }}',
   )
@@ -193,10 +193,10 @@ test('publishes one tag release after both signed artifacts verify', () => {
   expect(release.with?.['token']).toBe('${{ steps.release-app.outputs.token }}')
 })
 
-test('reads public Apple identity from variables', () => {
+test('reads Apple identity from secrets', () => {
   const credentials = signingStep('Import codesign certificate')
-  expect(credentials.with?.['apple-id']).toBe('${{ vars.APPLE_ID }}')
-  expect(credentials.with?.['team-id']).toBe('${{ vars.APPLE_TEAM_ID }}')
+  expect(credentials.with?.['apple-id']).toBe('${{ secrets.APPLE_ID }}')
+  expect(credentials.with?.['team-id']).toBe('${{ secrets.APPLE_TEAM_ID }}')
   expect(credentials.with?.['app-specific-password']).toBe(
     '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}',
   )
