@@ -202,6 +202,8 @@ int RunSet(std::string_view identifier, std::string_view binding_id) {
                stderr);
     return kUsageExit;
   }
+  if (IsCiEnvironment())
+    return RefuseKeychainInCi();
   SecretBuffer value;
   std::string input_error;
   if (!ReadSecretFromTerminal(identifier, value, input_error)) {
@@ -239,6 +241,8 @@ int RunOnePasswordImport(std::string_view identifier,
                stderr);
     return kUsageExit;
   }
+  if (IsCiEnvironment())
+    return RefuseKeychainInCi();
   std::string terminal_error;
   if (!HasForegroundTerminal(terminal_error)) {
     std::fprintf(stderr, "%s\n", terminal_error.c_str());
@@ -274,6 +278,8 @@ int RunDelete(std::string_view identifier, std::string_view binding_id) {
                stderr);
     return kUsageExit;
   }
+  if (IsCiEnvironment())
+    return RefuseKeychainInCi();
   std::string terminal_error;
   if (!HasForegroundTerminal(terminal_error)) {
     std::fprintf(stderr, "%s\n", terminal_error.c_str());
@@ -303,6 +309,8 @@ int RunVerify(std::string_view identifier, std::string_view binding_id) {
                stderr);
     return kUsageExit;
   }
+  if (IsCiEnvironment())
+    return RefuseKeychainInCi();
   std::string terminal_error;
   if (!HasForegroundTerminal(terminal_error)) {
     std::fprintf(stderr, "%s\n", terminal_error.c_str());
@@ -347,6 +355,8 @@ int RunApprovedChild(int argc, char** argv, bool refresh_github_token = false) {
     std::fprintf(stderr, "%s\n", parse_error.c_str());
     return kUsageExit;
   }
+  if (IsCiEnvironment())
+    return RefuseKeychainInCi();
 
   const std::string manifest = CanonicalRunManifest(options);
   const std::string manifest_digest = DigestText(manifest);

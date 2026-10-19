@@ -11,7 +11,12 @@ test.each([{ flags: [] }, { flags: ['--fix'] }])(
       {
         encoding: 'utf8',
         timeout: 10_000,
-        env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'ready' },
+        env: {
+          ...process.env,
+          CI: '',
+          GITHUB_ACTIONS: '',
+          SOCKEYE_TEST_SCENARIO: 'ready',
+        },
       },
     )
     expect(result.status).toBe(0)
