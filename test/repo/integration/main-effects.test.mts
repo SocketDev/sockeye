@@ -13,16 +13,6 @@ const binding = 'a'.repeat(64)
 const importBinding = 'b'.repeat(64)
 const deleteBinding = 'c'.repeat(64)
 const verifyBinding = 'd'.repeat(64)
-
-function localScenarioEnvironment(scenario: string): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    CI: '',
-    GITHUB_ACTIONS: '',
-    SOCKEYE_TEST_SCENARIO: scenario,
-  }
-}
-
 beforeAll(() => {
   const object = path.join(
     getCmakeBuildDir(getBuildMode(), `${process.platform}-${process.arch}`),
@@ -66,18 +56,6 @@ const commands: Record<string, string[]> = {
     binary,
     'example-argument',
   ],
-  'gh-run': [
-    'gh-run',
-    '--credential',
-    'GH_TOKEN',
-    '--binding',
-    '2'.repeat(64),
-    '--cwd',
-    REPO_ROOT,
-    '--',
-    binary,
-    'example-argument',
-  ],
 }
 
 test.each([
@@ -89,7 +67,7 @@ test.each([
     const result = spawnSync(binary, commands['delete'], {
       encoding: 'utf8',
       timeout: 10_000,
-      env: localScenarioEnvironment(scenario),
+      env: { ...process.env, SOCKEYE_TEST_SCENARIO: scenario },
     })
     expect(result.status).toBe(5)
     expect(result.stdout).toBe('')
@@ -104,7 +82,7 @@ test('successful startup establishes process restrictions before dispatch', () =
   const result = spawnSync(binary, commands['delete'], {
     encoding: 'utf8',
     timeout: 10_000,
-    env: localScenarioEnvironment('success'),
+    env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
   })
   expect(result.status).toBe(0)
   expect(result.stdout).toBe('')
@@ -121,35 +99,6 @@ test('successful startup establishes process restrictions before dispatch', () =
     'delete',
     'invalidate',
   ])
-})
-
-test.each([
-  'set',
-  'import',
-  'delete',
-  'verify',
-  'run',
-  'gh-run',
-  'doctor',
-] as const)('CI refuses %s before any Keychain effect', command => {
-  const result = spawnSync(binary, commands[command] ?? ['doctor'], {
-    encoding: 'utf8',
-    timeout: 10_000,
-    env: {
-      ...process.env,
-      CI: 'true',
-      GITHUB_ACTIONS: 'true',
-      GITHUB_TOKEN: 'example-placeholder-token',
-      SOCKEYE_TEST_SCENARIO: 'success',
-    },
-  })
-  expect(result.status).toBe(4)
-  expect(result.stdout).toBe('')
-  expect(result.stderr).toContain(
-    'In CI, use workflow-provided environment credentials directly',
-  )
-  expect(result.stderr).not.toContain('effect:')
-  expect(result.stderr).not.toContain('example-placeholder-token')
 })
 
 test.each([
@@ -172,7 +121,7 @@ test.each([
     const result = spawnSync(binary, commands[command], {
       encoding: 'utf8',
       timeout: 10_000,
-      env: localScenarioEnvironment('success'),
+      env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
     })
     expect(result.status, result.stderr).toBe(0)
     expect(result.stderr).toContain(`reason:${reason}`)
@@ -218,7 +167,7 @@ test.each([
     const result = spawnSync(binary, commands[command], {
       encoding: 'utf8',
       timeout: 10_000,
-      env: localScenarioEnvironment(scenario),
+      env: { ...process.env, SOCKEYE_TEST_SCENARIO: scenario },
     })
     expect(result.status, result.stderr).toBe(status)
     expect(

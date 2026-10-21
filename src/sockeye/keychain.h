@@ -57,10 +57,6 @@ private:
                                         std::string_view binding_id,
                                         const SecretBuffer& value,
                                         KeychainError& error);
-  friend KeychainStatus ReplaceCredential(AuthorizationContext& context,
-                                          std::string_view binding_id,
-                                          const SecretBuffer& value,
-                                          KeychainError& error);
 };
 
 KeychainStatus DeleteCredential(AuthorizationContext& context,
@@ -72,10 +68,6 @@ KeychainStatus ReadCredential(AuthorizationContext& context,
 KeychainStatus StoreCredential(AuthorizationContext& context,
                                std::string_view binding_id,
                                const SecretBuffer& value, KeychainError& error);
-KeychainStatus ReplaceCredential(AuthorizationContext& context,
-                                 std::string_view binding_id,
-                                 const SecretBuffer& value,
-                                 KeychainError& error);
 
 } // namespace sockeye
 

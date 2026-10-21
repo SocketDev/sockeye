@@ -446,42 +446,6 @@ KeychainStatus StoreCredential(AuthorizationContext &context,
   }
 }
 
-KeychainStatus ReplaceCredential(AuthorizationContext &context,
-                                 std::string_view binding_id,
-                                 const SecretBuffer &value,
-                                 KeychainError &error) {
-  @autoreleasepool {
-    if (!context.impl_->authenticated || !value.IsLocked() ||
-        value.Size() == 0) {
-      SetError(error, KeychainStatus::kDenied, 0,
-               "Credential replacement refused: an authenticated non-empty "
-               "locked-memory value is required.");
-      return error.status;
-    }
-    NSMutableDictionary *query = BaseQuery(binding_id);
-    if (query == nil) {
-      SetError(error, KeychainStatus::kIo, 0,
-               "Credential replacement failed: binding is invalid.");
-      return error.status;
-    }
-    query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
-    query[(__bridge id)kSecUseAuthenticationContext] = context.impl_->context;
-    NSData *secret =
-        [NSData dataWithBytesNoCopy:const_cast<unsigned char *>(value.Data())
-                             length:value.Size()
-                       freeWhenDone:NO];
-    NSDictionary *changes = @{(__bridge id)kSecValueData : secret};
-    const OSStatus status = SecItemUpdate((__bridge CFDictionaryRef)query,
-                                          (__bridge CFDictionaryRef)changes);
-    if (status != errSecSuccess) {
-      SetOsError(error, status, "Credential replacement");
-      return error.status;
-    }
-    error = {};
-    return KeychainStatus::kSuccess;
-  }
-}
-
 KeychainStatus DeleteCredential(AuthorizationContext &context,
                                 std::string_view binding_id,
                                 KeychainError &error) {

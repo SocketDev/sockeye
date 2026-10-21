@@ -8,6 +8,7 @@ import path from 'node:path'
 import process from 'node:process'
 
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
+import { resolveBuildMode } from '../fleet/build/mode.mts'
 
 export * from '../fleet/paths.mts'
 
@@ -126,13 +127,24 @@ export const LOGOMARK_SVG_PATHS = [
 ]
 
 /**
- * Resolve the active build mode. An explicit `BUILD_MODE` wins, CI defaults to
- * the release-shaped `prod` build, and a developer machine defaults to `dev`.
+ * Resolve the active build mode. Explicit mode flags win over `BUILD_MODE`.
+ * Unconfigured builds default to `dev` on every host.
  * Every consumer that locates a built binary resolves the mode through here so
  * tests and scripts always look in the directory the build actually wrote.
  */
 export function getBuildMode(): string {
-  return getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
+  const args = process.argv.slice(2)
+  const environmentMode = getEnvValue('BUILD_MODE')
+  const mode = resolveBuildMode(args, {
+    defaultMode: environmentMode === 'prod' ? 'prod' : 'dev',
+  })
+  return args.includes('--dev') || args.includes('--prod')
+    ? mode
+    : (environmentMode ?? mode)
+}
+
+export function getBuildModeArgs(mode: string): string[] {
+  return ['dev', 'prod'].includes(mode) ? [`--${mode}`] : []
 }
 
 export function getBuildRoot(mode: string, platformArch: string): string {

@@ -2310,12 +2310,6 @@ importers:
         specifier: 'catalog:'
         version: 26.6.5
 
-  .claude/hooks/fleet/no-subagent-publish-guard:
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.5
-
   .claude/hooks/fleet/no-tail-install-out-guard:
     dependencies:
       '@socketsecurity/lib-stable':
@@ -2419,8 +2413,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
-
-  .claude/hooks/fleet/no-vault-read-guard: {}
 
   .claude/hooks/fleet/no-verify-format-nudge:
     dependencies:

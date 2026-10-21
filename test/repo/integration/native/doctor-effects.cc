@@ -87,10 +87,6 @@ KeychainStatus StoreCredential(AuthorizationContext&, std::string_view,
   repaired = scenario != "postcheck-failed";
   return KeychainStatus::kSuccess;
 }
-KeychainStatus ReplaceCredential(AuthorizationContext&, std::string_view,
-                                 const SecretBuffer&, KeychainError&) {
-  ForbiddenDoctorEffect();
-}
 bool ReadOnePasswordReference(std::string_view, SecretBuffer&, std::string&) {
   ForbiddenDoctorEffect();
 }

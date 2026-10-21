@@ -36,14 +36,6 @@ and checksum-verified installer remain release gates; see the
 
 ## Usage
 
-### Documentation
-
-- [Command and user guide](docs/commands.md): credential operations, exact child
-  launches, local CI, and common errors.
-- [Security model](docs/security-model.md): trust boundaries and protections.
-- [Credential setup](docs/credential-setup.md): attended storage workflows.
-- [Threat model](docs/threat-model.md): scoped threats and remaining risks.
-
 Store a credential from an attached terminal. Sockeye hides the input; press
 Control-D when the value is complete.
 
@@ -82,14 +74,6 @@ Keychain. Keeping that distinction explicit avoids unnecessary biometric
 storage for values that are safe to display.
 
 </details>
-
-### Protected GitHub CLI commands
-
-Fleet GitHub commands use `sockeye gh-run` through the `credentials:gh`
-wrapper. Sockeye reads the active `github.com` token from `gh` without printing
-it. It validates the token with GitHub and stores a protected copy. It updates
-that copy only when the active token changes. It leaves `gh`'s credential
-storage unchanged.
 
 ### Local CI
 

@@ -15,13 +15,14 @@ import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
-import { runMain } from '../fleet/process/main/run.mts'
-import type { ScriptMeta } from '../fleet/process/main/run.mts'
+import { runMain } from '../fleet/process/run-main.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { ensureNativeCoverageToolchain } from './native-toolchain.mts'
 import {
   getBinaryPath,
   getBuildMode,
+  getBuildModeArgs,
   getCmakeBuildDir,
   getDefaultNativeProfilePattern,
   getNodeHeaderDirectory,
@@ -31,7 +32,7 @@ import {
 export const SCRIPT_META: ScriptMeta = {
   describe:
     'Build the Sockeye executable and keychain addon with the macOS toolchain.',
-  help: 'Usage: pnpm run build\nEnvironment: BUILD_MODE selects the build mode; RELEASE_VERSION overrides the embedded version; SOCKEYE_TARGET_ARCH selects arm64 or x64.',
+  help: 'Usage: pnpm run build [--dev | --prod]\nEnvironment: BUILD_MODE selects the default mode; RELEASE_VERSION overrides the embedded version; SOCKEYE_TARGET_ARCH selects arm64 or x64.',
   json: 'result',
 }
 
@@ -114,7 +115,10 @@ export async function buildSockeye(): Promise<void> {
   logger.success(`Built ${binaryPath} (${metadata.size} bytes)`)
 
   logger.info('Building the keychain addon…')
-  await run('node', ['packages/keychain-addon-builder/scripts/build.mts'])
+  await run('node', [
+    'packages/keychain-addon-builder/scripts/build.mts',
+    ...getBuildModeArgs(mode),
+  ])
 }
 
 if (isMainModule(import.meta.url)) {

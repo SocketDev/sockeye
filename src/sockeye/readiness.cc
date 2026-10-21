@@ -3,13 +3,9 @@
 #include "sockeye/terminal.h"
 
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 
 namespace sockeye {
 namespace {
-
-constexpr int kDeniedExit = 4;
 
 std::string ReadinessStatus(const KeychainError& error, bool credential) {
   switch (error.status) {
@@ -67,24 +63,6 @@ int ReadinessExit(const ReadinessReport& report) {
              : 5;
 }
 
-bool IsCiEnvironment() {
-  const char* github_actions = std::getenv("GITHUB_ACTIONS");
-  if (github_actions != nullptr && std::strcmp(github_actions, "true") == 0) {
-    return true;
-  }
-  const char* ci = std::getenv("CI");
-  return ci != nullptr && ci[0] != '\0' && std::strcmp(ci, "0") != 0 &&
-         std::strcmp(ci, "false") != 0;
-}
-
-int RefuseKeychainInCi() {
-  std::fputs(
-      "Sockeye Keychain commands require an attended local session. In CI, "
-      "use workflow-provided environment credentials directly.\n",
-      stderr);
-  return kDeniedExit;
-}
-
 int RunDoctorCommand(int argc, char** argv, std::string_view version,
                      int (*repair)(std::string_view, std::string_view)) {
   bool fix = false;
@@ -107,8 +85,6 @@ int RunDoctorCommand(int argc, char** argv, std::string_view version,
     } else
       return 2;
   }
-  if (IsCiEnvironment())
-    return RefuseKeychainInCi();
   ReadinessReport report;
   std::string terminal_error;
   report.foreground = HasForegroundTerminal(terminal_error);

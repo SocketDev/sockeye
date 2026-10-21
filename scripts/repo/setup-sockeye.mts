@@ -23,9 +23,9 @@ import { isPlainObject } from '@socketsecurity/lib-stable/objects/predicates'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { abortScript } from '../fleet/process/script-result.mts'
-import { runMain } from '../fleet/process/main/run.mts'
+import { runMain } from '../fleet/process/run-main.mts'
 
-import type { ScriptMeta } from '../fleet/process/main/run.mts'
+import type { ScriptMeta } from '../fleet/process/run-main.mts'
 import {
   releaseAssetName,
   releaseBundleDirectoryPath,

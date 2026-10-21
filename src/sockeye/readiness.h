@@ -17,8 +17,6 @@ struct ReadinessReport {
 std::string RenderReadinessReport(const ReadinessReport& report,
                                   std::string_view version);
 int ReadinessExit(const ReadinessReport& report);
-bool IsCiEnvironment();
-int RefuseKeychainInCi();
 int RunDoctorCommand(int argc, char** argv, std::string_view version,
                      int (*repair)(std::string_view, std::string_view));
 

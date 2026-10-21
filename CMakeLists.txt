@@ -29,7 +29,6 @@ set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 add_executable(sockeye
   src/sockeye/child-process.cc
   src/sockeye/file-identity.cc
-  src/sockeye/github.cc
   src/sockeye/input-policy.cc
   src/sockeye/keychain-macos.mm
   src/sockeye/main.cc
@@ -119,13 +118,6 @@ if(BUILD_TESTING)
     access=SockeyeTestAccess pipe=SockeyeTestPipe close=SockeyeTestClose
     read=SockeyeTestRead posix_spawn=SockeyeTestSpawn waitpid=SockeyeTestWait
   )
-  add_executable(sockeye-github-import-test
-    src/sockeye/github.cc
-    src/sockeye/secret-buffer.cc
-    test/repo/unit/native/github-import-test.cc
-  )
-  target_include_directories(sockeye-github-import-test PRIVATE src)
-  target_compile_definitions(sockeye-github-import-test PRIVATE SOCKEYE_TESTING=1)
 
   add_executable(sockeye-keychain-framework-test
     src/sockeye/keychain-macos.mm
@@ -164,8 +156,7 @@ if(BUILD_TESTING)
   target_include_directories(sockeye-run-request-test PRIVATE src)
   add_executable(sockeye-preview-isolation-test
     src/sockeye/main.cc
-    src/sockeye/github.cc
-    src/sockeye/readiness.cc
+  src/sockeye/readiness.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
     src/sockeye/input-policy.cc
@@ -176,8 +167,7 @@ if(BUILD_TESTING)
 
   add_executable(sockeye-doctor-test
     src/sockeye/main.cc
-    src/sockeye/github.cc
-    src/sockeye/readiness.cc
+  src/sockeye/readiness.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
     src/sockeye/input-policy.cc
@@ -188,7 +178,6 @@ if(BUILD_TESTING)
 
   add_executable(sockeye-main-effects-test
     src/sockeye/main.cc
-    src/sockeye/github.cc
     src/sockeye/readiness.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
@@ -234,7 +223,6 @@ if(BUILD_TESTING)
     sockeye-keychain-framework-test
     sockeye-keystore-framework-test
     sockeye-one-password-test
-    sockeye-github-import-test
     sockeye-run-request-test
     sockeye-readiness-test
     sockeye-preview-isolation-test

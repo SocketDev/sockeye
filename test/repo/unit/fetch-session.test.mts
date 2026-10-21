@@ -29,7 +29,7 @@ test('runs the bootstrap fetcher to verify an existing fleet payload', () => {
   expect(ensurePayload('.')).toBe(0)
   expect(spawnSync).toHaveBeenCalledWith(
     process.execPath,
-    ['scripts/repo/bootstrap/fleet.mjs', '--quiet', '--cached'],
+    ['scripts/repo/bootstrap/fleet.mjs', '--quiet'],
     { cwd: '.', encoding: 'utf8' },
   )
 })

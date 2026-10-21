@@ -31,14 +31,15 @@ import { getScriptLogger } from '../../../scripts/fleet/process/script-output.mt
 
 import { getKeychainAddonBinaryPath, getKeychainAddonOutDir } from './paths.mts'
 import {
+  getBuildMode,
   getDefaultNativeProfilePattern,
   getNodeHeaderDirectory,
 } from '../../../scripts/repo/paths.mts'
 import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
 import { ensureNativeCoverageToolchain } from '../../../scripts/repo/native-toolchain.mts'
 import { isMainModule } from '../../../scripts/fleet/process/is-main-module.mts'
-import { runMain } from '../../../scripts/fleet/process/main/run.mts'
-import type { ScriptMeta } from '../../../scripts/fleet/process/main/run.mts'
+import { runMain } from '../../../scripts/fleet/process/run-main.mts'
+import type { ScriptMeta } from '../../../scripts/fleet/process/run-main.mts'
 
 export const SCRIPT_META: ScriptMeta = {
   describe: 'Build the host keychain addon with the selected native toolchain.',
@@ -163,7 +164,7 @@ export async function buildKeychainAddon(
     throw new Error(`node_api.h not found under ${nodeInclude}.`)
   }
 
-  const mode = getEnvValue('BUILD_MODE') ?? (getEnvValue('CI') ? 'prod' : 'dev')
+  const mode = getBuildMode()
   const platformArch = `${platform}-${arch}`
   const outDir = getKeychainAddonOutDir(mode, platformArch)
   await mkdir(outDir, { recursive: true })

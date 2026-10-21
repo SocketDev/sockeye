@@ -32,12 +32,7 @@ test.each([
       {
         encoding: 'utf8',
         timeout: 10_000,
-        env: {
-          ...process.env,
-          CI: '',
-          GITHUB_ACTIONS: '',
-          SOCKEYE_TEST_SCENARIO: scenario,
-        },
+        env: { ...process.env, SOCKEYE_TEST_SCENARIO: scenario },
       },
     )
     expect(result.status).toBe(status)

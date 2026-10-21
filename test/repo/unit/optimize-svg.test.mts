@@ -9,7 +9,7 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { optimiseSvg } from '../../../scripts/fleet/gen/svg/optimize.mts'
+import { optimiseSvg } from '../../../scripts/fleet/gen/svg-optimize.mts'
 import { optimizeSvgAssets } from '../../../scripts/repo/optimize-svg.mts'
 import { LOGOMARK_SVG_PATHS } from '../../../scripts/repo/paths.mts'
 
