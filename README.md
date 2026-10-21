@@ -1,4 +1,4 @@
-# <picture><img width="32" height="32" alt="sockeye" src="https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/repo/logomark.svg"></picture> Sockeye
+# <picture><img width="48" height="48" alt="sockeye" src="https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/repo/logomark.svg"></picture> Sockeye
 
 [![Follow @SocketSecurity](https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/fleet/badge-follow-x.svg)](https://twitter.com/SocketSecurity)
 [![Follow @socket.dev on Bluesky](https://raw.githubusercontent.com/SocketDev/sockeye/HEAD/assets/fleet/badge-follow-bluesky.svg)](https://bsky.app/profile/socket.dev)

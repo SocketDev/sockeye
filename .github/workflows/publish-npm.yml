@@ -57,10 +57,10 @@ on:
           content is published while the workflow definition stays on main.
         type: string
         default: ''
-      resume-reserved:
+      resume-publish:
         description: >-
-          Resume an unpublished release from its existing vVERSION tag.
-          Requires checkout-ref to name that exact tag.
+          Resume publishing after squash-merging the release PR. Keep its title
+          unchanged and dispatch from the default branch.
         type: boolean
         default: false
 
@@ -135,7 +135,7 @@ jobs:
           CHECKOUT_REF: ${{ inputs.checkout-ref }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           DISPATCH_REF: ${{ github.ref }}
-          RESUME_RESERVED: ${{ inputs.resume-reserved }}
+          RESUME_PUBLISH: ${{ inputs.resume-publish }}
         run: |
           set -euo pipefail
           if [ "$DISPATCH_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
@@ -146,7 +146,7 @@ jobs:
             echo "trusted=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$RESUME_RESERVED" != "true" ] || [ -n "$BACKFILL_VERSION" ] || [[ ! "$CHECKOUT_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+          if [ "$RESUME_PUBLISH" != "true" ] || [ -n "$BACKFILL_VERSION" ] || [[ ! "$CHECKOUT_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
             echo "trusted=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -217,23 +217,35 @@ jobs:
           payload-token-client-id: ${{ steps.content-trust.outputs.trusted == 'true' && (secrets.SOCKET_RELEASE_CLIENT_ID || vars.SOCKET_RELEASE_CLIENT_ID) || '' }}
           payload-token-private-key: ${{ steps.content-trust.outputs.trusted == 'true' && secrets.SOCKET_RELEASE_APP_PRIVATE_KEY || '' }}
       - name: Validate reserved release resume
-        if: ${{ inputs.resume-reserved == true }}
+        if: ${{ inputs.resume-publish == true }}
         env:
           BACKFILL_VERSION: ${{ inputs.backfill-version }}
           CHECKOUT_REF: ${{ inputs.checkout-ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          VERSION="$(node -p 'require("./package.json").version')"
-          if [ -n "$BACKFILL_VERSION" ] || [ "$CHECKOUT_REF" != "v$VERSION" ]; then
-            echo "::error::Reserved release resume requires checkout-ref v$VERSION without backfill-version." >&2
+          VERSION="$(node --input-type=module -e 'import { readPackageJson } from "./scripts/fleet/registry/npm/shared.mts"; process.stdout.write(readPackageJson().version)')"
+          if [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            echo "::error::Reserved release resume must run from the default branch." >&2
             exit 1
           fi
           HEAD_SHA="$(git rev-parse HEAD)"
-          TAG_SHA="$(git rev-parse "$CHECKOUT_REF^{commit}")"
-          if [ "$HEAD_SHA" != "$TAG_SHA" ]; then
-            echo "::error::Reserved release resume checked out $HEAD_SHA, but $CHECKOUT_REF resolves to $TAG_SHA." >&2
+          if [ "$HEAD_SHA" != "$DISPATCH_SHA" ]; then
+            echo "::error::Reserved release resume did not check out the dispatched default-branch source." >&2
             exit 1
           fi
+          BUMP_SUBJECT="$(git log -1 --format=%s --fixed-strings --grep="chore: bump version to $VERSION" HEAD)"
+          if [ "$BUMP_SUBJECT" != "chore: bump version to $VERSION" ]; then
+            echo "::error::Default-branch history does not contain the signed bump commit for $VERSION. Merge its release PR first." >&2
+            exit 1
+          fi
+          BUMP_SHA="$(git log -1 --format=%H --fixed-strings --grep="chore: bump version to $VERSION" HEAD)"
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Reserved release resume requires a clean checkout." >&2
+            exit 1
+          fi
+          echo "[reserved-bump] $BUMP_SHA"
+          echo "[reserved-source] $HEAD_SHA"
       - name: Build
         run: pnpm run build
       - name: Install cargo-llvm-cov
@@ -245,7 +257,7 @@ jobs:
         if: ${{ inputs.backfill-version == '' }}
         run: pnpm run cover
       - name: Set up odai
-        if: ${{ inputs.backfill-version == '' && inputs.resume-reserved != true }}
+        if: ${{ inputs.backfill-version == '' && inputs.resume-publish != true }}
         uses: ./.github/actions/fleet/setup-odai
         with:
           allow-fill: 'true'
@@ -282,7 +294,7 @@ jobs:
           APPLE_TEAM_ID: ${{ vars.BROWSER_BRIDGE_RELEASE_ENABLED == 'true' && inputs.publish == true && inputs.backfill-version == '' && steps.content-trust.outputs.trusted == 'true' && (secrets.APPLE_TEAM_ID || vars.APPLE_TEAM_ID) || '' }}
           BACKFILL_VERSION: ${{ inputs.backfill-version }}
           BROWSER_BRIDGE_RELEASE_ENABLED: ${{ vars.BROWSER_BRIDGE_RELEASE_ENABLED == 'true' && inputs.publish == true && inputs.backfill-version == '' && steps.content-trust.outputs.trusted == 'true' && 'true' || 'false' }}
-          CHECKOUT_REF: ${{ inputs.resume-reserved != true && inputs.checkout-ref || '' }}
+          CHECKOUT_REF: ${{ inputs.resume-publish != true && inputs.checkout-ref || '' }}
           CHROME_EXTENSION_CRX_PRIVATE_KEY_PEM: ${{ vars.BROWSER_BRIDGE_RELEASE_ENABLED == 'true' && inputs.publish == true && inputs.backfill-version == '' && steps.content-trust.outputs.trusted == 'true' && secrets.CHROME_EXTENSION_CRX_PRIVATE_KEY_PEM || '' }}
           DIST_TAG: ${{ inputs.dist-tag }}
           RELEASE_APP_TOKEN: ${{ steps.release-app.outputs.token }}
@@ -290,7 +302,7 @@ jobs:
         # CHECKOUT_REF forwards on its own so a checkout-ref dispatch WITHOUT
         # backfill-version is refused by the script instead of silently
         # bump-publishing historical content.
-        run: node scripts/fleet/npm-publish.mts --tag "$DIST_TAG" ${BACKFILL_VERSION:+--backfill "$BACKFILL_VERSION"} ${CHECKOUT_REF:+--checkout-ref "$CHECKOUT_REF"} ${{ inputs.resume-reserved == true && '--resume-reserved' || '' }} ${{ inputs.publish != true && '--dry-run' || '' }}
+        run: node scripts/fleet/npm-publish.mts --tag "$DIST_TAG" ${BACKFILL_VERSION:+--backfill "$BACKFILL_VERSION"} ${CHECKOUT_REF:+--checkout-ref "$CHECKOUT_REF"} ${{ inputs.resume-publish == true && '--resume-publish' || '' }} ${{ inputs.publish != true && '--dry-run' || '' }}
       - name: Remove browser bridge signing keychain
         if: ${{ always() && vars.BROWSER_BRIDGE_RELEASE_ENABLED == 'true' && inputs.publish == true && inputs.backfill-version == '' && steps.content-trust.outputs.trusted == 'true' }}
         run: pnpm run browser-bridge:signing-cleanup
