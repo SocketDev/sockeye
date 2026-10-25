@@ -1,0 +1,315 @@
+#!/usr/bin/env node
+import { getScriptArgs, scriptStdio } from '../fleet/process/script-output.mts'
+/**
+ * @file Human-only credential setup with Socket Lib prompts. Usage: `pnpm run
+ *   setup:credential -- SOCKET_RELEASE_APP_PRIVATE_KEY --binding
+ *   <opaque-binding-id>` This process handles names and a non-secret 1Password
+ *   reference only. The native Sockeye executable reads either terminal input
+ *   or 1Password stdout, then puts the secret directly into Touch-ID-protected
+ *   Keychain storage.
+ */
+
+import { constants, existsSync, realpathSync } from 'node:fs'
+import { access } from 'node:fs/promises'
+import process from 'node:process'
+
+import { getEnvValue } from '@socketsecurity/lib-stable/env/rewire'
+import {
+  confirm,
+  input,
+  select,
+} from '@socketsecurity/lib-stable/stdio/prompts'
+import { whichSync } from '@socketsecurity/lib-stable/exe/path/which'
+import { authorizeOnePasswordTerminal } from '@socketsecurity/lib-stable/secrets/one-password'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
+
+import { isMainModule } from '../fleet/process/is-main-module.mts'
+import { runMain } from '../fleet/process/main/run.mts'
+import type { ScriptMeta } from '../fleet/process/main/run.mts'
+import { getInstalledSockeyeBinaryPath } from './paths.mts'
+import {
+  credentialSourceChoices,
+  isCredentialSource,
+  isOnePasswordReference,
+  parseCredentialSetupArgs,
+} from './setup-credential-contract.mts'
+
+import {
+  onePasswordEnvironment,
+  selectOnePasswordReference,
+} from './one-password-metadata.mts'
+import type { OnePasswordSelection } from './one-password-metadata.mts'
+import {
+  readSavedReference,
+  validateSavedReference,
+  writeSavedReference,
+} from './setup-credential/references.mts'
+
+export const SCRIPT_META: ScriptMeta = {
+  describe:
+    'Store one credential in Sockeye Keychain through guided 1Password import or hidden terminal entry.',
+  help: 'Usage: pnpm run setup:credential -- <UPPERCASE_CREDENTIAL_NAME> --binding <OPAQUE_BINDING_ID> [--source one-password]\nRequires a foreground terminal and Touch ID. The caller validates the binding against trusted local credential metadata before invoking this command. Guided import selects an account and vault, searches item names, then requests the field reference. Successful imports save only the account and field reference under the opaque binding ID in private local state for explicit reuse. --source one-password requires the supported 1Password CLI and never falls back to direct entry.',
+  json: 'result',
+}
+
+const ONE_PASSWORD_PATHS = ['/opt/homebrew/bin/op', '/usr/local/bin/op']
+const REQUIRED_SOCKEYE_CAPABILITIES = [
+  'sockeye-capabilities-v1',
+  'credential-bindings: sha256-64-lowercase-hex',
+  'credential-verify: attended-protected-readback-v1',
+  'credential-storage: keychain-biometry-current-set-device-only',
+]
+
+async function findOnePassword(): Promise<string | undefined> {
+  for (
+    let index = 0, { length } = ONE_PASSWORD_PATHS;
+    index < length;
+    index += 1
+  ) {
+    const candidate = ONE_PASSWORD_PATHS[index]!
+    try {
+      await access(candidate, constants.X_OK)
+      return candidate
+    } catch {
+      // Try the other supported, fixed installation location.
+    }
+  }
+  return undefined
+}
+
+async function runNative(
+  args: string[],
+  options?: { account?: string | undefined } | undefined,
+): Promise<void> {
+  const opts = { __proto__: null, ...options } as NonNullable<typeof options>
+  const account = opts.account
+  const binary = getInstalledSockeyeBinaryPath()
+  if (!existsSync(binary)) {
+    throw new Error(
+      `Installed Sockeye is unavailable. Run "pnpm run setup:sockeye --release <tag>" first (${binary}).`,
+    )
+  }
+  const capabilities = await spawn(binary, ['capabilities'], { stdio: 'pipe' })
+  const advertised = new Set(
+    typeof capabilities.stdout === 'string'
+      ? capabilities.stdout.trim().split(/\r?\n/u)
+      : [],
+  )
+  if (
+    capabilities.code !== 0 ||
+    REQUIRED_SOCKEYE_CAPABILITIES.some(
+      capability => !advertised.has(capability),
+    )
+  ) {
+    throw new Error(
+      'Installed Sockeye does not support protected credential bindings. Install a reviewed release with "pnpm run setup:sockeye --release <tag>".',
+    )
+  }
+  const result = await spawn(binary, args, {
+    stdio: scriptStdio('inherit'),
+    ...(account ? { env: onePasswordEnvironment({ account }) } : {}),
+  })
+  if (result.code !== 0) {
+    throw new Error(
+      `Sockeye credential setup failed with exit code ${result.code}`,
+    )
+  }
+}
+
+async function manualOnePasswordReference(): Promise<
+  OnePasswordSelection | undefined
+> {
+  const account = await input(
+    {
+      message: '1Password account sign-in address or user ID:',
+    },
+    { output: process.stderr },
+  )
+  if (typeof account !== 'string' || !/^[a-zA-Z0-9.-]{1,512}$/.test(account)) {
+    return undefined
+  }
+  const reference = await input(
+    {
+      message:
+        'Full 1Password reference (op://Vault/item/field), not its secret value:',
+    },
+    { output: process.stderr },
+  )
+  if (typeof reference !== 'string' || !isOnePasswordReference(reference)) {
+    return undefined
+  }
+  return { account, reference }
+}
+
+export async function authorizeOnePasswordAccount(
+  executable: string,
+  account: string,
+): Promise<void> {
+  const resolved = whichSync('op', {
+    path: getEnvValue('PATH'),
+    nothrow: true,
+  })
+  if (
+    typeof resolved !== 'string' ||
+    realpathSync(resolved) !== realpathSync(executable)
+  ) {
+    throw new Error(
+      '1Password CLI selection differs from PATH. Put the supported op installation first in PATH and retry.',
+    )
+  }
+  process.stderr.write(
+    'Enable 1Password Settings > Developer > Integrate with 1Password CLI, unlock the desktop app, and approve this terminal.\n',
+  )
+  let status: string
+  try {
+    status = (await authorizeOnePasswordTerminal({ account })).status
+  } catch {
+    status = 'authorization-failed'
+  }
+  if (status !== 'authorized') {
+    throw new Error(
+      `1Password terminal authorization failed (${status}). Check desktop CLI integration and retry from the foreground terminal.`,
+    )
+  }
+}
+
+export async function chooseOnePasswordReference(
+  executable: string,
+  options: {
+    bindingId?: string | undefined
+    credentialName?: string | undefined
+  } = {},
+): Promise<OnePasswordSelection | undefined> {
+  const saved = options.bindingId
+    ? await readSavedReference(options.bindingId)
+    : undefined
+  const method = await select(
+    {
+      message: 'How should Sockeye locate the 1Password field?',
+      choices: [
+        ...(saved
+          ? [
+              {
+                name: 'Use the saved account and field reference',
+                value: 'saved',
+              },
+            ]
+          : []),
+        {
+          name: 'Choose account, vault, and item (recommended)',
+          value: 'guided',
+        },
+        { name: 'Enter account and full reference', value: 'reference' },
+      ],
+    },
+    { output: process.stderr },
+  )
+  if (method === 'saved' && saved) {
+    await authorizeOnePasswordAccount(executable, saved.account)
+    return saved
+  }
+  if (method === 'reference') {
+    const selected = await manualOnePasswordReference()
+    if (selected) {
+      await authorizeOnePasswordAccount(executable, selected.account)
+    }
+    return selected
+  }
+  if (method !== 'guided') {
+    return undefined
+  }
+  return await selectOnePasswordReference(
+    executable,
+    {
+      authorize: async account =>
+        await authorizeOnePasswordAccount(executable, account),
+      choose: async (message, choices) =>
+        await select({ message, choices }, { output: process.stderr }),
+      search: async message =>
+        await input({ message }, { output: process.stderr }),
+      field: async message =>
+        await input({ message }, { output: process.stderr }),
+    },
+    { credentialName: options.credentialName },
+  )
+}
+
+export async function setupCredential(
+  args: readonly string[],
+): Promise<number> {
+  const {
+    bindingId,
+    identifier,
+    source: requestedSource,
+  } = parseCredentialSetupArgs(args)
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error('Credential setup requires a foreground terminal.')
+  }
+  const executable = await findOnePassword()
+  if (requestedSource && !executable) {
+    throw new Error(
+      '1Password credential setup is unavailable. A supported 1Password CLI was not found. Install the CLI, enable desktop integration, and retry.',
+    )
+  }
+  const source =
+    requestedSource ??
+    (await select(
+      {
+        message: `How should Sockeye set ${identifier}?`,
+        choices: credentialSourceChoices(Boolean(executable)),
+      },
+      { output: process.stderr },
+    ))
+  if (!isCredentialSource(source)) {
+    return 130
+  }
+  if (source === 'keychain') {
+    await runNative(['set', identifier, '--binding', bindingId])
+    return 0
+  }
+
+  if (!executable) {
+    return 130
+  }
+  const selected = await chooseOnePasswordReference(executable, {
+    bindingId,
+    credentialName: identifier,
+  })
+  if (!selected) {
+    return 130
+  }
+  validateSavedReference(selected)
+  const approved = await confirm(
+    {
+      message: `Import ${identifier} from ${selected.reference} in account ${selected.account} into Touch-ID-protected Keychain?`,
+      default: false,
+    },
+    { output: process.stderr },
+  )
+  if (approved !== true) {
+    return 130
+  }
+  await runNative(
+    [
+      'import-1password',
+      identifier,
+      selected.reference,
+      '--binding',
+      bindingId,
+    ],
+    { account: selected.account },
+  )
+  try {
+    await writeSavedReference(bindingId, selected)
+  } catch {
+    throw new Error(
+      'Credential imported into Keychain, but its reference metadata was not saved. Repair the private Sockeye state directory before reusing the reference.',
+    )
+  }
+  return 0
+}
+
+if (isMainModule(import.meta.url)) {
+  runMain(async () => await setupCredential(getScriptArgs()), SCRIPT_META)
+}
