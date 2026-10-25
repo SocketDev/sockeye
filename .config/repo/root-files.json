@@ -1,0 +1,5 @@
+{
+  "allow": {
+    "CMakeLists.txt": "CMake requires the top-level CMakeLists.txt at the source root — sockeye's native C++/ObjC++ build anchor, driven by scripts/repo/build.mts"
+  }
+}
