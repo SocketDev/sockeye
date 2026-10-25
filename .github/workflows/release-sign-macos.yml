@@ -1,0 +1,298 @@
+name: 'release: sign macos'
+run-name: 'release: sign macos for ${{ github.ref_name }}'
+
+# Repo-owned workflow: builds, signs, and notarizes the Sockeye binary for
+# macOS. Uses the fleet checkout + setup actions (under .github/actions/fleet/)
+# and the repo-local import-codesign-certs action (under .github/actions/repo/).
+#
+# The signing identity comes from org-level GitHub secrets:
+#   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12 (secret) - base64 P12
+#   APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS (secret) - P12 password
+#   APPLE_APP_SPECIFIC_PASSWORD (secret) - notarytool auth
+#   APPLE_DEVELOPER_ID_PROVISIONING_PROFILE (secret) - base64 profile
+#   APPLE_ID (secret or variable) - Apple ID email
+#   APPLE_TEAM_ID (secret or variable) - Developer Program team ID
+#
+# Until those secrets are in place, set adhoc: true on dispatch to build and
+# ad-hoc sign without a certificate. Ad-hoc is good for local testing but not
+# releasable.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      adhoc:
+        default: false
+        description: 'Ad-hoc sign (no certificate needed, not releasable)'
+        type: boolean
+
+permissions:
+  contents: read
+
+# The fleet env knobs come from the setup action's fleet-env.json; the
+# build-sign job runs setup-and-install, so nothing is declared here.
+jobs:
+  build-sign:
+    name: 'Build and sign (arch: ${{ matrix.arch }})'
+    runs-on: ${{ matrix.arch == 'x64' && 'macos-26-intel' || 'macos-26' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
+    env:
+      BUILD_MODE: prod
+      SOCKEYE_TARGET_ARCH: ${{ matrix.arch }}
+    permissions:
+      contents: read
+    steps:
+      - name: Bootstrap checkout
+        shell: bash
+        env:
+          # Route context through env (no ${{ }} in the shell body -
+          # zizmor expression-injection). Token authorizes the fetch inline and
+          # is never persisted to .git/config.
+          GITHUB_TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          TRIGGER_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q
+          git config --local advice.detachedHead false
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${SERVER_URL}/${REPOSITORY}"
+          FETCH_ARGS=(--no-tags --prune --depth 1 origin "${TRIGGER_REF}")
+          if [ -n "${GITHUB_TOKEN}" ]; then
+            AUTH_B64="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+            git -c "http.${SERVER_URL}/.extraheader=AUTHORIZATION: basic ${AUTH_B64}" fetch "${FETCH_ARGS[@]}"
+          else
+            git fetch "${FETCH_ARGS[@]}"
+          fi
+          git checkout -q --detach FETCH_HEAD
+      - name: Hydrate pinned fleet tools
+        uses: ./.github/actions/fleet/checkout
+        with:
+          checkout: 'false'
+          payload-token-client-id: ${{ secrets.SOCKET_RELEASE_CLIENT_ID || vars.SOCKET_RELEASE_CLIENT_ID }}
+          payload-token-private-key: ${{ secrets.SOCKET_RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Set up pinned tools
+        uses: ./.github/actions/fleet/setup
+        with:
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      # Import the Developer ID Application certificate from the org-level
+      # secret. Skipped on ad-hoc runs.
+      - name: Import codesign certificate
+        id: import-signing
+        if: ${{ !inputs.adhoc }}
+        uses: ./.github/actions/repo/import-codesign-certs
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12 }}
+          p12-password: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTS_P12_PASS }}
+          apple-id: ${{ secrets.APPLE_ID || vars.APPLE_ID }}
+          app-specific-password: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          team-id: ${{ secrets.APPLE_TEAM_ID || vars.APPLE_TEAM_ID }}
+
+      - name: Build prod binary
+        run: pnpm run build
+
+      - name: Prepare provisioning profile
+        if: ${{ !inputs.adhoc }}
+        env:
+          SOCKEYE_PROFILE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          test -n "$SOCKEYE_PROFILE_BASE64" || { echo 'A Developer ID provisioning profile for Sockeye is required.' >&2; exit 1; }
+          umask 077
+          printf '%s' "$SOCKEYE_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/sockeye.provisionprofile"
+          echo "SOCKEYE_PROVISIONING_PROFILE=$RUNNER_TEMP/sockeye.provisionprofile" >> "$GITHUB_ENV"
+
+      - name: Sign with developer id
+        if: ${{ !inputs.adhoc }}
+        run: pnpm run sign --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+
+      - name: Verify signed binary starts
+        if: ${{ !inputs.adhoc }}
+        run: build/prod/darwin-${{ matrix.arch }}/out/Final/"$SOCKEYE_BUNDLE_NAME"/Contents/MacOS/sockeye --help > /dev/null
+
+      - name: Detach signing keychain
+        if: ${{ !inputs.adhoc }}
+        uses: ./.github/actions/repo/import-codesign-certs
+        with:
+          mode: detach
+          temporary-directory: ${{ steps.import-signing.outputs.temporary-directory }}
+
+      - name: Sign ad-hoc
+        if: ${{ inputs.adhoc }}
+        run: pnpm run sign --ad-hoc --run build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+
+      - name: Create ad-hoc archive
+        if: ${{ inputs.adhoc }}
+        run: |
+          cd build/prod/darwin-${{ matrix.arch }}/out/Final
+          zip -X sockeye-darwin-${{ matrix.arch }}.zip sockeye
+
+      # Notarize (skipped on ad-hoc runs - notarytool needs a
+      # Developer ID signature).
+      - name: Notarize, staple, and package application
+        if: ${{ !inputs.adhoc }}
+        env:
+          NOTARY_KEYCHAIN: ${{ steps.import-signing.outputs.notary-keychain }}
+        run: pnpm run notarize --run
+          --bundle build/prod/darwin-${{ matrix.arch }}/out/Final/$SOCKEYE_BUNDLE_NAME
+          --output build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
+          --keychain-profile sockeye-notary
+          --keychain "$NOTARY_KEYCHAIN"
+
+      - name: Compute checksum
+        run: |
+          cd build/prod/darwin-${{ matrix.arch }}/out/Final
+          shasum -a 256 sockeye-darwin-${{ matrix.arch }}.zip > sockeye-darwin-${{ matrix.arch }}.zip.sha256
+
+      - name: Verify release artifact
+        if: ${{ !inputs.adhoc }}
+        run: pnpm run verify-release build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
+
+      - name: Verify ad-hoc signature
+        if: ${{ inputs.adhoc }}
+        run: codesign --verify --strict --verbose=4 build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+
+      - name: Upload signed artifact
+        if: ${{ !inputs.adhoc }}
+        uses: ./.github/actions/fleet/upload-artifact
+        with:
+          name: sockeye-darwin-${{ matrix.arch }}
+          path: |
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.sha256
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.notary-receipt.json
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.notary-submission.zip
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.notary-log.json
+
+      - name: Upload ad-hoc artifact
+        if: ${{ inputs.adhoc }}
+        uses: ./.github/actions/fleet/upload-artifact
+        with:
+          name: sockeye-darwin-${{ matrix.arch }}-adhoc
+          path: |
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip
+            build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye-darwin-${{ matrix.arch }}.zip.sha256
+
+      - name: Clean up provisioning profile
+        if: ${{ always() }}
+        run: rm -f "$RUNNER_TEMP/sockeye.provisionprofile"
+
+      - name: Clean up signing keychain
+        if: ${{ always() && !inputs.adhoc }}
+        uses: ./.github/actions/repo/import-codesign-certs
+        with:
+          mode: cleanup
+          temporary-directory: ${{ steps.import-signing.outputs.temporary-directory }}
+
+  release-assets:
+    name: Verify and publish signed release
+    needs: build-sign
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - name: Bootstrap checkout
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          TRIGGER_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q
+          git config --local advice.detachedHead false
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${SERVER_URL}/${REPOSITORY}"
+          FETCH_ARGS=(--no-tags --prune --depth 1 origin "${TRIGGER_REF}")
+          if [ -n "${GITHUB_TOKEN}" ]; then
+            AUTH_B64="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+            git -c "http.${SERVER_URL}/.extraheader=AUTHORIZATION: basic ${AUTH_B64}" fetch "${FETCH_ARGS[@]}"
+          else
+            git fetch "${FETCH_ARGS[@]}"
+          fi
+          git checkout -q --detach FETCH_HEAD
+      - name: Set up and install
+        uses: ./.github/actions/fleet/setup-and-install
+        with:
+          checkout: 'false'
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
+          payload-token-client-id: ${{ secrets.SOCKET_RELEASE_CLIENT_ID || vars.SOCKET_RELEASE_CLIENT_ID }}
+          payload-token-private-key: ${{ secrets.SOCKET_RELEASE_APP_PRIVATE_KEY }}
+      - name: Download signed artifacts
+        uses: ./.github/actions/fleet/download-artifact
+        with:
+          path: release-assets
+      - name: Verify ARM64 release artifact
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: pnpm run verify-release
+          --expected-version "${RELEASE_TAG#v}"
+          --expected-source "$SOURCE_SHA"
+          --expected-architecture arm64
+          --expected-run-attempt "$RUN_ATTEMPT"
+          --expected-run-id "$RUN_ID"
+          --expected-repository "$REPOSITORY"
+          --expected-workflow-ref "$WORKFLOW_REF"
+          --receipt release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-receipt.json
+          --submission release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-submission.zip
+          --notary-log release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-log.json
+          release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip
+      - name: Verify x64 release artifact
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: pnpm run verify-release
+          --expected-version "${RELEASE_TAG#v}"
+          --expected-source "$SOURCE_SHA"
+          --expected-architecture x64
+          --expected-run-attempt "$RUN_ATTEMPT"
+          --expected-run-id "$RUN_ID"
+          --expected-repository "$REPOSITORY"
+          --expected-workflow-ref "$WORKFLOW_REF"
+          --receipt release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-receipt.json
+          --submission release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-submission.zip
+          --notary-log release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-log.json
+          release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip
+      - name: Mint release-app token
+        id: release-app
+        uses: ./.github/actions/fleet/github-release-app-token
+        with:
+          client-id: ${{ secrets.SOCKET_RELEASE_CLIENT_ID }}
+          private-key: ${{ secrets.SOCKET_RELEASE_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+      - name: Cut immutable GitHub release
+        uses: ./.github/actions/fleet/github-release
+        with:
+          tag: ${{ github.ref_name }}
+          dry-run: 'false'
+          assets: |
+            release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip
+            release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.sha256
+            release-assets/sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-receipt.json
+            release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip
+            release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.sha256
+            release-assets/sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-receipt.json
+          token: ${{ steps.release-app.outputs.token }}
