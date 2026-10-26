@@ -1992,6 +1992,7 @@ opencode.json
 .claude/rules/fleet/check-names.md
 .claude/rules/fleet/fail-fast-linter-count-is-unknowable.md
 .claude/rules/fleet/file-deletion.md
+.claude/rules/fleet/handoff-ownership.md
 .claude/rules/fleet/lint-parity-across-languages.md
 .claude/rules/fleet/match-error-codes-not-messages.md
 .claude/rules/fleet/no-deferred-residue.md
@@ -2721,6 +2722,7 @@ docs/fleet/agents.md/git-config-write-guard.md
 docs/fleet/agents.md/github-action-release-contract.md
 docs/fleet/agents.md/github-token-limitations.md
 docs/fleet/agents.md/golden-fixtures.md
+docs/fleet/agents.md/handoff-ownership.md
 docs/fleet/agents.md/heavy-jobs.md
 docs/fleet/agents.md/history-rewrites.md
 docs/fleet/agents.md/hook-bundle.md
@@ -2868,6 +2870,7 @@ docs/fleet/testing/performance.md
 docs/fleet/testing/practices.md
 docs/fleet/testing/quality.md
 docs/fleet/workflows/browser-mcp-sessions.md
+docs/fleet/workflows/chrome-mcp-sessions.md
 docs/fleet/workflows/depot-auth.md
 docs/fleet/workflows/odai-cache.md
 docs/fleet/workflows/practices.md
@@ -4223,6 +4226,7 @@ scripts/fleet/git/admin/push/git.mts
 scripts/fleet/git/admin/push/github.mts
 scripts/fleet/git/admin/push/lock.mts
 scripts/fleet/git/admin/push/pending-ci.mts
+scripts/fleet/git/admin/push/protection.mts
 scripts/fleet/git/admin/push/timings.mts
 scripts/fleet/git/admin/push/tracking-transaction.mts
 scripts/fleet/git/admin/push/transaction.mts
@@ -4826,6 +4830,9 @@ scripts/fleet/registry/apple/developer-id-profile.mts
 scripts/fleet/registry/apple/identity.mts
 scripts/fleet/registry/apple/keychain-csr.mts
 scripts/fleet/registry/apple/signature.mts
+scripts/fleet/registry/apple/signing-request.mts
+scripts/fleet/registry/apple/signing-result.mts
+scripts/fleet/registry/apple/signing/protocol.mts
 scripts/fleet/registry/apple/util.mts
 scripts/fleet/registry/brew/shared.mts
 scripts/fleet/registry/cargo/approve.mts
@@ -5189,6 +5196,7 @@ scripts/fleet/setup/tls-trust-runtime.mts
 scripts/fleet/setup/tls-trust-shell.mts
 scripts/fleet/setup/tls-trust-state.mts
 scripts/fleet/setup/tls-trust.mts
+scripts/fleet/setup/tls/run.mts
 scripts/fleet/setup/token.mts
 scripts/fleet/setup/tools-sfw.d.mts
 scripts/fleet/setup/tools-sfw.mjs
