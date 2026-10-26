@@ -3472,6 +3472,7 @@ scripts/fleet/check/allowlist-entries-are-justified.mts
 scripts/fleet/check/app-token-minters-are-identical.mts
 scripts/fleet/check/app-tokens-are-scoped.mts
 scripts/fleet/check/app-tokens-are-scoped/direct-release.mts
+scripts/fleet/check/app-tokens-are-scoped/direct-signing.mts
 scripts/fleet/check/app-tokens-are-scoped/policy.mts
 scripts/fleet/check/artifact-gates-are-real.mts
 scripts/fleet/check/authenticated-browser-plane-is-absent.mts
