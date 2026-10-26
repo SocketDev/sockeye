@@ -40,6 +40,22 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Place NuGet caches on the runner temp volume
+      if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+      shell: pwsh
+      run: | # zizmor: ignore[github-env] - writes fixed NuGet variables from GitHub-hosted RUNNER_TEMP, with no requester input.
+        $ErrorActionPreference = 'Stop'
+        $runnerTemp = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP)
+        if ([System.IO.Path]::GetPathRoot($runnerTemp) -ne 'D:\') {
+          Write-Output 'RUNNER_TEMP is not on D:, retaining the runner NuGet paths.'
+          exit 0
+        }
+        $packages = Join-Path $runnerTemp 'nuget\packages'
+        $httpCache = Join-Path $runnerTemp 'nuget\http-cache'
+        New-Item -ItemType Directory -Force -Path $packages, $httpCache | Out-Null
+        "NUGET_PACKAGES=$packages" >> $env:GITHUB_ENV
+        "NUGET_HTTP_CACHE_PATH=$httpCache" >> $env:GITHUB_ENV
+
     - name: Export filtered TLS trust and install bash validation
       shell: bash
       run: | # zizmor: ignore[github-env] - emits generated absolute paths from private RUNNER_TEMP state.

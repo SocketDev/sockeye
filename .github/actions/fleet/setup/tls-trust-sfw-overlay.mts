@@ -9,9 +9,11 @@ import {
 import {
   createRuntimeTlsTrust,
   reuseRuntimeTlsTrust,
+  tlsTrustBundleMatches,
   TLS_RUNTIME_CA_KEY,
   TLS_RUNTIME_DIRECTORY_KEY,
 } from '../../../../scripts/fleet/setup/tls-trust-runtime-bundles.mts'
+import { cleanupRuntimeTlsTrust } from '../../../../scripts/fleet/setup/tls-trust-cleanup.mjs'
 import {
   getTlsTrustRootPath,
   TLS_SFW_BUNDLE_KEYS,
@@ -101,7 +103,7 @@ export function sfwTlsEnvironmentLines(config: {
     ...(config.bash && config.env[TLS_RUNTIME_DIRECTORY_KEY]
       ? {
           [TLS_RUNTIME_DIRECTORY_KEY]: config.env[TLS_RUNTIME_DIRECTORY_KEY],
-          [TLS_RUNTIME_CA_KEY]: config.env[TLS_RUNTIME_CA_KEY],
+          [TLS_RUNTIME_CA_KEY]: config.env[TLS_RUNTIME_CA_KEY] ?? '',
         }
       : {}),
   }
@@ -171,8 +173,7 @@ export async function resolveSfwTlsOverlay(
   if (
     !sfwBundle ||
     sfwBundle === source ||
-    Object.values(bundlePaths).includes(sfwBundle) ||
-    SFW_BUNDLE_KEYS.some(key => env[key] !== sfwBundle)
+    Object.values(bundlePaths).includes(sfwBundle)
   ) {
     throw new Error(
       'Socket Firewall CA bundle does not match its filtered source; restart the wrapped command.',
@@ -215,8 +216,35 @@ export async function resolveSfwTlsOverlay(
   if (!inspection.ok) {
     throw new Error([...inspection.conflicts, ...inspection.errors].join(' '))
   }
-  if (runtimeEnv) return runtimeEnv
-  return await createRuntimeTlsTrust(env, bundlePaths, source, {
-    directoryRoot: runtimeDirectoryRoot,
-  })
+  const normalizedEnv =
+    runtimeEnv ??
+    (await createRuntimeTlsTrust(env, bundlePaths, source, {
+      directoryRoot: runtimeDirectoryRoot,
+    }))
+  try {
+    for (const key of SFW_BUNDLE_KEYS) {
+      const bundle = env[key]
+      if (
+        !bundle ||
+        bundle === bundlePaths[key] ||
+        bundle === normalizedEnv[key]
+      ) {
+        continue
+      }
+      const expectedBundle = await readTlsTrustFile(normalizedEnv[key]!)
+      if (!(await tlsTrustBundleMatches(bundle, expectedBundle!))) {
+        throw new Error(
+          `Socket Firewall ${key} bundle does not match its filtered source; restart the wrapped command.`,
+        )
+      }
+    }
+  } catch (error) {
+    if (!runtimeEnv) {
+      cleanupRuntimeTlsTrust(normalizedEnv[TLS_RUNTIME_DIRECTORY_KEY], {
+        allowedDirectoryRoot: runtimeDirectoryRoot,
+      })
+    }
+    throw error
+  }
+  return normalizedEnv
 }
