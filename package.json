@@ -197,6 +197,7 @@
     "setup:security-tools": "node scripts/fleet/setup/security/tools.mts",
     "setup:sfw-ca": "node scripts/fleet/setup/sfw-ca.mts",
     "setup:signing": "node scripts/fleet/setup/signing/install.mts",
+    "signing:request": "node scripts/fleet/registry/apple/signing-request.mts",
     "setup:tls-trust": "node scripts/fleet/setup/tls-trust.mts",
     "setup:token:rotate": "node scripts/fleet/setup/token.mts --rotate",
     "setup:xcode": "node scripts/fleet/setup/xcode-license.mts",

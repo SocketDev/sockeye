@@ -1,0 +1,79 @@
+name: 'verify: central signing'
+run-name: 'verify: central signing'
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft_release_id:
+        description: Existing source-bound diagnostic draft release ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  request:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    name: 'Request signing (${{ matrix.arch }})'
+    runs-on: ${{ matrix.arch == 'x64' && 'macos-26-intel' || 'macos-26' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
+    env:
+      BUILD_MODE: prod
+      SOCKEYE_TARGET_ARCH: ${{ matrix.arch }}
+      SIGNING_PROFILE: sockeye-app-${{ matrix.arch }}
+      SIGNING_BINARY: build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
+      PROFILE_PATH: ${{ runner.temp }}/sockeye.provisionprofile
+      DRAFT_ID: ${{ inputs.draft_release_id }}
+    steps:
+      - name: Bootstrap exact source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init -q
+          git remote add origin "https://github.com/${REPOSITORY}.git"
+          AUTH_B64="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${AUTH_B64}"
+          git fetch --no-tags --depth 1 origin "${SOURCE_SHA}"
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
+      - name: Hydrate pinned fleet tools and audit workflows
+        uses: ./.github/actions/fleet/checkout
+        with:
+          checkout: 'false'
+      - name: Set up pinned tools
+        uses: ./.github/actions/fleet/setup
+        with:
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build the unsigned executable
+        run: pnpm run build
+      - name: Expose artifact runtime
+        uses: ./.github/actions/fleet/expose-actions-runtime
+      - name: Upload source-bound signing request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROFILE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          test -n "${PROFILE_BASE64}"
+          umask 077
+          printf '%s' "${PROFILE_BASE64}" | base64 --decode > "${PROFILE_PATH}"
+          pnpm run signing:request --profile "${SIGNING_PROFILE}" --binary "${SIGNING_BINARY}" --provisioning-profile "${PROFILE_PATH}" --draft-release-id "${DRAFT_ID}" --json
+      - name: Remove profile scratch
+        if: always()
+        shell: bash
+        run: rm -f "${PROFILE_PATH}"
