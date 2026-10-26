@@ -158,7 +158,8 @@ async function main() {
       const bar = '\u2588'.repeat(Math.floor(memPercent / 5))
       const empty = '\u2591'.repeat(20 - Math.floor(memPercent / 5))
       const status = `\r Memory: ${memoryMB}MB / ${MAX_MEMORY_MB}MB [${bar}${empty}] ${memPercent}% | ${elapsed}s`
-      process.stdout.write(status) // socket-hook: allow console -- TTY progress bar with \r overwrite
+      // oxlint-disable-next-line socket/no-direct-stream-write -- Preserve the TTY progress bar.
+      process.stdout.write(status) // TTY progress bar with \r overwrite
     }
   }, CHECK_INTERVAL_MS)
 

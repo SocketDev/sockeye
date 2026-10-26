@@ -154,7 +154,8 @@ export function getTerminalSize(): { width: number; height: number } {
 // re-encode + prefix the bytes which breaks the terminal sequences.
 // stdoutWrite isolates the marker into one helper.
 export function stdoutWrite(data: Uint8Array | string): void {
-  process.stdout.write(data) // socket-hook: allow console
+  // oxlint-disable-next-line socket/no-direct-stream-write -- Preserve terminal escape sequences.
+  process.stdout.write(data)
 }
 
 // Quick verification — these checks run before the render loop so a

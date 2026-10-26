@@ -201,6 +201,7 @@ export function processEvents(
 }
 
 export function stdoutWrite(data: Uint8Array | string): void {
+  // oxlint-disable-next-line socket/no-direct-stream-write -- Preserve terminal escape sequences.
   process.stdout.write(data)
 }
 

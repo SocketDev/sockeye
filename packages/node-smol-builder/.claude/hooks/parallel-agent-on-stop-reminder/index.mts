@@ -30,11 +30,15 @@
 
 import process from 'node:process'
 
+import { getDefaultLogger } from '@socketsecurity/lib-stable/logger/default'
+
 import {
   listForeignDirtyPaths,
   readTouchedPaths,
 } from '../_shared/foreign-paths.mts'
 import { readStdin } from '../_shared/transcript.mts'
+
+const logger = getDefaultLogger()
 
 interface StopPayload {
   readonly transcript_path?: string | undefined
@@ -68,29 +72,28 @@ async function main(): Promise<void> {
     return
   }
 
-  process.stderr.write(
-    `[parallel-agent-on-stop-reminder] ${foreign.length} dirty path(s) this session did not author and that changed recently — likely another agent on the same checkout:\n`,
-  )
-  for (const p of foreign.slice(0, 10)) {
-    process.stderr.write(`  ${p}\n`)
-  }
-  if (foreign.length > 10) {
-    process.stderr.write(`  ... and ${foreign.length - 10} more\n`)
-  }
-  process.stderr.write(
-    '\nAnother Claude session may be working in this checkout. Be cautious:\n' +
-      '  • Do NOT commit, revert, stash, or `git add -A` these paths —\n' +
-      "    that sweeps up or destroys the other agent's in-flight work.\n" +
-      '  • Stage only the files YOU authored, by explicit path.\n' +
-      '  • If you saw these appear after your own build / check run, they\n' +
-      "    are the other agent's edits landing — not your regression.\n" +
-      '\nSee: CLAUDE.md → "Parallel Claude sessions"\n' +
-      '     docs/claude.md/fleet/parallel-claude-sessions.md\n',
-  )
+  const message = [
+    `[parallel-agent-on-stop-reminder] ${foreign.length} dirty path(s) this session did not author and that changed recently — likely another agent on the same checkout:`,
+    ...foreign.slice(0, 10).map(path => `  ${path}`),
+    ...(foreign.length > 10
+      ? [`  ... and ${foreign.length - 10} more`]
+      : []),
+    '',
+    'Another Claude session may be working in this checkout. Be cautious:',
+    '  • Do NOT commit, revert, stash, or `git add -A` these paths —',
+    "    that sweeps up or destroys the other agent's in-flight work.",
+    '  • Stage only the files YOU authored, by explicit path.',
+    '  • If you saw these appear after your own build / check run, they',
+    "    are the other agent's edits landing — not your regression.",
+    '',
+    'See: CLAUDE.md → "Parallel Claude sessions"',
+    '     docs/claude.md/fleet/parallel-claude-sessions.md',
+  ].join('\n')
+  logger.error(message)
 }
 
 main().catch(e => {
-  process.stderr.write(
-    `[parallel-agent-on-stop-reminder] hook bug — fail-open. ${e instanceof Error ? e.message : String(e)}\n`,
+  logger.error(
+    `[parallel-agent-on-stop-reminder] hook bug — fail-open. ${e instanceof Error ? e.message : String(e)}`,
   )
 })

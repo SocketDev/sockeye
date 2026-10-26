@@ -335,6 +335,7 @@ export async function runPipeline(config, cliOverrides) {
   })
 
   if (flags.printCacheKey) {
+    // oxlint-disable-next-line socket/no-direct-stream-write -- Keep the cache key output machine-readable.
     process.stdout.write(`${cacheKey}\n`)
     return undefined
   }

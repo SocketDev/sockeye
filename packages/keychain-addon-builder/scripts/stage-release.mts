@@ -51,11 +51,13 @@ async function main(): Promise<void> {
   await copyFile(input, output)
   const checksum = crypto.createHash('sha256').update(bytes).digest('hex')
   await writeFile(`${output}.sha256`, `${checksum}  ${name}\n`)
+  // oxlint-disable-next-line socket/no-direct-stream-write -- Print the staged path for callers.
   process.stdout.write(`${output}\n`)
 }
 
 if (process.argv[1]?.endsWith('stage-release.mts')) {
   void main().catch((error: unknown) => {
+    // oxlint-disable-next-line socket/no-direct-stream-write -- Keep CLI errors on stderr.
     process.stderr.write(`${errorMessage(error)}\n`)
     process.exitCode = 1
   })

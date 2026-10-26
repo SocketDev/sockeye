@@ -383,9 +383,11 @@ export async function runInDocker(config) {
   // Stream raw docker output bytes to console in real-time — logger.info would
   // add timestamps/prefixes and break passthrough of docker's own progress UI.
   result.process.stdout?.on('data', data => {
+    // oxlint-disable-next-line socket/no-direct-stream-write -- Preserve raw Docker progress bytes.
     process.stdout.write(data)
   })
   result.process.stderr?.on('data', data => {
+    // oxlint-disable-next-line socket/no-direct-stream-write -- Preserve raw Docker error bytes.
     process.stderr.write(data)
   })
 
