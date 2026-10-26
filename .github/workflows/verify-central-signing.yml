@@ -28,7 +28,6 @@ jobs:
       SOCKEYE_TARGET_ARCH: ${{ matrix.arch }}
       SIGNING_PROFILE: sockeye-app-${{ matrix.arch }}
       SIGNING_BINARY: build/prod/darwin-${{ matrix.arch }}/out/Final/sockeye
-      PROFILE_PATH: ${{ runner.temp }}/sockeye.provisionprofile
       DRAFT_ID: ${{ inputs.draft_release_id }}
     steps:
       - name: Bootstrap exact source
@@ -64,6 +63,9 @@ jobs:
         run: pnpm run build
       - name: Expose artifact runtime
         uses: ./.github/actions/fleet/expose-actions-runtime
+      - name: Set profile scratch path
+        shell: bash
+        run: printf 'PROFILE_PATH=%s/sockeye.provisionprofile\n' "${RUNNER_TEMP}" >> "${GITHUB_ENV}"
       - name: Upload source-bound signing request
         shell: bash
         env:
