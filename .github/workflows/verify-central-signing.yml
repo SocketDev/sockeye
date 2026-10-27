@@ -66,10 +66,19 @@ jobs:
       - name: Set profile scratch path
         shell: bash
         run: printf 'PROFILE_PATH=%s/sockeye.provisionprofile\n' "${RUNNER_TEMP}" >> "${GITHUB_ENV}"
+      - name: Mint scoped draft inspection token
+        id: draft-reader
+        uses: ./.github/actions/fleet/github-release-app-token
+        with:
+          client-id: ${{ secrets.SOCKET_RELEASE_CLIENT_ID || vars.SOCKET_RELEASE_CLIENT_ID }}
+          private-key: ${{ secrets.SOCKET_RELEASE_APP_PRIVATE_KEY }}
+          owner: SocketDev
+          repositories: sockeye
       - name: Upload source-bound signing request
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          SIGNING_DRAFT_READ_TOKEN: ${{ steps.draft-reader.outputs.token }}
           PROFILE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_PROVISIONING_PROFILE }}
         run: |
           set -euo pipefail
