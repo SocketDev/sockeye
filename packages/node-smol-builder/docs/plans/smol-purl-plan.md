@@ -736,39 +736,52 @@ declare module 'node:smol-purl' {
     | string
 
   export interface ParsedPurl {
-    /** Package type/ecosystem */
+    /**
+     * Package type/ecosystem.
+     */
     readonly type: PurlType
-    /** Optional namespace (org, group, scope) */
+    /**
+     * Optional namespace (org, group, scope)
+     */
     readonly namespace: string | null
-    /** Package name */
+    /**
+     * Package name.
+     */
     readonly name: string
-    /** Optional version */
+    /**
+     * Optional version.
+     */
     readonly version: string | null
-    /** Optional qualifiers */
+    /**
+     * Optional qualifiers.
+     */
     readonly qualifiers: Readonly<Record<string, string>> | null
-    /** Optional subpath */
+    /**
+     * Optional subpath.
+     */
     readonly subpath: string | null
   }
 
   /**
-   * Parse a Package URL string
+   * Parse a Package URL string.
+   *
    * @throws Error if PURL is invalid
    */
   export function parse(purl: string): ParsedPurl
 
   /**
    * Parse multiple PURLs (SIMD-accelerated batch)
-   * Returns array with null for invalid entries
+   * Returns array with null for invalid entries.
    */
   export function parseBatch(purls: string[]): (ParsedPurl | null)[]
 
   /**
-   * Try to parse, returns null on failure instead of throwing
+   * Try to parse, returns null on failure instead of throwing.
    */
   export function tryParse(purl: string): ParsedPurl | null
 
   /**
-   * Build a PURL string from components
+   * Build a PURL string from components.
    */
   export function build(options: {
     type: PurlType
@@ -780,7 +793,7 @@ declare module 'node:smol-purl' {
   }): string
 
   /**
-   * Validate a PURL string
+   * Validate a PURL string.
    */
   export function isValid(purl: string): boolean
 
@@ -795,7 +808,7 @@ declare module 'node:smol-purl' {
   export function equals(a: string, b: string): boolean
 
   /**
-   * Cache statistics
+   * Cache statistics.
    */
   export interface CacheStats {
     size: number
@@ -805,17 +818,17 @@ declare module 'node:smol-purl' {
   }
 
   /**
-   * Get cache statistics
+   * Get cache statistics.
    */
   export function cacheStats(): CacheStats
 
   /**
-   * Clear the PURL cache
+   * Clear the PURL cache.
    */
   export function clearCache(): void
 
   /**
-   * PURL type constants
+   * PURL type constants.
    */
   export const types: {
     readonly NPM: 'npm'

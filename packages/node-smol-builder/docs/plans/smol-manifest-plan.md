@@ -737,7 +737,14 @@ NODE_MODULE_CONTEXT_AWARE_INTERNAL(smol_manifest, Initialize)
 ```typescript
 declare module 'node:smol-manifest' {
   export type Ecosystem =
-    'npm' | 'maven' | 'pypi' | 'cargo' | 'gem' | 'golang' | 'composer' | 'nuget'
+    | 'npm'
+    | 'maven'
+    | 'pypi'
+    | 'cargo'
+    | 'gem'
+    | 'golang'
+    | 'composer'
+    | 'nuget'
 
   export type DepType = 'prod' | 'dev' | 'optional' | 'peer' | 'build' | 'test'
 
@@ -792,12 +799,13 @@ declare module 'node:smol-manifest' {
   export function parse(filename: string, content: string): Manifest | Lockfile
 
   /**
-   * Parse a package manifest
+   * Parse a package manifest.
    */
   export function parseManifest(content: string, ecosystem: Ecosystem): Manifest
 
   /**
-   * Parse a lockfile
+   * Parse a lockfile.
+   *
    * @param format Optional format hint (e.g., 'yarn-v1', 'yarn-berry')
    */
   export function parseLockfile(
@@ -807,7 +815,7 @@ declare module 'node:smol-manifest' {
   ): Lockfile
 
   /**
-   * Create a streaming parser for large lockfiles
+   * Create a streaming parser for large lockfiles.
    */
   export function createStreamingParser(
     content: string,
@@ -815,7 +823,7 @@ declare module 'node:smol-manifest' {
   ): AsyncIterable<PackageRef>
 
   /**
-   * Analyze lockfile statistics
+   * Analyze lockfile statistics.
    */
   export function analyzeLockfile(lockfile: Lockfile): LockfileStats
 
@@ -828,7 +836,7 @@ declare module 'node:smol-manifest' {
   ): PackageRef | null
 
   /**
-   * Get all packages matching a pattern
+   * Get all packages matching a pattern.
    */
   export function findPackages(
     lockfile: Lockfile,
@@ -836,7 +844,7 @@ declare module 'node:smol-manifest' {
   ): PackageRef[]
 
   /**
-   * Detect file format from filename
+   * Detect file format from filename.
    */
   export function detectFormat(filename: string): {
     type: 'manifest' | 'lockfile'
@@ -845,7 +853,7 @@ declare module 'node:smol-manifest' {
   } | null
 
   /**
-   * Supported file patterns
+   * Supported file patterns.
    */
   export const supportedFiles: {
     readonly manifests: ReadonlyArray<string>

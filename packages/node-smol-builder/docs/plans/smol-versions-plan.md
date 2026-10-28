@@ -473,31 +473,46 @@ declare module 'node:smol-versions' {
     | 'swift'
 
   export interface ParsedVersion {
-    /** Major version number */
+    /**
+     * Major version number.
+     */
     readonly major: bigint
-    /** Minor version number */
+    /**
+     * Minor version number.
+     */
     readonly minor: bigint
-    /** Patch version number */
+    /**
+     * Patch version number.
+     */
     readonly patch: bigint
-    /** Build number (4th component, mainly for NuGet) */
+    /**
+     * Build number (4th component, mainly for NuGet)
+     */
     readonly build?: bigint
-    /** Prerelease identifiers */
+    /**
+     * Prerelease identifiers.
+     */
     readonly prerelease: ReadonlyArray<string | bigint>
-    /** Build metadata */
+    /**
+     * Build metadata.
+     */
     readonly buildMetadata?: string
-    /** Original version string */
+    /**
+     * Original version string.
+     */
     readonly raw: string
   }
 
   /**
-   * Parse a version string
-   * @param version Version string to parse
-   * @param ecosystem Target ecosystem for parsing rules
+   * Parse a version string.
+   *
+   * @param version Version string to parse.
+   * @param ecosystem Target ecosystem for parsing rules.
    */
   export function parse(version: string, ecosystem?: Ecosystem): ParsedVersion
 
   /**
-   * Try to parse a version, returns null on failure
+   * Try to parse a version, returns null on failure.
    */
   export function tryParse(
     version: string,
@@ -505,7 +520,8 @@ declare module 'node:smol-versions' {
   ): ParsedVersion | null
 
   /**
-   * Compare two versions
+   * Compare two versions.
+   *
    * @returns -1 if a < b, 0 if a === b, 1 if a > b
    */
   export function compare(
@@ -515,27 +531,27 @@ declare module 'node:smol-versions' {
   ): -1 | 0 | 1
 
   /**
-   * Check if version a is less than b
+   * Check if version a is less than b.
    */
   export function lt(a: string, b: string, ecosystem?: Ecosystem): boolean
 
   /**
-   * Check if version a is less than or equal to b
+   * Check if version a is less than or equal to b.
    */
   export function lte(a: string, b: string, ecosystem?: Ecosystem): boolean
 
   /**
-   * Check if version a is greater than b
+   * Check if version a is greater than b.
    */
   export function gt(a: string, b: string, ecosystem?: Ecosystem): boolean
 
   /**
-   * Check if version a is greater than or equal to b
+   * Check if version a is greater than or equal to b.
    */
   export function gte(a: string, b: string, ecosystem?: Ecosystem): boolean
 
   /**
-   * Check if two versions are equal
+   * Check if two versions are equal.
    */
   export function eq(a: string, b: string, ecosystem?: Ecosystem): boolean
 
@@ -549,12 +565,12 @@ declare module 'node:smol-versions' {
   ): string[]
 
   /**
-   * Find the maximum version
+   * Find the maximum version.
    */
   export function max(versions: string[], ecosystem?: Ecosystem): string | null
 
   /**
-   * Find the minimum version
+   * Find the minimum version.
    */
   export function min(versions: string[], ecosystem?: Ecosystem): string | null
 
@@ -568,7 +584,7 @@ declare module 'node:smol-versions' {
   ): boolean
 
   /**
-   * Find the maximum version that satisfies a range
+   * Find the maximum version that satisfies a range.
    */
   export function maxSatisfying(
     versions: string[],
@@ -577,7 +593,7 @@ declare module 'node:smol-versions' {
   ): string | null
 
   /**
-   * Find the minimum version that satisfies a range
+   * Find the minimum version that satisfies a range.
    */
   export function minSatisfying(
     versions: string[],
@@ -586,7 +602,7 @@ declare module 'node:smol-versions' {
   ): string | null
 
   /**
-   * Get all versions that satisfy a range
+   * Get all versions that satisfy a range.
    */
   export function filter(
     versions: string[],
@@ -595,17 +611,17 @@ declare module 'node:smol-versions' {
   ): string[]
 
   /**
-   * Check if a string is a valid version
+   * Check if a string is a valid version.
    */
   export function valid(version: string, ecosystem?: Ecosystem): string | null
 
   /**
-   * Coerce a string to a valid version
+   * Coerce a string to a valid version.
    */
   export function coerce(version: string, ecosystem?: Ecosystem): string | null
 
   /**
-   * Increment version
+   * Increment version.
    */
   export function inc(
     version: string,
@@ -615,7 +631,7 @@ declare module 'node:smol-versions' {
   ): string
 
   /**
-   * Cache statistics
+   * Cache statistics.
    */
   export function cacheStats(): {
     size: number
@@ -625,12 +641,12 @@ declare module 'node:smol-versions' {
   }
 
   /**
-   * Clear the version cache
+   * Clear the version cache.
    */
   export function clearCache(): void
 
   /**
-   * Ecosystem constants
+   * Ecosystem constants.
    */
   export const ecosystems: {
     readonly NPM: 'npm'
