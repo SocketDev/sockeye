@@ -313,8 +313,7 @@ int RunApprovedChild(int argc, char** argv) {
   const std::string reason =
       "run " + child_name + " with access to " +
       std::to_string(options.credentials.size()) +
-      (options.credentials.size() == 1 ? " credential" : " credentials") +
-      " (request " + manifest_digest.substr(0, 16) + ")";
+      (options.credentials.size() == 1 ? " credential" : " credentials");
   if (!context.Authenticate(reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);

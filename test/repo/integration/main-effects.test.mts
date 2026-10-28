@@ -128,6 +128,19 @@ test.each([
   },
 )
 
+test('run uses a concise Touch ID reason without exposing the manifest digest', () => {
+  const result = spawnSync(binary, commands['run'], {
+    encoding: 'utf8',
+    timeout: 10_000,
+    env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
+  })
+  expect(result.status, result.stderr).toBe(23)
+  expect(result.stderr).toContain(
+    'reason:run sockeye-main-effects-test with access to 2 credentials',
+  )
+  expect(result.stderr).not.toMatch(/reason:.*request [a-f0-9]{16}/u)
+})
+
 test.each([
   ['set', 'success', 0, 'input approve read store read invalidate policy'],
   ['set', 'input-failed', 2, 'input'],
