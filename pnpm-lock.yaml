@@ -168,8 +168,8 @@ catalogs:
       specifier: 1.0.2
       version: 1.0.2
     '@mdn/browser-compat-data':
-      specifier: 8.1.6
-      version: 8.1.6
+      specifier: 8.1.0
+      version: 8.1.0
     '@modelcontextprotocol/client':
       specifier: 2.3.1
       version: 2.3.1
@@ -225,8 +225,8 @@ catalogs:
       specifier: 1.0.7
       version: 1.0.7
     ata-validator:
-      specifier: 1.56.0
-      version: 1.56.0
+      specifier: 1.57.0
+      version: 1.57.0
     c8:
       specifier: 12.0.0
       version: 12.0.0
@@ -285,11 +285,11 @@ catalogs:
       specifier: 1.20.1
       version: 1.20.1
     oxfmt:
-      specifier: 0.74.0
-      version: 0.74.0
+      specifier: 0.66.0
+      version: 0.66.0
     oxlint:
-      specifier: 1.89.0
-      version: 1.89.0
+      specifier: 1.81.0
+      version: 1.81.0
     parse5:
       specifier: 8.0.1
       version: 8.0.1
@@ -324,8 +324,8 @@ catalogs:
       specifier: 0.18.0-ts7.1.0-dev.20260929
       version: 0.18.0-ts7.1.0-dev.20260929
     typescript:
-      specifier: 7.1.0-dev.20261013.1
-      version: 7.1.0-dev.20261013.1
+      specifier: 7.0.2
+      version: 7.0.2
     vitest:
       specifier: 5.0.5
       version: 5.0.5
@@ -416,7 +416,7 @@ importers:
         version: 1.0.2
       '@mdn/browser-compat-data':
         specifier: 'catalog:'
-        version: 8.1.6
+        version: 8.1.0
       '@modelcontextprotocol/client':
         specifier: 'catalog:'
         version: 2.3.1
@@ -437,10 +437,10 @@ importers:
         version: '@socketregistry/packageurl-js@1.7.0'
       '@socketsecurity/lib':
         specifier: 7.2.0
-        version: 7.2.0(typescript@7.1.0-dev.20261013.1)
+        version: 7.2.0(typescript@7.0.2)
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@socketsecurity/sdk':
         specifier: 4.3.0
         version: 4.3.0
@@ -473,7 +473,7 @@ importers:
         version: 1.0.7
       ata-validator:
         specifier: 'catalog:'
-        version: 1.56.0(yaml@2.9.0)
+        version: 1.57.0(yaml@2.9.0)
       c8:
         specifier: 'catalog:'
         version: 12.0.0
@@ -497,7 +497,7 @@ importers:
         version: 0.23.3(supports-color@7.2.0)
       mcp-tada:
         specifier: 'catalog:'
-        version: 0.5.0(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.1))(typescript@7.1.0-dev.20261013.1)
+        version: 0.5.0(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.1))(typescript@7.0.2)
       mdast-util-from-markdown:
         specifier: 'catalog:'
         version: 2.1.0(supports-color@7.2.0)
@@ -524,10 +524,10 @@ importers:
         version: 1.13.0
       oxfmt:
         specifier: 'catalog:'
-        version: 0.74.0
+        version: 0.66.0
       oxlint:
         specifier: 'catalog:'
-        version: 1.89.0(@maschwenk/tsrslint@0.1.5)
+        version: 1.81.0(@maschwenk/tsrslint@0.1.5)
       oxlint-tsgolint:
         specifier: npm:@maschwenk/tsrslint@0.1.5
         version: '@maschwenk/tsrslint@0.1.5'
@@ -572,7 +572,7 @@ importers:
         version: 1.4.3
       typescript:
         specifier: 'catalog:'
-        version: 7.1.0-dev.20261013.1
+        version: 7.0.2
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(patch_hash=fcb822ac1e1f16d6a08bc2fafd2a304772eeec56a5a3fde187e0da0e0f8190c8)(@types/node@26.6.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0)(yaml@2.9.0))
@@ -590,7 +590,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -600,7 +600,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -622,7 +622,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/agent-prompt-budget-guard:
     devDependencies:
@@ -634,7 +634,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -644,13 +644,13 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/ai-balancer-proxy-start:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -660,7 +660,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -670,7 +670,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -680,7 +680,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -696,7 +696,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -718,7 +718,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -728,7 +728,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -750,7 +750,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -760,7 +760,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -770,7 +770,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -780,7 +780,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -790,7 +790,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -806,7 +806,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -822,7 +822,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -838,7 +838,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -851,7 +851,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -861,7 +861,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -874,7 +874,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -884,7 +884,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -906,7 +906,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -916,7 +916,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -926,7 +926,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -945,7 +945,7 @@ importers:
         version: '@socketregistry/packageurl-js@1.7.0'
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@socketsecurity/sdk-stable':
         specifier: 'catalog:'
         version: '@socketsecurity/sdk@4.3.0'
@@ -958,7 +958,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -968,7 +968,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -994,7 +994,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1004,7 +1004,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1014,7 +1014,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1024,7 +1024,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1033,7 +1033,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1043,7 +1043,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1052,7 +1052,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1078,7 +1078,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1106,7 +1106,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1122,7 +1122,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1138,7 +1138,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1153,7 +1153,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1163,7 +1163,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1173,7 +1173,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1189,7 +1189,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1205,7 +1205,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1215,7 +1215,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1225,7 +1225,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1235,7 +1235,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1245,7 +1245,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1255,7 +1255,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1295,7 +1295,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -1308,7 +1308,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1334,7 +1334,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1343,7 +1343,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1353,7 +1353,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1375,7 +1375,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1385,7 +1385,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1401,7 +1401,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -1414,7 +1414,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1430,7 +1430,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1440,7 +1440,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/goal-scope-nudge:
     devDependencies:
@@ -1464,7 +1464,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1480,7 +1480,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1490,7 +1490,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1506,7 +1506,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1522,7 +1522,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/issue-autolink-nudge:
     devDependencies:
@@ -1534,7 +1534,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1560,7 +1560,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1570,7 +1570,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1579,7 +1579,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1589,7 +1589,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1599,7 +1599,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1619,7 +1619,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1629,7 +1629,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1639,7 +1639,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -1658,7 +1658,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1674,7 +1674,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -1693,7 +1693,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1703,7 +1703,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1713,7 +1713,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1735,7 +1735,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1745,7 +1745,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1755,7 +1755,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1777,7 +1777,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1787,7 +1787,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1809,7 +1809,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1841,7 +1841,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1857,7 +1857,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1867,7 +1867,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1877,7 +1877,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1887,7 +1887,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -1902,7 +1902,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1922,7 +1922,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1938,7 +1938,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1948,7 +1948,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1970,7 +1970,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1980,7 +1980,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1990,7 +1990,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2010,7 +2010,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2040,7 +2040,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2056,7 +2056,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2076,7 +2076,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2086,7 +2086,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2095,7 +2095,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2105,7 +2105,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2137,7 +2137,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2152,7 +2152,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2162,7 +2162,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2172,7 +2172,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -2185,7 +2185,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2195,7 +2195,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2205,7 +2205,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2215,7 +2215,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -2234,7 +2234,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2244,7 +2244,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2254,7 +2254,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2286,7 +2286,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2296,7 +2296,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2330,7 +2330,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2340,7 +2340,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2350,7 +2350,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2360,7 +2360,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2370,7 +2370,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2380,7 +2380,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2392,7 +2392,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2402,7 +2402,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2442,7 +2442,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2452,7 +2452,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2478,7 +2478,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2506,7 +2506,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2515,7 +2515,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -2528,7 +2528,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2538,7 +2538,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2547,7 +2547,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2579,7 +2579,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2589,7 +2589,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2611,7 +2611,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2633,7 +2633,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@ultrathink/acorn.rs.wasm':
         specifier: 'catalog:'
         version: 0.2.0
@@ -2658,7 +2658,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2667,7 +2667,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2676,7 +2676,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2686,7 +2686,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2702,7 +2702,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2724,7 +2724,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2734,7 +2734,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2744,7 +2744,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2760,7 +2760,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2770,7 +2770,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2786,7 +2786,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -2811,7 +2811,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2821,7 +2821,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2831,7 +2831,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2847,7 +2847,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2867,7 +2867,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2877,7 +2877,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2887,7 +2887,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2897,7 +2897,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2913,7 +2913,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2935,7 +2935,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2945,7 +2945,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2961,7 +2961,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2971,7 +2971,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2985,7 +2985,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2994,7 +2994,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -3027,7 +3027,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3037,7 +3037,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3047,7 +3047,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3069,7 +3069,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -3078,7 +3078,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3088,7 +3088,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3114,7 +3114,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3124,7 +3124,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -3145,7 +3145,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3155,7 +3155,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3165,7 +3165,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3175,7 +3175,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3188,7 +3188,7 @@ importers:
         version: '@socketregistry/packageurl-js@1.7.0'
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/shallow-clone-guard:
     devDependencies:
@@ -3200,7 +3200,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -3227,7 +3227,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3237,7 +3237,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3247,13 +3247,13 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/soak-exclude-scope-guard:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3263,7 +3263,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3273,7 +3273,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3289,7 +3289,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3311,13 +3311,13 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/stale-tree-clobber-guard:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3327,7 +3327,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3337,7 +3337,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3347,7 +3347,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3363,7 +3363,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3375,7 +3375,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3385,7 +3385,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3395,7 +3395,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3405,7 +3405,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3415,7 +3415,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3439,7 +3439,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3449,7 +3449,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -3474,7 +3474,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3484,7 +3484,7 @@ importers:
     devDependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -3499,7 +3499,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3509,7 +3509,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3519,7 +3519,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3529,7 +3529,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3539,7 +3539,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3555,7 +3555,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -3568,7 +3568,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/variant-analysis-nudge:
     devDependencies:
@@ -3586,7 +3586,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3596,7 +3596,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3606,7 +3606,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       shell-quote:
         specifier: 'catalog:'
         version: 1.12.0
@@ -3619,7 +3619,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3629,7 +3629,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3645,7 +3645,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3661,7 +3661,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3671,13 +3671,13 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
 
   .claude/hooks/fleet/worktree-create-defers-to-script-guard:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3697,7 +3697,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -4010,7 +4010,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4038,7 +4038,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-bin-infra:
         specifier: workspace:0.0.0
         version: link:../bin-infra
@@ -4069,10 +4069,10 @@ importers:
         version: 0.34.52
       '@socketsecurity/lib':
         specifier: 7.2.0
-        version: 7.2.0(typescript@7.1.0-dev.20261013.1)
+        version: 7.2.0(typescript@7.0.2)
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       acorn:
         specifier: 'catalog:'
         version: 8.18.0
@@ -4100,7 +4100,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4119,7 +4119,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4135,7 +4135,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4148,7 +4148,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
     devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
@@ -4161,7 +4161,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4180,7 +4180,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4208,7 +4208,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4224,7 +4224,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4240,7 +4240,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-bin-infra:
         specifier: workspace:0.0.0
         version: link:../bin-infra
@@ -4283,7 +4283,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       acorn:
         specifier: 'catalog:'
         version: 8.18.0
@@ -4308,7 +4308,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       local-build-infra:
         specifier: workspace:0.0.0
         version: link:../build-infra
@@ -4324,7 +4324,7 @@ importers:
     dependencies:
       '@socketsecurity/lib-stable':
         specifier: 'catalog:'
-        version: '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)'
+        version: '@socketsecurity/lib@7.2.0(typescript@7.0.2)'
       acorn:
         specifier: 'catalog:'
         version: 8.18.0
@@ -4364,42 +4364,42 @@ packages:
     resolution: {integrity: sha512-UQFQ6SgyJ6LX42W8rHCs8KVc0JS0tzVL9ct4XYedJukskYVWTo49tNiMEK9C2HTyarbNiT/RVIRSY82vH+6sTg==}
     engines: {node: '>=4'}
 
-  '@ata-validator/native-darwin-arm64@1.56.0':
-    resolution: {integrity: sha512-gsLVVshj+9/icnX/S7ekXxs+Q4Z0gT16Amv303bsel/ng1MAV4mdZXtkk9+tksZRwnYuGcYwoENx2owf9qNSAA==}
+  '@ata-validator/native-darwin-arm64@1.57.0':
+    resolution: {integrity: sha512-6CM/seLKvjMhD0tAR5epb5hVCdji2q9tm73muG8Q99YHz/q6Pdc+DSPNndDthL6OZNvYhjnXFBgOyegcMXxmSw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@ata-validator/native-darwin-x64@1.56.0':
-    resolution: {integrity: sha512-IDwJtOONHh8YRrSMv52ViYNMeKf69I2LE2yiGg9UP29zcn6wfSWpqRYJHeG32WjzW6mTzpTnI207LGFFXg1gQQ==}
+  '@ata-validator/native-darwin-x64@1.57.0':
+    resolution: {integrity: sha512-gBqZDd2A5LjA0OEO80HuNOw0u+i+Bvh6AW3Ln9/v+L6bsXDUdK2RAMEoBAhSGmqh1PgUQzy6bOGIS1mChBPiug==}
     cpu: [x64]
     os: [darwin]
 
-  '@ata-validator/native-linux-arm64-gnu@1.56.0':
-    resolution: {integrity: sha512-xpEpZELKk6BxGh/QXfVkO/XUBebUrFLJM83hIQrz0Oo7QQRQgQBE7PqGYsO+Un6xdI3ecEv25hpqk8ECJuwN9w==}
+  '@ata-validator/native-linux-arm64-gnu@1.57.0':
+    resolution: {integrity: sha512-8nE5wOsYhX221/LYrmhdyBRQ+YBx05Fxta6JTq1aRdustHNxdq8yHLSyzovkKCInLqbLl6RVQG18AboDeKkHaA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@ata-validator/native-linux-arm64-musl@1.56.0':
-    resolution: {integrity: sha512-WXxBlqGMU2jSf0B2uH65Ubwox068PxiKLUxTUS4+9f+Bdij+iQOUtRTbs4XjXmcif5Z3vGbr86yJWP3gtLt4qQ==}
+  '@ata-validator/native-linux-arm64-musl@1.57.0':
+    resolution: {integrity: sha512-NpP9GmIoEgZXCGW6oJ/KPUlwYgJUCBr3gVVI6vtA50oY/Xb6B13+avQ1QjhcX55KrmYOnL6Y6uDM/Pp35fzmHw==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@ata-validator/native-linux-x64-gnu@1.56.0':
-    resolution: {integrity: sha512-u1nksVCI1s2WslwFJE9A6QlhxhOJEPV3xMyr3eZKTep9J34sOenjK0PYaga2ylQP5B6fKK2w02TZfjB+8Gqevw==}
+  '@ata-validator/native-linux-x64-gnu@1.57.0':
+    resolution: {integrity: sha512-VbuBauTFC2AJipovG6AjpBm5fwUQhexdFGKCl1cY/q+ha3xmWv3YdGWq279pOhjCFSdW1QdiB8tP6nFK55yEgw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@ata-validator/native-linux-x64-musl@1.56.0':
-    resolution: {integrity: sha512-8FNMNhH1vwo65Sd3xuGLUgSD+Cz1TuWBywqLAq0ztQli/rr27AWtOH13IPOWJ7VRt9vvhgByIAgauRvIqY6Mzg==}
+  '@ata-validator/native-linux-x64-musl@1.57.0':
+    resolution: {integrity: sha512-Y06VO4dBLxiL+9pcjkzFCiGmUsgnCPbLIYkaI7Kq6E/bb3eFxS1olMc7C7ZowdPoexmgNvNBkYfm13cqFnsjNg==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@ata-validator/native-win32-x64@1.56.0':
-    resolution: {integrity: sha512-MLvjOFOM/wNX19DfaKT943YhG/20J3wuxkr+byxI94sm0YHzlgVA8fcz606D85KOh1NYXKyNNs4IEL0+wENO6g==}
+  '@ata-validator/native-win32-x64@1.57.0':
+    resolution: {integrity: sha512-KayvsVidisSYj3kdeXeBWDz/AivaWDL8KCFVtUY4u6JJc27l33b9an6PN04kC+aEH0BwdejcdTXdWphaokkPPw==}
     cpu: [x64]
     os: [win32]
 
@@ -4699,8 +4699,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@mdn/browser-compat-data@8.1.6':
-    resolution: {integrity: sha512-bTP5c58cBsgMOokwa/ECLcAxTkIwBe9csIts92Nq2wviediIJadh9iHI4Ezn2q6RiZhy7b54SNRn/tZpPKtTsA==}
+  '@mdn/browser-compat-data@8.1.0':
+    resolution: {integrity: sha512-BNlUjp+9O6gtIHPVZEGFb5rgtuWW8weR+mSKfLOevxbfoZv5DRe3N4ZTEpXiIm5wfR7+kqHu8malCCgP6USrlg==}
 
   '@modelcontextprotocol/client@2.3.1':
     resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
@@ -4988,246 +4988,246 @@ packages:
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
 
-  '@oxfmt/binding-android-arm-eabi@0.74.0':
-    resolution: {integrity: sha512-xxQwrf5EPI5zxvuCTW8r6tzCTjPQ+h6+HqJ0iRKRy2zS1yBllt/xLVjoIyUc+FnR7g0a5g1SZv2yyDYhTItLbA==}
+  '@oxfmt/binding-android-arm-eabi@0.66.0':
+    resolution: {integrity: sha512-2Me9eoptv6ERdEuI2P8AOlYdHHraXebJaM6SC0kc2Dfb+mLrep2db+fedBPKaYn673h/vBgvP4tkOdAbaudX6w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [android]
 
-  '@oxfmt/binding-android-arm64@0.74.0':
-    resolution: {integrity: sha512-FJW3sATVvrWbV64al8xofCPZj4500Z/1W0ad7Tg1rcCUyh0EMbuSrsf3jsZS7CEbwQ5fQ0mRhmkc129GFgofSQ==}
+  '@oxfmt/binding-android-arm64@0.66.0':
+    resolution: {integrity: sha512-u7O+bSSF0HGsDKkQQxBqvLGVepu93RA+JKu+ONqvfh4sCnCEbj31wZj4iG5gk3XfRwrmYj0/8catkO2LcblQKQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [android]
 
-  '@oxfmt/binding-darwin-arm64@0.74.0':
-    resolution: {integrity: sha512-TfmNKBD30dGyMu9GCLiaw2rt/z7fms9LS+5cKcNOyWst0QgAs8oZs6wPxMbVaaDVE0/PCdCosgWM1vbu6f5NUg==}
+  '@oxfmt/binding-darwin-arm64@0.66.0':
+    resolution: {integrity: sha512-/ikyMIVjX/sdo7KtjxoEsSUosfPzveVhT9RWMx9yGqFDKFJ89JAEKuEeLBmurDjrkb4w8tOnAdSO3SBaplY3bw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxfmt/binding-darwin-x64@0.74.0':
-    resolution: {integrity: sha512-5Usf8+DfC4Q3o/MD8FkN47GrI6y0KbhQ4KhZ2HGzMZcXjcW1AeldwbUn51aKih+1TVuJFF9qkNm6X1nzm6NYng==}
+  '@oxfmt/binding-darwin-x64@0.66.0':
+    resolution: {integrity: sha512-q5xUsKeFqawa9NXa6ZGXWimFV19m8MogKPdTaSVDAAk2EQKBmBZRDeluwcl1p8ty/OFc9s9888OKEh3xfPVH0g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
 
-  '@oxfmt/binding-freebsd-x64@0.74.0':
-    resolution: {integrity: sha512-eL+1O3gykw1XihbZh2MRAciQvU2988LByrnjhyo/dmNG74X4oZ7XzigRoWPRFLfJCp8hzRkp/LbEhwe7uuT2eA==}
+  '@oxfmt/binding-freebsd-x64@0.66.0':
+    resolution: {integrity: sha512-CR+x4VzMY0pRXLK/xFQ/RzsSFkP5t2Z2mef0QY6OP/rTRcMUoMLCOM62/3Fp/t0K+UDoBKxvMyeb6D0zPMjleA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
 
-  '@oxfmt/binding-linux-arm-gnueabihf@0.74.0':
-    resolution: {integrity: sha512-Xt0QtO2hJ4stnul8IL4LJGVLyp0xnc6ccN9fZ30yuubv8FWSRYxWwd1Za62KsEqAfmPSazoS/cLSUUJpja6npA==}
+  '@oxfmt/binding-linux-arm-gnueabihf@0.66.0':
+    resolution: {integrity: sha512-ZEYmO/LbH9tTQCADILHGZE4GeOXOAj2VzedHkASNwjmwlwtutJCLpCJbIs37wRGTFgWRoEcD72jpMX+IBJUGjQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxfmt/binding-linux-arm-musleabihf@0.74.0':
-    resolution: {integrity: sha512-/4wYQ0gZl4vUR0QoBTGaay73FmQ1GAjUa9z9101TR2xbGNrg4a+grazlR0yzEOe3/E+PJr5BGfj66MMzm/54vg==}
+  '@oxfmt/binding-linux-arm-musleabihf@0.66.0':
+    resolution: {integrity: sha512-hNtR9/oU0CeTkq7JnRkmBQwqe17v2ZaAMLC4VcN7IIOWeRyWDk0knSPWS9iiLmtbZ2RRBBtsG01jQgkZmKCJeQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxfmt/binding-linux-arm64-gnu@0.74.0':
-    resolution: {integrity: sha512-846bKzF+HJd+JkOFh3rxzmYvSq4Cm+GMT+p+mW7S13ZYo6GAAGv8bL8cAOi/XcdeMqxEJDCIMTVQLVBXHMCdig==}
+  '@oxfmt/binding-linux-arm64-gnu@0.66.0':
+    resolution: {integrity: sha512-uwOVQ8i6I1LT/+eDzfsgrrcZp8Fn6NPVUPn8fF5gdFGekFf0PddF+LEuwsD0/pbNUcKZhDj2rQ5UpITh9gF4iQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@oxfmt/binding-linux-arm64-musl@0.74.0':
-    resolution: {integrity: sha512-nI5FJwZ4Flo6CBdscpwxymZXxO3m3IErQJX55ZS6h+ObfGXu8FostL85L/RWPFaCLnIVE4/WfLw+2q8XvVEeUA==}
+  '@oxfmt/binding-linux-arm64-musl@0.66.0':
+    resolution: {integrity: sha512-tTkF2Dmx4nGAjmBlZb+UtTGqR/EK4ZrW9qBfzte07a9XWqzoGGKzpFFlyNDhQe+Uwql94+ReCTeNbhOXscw1Dg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@oxfmt/binding-linux-ppc64-gnu@0.74.0':
-    resolution: {integrity: sha512-BoQYKuqUdsKAFAkK6DLBvkdv4+t0hppSm79sB0wIcE2o/eOwNj+6Z3OlKY4q3Eta/tlssP65FaS9vHn8TeF7vQ==}
+  '@oxfmt/binding-linux-ppc64-gnu@0.66.0':
+    resolution: {integrity: sha512-F3cKHUav4yXOHn6GFnwpBhSYsJOYKKf9eqO/9jlEuqPxNw9zb98E9ZFct79gcg8pibUGkbveEu9WDlmXJpDzKw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
 
-  '@oxfmt/binding-linux-riscv64-gnu@0.74.0':
-    resolution: {integrity: sha512-FSroRrM12+jCdSQklF9aOxsKpI6wFs4ZCo/1cSYG80RWZS6z4LV+l9tXRMT8lDGu+yohIZBwi9M76FzGPFDE2A==}
+  '@oxfmt/binding-linux-riscv64-gnu@0.66.0':
+    resolution: {integrity: sha512-K5fDaNZfDyQMYA/3qL21bqyN0X9T15LLwwbFPt2aHc94+ZG7bh0vZEsy2y7NlRnjjHFSwN+Hzg6ldJtbOriH4Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [glibc]
 
-  '@oxfmt/binding-linux-riscv64-musl@0.74.0':
-    resolution: {integrity: sha512-0VLQD0dhGBLY9Ik/w+otMvD81D0YXi4VDwql65macV+O9UzmSWmUr6CKf+dMtysDeC0PnG3y6kBkRO08BJx52g==}
+  '@oxfmt/binding-linux-riscv64-musl@0.66.0':
+    resolution: {integrity: sha512-44Yc+I+qOmTElRcEhm5hUKIUJEQIOugymz4ua4tB0Wox7tGAfIbjzmXz/HDAtw1Ij6gmBwZlzh4hc9679RhWeA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
 
-  '@oxfmt/binding-linux-s390x-gnu@0.74.0':
-    resolution: {integrity: sha512-6X7BbZNz34+OHM6Oqjf6TRcUyRn6aRcB4VtIDZAF/uQRyeVhg+G2hv6MlMvmnRekVSyTJ/8rG/u8W2dRFW6glg==}
+  '@oxfmt/binding-linux-s390x-gnu@0.66.0':
+    resolution: {integrity: sha512-1e29Eg9hEj2kRBB19M0seIehPbbXHCk35GvImjDvb79rjjYjXCRmtbUNHJcgoktZAMIzXrTbxDBKmTc1V4bg3A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
 
-  '@oxfmt/binding-linux-x64-gnu@0.74.0':
-    resolution: {integrity: sha512-4kYIQK53yJXrxwxSzx8H2bojlf6/KezLGYLRXzV9QCCkoiCsvBTCid9Bg83dUPTLPa3g9K0730f6MKDbck1+OA==}
+  '@oxfmt/binding-linux-x64-gnu@0.66.0':
+    resolution: {integrity: sha512-vODY1UQo10gngn0+D4xHKU84F1Twm1LqrzV4SqPXvmQKSd87paehvZ6jqA5wKs6XQrlWul9clYMDVHcoW9CPMA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@oxfmt/binding-linux-x64-musl@0.74.0':
-    resolution: {integrity: sha512-MfWz4wDREjp/JQDmuxtKieix4FHGa1z5rBvB3betdcPwZvf5fqeQrlCm1mmoyuUVQOh9Pt3M61HwN94kJCxw7Q==}
+  '@oxfmt/binding-linux-x64-musl@0.66.0':
+    resolution: {integrity: sha512-YDzXx2JsT4+HL4MdkVrYjO55NS5lUKNm8rLC4ZPou8+seu0v0jhecSh+ufoO6+xEa8gccEezMlI2WHJi4ApUgw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@oxfmt/binding-openharmony-arm64@0.74.0':
-    resolution: {integrity: sha512-6rmAApkq5s1kbDjvNI6Nl5A+JqQkLORb2sR941pf5HWsrd01WGKyagK/B4vX9+kh1FfvRkNgEu59FHvVk4H8cQ==}
+  '@oxfmt/binding-openharmony-arm64@0.66.0':
+    resolution: {integrity: sha512-mJjUYd8lj0+j4JkYyEM+5qKBf1Rnrpgjn/SVYKJhicVDqLz566ooa7Fs8zflPqt+dnZDV7X054rVIQX6ZcQNlQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
 
-  '@oxfmt/binding-win32-arm64-msvc@0.74.0':
-    resolution: {integrity: sha512-+5SpRUnZNGeXTyumHnpHa791tQtt04qZs076WT8eTcGF2OJ631VLnf7S0kQSPuDG+PtJM0phadEB2WAr5n1w9g==}
+  '@oxfmt/binding-win32-arm64-msvc@0.66.0':
+    resolution: {integrity: sha512-soV+0vESv7e5ntCHWC61x4gg8OSak6IHHnWsZmHrJFlvMj2AK+kmldErCNkVkrvc1Ts2/++rJXn+IuAb2WMXhw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [win32]
 
-  '@oxfmt/binding-win32-ia32-msvc@0.74.0':
-    resolution: {integrity: sha512-1Fg+wYBO3Dsti1QX+/6EYHjeQzLC84tLOAqPu/r7ah3UJlUs9C/DB703Ay9Vcg+8VMzqZA2P5VGhzJraVUD4OQ==}
+  '@oxfmt/binding-win32-ia32-msvc@0.66.0':
+    resolution: {integrity: sha512-YCPi23uRIEYuIKTZohAkKbPFpujQ5QBuUM5iDv+UqbCmTPAkaFsxjsSuB8xlBpRT0G7eP/4HMF+cPDSqHtOD9A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ia32]
     os: [win32]
 
-  '@oxfmt/binding-win32-x64-msvc@0.74.0':
-    resolution: {integrity: sha512-y9jXUgPBm2TZIWbQhMYRRYAQM57+r4fbykgc+j24ICIIZl+pcuoNhnq1CRGm3oFiHnEUnZO00qOtSPGQdJ2ziQ==}
+  '@oxfmt/binding-win32-x64-msvc@0.66.0':
+    resolution: {integrity: sha512-bwTQcv/JVRPkOqQtMF0X7vpvpncDQiBcXHxZ9S2hR12Hlo8bvBdUR5x5XnxzDZ3kM0qoZw1rv7KaD66Ly+pFWA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
 
-  '@oxlint/binding-android-arm-eabi@1.89.0':
-    resolution: {integrity: sha512-Pflpba5F3gRAQ12sWglRxvWTHEdAusNDvmi4Y5N1T5SY1AGkM7AixOnET8qkrnLJ/F32qAlNokO6eCknT8tmnw==}
+  '@oxlint/binding-android-arm-eabi@1.81.0':
+    resolution: {integrity: sha512-IcCRsXiedJoJopY6mpZUBEeVFsUrutmrG7dZ87zMuKJlhg70Ora9bBl1WcCxZQtyI10YpnVdEso5oCg7YcfSHw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [android]
 
-  '@oxlint/binding-android-arm64@1.89.0':
-    resolution: {integrity: sha512-dYmyD1x7LaPlb79vZWUcpTShk8dI9z1I+IubtqrBxWNJaDhQdPHwcsvg7q5StTU4xWyd9AwPfLaTYFZY8NZgtQ==}
+  '@oxlint/binding-android-arm64@1.81.0':
+    resolution: {integrity: sha512-GRrIPyTGVhx3L3h+0T5xT2A0jFAcdPv4+IfuXpGDLIdl6XeYhgg/zw72A5ILZoUgRqZuM8F1y+V/gfDriXSxzQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [android]
 
-  '@oxlint/binding-darwin-arm64@1.89.0':
-    resolution: {integrity: sha512-Z/oxOPiIqiS7fItRdxaaOEC+6GD3OpGi0IxoR0dMefzQHolsKLzScw2DNcu/5gUPok3tv+G9mslvYB5bo3i0qg==}
+  '@oxlint/binding-darwin-arm64@1.81.0':
+    resolution: {integrity: sha512-qNQ9tXRgLuKbqSV1S2h9h4KPHjbovO7RRR2/enUOtHzTkFZ7B9X5zqqHJua8dRyc7dBy7Aoyq5pqTSLFVcAzGQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxlint/binding-darwin-x64@1.89.0':
-    resolution: {integrity: sha512-eAjTkHSjAxrdCPJxO6y5sPQL5pYLKb2kvxZz9UU7tXnOZk9I/HLtkvx9S7GHY883k+AmL/eC7mqFt+w7WCwk0w==}
+  '@oxlint/binding-darwin-x64@1.81.0':
+    resolution: {integrity: sha512-q0QTm32jWga2Gv4j7IaVZN0jYMi9UV73sWVgFtDA4iIfqwMCLLZ3ve+9KwfYtsaKZSgQhmPaogeZWqDZpcY1Pw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
 
-  '@oxlint/binding-freebsd-x64@1.89.0':
-    resolution: {integrity: sha512-0lNCA9Tl1n1FKpqy2/9ckp0kIuSrtJ/l9bMRgaEhOtM7TsOHshFuwOcvW8oA9teXLMOJT61LjEKWiaHDFGxF/w==}
+  '@oxlint/binding-freebsd-x64@1.81.0':
+    resolution: {integrity: sha512-/+8wVWDXEC7wHVAhOc59Fw/SkMc1arLkFD8iQCaSsmzenK1X4doFqquL9H1wrtGUzaiycVqkf/sSpcILK6W1UA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
 
-  '@oxlint/binding-linux-arm-gnueabihf@1.89.0':
-    resolution: {integrity: sha512-OTFEvi9W+JczaZD1Caj17SGCoW8H7TE+fvx0D7ATEWa1Lohn91UMxFQ6r145SiGy/yCxeIwptMys/RAM7gSVSQ==}
+  '@oxlint/binding-linux-arm-gnueabihf@1.81.0':
+    resolution: {integrity: sha512-4xt422FEgioRq9hAL4Tq7fujGUWnc8z1BJ+Oi8RN8vB8axaP+sdK6a2xdlcQCCYnJg9QMuMFS0AucuIFx/EacA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxlint/binding-linux-arm-musleabihf@1.89.0':
-    resolution: {integrity: sha512-fRxgNHvBLswj6MrhW2uBq5UDhPRQlCbHeq/Nf8yuG9zOxhDsXqX/mi2PX1axgsQxMm88el7HLiJAzglAnflYxw==}
+  '@oxlint/binding-linux-arm-musleabihf@1.81.0':
+    resolution: {integrity: sha512-u3vna8KdGplH4DRCW9K54D68fcMo7IxVrkCJWwXnIhwtBdnDnYrmzOUA/XjmBlPpcLsgw9Z5BNdY4za9+Dj+MQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxlint/binding-linux-arm64-gnu@1.89.0':
-    resolution: {integrity: sha512-v9ENzHvwrQoYSWTtviH1pOYc7R9UovDxVofnck50cNmPihRRTcrg5X0UlRbLOZ7IVtxPOlh2hb7kDO+FpE8SfQ==}
+  '@oxlint/binding-linux-arm64-gnu@1.81.0':
+    resolution: {integrity: sha512-3j9k+gsYsE7nv71GWotXsqsa2l9/aJenD7dVHNt/CBvsb0SgRjSMnHFeP59IXUAl1wvVFhqGl2wJNMwWU3UBlA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-arm64-musl@1.89.0':
-    resolution: {integrity: sha512-vfffe8mQ484AzVadlUOFpgL+JDwhvs9hrzxTgQP1FVfi4ZEUUYeffXlzC9dFV7Dgnu5s/KrNKvfmG6HxBd/ISQ==}
+  '@oxlint/binding-linux-arm64-musl@1.81.0':
+    resolution: {integrity: sha512-k5iAp3dNxW0/uDCBY+WSm8jKB2szu7SkEQZdgRRpDXvuDd69vvDcqhB3A/pWCfCwXyenjNjFn9Td1fVoyAc+Yg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@oxlint/binding-linux-ppc64-gnu@1.89.0':
-    resolution: {integrity: sha512-Buonlp4hVS7RGNP5M7bPpGNQrenyzA2C64JcO/oz9C1c6dGOXJ7VEAnaiAMY7voou0JYyCJdvDVlFQc5DZX3DQ==}
+  '@oxlint/binding-linux-ppc64-gnu@1.81.0':
+    resolution: {integrity: sha512-TFqLja3uYmVSte6nof9GWrex9Z8WgdZrNiLC6Te5rXGDqXB2y4j/26iFhwosXiAFqDhE9JJVuuCkDKLwptTn1g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-riscv64-gnu@1.89.0':
-    resolution: {integrity: sha512-1eVwJJrJ3lYIPT+cm7BcBBZZXY6IQZP/oyonaruTor/MrVyWOpvnwt1oD5CLdsHg5aVBIxXodQSvt+1gK6ck5w==}
+  '@oxlint/binding-linux-riscv64-gnu@1.81.0':
+    resolution: {integrity: sha512-UEcySvGS0NOVo7h7n7CYyJL9+6gFAh7Zc/ToDXVScFvzHSTIxtzkMVU30rmQ6+nQ1LF+UdiRDdJajpDu+OylLg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-riscv64-musl@1.89.0':
-    resolution: {integrity: sha512-fRQQsKUGShdEL5Fl9o9uhj3grkZbeXKLv0icQ5tspUCNYSDy8wzzEcP1WC2bKdTQ0rSszbKlO3iiHORxV22DLg==}
+  '@oxlint/binding-linux-riscv64-musl@1.81.0':
+    resolution: {integrity: sha512-H+diDbhD00+wI1IRP8Kz88x/lat+DgtoBJzoTthS16xkTJGNaEkfb8gzmd1rzc/2uDQQMl7GNl+JFUacVeWxIA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
 
-  '@oxlint/binding-linux-s390x-gnu@1.89.0':
-    resolution: {integrity: sha512-dEtYjIy6+fHcjKklsmtmMkZRhwHr2UbzjmpvuPtQYSeN9awQ2hx5JLms5Wvri+8P/NZtD8v5hfgHALUql+/Ycg==}
+  '@oxlint/binding-linux-s390x-gnu@1.81.0':
+    resolution: {integrity: sha512-8znJ/5TekjOKg1j1Acho4PJMdiAHLtlcXuWEiipOhAMV6rQcXdmDdXCbheyDczN6TjBwiNfjcP81k4AthrKRzw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-x64-gnu@1.89.0':
-    resolution: {integrity: sha512-hqjwIj5KOYM8Wjef/p7IruNi1iByLhSzbMBk62y22P/E8q7Jj0Pp+DeUTKTRYyZYCDtU1wEGlnWOnttHbyNIww==}
+  '@oxlint/binding-linux-x64-gnu@1.81.0':
+    resolution: {integrity: sha512-Q2Wj70yFsvn5QjlmifFzbj4H+kJy53bwqc41o1fzoM7MpLV1NIbhg/LpWXRfC6KOkSAdUx1Wd8VJsdPmhp/HRA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@oxlint/binding-linux-x64-musl@1.89.0':
-    resolution: {integrity: sha512-iAQN3e6o9UgUCcdGwqRx/jYcKbG3HK7ur3rH6lTqVcQeNGZ85AeWIg6cgn/edwFQ0ofEZZItMwkzyCVTahnvEA==}
+  '@oxlint/binding-linux-x64-musl@1.81.0':
+    resolution: {integrity: sha512-cPInHp/ddEe5qkyK2IiyQ8Q3Mp2oLLEhhsGgTK2oZx4L6+llGam1H1yBvJZ7qHfOXj8N3hxBS8sj4tO+gtFlIg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@oxlint/binding-openharmony-arm64@1.89.0':
-    resolution: {integrity: sha512-MNxjEByz3N/7Q4qFQuPWvc14TpN9LoD3pECEDsJTZbP/wyB7U+hduUXEl7QAbbgVezFwsb9sWtNUO6XVBndOhg==}
+  '@oxlint/binding-openharmony-arm64@1.81.0':
+    resolution: {integrity: sha512-0CQxSX4ajqm07AHBf5U33qQzXKdd7wtq/oTL/7vpY6RNNuxrRi8W4bqUV1Jyu/vj+9KmxQyDhxfeVX1nQL6kfg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
 
-  '@oxlint/binding-win32-arm64-msvc@1.89.0':
-    resolution: {integrity: sha512-xxe+i9wfuFso/VnoL4mfj0UlzE+cfCFiUB06vkXCMyQdgVVmItF5FfAF4tATAktSU6uHruWR+FjqvAT9cHZZzg==}
+  '@oxlint/binding-win32-arm64-msvc@1.81.0':
+    resolution: {integrity: sha512-l0hbeISm9673hVrrQU8j/p2M7YH9Ouoj7p7E/QM55NTrKVLP+P3PF8hLu+OY+x0VtGRW+ggiQKZqmdYps9H+TA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [win32]
 
-  '@oxlint/binding-win32-ia32-msvc@1.89.0':
-    resolution: {integrity: sha512-saFy07cO94E664glwgLmKLI40HgTL1PY86y4T6+ud4niX4H0Kdqjcmqmjps7mQNdBytV5guGbXDdyQtRfeLbLA==}
+  '@oxlint/binding-win32-ia32-msvc@1.81.0':
+    resolution: {integrity: sha512-ksqPP5jbFXcYreEQ7zdJh06rJQBymCTyGRCdaXjfcf2aG4f8KxUWY5wcgYHmaTK+FJ4bPG5sUAdOX+6trnH1JA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ia32]
     os: [win32]
 
-  '@oxlint/binding-win32-x64-msvc@1.89.0':
-    resolution: {integrity: sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A==}
+  '@oxlint/binding-win32-x64-msvc@1.81.0':
+    resolution: {integrity: sha512-IZuUCwGw9emG5JtCp+fYGB+Z4OWEoeEcM8R5BA1pYw63/ieYFVdcU2ylxTpHbVHSenZnsYE+ZZ20uHAJszQ4cA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
@@ -5506,20 +5506,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-V22DvbTQjg6kMEqU5hhZmxhZqTNdbwNz3YB1CULEtxH7gxMxPvFpMM5rbJQgZlhabo0DxvsFfTdUNjOTr4IPIQ==}
-    engines: {node: '>=16.20.0'}
-    cpu: [arm64]
-    os: [darwin]
-
   '@typescript/typescript-darwin-x64@7.0.2':
     resolution: {integrity: sha512-SZ9xZInqApNlNGc9s0W1VSsktYSOe9cFqNOIqmN1Gs8SmkjKZYFt017G4VwPxASInODuAdbTW7sXiFUf893RgA==}
-    engines: {node: '>=16.20.0'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@typescript/typescript-darwin-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-v10+lJ+NedjOIxTapLg6EQEeWkVdi48f3xVSR9b7e6QXoXCHBpsh/kWXV9TsV5ktK6dVupejI37NhYshHhL30g==}
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [darwin]
@@ -5542,20 +5530,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@typescript/typescript-linux-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-Yfc3YMuraVGekDFh3UNBnuOyXQV76kTqEGN/eYgyarHNy6T8GlhZeF27Q8MTi7UUwf5/gYb4bkXaN1QHazUIIw==}
-    engines: {node: '>=16.20.0'}
-    cpu: [arm64]
-    os: [linux]
-
   '@typescript/typescript-linux-arm@7.0.2':
     resolution: {integrity: sha512-gffT3xPz9sR7j/YJExkyPntrI0P2EP9XbOyWzth2/Gs0RstK+90RBcO0ncXoXy/beYll1SXw846Nf2zdnEz0QQ==}
-    engines: {node: '>=16.20.0'}
-    cpu: [arm]
-    os: [linux]
-
-  '@typescript/typescript-linux-arm@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-AoETMKNMW3fSoBShrmReiWcMShNLUzxlOyOEcmvWhJJYMMi0Tn6D3djoeuyojtCgUGwcygGaV5F893axTzDZ3w==}
     engines: {node: '>=16.20.0'}
     cpu: [arm]
     os: [linux]
@@ -5596,12 +5572,6 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@typescript/typescript-linux-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-3A4+Mc0oaeylfTNhOqWO16Rjsus1rbUePzO8syfp3hjd2KMm97KlQjZoWQdTx4HMN+kNO0gkBeK6EPmExcfaug==}
-    engines: {node: '>=16.20.0'}
-    cpu: [x64]
-    os: [linux]
-
   '@typescript/typescript-netbsd-arm64@7.0.2':
     resolution: {integrity: sha512-+polYF4MF04aPpO5FTkHran9yUQDSXqy5GiSDKpsll5jy3l3+g9QLhpf39T+ePtefhXLOGrLl0QIjkQP6VnelA==}
     engines: {node: '>=16.20.0'}
@@ -5638,20 +5608,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@typescript/typescript-win32-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-lm1K1ltNO88ynBQiQlJJLncUPvDeimW4R50T+Adp8jsLDgbVObuBPXvaiQnpV922JeMWSnOgIH7KeRvxD3W/EQ==}
-    engines: {node: '>=16.20.0'}
-    cpu: [arm64]
-    os: [win32]
-
   '@typescript/typescript-win32-x64@7.0.2':
     resolution: {integrity: sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g==}
-    engines: {node: '>=16.20.0'}
-    cpu: [x64]
-    os: [win32]
-
-  '@typescript/typescript-win32-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-+K0COtvzbCVuQFVQ25pEXlGOfOqES53+y2XNeZUSfJONLOOmfSc5sniVyTSjjrzMstg8zK9W20nJGKs1eY9BkQ==}
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [win32]
@@ -5750,8 +5708,8 @@ packages:
   ast-v8-to-istanbul@1.0.7:
     resolution: {integrity: sha512-kFL68AG6ajd8fg248zwM9GQrUWEp79gsmjum34OEXjs4yHuUMZfYKwOLW9GMmB4oNvVrj+EAGxsP7ye2UR9UlA==}
 
-  ata-validator@1.56.0:
-    resolution: {integrity: sha512-B1j2xaLCTsRQeBUVC3f1wNKCJugODy+4KI66PSL1dRcGZJDa81V0PbavmhK6pAlXNPhL1btI4PcNXUHx0A7gmQ==}
+  ata-validator@1.57.0:
+    resolution: {integrity: sha512-ORdPARvZBY2wthIc5SL+lrlaPHC07vuZR1aUU6OnM4O5RmNX6MKiapfQ9dkb4EjK/0yN44qlsG67VaPVJHktOA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
@@ -6706,28 +6664,25 @@ packages:
   outvariant@1.4.3:
     resolution: {integrity: sha512-+Sl2UErvtsoajRDKCE5/dBz4DIvHXQQnAxtQTF04OJxY0+DyZXSo5P5Bb7XYWOh81syohlYL24hbDwxedPUJCA==}
 
-  oxfmt@0.74.0:
-    resolution: {integrity: sha512-G4OP7FgwGYZR5ttRpCOOfJdyRsSyvtn34vSXnjDq6Oqed5Dufg5mB44mank+51nAdHOKuTJ0lj0mksY7L+N61A==}
+  oxfmt@0.66.0:
+    resolution: {integrity: sha512-FfvqR8RFtV6JJpRrpkfqyVCQ7HDvZ/VriWFx7veftCgL1B5ZO9qNr+1rvPieycMQnNfVG0PWyJQiy7p0hq1I5w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
-      '@astrojs/compiler-rs': ^0.4.0 || ^0.5.0
       svelte: ^5.0.0
       vite-plus: '*'
     peerDependenciesMeta:
-      '@astrojs/compiler-rs':
-        optional: true
       svelte:
         optional: true
       vite-plus:
         optional: true
 
-  oxlint@1.89.0:
-    resolution: {integrity: sha512-a25hkfo61okGPvJz432fRIPoxlKtNnOVy9w4rzrmGgNm4iVTPwpSQlmdqNWnp6p9QyyPVfAZRgnf5XvSBZFk/A==}
+  oxlint@1.81.0:
+    resolution: {integrity: sha512-HyrJYqeoOCL0iqaLEzGewGT48ZX99P3hxYh8udAF9RGGIghSamkXE4ClUyBpEDNqasamThgmlPbuMOe7SAZmHg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
-      oxlint-tsgolint: '>=7.0.2003'
+      oxlint-tsgolint: '>=7.0.2001'
       vite-plus: '*'
     peerDependenciesMeta:
       oxlint-tsgolint:
@@ -7047,8 +7002,8 @@ packages:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
 
-  tinypool@2.2.0:
-    resolution: {integrity: sha512-jBrmx4lYmaC9k/mgPbylxs7kBUxHtD8256up+HjLaDFfXScKJQyil+SWXSvhAtT7XHo+yTVlpB81PGmHP8oLSQ==}
+  tinypool@2.1.0:
+    resolution: {integrity: sha512-Pugqs6M0m7Lv1I7FtxN4aoyToKg1C4tu+/381vH35y8oENM/Ai7f7C4StcoK4/+BSw9ebcS8jRiVrORFKCALLw==}
     engines: {node: ^20.0.0 || >=22.0.0}
 
   tinyrainbow@3.2.0:
@@ -7100,11 +7055,6 @@ packages:
 
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
-    engines: {node: '>=16.20.0'}
-    hasBin: true
-
-  typescript@7.1.0-dev.20261013.1:
-    resolution: {integrity: sha512-wEt6fQCqhZ3hrbIUaO2LS7d94FSzH+xGP+/KJCxFNFHQiG/W2L0rJ/1B7lAQv6VKntlmjWuzYQ8LABuLZ3W/sg==}
     engines: {node: '>=16.20.0'}
     hasBin: true
 
@@ -7347,25 +7297,25 @@ snapshots:
 
   '@arr/every@1.0.1': {}
 
-  '@ata-validator/native-darwin-arm64@1.56.0':
+  '@ata-validator/native-darwin-arm64@1.57.0':
     optional: true
 
-  '@ata-validator/native-darwin-x64@1.56.0':
+  '@ata-validator/native-darwin-x64@1.57.0':
     optional: true
 
-  '@ata-validator/native-linux-arm64-gnu@1.56.0':
+  '@ata-validator/native-linux-arm64-gnu@1.57.0':
     optional: true
 
-  '@ata-validator/native-linux-arm64-musl@1.56.0':
+  '@ata-validator/native-linux-arm64-musl@1.57.0':
     optional: true
 
-  '@ata-validator/native-linux-x64-gnu@1.56.0':
+  '@ata-validator/native-linux-x64-gnu@1.57.0':
     optional: true
 
-  '@ata-validator/native-linux-x64-musl@1.56.0':
+  '@ata-validator/native-linux-x64-musl@1.57.0':
     optional: true
 
-  '@ata-validator/native-win32-x64@1.56.0':
+  '@ata-validator/native-win32-x64@1.57.0':
     optional: true
 
   '@babel/helper-string-parser@7.29.7': {}
@@ -7582,7 +7532,7 @@ snapshots:
       '@maschwenk/tsrslint-linux-arm64': 0.1.5
       '@maschwenk/tsrslint-linux-x64': 0.1.5
 
-  '@mdn/browser-compat-data@8.1.6': {}
+  '@mdn/browser-compat-data@8.1.0': {}
 
   '@modelcontextprotocol/client@2.3.1':
     dependencies:
@@ -7878,118 +7828,118 @@ snapshots:
 
   '@oxc-project/types@0.155.0': {}
 
-  '@oxfmt/binding-android-arm-eabi@0.74.0':
+  '@oxfmt/binding-android-arm-eabi@0.66.0':
     optional: true
 
-  '@oxfmt/binding-android-arm64@0.74.0':
+  '@oxfmt/binding-android-arm64@0.66.0':
     optional: true
 
-  '@oxfmt/binding-darwin-arm64@0.74.0':
+  '@oxfmt/binding-darwin-arm64@0.66.0':
     optional: true
 
-  '@oxfmt/binding-darwin-x64@0.74.0':
+  '@oxfmt/binding-darwin-x64@0.66.0':
     optional: true
 
-  '@oxfmt/binding-freebsd-x64@0.74.0':
+  '@oxfmt/binding-freebsd-x64@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-arm-gnueabihf@0.74.0':
+  '@oxfmt/binding-linux-arm-gnueabihf@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-arm-musleabihf@0.74.0':
+  '@oxfmt/binding-linux-arm-musleabihf@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-arm64-gnu@0.74.0':
+  '@oxfmt/binding-linux-arm64-gnu@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-arm64-musl@0.74.0':
+  '@oxfmt/binding-linux-arm64-musl@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-ppc64-gnu@0.74.0':
+  '@oxfmt/binding-linux-ppc64-gnu@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-riscv64-gnu@0.74.0':
+  '@oxfmt/binding-linux-riscv64-gnu@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-riscv64-musl@0.74.0':
+  '@oxfmt/binding-linux-riscv64-musl@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-s390x-gnu@0.74.0':
+  '@oxfmt/binding-linux-s390x-gnu@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-x64-gnu@0.74.0':
+  '@oxfmt/binding-linux-x64-gnu@0.66.0':
     optional: true
 
-  '@oxfmt/binding-linux-x64-musl@0.74.0':
+  '@oxfmt/binding-linux-x64-musl@0.66.0':
     optional: true
 
-  '@oxfmt/binding-openharmony-arm64@0.74.0':
+  '@oxfmt/binding-openharmony-arm64@0.66.0':
     optional: true
 
-  '@oxfmt/binding-win32-arm64-msvc@0.74.0':
+  '@oxfmt/binding-win32-arm64-msvc@0.66.0':
     optional: true
 
-  '@oxfmt/binding-win32-ia32-msvc@0.74.0':
+  '@oxfmt/binding-win32-ia32-msvc@0.66.0':
     optional: true
 
-  '@oxfmt/binding-win32-x64-msvc@0.74.0':
+  '@oxfmt/binding-win32-x64-msvc@0.66.0':
     optional: true
 
-  '@oxlint/binding-android-arm-eabi@1.89.0':
+  '@oxlint/binding-android-arm-eabi@1.81.0':
     optional: true
 
-  '@oxlint/binding-android-arm64@1.89.0':
+  '@oxlint/binding-android-arm64@1.81.0':
     optional: true
 
-  '@oxlint/binding-darwin-arm64@1.89.0':
+  '@oxlint/binding-darwin-arm64@1.81.0':
     optional: true
 
-  '@oxlint/binding-darwin-x64@1.89.0':
+  '@oxlint/binding-darwin-x64@1.81.0':
     optional: true
 
-  '@oxlint/binding-freebsd-x64@1.89.0':
+  '@oxlint/binding-freebsd-x64@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-arm-gnueabihf@1.89.0':
+  '@oxlint/binding-linux-arm-gnueabihf@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-arm-musleabihf@1.89.0':
+  '@oxlint/binding-linux-arm-musleabihf@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-arm64-gnu@1.89.0':
+  '@oxlint/binding-linux-arm64-gnu@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-arm64-musl@1.89.0':
+  '@oxlint/binding-linux-arm64-musl@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-ppc64-gnu@1.89.0':
+  '@oxlint/binding-linux-ppc64-gnu@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-riscv64-gnu@1.89.0':
+  '@oxlint/binding-linux-riscv64-gnu@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-riscv64-musl@1.89.0':
+  '@oxlint/binding-linux-riscv64-musl@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-s390x-gnu@1.89.0':
+  '@oxlint/binding-linux-s390x-gnu@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-x64-gnu@1.89.0':
+  '@oxlint/binding-linux-x64-gnu@1.81.0':
     optional: true
 
-  '@oxlint/binding-linux-x64-musl@1.89.0':
+  '@oxlint/binding-linux-x64-musl@1.81.0':
     optional: true
 
-  '@oxlint/binding-openharmony-arm64@1.89.0':
+  '@oxlint/binding-openharmony-arm64@1.81.0':
     optional: true
 
-  '@oxlint/binding-win32-arm64-msvc@1.89.0':
+  '@oxlint/binding-win32-arm64-msvc@1.81.0':
     optional: true
 
-  '@oxlint/binding-win32-ia32-msvc@1.89.0':
+  '@oxlint/binding-win32-ia32-msvc@1.81.0':
     optional: true
 
-  '@oxlint/binding-win32-x64-msvc@1.89.0':
+  '@oxlint/binding-win32-x64-msvc@1.81.0':
     optional: true
 
   '@playwright/mcp@0.0.83':
@@ -8094,9 +8044,9 @@ snapshots:
 
   '@socketregistry/side-channel@1.0.10': {}
 
-  '@socketsecurity/lib@7.2.0(typescript@7.1.0-dev.20261013.1)':
+  '@socketsecurity/lib@7.2.0(typescript@7.0.2)':
     optionalDependencies:
-      typescript: 7.1.0-dev.20261013.1
+      typescript: 7.0.2
 
   '@socketsecurity/sdk@4.3.0': {}
 
@@ -8165,13 +8115,7 @@ snapshots:
   '@typescript/typescript-darwin-arm64@7.0.2':
     optional: true
 
-  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261013.1':
-    optional: true
-
   '@typescript/typescript-darwin-x64@7.0.2':
-    optional: true
-
-  '@typescript/typescript-darwin-x64@7.1.0-dev.20261013.1':
     optional: true
 
   '@typescript/typescript-freebsd-arm64@7.0.2':
@@ -8183,13 +8127,7 @@ snapshots:
   '@typescript/typescript-linux-arm64@7.0.2':
     optional: true
 
-  '@typescript/typescript-linux-arm64@7.1.0-dev.20261013.1':
-    optional: true
-
   '@typescript/typescript-linux-arm@7.0.2':
-    optional: true
-
-  '@typescript/typescript-linux-arm@7.1.0-dev.20261013.1':
     optional: true
 
   '@typescript/typescript-linux-loong64@7.0.2':
@@ -8210,9 +8148,6 @@ snapshots:
   '@typescript/typescript-linux-x64@7.0.2':
     optional: true
 
-  '@typescript/typescript-linux-x64@7.1.0-dev.20261013.1':
-    optional: true
-
   '@typescript/typescript-netbsd-arm64@7.0.2':
     optional: true
 
@@ -8231,13 +8166,7 @@ snapshots:
   '@typescript/typescript-win32-arm64@7.0.2':
     optional: true
 
-  '@typescript/typescript-win32-arm64@7.1.0-dev.20261013.1':
-    optional: true
-
   '@typescript/typescript-win32-x64@7.0.2':
-    optional: true
-
-  '@typescript/typescript-win32-x64@7.1.0-dev.20261013.1':
     optional: true
 
   '@ultrathink/acorn.rs.wasm@0.2.0': {}
@@ -8349,15 +8278,15 @@ snapshots:
       estree-walker: 3.0.3
       js-tokens: 10.0.0
 
-  ata-validator@1.56.0(yaml@2.9.0):
+  ata-validator@1.57.0(yaml@2.9.0):
     optionalDependencies:
-      '@ata-validator/native-darwin-arm64': 1.56.0
-      '@ata-validator/native-darwin-x64': 1.56.0
-      '@ata-validator/native-linux-arm64-gnu': 1.56.0
-      '@ata-validator/native-linux-arm64-musl': 1.56.0
-      '@ata-validator/native-linux-x64-gnu': 1.56.0
-      '@ata-validator/native-linux-x64-musl': 1.56.0
-      '@ata-validator/native-win32-x64': 1.56.0
+      '@ata-validator/native-darwin-arm64': 1.57.0
+      '@ata-validator/native-darwin-x64': 1.57.0
+      '@ata-validator/native-linux-arm64-gnu': 1.57.0
+      '@ata-validator/native-linux-arm64-musl': 1.57.0
+      '@ata-validator/native-linux-x64-gnu': 1.57.0
+      '@ata-validator/native-linux-x64-musl': 1.57.0
+      '@ata-validator/native-win32-x64': 1.57.0
       yaml: 2.9.0
 
   balanced-match@4.0.4: {}
@@ -9048,11 +8977,11 @@ snapshots:
     dependencies:
       '@arr/every': 1.0.1
 
-  mcp-tada@0.5.0(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.1))(typescript@7.1.0-dev.20261013.1):
+  mcp-tada@0.5.0(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.1))(typescript@7.0.2):
     optionalDependencies:
       '@modelcontextprotocol/client': 2.3.1
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.6.1)
-      typescript: 7.1.0-dev.20261013.1
+      typescript: 7.0.2
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:
@@ -9511,51 +9440,51 @@ snapshots:
 
   outvariant@1.4.3: {}
 
-  oxfmt@0.74.0:
+  oxfmt@0.66.0:
     dependencies:
-      tinypool: 2.2.0
+      tinypool: 2.1.0
     optionalDependencies:
-      '@oxfmt/binding-android-arm-eabi': 0.74.0
-      '@oxfmt/binding-android-arm64': 0.74.0
-      '@oxfmt/binding-darwin-arm64': 0.74.0
-      '@oxfmt/binding-darwin-x64': 0.74.0
-      '@oxfmt/binding-freebsd-x64': 0.74.0
-      '@oxfmt/binding-linux-arm-gnueabihf': 0.74.0
-      '@oxfmt/binding-linux-arm-musleabihf': 0.74.0
-      '@oxfmt/binding-linux-arm64-gnu': 0.74.0
-      '@oxfmt/binding-linux-arm64-musl': 0.74.0
-      '@oxfmt/binding-linux-ppc64-gnu': 0.74.0
-      '@oxfmt/binding-linux-riscv64-gnu': 0.74.0
-      '@oxfmt/binding-linux-riscv64-musl': 0.74.0
-      '@oxfmt/binding-linux-s390x-gnu': 0.74.0
-      '@oxfmt/binding-linux-x64-gnu': 0.74.0
-      '@oxfmt/binding-linux-x64-musl': 0.74.0
-      '@oxfmt/binding-openharmony-arm64': 0.74.0
-      '@oxfmt/binding-win32-arm64-msvc': 0.74.0
-      '@oxfmt/binding-win32-ia32-msvc': 0.74.0
-      '@oxfmt/binding-win32-x64-msvc': 0.74.0
+      '@oxfmt/binding-android-arm-eabi': 0.66.0
+      '@oxfmt/binding-android-arm64': 0.66.0
+      '@oxfmt/binding-darwin-arm64': 0.66.0
+      '@oxfmt/binding-darwin-x64': 0.66.0
+      '@oxfmt/binding-freebsd-x64': 0.66.0
+      '@oxfmt/binding-linux-arm-gnueabihf': 0.66.0
+      '@oxfmt/binding-linux-arm-musleabihf': 0.66.0
+      '@oxfmt/binding-linux-arm64-gnu': 0.66.0
+      '@oxfmt/binding-linux-arm64-musl': 0.66.0
+      '@oxfmt/binding-linux-ppc64-gnu': 0.66.0
+      '@oxfmt/binding-linux-riscv64-gnu': 0.66.0
+      '@oxfmt/binding-linux-riscv64-musl': 0.66.0
+      '@oxfmt/binding-linux-s390x-gnu': 0.66.0
+      '@oxfmt/binding-linux-x64-gnu': 0.66.0
+      '@oxfmt/binding-linux-x64-musl': 0.66.0
+      '@oxfmt/binding-openharmony-arm64': 0.66.0
+      '@oxfmt/binding-win32-arm64-msvc': 0.66.0
+      '@oxfmt/binding-win32-ia32-msvc': 0.66.0
+      '@oxfmt/binding-win32-x64-msvc': 0.66.0
 
-  oxlint@1.89.0(@maschwenk/tsrslint@0.1.5):
+  oxlint@1.81.0(@maschwenk/tsrslint@0.1.5):
     optionalDependencies:
-      '@oxlint/binding-android-arm-eabi': 1.89.0
-      '@oxlint/binding-android-arm64': 1.89.0
-      '@oxlint/binding-darwin-arm64': 1.89.0
-      '@oxlint/binding-darwin-x64': 1.89.0
-      '@oxlint/binding-freebsd-x64': 1.89.0
-      '@oxlint/binding-linux-arm-gnueabihf': 1.89.0
-      '@oxlint/binding-linux-arm-musleabihf': 1.89.0
-      '@oxlint/binding-linux-arm64-gnu': 1.89.0
-      '@oxlint/binding-linux-arm64-musl': 1.89.0
-      '@oxlint/binding-linux-ppc64-gnu': 1.89.0
-      '@oxlint/binding-linux-riscv64-gnu': 1.89.0
-      '@oxlint/binding-linux-riscv64-musl': 1.89.0
-      '@oxlint/binding-linux-s390x-gnu': 1.89.0
-      '@oxlint/binding-linux-x64-gnu': 1.89.0
-      '@oxlint/binding-linux-x64-musl': 1.89.0
-      '@oxlint/binding-openharmony-arm64': 1.89.0
-      '@oxlint/binding-win32-arm64-msvc': 1.89.0
-      '@oxlint/binding-win32-ia32-msvc': 1.89.0
-      '@oxlint/binding-win32-x64-msvc': 1.89.0
+      '@oxlint/binding-android-arm-eabi': 1.81.0
+      '@oxlint/binding-android-arm64': 1.81.0
+      '@oxlint/binding-darwin-arm64': 1.81.0
+      '@oxlint/binding-darwin-x64': 1.81.0
+      '@oxlint/binding-freebsd-x64': 1.81.0
+      '@oxlint/binding-linux-arm-gnueabihf': 1.81.0
+      '@oxlint/binding-linux-arm-musleabihf': 1.81.0
+      '@oxlint/binding-linux-arm64-gnu': 1.81.0
+      '@oxlint/binding-linux-arm64-musl': 1.81.0
+      '@oxlint/binding-linux-ppc64-gnu': 1.81.0
+      '@oxlint/binding-linux-riscv64-gnu': 1.81.0
+      '@oxlint/binding-linux-riscv64-musl': 1.81.0
+      '@oxlint/binding-linux-s390x-gnu': 1.81.0
+      '@oxlint/binding-linux-x64-gnu': 1.81.0
+      '@oxlint/binding-linux-x64-musl': 1.81.0
+      '@oxlint/binding-openharmony-arm64': 1.81.0
+      '@oxlint/binding-win32-arm64-msvc': 1.81.0
+      '@oxlint/binding-win32-ia32-msvc': 1.81.0
+      '@oxlint/binding-win32-x64-msvc': 1.81.0
       oxlint-tsgolint: '@maschwenk/tsrslint@0.1.5'
 
   p-limit@3.1.0:
@@ -9972,7 +9901,7 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
 
-  tinypool@2.2.0: {}
+  tinypool@2.1.0: {}
 
   tinyrainbow@3.2.0: {}
 
@@ -10035,17 +9964,6 @@ snapshots:
       '@typescript/typescript-sunos-x64': 7.0.2
       '@typescript/typescript-win32-arm64': 7.0.2
       '@typescript/typescript-win32-x64': 7.0.2
-    optional: true
-
-  typescript@7.1.0-dev.20261013.1:
-    optionalDependencies:
-      '@typescript/typescript-darwin-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-darwin-x64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-arm': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-x64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-win32-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-win32-x64': 7.1.0-dev.20261013.1
 
   uc.micro@2.1.0: {}
 
