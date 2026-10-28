@@ -64,7 +64,7 @@
 **/.claude/hooks/fleet/_shared/snapshot-blob.path
 **/.claude/hooks/fleet/_dist/fleet-pack.snapshot.generated.cjs
 **/.claude/hooks/fleet/_shared/dispatch-manifest.generated.json
-# The rolldown-bundled fleet oxlint plugin (build-oxlint-bundle.mts): members
+# The rolldown-bundled fleet oxlint plugin (build/oxlint-bundle.mts): members
 # load this single artifact via jsPlugins instead of the ~100 rule source
 # dirs. Release-only + gitignored like the hook bundles above.
 **/.config/fleet/oxlint-plugin.generated.mjs
@@ -2194,6 +2194,7 @@ opencode.json
 .claude/skills/fleet/researching-recency/SKILL.md
 .claude/skills/fleet/researching-recency/reference.md
 .claude/skills/fleet/reviewing-code/SKILL.md
+.claude/skills/fleet/reviewing-code/references/rust.md
 .claude/skills/fleet/reviewing-code/run.mts
 .claude/skills/fleet/reviewing-test-quality/SKILL.md
 .claude/skills/fleet/reviewing-web-interfaces/SKILL.md
@@ -3406,6 +3407,7 @@ scripts/fleet/build-hook-bundle.mts
 scripts/fleet/build-hook-snapshot.mts
 scripts/fleet/build-oxlint-bundle.mts
 scripts/fleet/build-snapshot-launcher.mts
+scripts/fleet/build/blaze.mts
 scripts/fleet/build/cargo.mts
 scripts/fleet/build/cargo/run.mts
 scripts/fleet/build/compiler.mts
@@ -3841,6 +3843,7 @@ scripts/fleet/ci/fix/batch.mts
 scripts/fleet/ci/fix/control.mts
 scripts/fleet/ci/fix/delivery.mts
 scripts/fleet/ci/fix/followup-route.mts
+scripts/fleet/ci/fix/observe.mts
 scripts/fleet/ci/fix/preview.mts
 scripts/fleet/ci/fix/receipt.mts
 scripts/fleet/ci/fix/resume.mts
@@ -3852,6 +3855,8 @@ scripts/fleet/ci/fix/task/snapshot/value.mts
 scripts/fleet/ci/fix/task/state.mts
 scripts/fleet/ci/fix/task/store.mts
 scripts/fleet/ci/fix/task/store/destination.mts
+scripts/fleet/ci/fix/task/store/init.mts
+scripts/fleet/ci/fix/task/store/transport.mts
 scripts/fleet/ci/fix/task/store/types.mts
 scripts/fleet/ci/fix/wait.mts
 scripts/fleet/ci/gates/remote-target.mts
@@ -4432,6 +4437,12 @@ scripts/fleet/lockstep/verification/accept.mts
 scripts/fleet/lockstep/verification/inputs.mts
 scripts/fleet/lockstep/verification/schema.mts
 scripts/fleet/mcp/1password/run.mts
+scripts/fleet/mcp/auth/linear.mts
+scripts/fleet/mcp/auth/notion.mts
+scripts/fleet/mcp/auth/readme.mts
+scripts/fleet/mcp/auth/refero.mts
+scripts/fleet/mcp/auth/sanity.mts
+scripts/fleet/mcp/auth/slack.mts
 scripts/fleet/mcp/browser-args.mts
 scripts/fleet/mcp/browser-launch.mts
 scripts/fleet/mcp/browser-session/run.mts
@@ -4517,6 +4528,7 @@ scripts/fleet/naming/prefix-groups.mts
 scripts/fleet/naming/registry.mts
 scripts/fleet/naming/source.mts
 scripts/fleet/naming/test-path.mts
+scripts/fleet/notion/planning/edits.mts
 scripts/fleet/notion/planning/update.mts
 scripts/fleet/notion/standup/update.mts
 scripts/fleet/notion/status/update.mts
@@ -5145,6 +5157,7 @@ scripts/fleet/setup/repo-steps.mts
 scripts/fleet/setup/roster-db.mts
 scripts/fleet/setup/rust-coverage.mts
 scripts/fleet/setup/rust.mts
+scripts/fleet/setup/rust/blaze.mts
 scripts/fleet/setup/security/external-tools.json
 scripts/fleet/setup/security/lib/agentshield.mts
 scripts/fleet/setup/security/lib/api-token.mts
@@ -5536,6 +5549,7 @@ packages/node-smol-builder/test/fixtures/*
 !/.git-hooks/_shared/personal-path.mts
 !/.git-hooks/_shared/pkg-script-target.mts
 !/.git-hooks/_shared/push/
+!/.git-hooks/_shared/push/blob-reader.mts
 !/.git-hooks/_shared/push/commit-messages.mts
 !/.git-hooks/_shared/push/durable-ref.mts
 !/.git-hooks/_shared/push/file-scan.mts

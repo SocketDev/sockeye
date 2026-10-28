@@ -411,6 +411,7 @@ runs:
           exit 1
         fi
         echo "$UV_BIN_DIR" >> "${GITHUB_PATH:-/dev/null}"
+        echo "SOCKET_TOOL_UV_BIN=$UV_BIN" >> "${GITHUB_ENV:-/dev/null}"
 
     - name: Download SFW
       shell: bash

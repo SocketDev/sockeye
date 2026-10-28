@@ -293,9 +293,9 @@
     },
     {
       "files": [
-        "**/scripts/fleet/build-hook-bundle.mts",
-        "**/scripts/fleet/build-hook-snapshot.mts",
-        "**/scripts/fleet/build-snapshot-launcher.mts",
+        "**/scripts/fleet/build/hook-bundle.mts",
+        "**/scripts/fleet/build/hook-snapshot.mts",
+        "**/scripts/fleet/build/snapshot-launcher.mts",
         "**/scripts/fleet/fetch-fleet-pack.mts",
         "**/scripts/fleet/gen/hook-dispatch.mts",
         "**/scripts/fleet/gen/hook-validators.mts",
@@ -358,7 +358,7 @@
     "**/test/fleet/nock-loopback-passthrough.test.mts",
     "**/test/fleet/unit/ci/gates/run.test.mts",
     "**/test/fleet/unit/comment-voice.test.mts",
-    "**/test/fleet/unit/credentials/otp/bindings.test.mts",
+    "**/test/fleet/unit/auth/otp/bindings.test.mts",
     "**/test/fleet/unit/fix/plan.test.mts",
     "**/test/fleet/unit/fix/run.test.mts",
     "**/test/fleet/unit/lockstep/emit-mirror-globs.test.mts",

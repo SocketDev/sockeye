@@ -33,7 +33,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 
 function die(message) {
-  if (process.env['CREDENTIAL_ROLE'] !== undefined) {
+  if (process.env['CREDENTIAL_ROLE'] !== undefined || process.env['INSPECT_PERMISSIONS'] === '1') {
     process.stderr.write(
       '[mint-app-token] Local App token mint failed. Where: protected credential child. Saw: invalid credentials, request, or installation grant. Fix: verify the selected App pair and its existing repository permissions.\n',
     )
@@ -315,12 +315,40 @@ export function appCredentialEnvironment(role) {
   }
 }
 
-async function main() {
+export function appInstallationIdentityOutputs(installation) {
+  if (
+    !Number.isSafeInteger(installation?.app_id) ||
+    installation.app_id <= 0 ||
+    !Number.isSafeInteger(installation?.id) ||
+    installation.id <= 0
+  ) {
+    return ''
+  }
+  return `app-id=${installation.app_id}\ninstallation-id=${installation.id}\n`
+}
+
+export function appInstallationPermissionMetadata(installation) {
+  const permissions = {}
+  for (const name of ['actions', 'administration', 'checks', 'contents', 'deployments', 'issues', 'members', 'metadata', 'packages', 'pull_requests', 'repository_hooks', 'security_events', 'statuses', 'workflows']) {
+    const value = installation?.permissions?.[name]
+    if (value === 'read' || value === 'write' || value === 'admin') {
+      permissions[name] = value
+    }
+  }
+  return {
+    ...(appInstallationIdentityOutputs(installation) ? { appId: installation.app_id, installationId: installation.id } : {}),
+    slug: typeof installation?.app_slug === 'string' && /^[a-z0-9-]{1,100}$/u.test(installation.app_slug) ? installation.app_slug : undefined,
+    repositorySelection: ['all', 'selected'].includes(installation?.repository_selection) ? installation.repository_selection : undefined,
+    permissions,
+    repositoryAccessVerified: false,
+  }
+}
+
+export async function runAppInstallationMinter(api = gh) {
   const credentials = appCredentialEnvironment(process.env['CREDENTIAL_ROLE'])
   const clientId = env(credentials.clientId)
   const privateKey = env(credentials.privateKey)
   const owner = env('OWNER')
-  const permissions = parsePermissions(process.env['PERMISSIONS'])
   const repositories = parseRepositories(process.env['REPOSITORIES'])
   const now = Math.floor(Date.now() / 1000)
   const head = Buffer.from(
@@ -335,7 +363,7 @@ async function main() {
     .sign(privateKey, 'base64url')
   const jwt = `${head}.${claims}.${signature}`
 
-  const inst = await gh(
+  const inst = await api(
     'GET',
     `/orgs/${encodeURIComponent(owner)}/installation`,
     jwt,
@@ -348,6 +376,11 @@ async function main() {
     )
   }
   const installation = JSON.parse(inst.body)
+  if (process.env['INSPECT_PERMISSIONS'] === '1') {
+    appendFileSync(env('GITHUB_OUTPUT'), JSON.stringify(appInstallationPermissionMetadata(installation)))
+    return
+  }
+  const permissions = parsePermissions(process.env['PERMISSIONS'])
   const installationId = installation.id
   if (typeof installationId !== 'number') {
     die(`installation lookup returned no id. Saw: ${inst.body}.`)
@@ -401,6 +434,7 @@ async function main() {
     process.stdout.write(`::add-mask::${token}\n`)
   }
   appendFileSync(env('GITHUB_OUTPUT'), `token=${token}\n`)
+  appendFileSync(env('GITHUB_OUTPUT'), appInstallationIdentityOutputs(installation))
 
   // Expose the app slug, from the installation lookup, so the caller can build
   // the `<slug>[bot]` committer identity. An installation token cannot call
@@ -420,7 +454,7 @@ if (
 ) {
   void (async () => {
     try {
-      await main()
+      await runAppInstallationMinter()
     } catch (e) {
       die(errorMessage(e))
     }

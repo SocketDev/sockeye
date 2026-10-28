@@ -12,6 +12,7 @@ import { debugCheck } from '../check-output.mts'
 
 import { shouldSkipFile } from '../file-scan.mts'
 import { gitSync } from '../../../scripts/fleet/git/exec.mts'
+import { readBlobBodies, readBlobMetadata } from './blob-reader.mts'
 import { stripTemplateLayer, suppressionFor } from '../scan-core.mts'
 
 import type { LineHit } from '../scan-core.mts'
@@ -291,15 +292,8 @@ function warnAiConfigPoison(file: string, text: string): void {
   )
 }
 
-// Every content scan for one file, in the order the gate has always run them.
-function scanFileContent(file: string, text: string, repoRoot: string): number {
-  // Layer-agnostic form of the path for the `template/...` exemptions: the
-  // archetype move buries the canonical sources under template/<layer>/, so
-  // the prefix exemptions test this collapsed form (template/base/universal/.git-hooks/x
-  // → template/.git-hooks/x) instead of the raw moved path.
-  const layerless = stripTemplateLayer(file)
+function scanSecretContent(file: string, text: string): number {
   let errors = 0
-  errors += reportPersonalPaths(file, text)
   errors += reportSecretLines(
     `Real API key detected in: ${file}`,
     scanSocketApiKeys(text),
@@ -313,6 +307,12 @@ function scanFileContent(file: string, text: string, repoRoot: string): number {
     scanGitHubTokens(text),
   )
   errors += reportPrivateKeys(file, text)
+  return errors
+}
+
+function scanFileContent(file: string, text: string, repoRoot: string): number {
+  const layerless = stripTemplateLayer(file)
+  let errors = reportPersonalPaths(file, text) + scanSecretContent(file, text)
   if (isLoggerScanTarget(file, layerless)) {
     errors += reportLoggerLeaks(file, text)
   }
@@ -429,7 +429,8 @@ export function readGitBlobChangesInRange(
     .filter(Boolean)
   const changes: GitBlobChange[] = []
   const seen = new Set<string>()
-  for (const commitSha of commits) {
+  for (let i = 0, { length } = commits; i < length; i += 1) {
+    const commitSha = commits[i]!
     const commitChanges = parseDiffTreeEntries(
       readGitOutput(
         [
@@ -461,11 +462,73 @@ export function readGitBlobChangesInRange(
   return changes
 }
 
+/**
+ * Return every postimage blob in the current commit tree.
+ */
+export function readGitBlobChangesAtCommit(
+  commitSha: string,
+  repoRoot = process.cwd(),
+): GitBlobChange[] {
+  const output = readGitOutput(
+    [
+      'ls-tree',
+      '-r',
+      '--full-tree',
+      '-z',
+      '--abbrev=64',
+      '--end-of-options',
+      commitSha,
+    ],
+    repoRoot,
+  )
+  const entries = output.toString('utf8').split('\0')
+  const changes: GitBlobChange[] = []
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index]!
+    if (!entry) {
+      continue
+    }
+    const separator = entry.indexOf('\t')
+    const metadata = separator < 0 ? '' : entry.slice(0, separator)
+    const file = separator < 0 ? '' : entry.slice(separator + 1)
+    const [mode, type, blobSha, ...extra] = metadata.split(/\s+/u)
+    if (
+      separator < 0 ||
+      !file ||
+      extra.length > 0 ||
+      !mode ||
+      !type ||
+      !blobSha ||
+      !/^[a-f\d]{40,64}$/iu.test(blobSha)
+    ) {
+      throw new Error(
+        `Git returned a malformed tree entry. Where: ${commitSha}. Saw: ${metadata}; wanted NUL-delimited blob entries. Fix: inspect Git output before pushing.`,
+      )
+    }
+    if (type !== 'blob' || mode === '160000') {
+      continue
+    }
+    const normalized = normalizePath(file)
+    if (
+      path.posix.isAbsolute(normalized) ||
+      normalized.split('/').includes('..') ||
+      normalized !== file
+    ) {
+      throw new Error(
+        `Git returned an unsafe tree path. Where: ${commitSha}. Saw: ${JSON.stringify(file)}. Fix: inspect the commit before pushing.`,
+      )
+    }
+    changes.push({ blobSha, commitSha, mode, path: normalized })
+  }
+  return changes
+}
+
 // Scan exact postimage blobs from every outgoing commit. Later edits or
 // deletions cannot hide content that was present earlier in the push range.
 export const scanFilesInRange = (
   range: string,
   repoRoot = process.cwd(),
+  options: { secretsOnly?: boolean } = {},
 ): number => {
   debugCheck('Checking exact outgoing Git blobs for security issues…')
   const changes = readGitBlobChangesInRange(range, repoRoot)
@@ -476,23 +539,69 @@ export const scanFilesInRange = (
     ...new Set(changes.map(change => change.path)),
   ])
   const blobs = new Map<string, string>()
+  const included = changes.filter(change => !shouldSkipFile(change.path))
+  const uniqueOids = [...new Set(included.map(change => change.blobSha))]
+  const metadata = readBlobMetadata(uniqueOids, repoRoot)
+  readBlobBodies(metadata, repoRoot, (oid, body) => {
+    blobs.set(oid, gitBlobText(body))
+  })
   const scanned = new Set<string>()
   for (const change of changes) {
     if (shouldSkipFile(change.path)) {
       continue
     }
-    let text = blobs.get(change.blobSha)
+    const text = blobs.get(change.blobSha)
     if (text === undefined) {
-      text = gitBlobText(
-        readGitOutput(['cat-file', 'blob', change.blobSha], repoRoot),
+      throw new Error(
+        'Committed Git blob was not read. Fix: retry the security scan.',
       )
-      blobs.set(change.blobSha, text)
     }
     const key = `${change.blobSha}\0${change.path}`
     if (!scanned.has(key)) {
       scanned.add(key)
-      errors += scanFileContent(change.path, text, repoRoot)
+      errors += options.secretsOnly
+        ? scanSecretContent(change.path, text)
+        : scanFileContent(change.path, text, repoRoot)
     }
+  }
+  return errors
+}
+
+export function scanSecretsInRange(
+  range: string,
+  repoRoot = process.cwd(),
+): number {
+  return scanFilesInRange(range, repoRoot, { secretsOnly: true })
+}
+
+// Snapshot policy checks complement the outgoing-history secret scan.
+export const scanFilesAtCommit = (
+  commitSha: string,
+  repoRoot = process.cwd(),
+): number => {
+  debugCheck('Checking the delivered Git tree for security issues…')
+  const changes = readGitBlobChangesAtCommit(commitSha, repoRoot)
+  if (changes.length === 0) {
+    return 0
+  }
+  let errors = scanForbiddenFilenames(changes.map(change => change.path))
+  const blobs = new Map<string, string>()
+  const included = changes.filter(change => !shouldSkipFile(change.path))
+  const uniqueOids = [...new Set(included.map(change => change.blobSha))]
+  const metadata = readBlobMetadata(uniqueOids, repoRoot)
+  readBlobBodies(metadata, repoRoot, (oid, body) => {
+    blobs.set(oid, gitBlobText(body))
+  })
+  for (const change of changes) {
+    if (shouldSkipFile(change.path)) {
+      continue
+    }
+    const text = blobs.get(change.blobSha)
+    if (text === undefined)
+      throw new Error(
+        'Committed Git blob was not read. Fix: retry the security scan.',
+      )
+    errors += scanFileContent(change.path, text, repoRoot)
   }
   return errors
 }

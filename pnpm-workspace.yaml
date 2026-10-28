@@ -16,7 +16,7 @@ catalog:
   '@shadscan/cli': 0.17.0
   '@sinclair/typebox': 0.34.52
   'ecc-agentshield': 1.6.0
-  'fallow': 3.34.0
+  'fallow': 3.34.1
   'mcp-tada': 0.5.0
   'run-local-ci': 0.18.1
   'tsrs': 0.18.0-ts7.1.0-dev.20260929
@@ -47,7 +47,7 @@ catalog:
   '@types/node': 26.6.5
   '@types/semver': 7.8.0
   '@types/shell-quote': 1.7.5
-  'compromise': 14.18.0
+  'compromise': 14.19.0
   # fast-check — property-based testing for pure fleet-script logic (pin
   # derivation, version compare, config validation). Runs standalone in vitest.
   # published: 2026-07-08 (past 7-day soak). See .claude/skills/fleet/property-testing.
@@ -383,78 +383,6 @@ minimumReleaseAgeExclude:
   - 'socket'
   - 'sdxgen'
   - 'sockeye'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-darwin-arm64@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-darwin-x64@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-linux-arm64-gnu@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-linux-arm64-musl@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-linux-x64-gnu@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-linux-x64-musl@1.56.0'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - '@ata-validator/native-win32-x64@1.56.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@tsrs/darwin-arm64@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@tsrs/linux-arm64-gnu@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@tsrs/linux-arm64-musl@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@tsrs/linux-x64-gnu@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@tsrs/linux-x64-musl@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-18 | removable: 2026-10-25
-  - 'ata-validator@1.56.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - 'tsrs@0.18.0-ts7.1.0-dev.20260929'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-aix-ppc64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-android-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-darwin-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-darwin-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-freebsd-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-freebsd-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-arm@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-loong64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-mips64el@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-ppc64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-riscv64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-s390x@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-linux-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-netbsd-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-netbsd-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-openbsd-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-openbsd-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-sunos-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-win32-arm64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - '@typescript/typescript-win32-x64@7.1.0-beta'
-  # published: 2026-10-20 | removable: 2026-10-27
-  - 'typescript@7.1.0-beta'
   # published: 2026-10-21 | removable: 2026-10-28
   - '@motherload/core@0.1.0'
   # published: 2026-10-21 | removable: 2026-10-28
@@ -473,84 +401,6 @@ minimumReleaseAgeExclude:
   - '@motherload/txt@0.1.0'
   # published: 2026-10-21 | removable: 2026-10-28
   - '@motherload/yaml@0.1.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxc-project/types@0.155.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-android-arm-eabi@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-android-arm64@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-darwin-arm64@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-darwin-x64@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-freebsd-x64@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-arm-gnueabihf@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-arm-musleabihf@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-arm64-gnu@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-arm64-musl@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-ppc64-gnu@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-riscv64-gnu@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-riscv64-musl@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-s390x-gnu@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-x64-gnu@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-linux-x64-musl@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-openharmony-arm64@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-win32-arm64-msvc@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-win32-ia32-msvc@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxfmt/binding-win32-x64-msvc@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-android-arm-eabi@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-android-arm64@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-darwin-arm64@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-darwin-x64@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-freebsd-x64@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-arm-gnueabihf@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-arm-musleabihf@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-arm64-gnu@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-arm64-musl@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-ppc64-gnu@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-riscv64-gnu@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-riscv64-musl@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-s390x-gnu@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-x64-gnu@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-linux-x64-musl@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-openharmony-arm64@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-win32-arm64-msvc@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-win32-ia32-msvc@1.89.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - '@oxlint/binding-win32-x64-msvc@1.89.0'
   # published: 2026-10-21 | removable: 2026-10-28
   - '@rolldown/binding-android-arm-eabi@1.2.15'
   # published: 2026-10-21 | removable: 2026-10-28
@@ -583,10 +433,6 @@ minimumReleaseAgeExclude:
   - '@rolldown/binding-win32-x64-msvc@1.2.15'
   # published: 2026-10-21 | removable: 2026-10-28
   - 'motherload@0.1.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - 'oxfmt@0.74.0'
-  # published: 2026-10-19 | removable: 2026-10-26
-  - 'oxlint@1.89.0'
   # published: 2026-10-21 | removable: 2026-10-28
   - 'rolldown@1.2.15'
   # published: 2026-10-22 | removable: 2026-10-29
@@ -682,6 +528,6 @@ tasks:
 trustPolicyExcludePrune: true
 peerDependencyRules:
   allowedVersions:
-    '@socketsecurity/lib>typescript': 7.1.0-dev.20261015.1
-    '@socketsecurity/registry>typescript': 7.1.0-dev.20261015.1
-    mcp-tada>typescript: 7.1.0-dev.20261015.1
+    '@socketsecurity/lib>typescript': 7.1.0-dev.20261020.3
+    '@socketsecurity/registry>typescript': 7.1.0-dev.20261020.3
+    mcp-tada>typescript: 7.1.0-dev.20261020.3

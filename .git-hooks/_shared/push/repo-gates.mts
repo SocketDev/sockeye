@@ -439,7 +439,7 @@ export const scanDispatchDrift = (): number => {
   if (r.status !== 0) {
     logger.fail('Hook dispatch table is stale — rebuild before pushing.')
     logger.info(
-      '  Run `node scripts/fleet/build-hook-bundle.mts`, commit the ' +
+      '  Run `node scripts/fleet/build/hook-bundle.mts`, commit the ' +
         'regenerated table + bundle, then re-push.',
     )
     return 1

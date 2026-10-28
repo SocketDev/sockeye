@@ -18,6 +18,7 @@ import {
   readAgentWorktreeScope,
 } from '../../scripts/fleet/worktree/agent/scope.mts'
 import { debugCheck } from '../_shared/check-output.mts'
+import { findTrackedHandoffDocs } from '../../scripts/fleet/check/handoff-docs-are-untracked.mts'
 
 import {
   catastrophicDeletionReason,
@@ -799,6 +800,17 @@ const main = (): number => {
     '--name-only',
     '--diff-filter=ACM',
   ).map(normalizePath)
+  const stagedHandoffDocs = findTrackedHandoffDocs(stagedFiles.join('\n'))
+  if (stagedHandoffDocs.length > 0) {
+    logger.fail('Refusing to commit staged handoff documents:')
+    for (let i = 0, { length } = stagedHandoffDocs; i < length; i += 1) {
+      logger.fail(`  ${stagedHandoffDocs[i]!}`)
+    }
+    logger.info(
+      '  Fix: unstage the handoff doc and keep it in .claude/reports/.',
+    )
+    return 1
+  }
   const repoTopline = gitLines('rev-parse', '--show-toplevel')[0] ?? ''
   if (refuseOutOfScopeStagedPaths(repoTopline || process.cwd()) > 0) {
     return 1

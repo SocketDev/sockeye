@@ -408,35 +408,35 @@
       "origin": "gh-asset"
     },
     "mbx": {
-      "version": "1.24.1",
-      "tag": "v1.24.1",
+      "version": "1.28.0",
+      "tag": "v1.28.0",
       "repository": "github:jdx/mr-boxington",
       "origin": "gh-asset",
       "platforms": {
         "darwin-arm64": {
           "asset": "mbx-aarch64-apple-darwin.tar.gz",
-          "integrity": "sha512-D60ncHlyFaXgyFs6aGj5HCMFFWFlqMiHzDEbyDFmS5GpqSav2cpx5OQ9FYvqW35T0myEb6lv/DsziB/3MUH7/g=="
+          "integrity": "sha512-C/NDQ+LYQYE/BMWeqdiJWlFNmuFCNQFs/TnsdeTdEREkWQ9YRTDdWMXEQIKjNpgYkU1R8ZymWAk0Au4zpyaVMg=="
         },
         "linux-arm64-musl": {
           "asset": "mbx-aarch64-unknown-linux-musl.tar.gz",
-          "integrity": "sha512-OK/BQ8h9G5PKKzg3jHbjCoyixhAX8/if9sOvLo+pA+qUxPkvow5dpFOH6FvcAGW1CeNNUXOCBuztstwKfmJM9g=="
+          "integrity": "sha512-Oqa0I8QS1WB2qLNnD4zBxKkAmj9gEuv3VDCyK9oOsBw/5qyFAl083wwHRzJ0FNYpZrEImMLj2HQyRohcoMoHAw=="
         },
         "linux-x64-musl": {
           "asset": "mbx-x86_64-unknown-linux-musl.tar.gz",
-          "integrity": "sha512-M19aTOiGUged/qI4VTCpt3OpEERGiBmpzdMod5pZUvLhN5DbhXZhstFhZtG3cpK5WUokQg4XBEWbudVjWytf2w=="
+          "integrity": "sha512-ejoZ0aDvq2IFrz9rp+F+TnAloJsoDC/syCebaeqmdedErtdzlAUxjfvde5MQW4EwkDChKosbjLk1djrf0s8QXw=="
         },
         "win32-x64": {
           "asset": "mbx-x86_64-pc-windows-msvc.zip",
-          "integrity": "sha512-mKg9IeZqUIARkAe86hsGDHVGIYS6cdAnc1fp0es18uujI5k+lkeg9LNc8gdhdJ0jQfx2GJIwIHx68wZ9TzTKmw=="
+          "integrity": "sha512-lEDEjfkm5fQ/y/TLXtcuzthmlgeW0aDMJrnAcDjeqj0nQAzM4FbBt6tBp//DM7GXTohHZRiqeZqUy7bTfHyayw=="
         }
       },
       "description": "Cache front-end for cargo: put mbx in front of any cargo command and one cache warms every worktree and CI run, pruning itself to a size budget.",
       "soakBypass": {
-        "version": "1.24.1",
-        "published": "2026-10-16",
-        "removable": "2026-10-23"
+        "published": "2026-10-26",
+        "removable": "2026-11-02",
+        "version": "1.28.0"
       },
-      "versionDate": "2026-10-16"
+      "versionDate": "2026-10-26"
     },
     "mise": {
       "binaryName": "mise",
@@ -632,8 +632,8 @@
         ],
         "verify": "none"
       },
-      "version": "0.5.1563",
-      "versionDate": "2026-09-14",
+      "version": "0.5.1661",
+      "versionDate": "2026-10-18",
       "notes": "The wheelhouse producer publishes verified toolchains. Renderer builds consume immutable toolchain artifacts."
     },
     "pgbot": {
