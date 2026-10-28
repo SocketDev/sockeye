@@ -1,4 +1,4 @@
-name: 📦 npm Publish
+name: "publish: npm"
 
 # Cascade-owned — every npm-publishing repo carries the byte-identical copy
 # (adopt by copying the template once; the sync then keeps it in lock-step;

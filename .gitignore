@@ -4363,6 +4363,7 @@ scripts/fleet/github/credentials/setup.mts
 scripts/fleet/github/credentials/util.mts
 scripts/fleet/github/ghcr-package.mts
 scripts/fleet/github/managed-ruleset-identity.mts
+scripts/fleet/github/pr/care/auto-merge.mts
 scripts/fleet/github/pr/care/bot-capabilities.mts
 scripts/fleet/github/pr/care/bot-requests.mts
 scripts/fleet/github/pr/care/bots.mts
@@ -4370,6 +4371,7 @@ scripts/fleet/github/pr/care/branch.mts
 scripts/fleet/github/pr/care/checks.mts
 scripts/fleet/github/pr/care/gh.mts
 scripts/fleet/github/pr/care/run.mts
+scripts/fleet/github/pr/care/stack-merge.mts
 scripts/fleet/github/pr/run.mts
 scripts/fleet/github/raw-url.mts
 scripts/fleet/github/repo-visibility.mts
