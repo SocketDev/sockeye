@@ -197,7 +197,7 @@ void RenderRunRequest(FILE* stream, const RunOptions& options,
   std::fprintf(stream, "%s\n",
                preview ? "Request preview (no authorization)"
                        : "Approval request");
-  std::fprintf(stream, "  request ID: sha256:%.*s\n",
+  std::fprintf(stream, "  requestId: sha256:%.*s\n",
                static_cast<int>(preview ? digest.size() : 16), digest.data());
   std::fprintf(stream, "  cwd: %s\n",
                options.working_directory.canonical_path.c_str());

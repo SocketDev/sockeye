@@ -30,6 +30,6 @@ test('public preview works with stdin closed and an empty parent environment', (
   )
   expect(result.status).toBe(0)
   expect(result.stdout).toContain('Request preview (no authorization)')
-  expect(result.stdout).toMatch(/request ID: sha256:[a-f0-9]{64}\n/u)
+  expect(result.stdout).toMatch(/requestId: sha256:[a-f0-9]{64}\n/u)
   expect(result.stderr).toBe('')
 })
