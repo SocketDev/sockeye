@@ -111,7 +111,8 @@ bool ValidateRequestRecordDirectory(std::string& directory,
 
 std::string Visible(std::string_view value) {
   std::string result;
-  for (const unsigned char character : value) {
+  for (const char raw_character : value) {
+    const auto character = static_cast<unsigned char>(raw_character);
     switch (character) {
     case '\\':
       result += "\\\\";
