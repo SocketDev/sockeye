@@ -23,9 +23,10 @@ it the requested credentials. The child is trusted to use and protect them.
 2. Sockeye rejects unknown options, duplicates, wildcard credential names,
    relative paths, oversized fields, and unsafe file permissions.
 3. Sockeye resolves and hashes the executable and every bound file. It converts
-   the request into one canonical manifest and prints its digest.
-4. macOS asks the human to approve the request with Touch ID. Password fallback
-   and recent-device-unlock reuse are disabled.
+   the request into one canonical manifest and prints a short request ID. Use
+   `sockeye explain` with the same options to view the full request details.
+4. The macOS prompt names the child and credentials and requires Touch ID.
+   Password fallback and recent-device-unlock reuse are disabled.
 5. The same one-use authorization context opens only the listed Keychain items.
    Sockeye checks that each item has its exact device-only,
    `biometryCurrentSet` access-control policy.

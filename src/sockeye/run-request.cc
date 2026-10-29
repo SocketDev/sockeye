@@ -182,23 +182,25 @@ std::string CanonicalRunManifest(const RunOptions& options) {
 void RenderRunRequest(FILE* stream, const RunOptions& options,
                       std::string_view digest, bool preview) {
   std::fprintf(stream, "%s\n",
-               preview ? "Sockeye request preview (no authorization granted)"
-                       : "Sockeye approval request");
-  std::fprintf(stream, "  manifest: sha256:%.*s\n",
+               preview ? "Request preview (no authorization)"
+                       : "Approval request");
+  std::fprintf(stream, "  request ID: sha256:%.*s\n",
                static_cast<int>(preview ? digest.size() : 16), digest.data());
   std::fprintf(stream, "  working directory: %s\n",
                options.working_directory.canonical_path.c_str());
   std::fprintf(stream, "  executable: %s\n",
                options.executable.canonical_path.c_str());
-  std::fprintf(stream, "  executable sha256: %s\n",
-               DigestHex(options.executable).c_str());
   for (const FileIdentity& file : options.bound_files) {
     std::fprintf(stream, "  bound file: %s\n", file.canonical_path.c_str());
-    std::fprintf(stream, "    sha256: %s\n", DigestHex(file).c_str());
+    if (preview) {
+      std::fprintf(stream, "    sha256: %s\n", DigestHex(file).c_str());
+    }
   }
   for (const CredentialRequest& credential : options.credentials) {
     std::fprintf(stream, "  credential: %s\n", credential.identifier.c_str());
-    std::fprintf(stream, "    binding: %s\n", credential.binding_id.c_str());
+    if (preview) {
+      std::fprintf(stream, "    binding: %s\n", credential.binding_id.c_str());
+    }
   }
   for (const std::string& name : options.passed_environment) {
     std::fprintf(stream, "  pass parent env: %s\n", name.c_str());

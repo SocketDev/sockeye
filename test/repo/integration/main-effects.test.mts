@@ -136,8 +136,11 @@ test('run uses a concise Touch ID reason without exposing the manifest digest', 
   })
   expect(result.status, result.stderr).toBe(23)
   expect(result.stderr).toContain(
-    'reason:run sockeye-main-effects-test with access to 2 credentials',
+    'reason:Allow sockeye-main-effects-test to use EXAMPLE_TOKEN, SECOND_TOKEN? Approve with Touch ID.',
   )
+  expect(result.stderr).toMatch(/request ID: sha256:[a-f0-9]{16}\n/u)
+  expect(result.stderr).not.toContain('executable sha256:')
+  expect(result.stderr).not.toContain('binding:')
   expect(result.stderr).not.toMatch(/reason:.*request [a-f0-9]{16}/u)
 })
 

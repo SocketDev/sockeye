@@ -62,11 +62,12 @@ sockeye run \
   -- /absolute/path/to/node /absolute/path/to/runner.mjs
 ```
 
-Sockeye prints the complete request and a manifest digest before showing the
-Touch ID prompt. The child receives a minimal environment containing only the
-listed credentials and any names explicitly added with `--pass-env`. For
-`ENVRYPT_PRIVATE_KEY`, Sockeye uses Envrypt's one-use `envrypt-v1` pipe instead
-of putting the key in that environment.
+Before the Touch ID prompt, Sockeye prints a request ID and the child path,
+working directory, credentials, and arguments. Run `sockeye explain` with the
+same options to view the full request details. The child receives a minimal
+environment containing only the listed credentials and names added with
+`--pass-env`. For `ENVRYPT_PRIVATE_KEY`, Sockeye uses Envrypt's one-use
+`envrypt-v1` pipe instead of putting the key in that environment.
 
 `SOCKET_RELEASE_CLIENT_ID` is public configuration, so the example passes it
 from the parent environment. The private key is a secret and comes from

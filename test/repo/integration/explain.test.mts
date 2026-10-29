@@ -85,9 +85,10 @@ test.each([production, isolated])(
     const result = runExplain(binary, 'explain', fixture.args)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toContain('preview (no authorization granted)')
-    expect(result.stdout).toMatch(/manifest: sha256:[a-f0-9]{64}\n/u)
+    expect(result.stdout).toContain('Request preview (no authorization)')
+    expect(result.stdout).toMatch(/request ID: sha256:[a-f0-9]{64}\n/u)
     expect(result.stdout).toContain('credential: EXAMPLE_TOKEN')
+    expect(result.stdout).not.toContain('executable sha256:')
     expect(result.stdout).toContain('pass parent env: EXAMPLE_CONFIG')
     expect(result.stdout).toContain('line\\x0abreak')
     expect(result.stdout).not.toContain('fake-parent-value-hidden')
@@ -101,17 +102,17 @@ test('run preparation is fresh and the forbidden authorization detector is activ
   writeFileSync(fixture.bound, 'configuration two\n')
   const second = runExplain(isolated, 'explain', fixture.args)
   const firstDigest = first.stdout.match(
-    /manifest: sha256:([a-f0-9]{64})/u,
+    /request ID: sha256:([a-f0-9]{64})/u,
   )?.[1]
   const secondDigest = second.stdout.match(
-    /manifest: sha256:([a-f0-9]{64})/u,
+    /request ID: sha256:([a-f0-9]{64})/u,
   )?.[1]
   expect(firstDigest).toHaveLength(64)
   expect(secondDigest).toHaveLength(64)
   expect(secondDigest).not.toBe(firstDigest)
   const run = runExplain(isolated, 'run', fixture.args)
   expect(run.status).toBe(90)
-  expect(run.stderr).toContain(`manifest: sha256:${secondDigest?.slice(0, 16)}`)
+  expect(run.stderr).toContain(`request ID: sha256:${secondDigest?.slice(0, 16)}`)
   expect(existsSync(fixture.marker)).toBe(false)
 })
 

@@ -310,10 +310,16 @@ int RunApprovedChild(int argc, char** argv) {
   KeychainError keychain_error;
   const std::string child_name = options.executable.canonical_path.substr(
       options.executable.canonical_path.find_last_of('/') + 1);
+  std::string credential_names;
+  for (const CredentialRequest& credential : options.credentials) {
+    if (!credential_names.empty()) {
+      credential_names += ", ";
+    }
+    credential_names += credential.identifier;
+  }
   const std::string reason =
-      "run " + child_name + " with access to " +
-      std::to_string(options.credentials.size()) +
-      (options.credentials.size() == 1 ? " credential" : " credentials");
+      "Allow " + child_name + " to use " + credential_names +
+      "? Approve with Touch ID.";
   if (!context.Authenticate(reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);
