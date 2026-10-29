@@ -6,20 +6,20 @@ release commit.
 
 ## Current gate status
 
-| Gate             | Required evidence                                                                                                | Status                                                 |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Threat model     | Reviewed `docs/threat-model.md` matches the release code.                                                        | In progress                                            |
-| CLI contract     | Vitest negative tests pass without opening Keychain UI.                                                          | Passing locally                                        |
-| Keychain policy  | Fresh-item, update, cancel, missing-item, changed-biometry, and policy-mismatch tests on clean macOS accounts.   | Open                                                   |
-| Process identity | Executable launch race is closed or explicitly accepted with independent review.                                 | Open                                                   |
-| Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                             | Sanitizers pass; 15-minute fuzz evidence recorded      |
-| Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                   | Open                                                   |
-| Signing          | The Developer ID leaf certificate matches each embedded profile. The profile authorizes the exact signed claims. | ARM64 and x64 validation passed at `1e57cc0c`          |
-| Notarization     | Apple accepts each submission. Each final ZIP contains an application with a validated stapled ticket.           | ARM64 and x64 validation passed at `1e57cc0c`          |
-| Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                 | Open                                                   |
-| Installation     | The installer verifies the checksum, exact release version, full bundle, signature, profile, and stapled ticket. | Automated checks pass; clean-machine test remains open |
-| Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                  | Bridge and name-set tests pass; interactive smoke open |
-| Platform scope   | Linux and Windows artifacts do not ship without an equivalent biometric design.                                  | Enforced by macOS-only build                           |
+| Gate             | Required evidence                                                                                                | Status                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Threat model     | Reviewed `docs/threat-model.md` matches the release code.                                                        | In progress                                                                                                                       |
+| CLI contract     | Vitest negative tests pass without opening Keychain UI.                                                          | Passing locally                                                                                                                   |
+| Keychain policy  | Fresh-item, update, cancel, missing-item, changed-biometry, and policy-mismatch tests on clean macOS accounts.   | Open                                                                                                                              |
+| Process identity | Executable launch race is closed or explicitly accepted with independent review.                                 | Open                                                                                                                              |
+| Memory safety    | ASan and UBSan runs are clean; the manifest/input fuzz target meets its time budget.                             | Sanitizers pass; 15-minute fuzz evidence recorded                                                                                 |
+| Architecture     | Apple silicon and Intel binaries pass the same contract and interactive tests.                                   | Open                                                                                                                              |
+| Signing          | The Developer ID leaf certificate matches each embedded profile. The profile authorizes the exact signed claims. | ARM64 and x64 passed in [run 40923909657](https://github.com/SocketDev/sockeye/actions/runs/40923909657); rerun on release commit |
+| Notarization     | Apple accepts each submission. Each final ZIP contains an application with a validated stapled ticket.           | ARM64 and x64 passed in [run 40923909657](https://github.com/SocketDev/sockeye/actions/runs/40923909657); rerun on release commit |
+| Provenance       | CI records source commit, compiler inputs, checksums, and artifact attestations.                                 | Open                                                                                                                              |
+| Installation     | The installer verifies the checksum, exact release version, full bundle, signature, profile, and stapled ticket. | Automated checks pass; clean-machine test remains open                                                                            |
+| Agent-CI         | One approval launches the exact bound Agent-CI entry point with only its requested credentials.                  | Bridge and name-set tests pass; interactive smoke open                                                                            |
+| Platform scope   | Linux and Windows artifacts do not ship without an equivalent biometric design.                                  | Enforced by macOS-only build                                                                                                      |
 
 ## Release sequence
 
