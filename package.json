@@ -109,6 +109,7 @@
     "gh:auth": "node scripts/fleet/gh-auth.mts",
     "git:commit-paths": "node scripts/fleet/git/commit/named-paths.mts",
     "git:history": "node scripts/fleet/git/history/cli.mts",
+    "git:history:refresh": "node .claude/skills/fleet/refreshing-history/run.mts",
     "github:browser": "node scripts/fleet/ai/browser/drive/github.com/auth/run.mts",
     "hide-comments": "node scripts/fleet/github/comments/hide.mts",
     "hooks:global:sync": "node scripts/fleet/sync-global-hooks.mts",
