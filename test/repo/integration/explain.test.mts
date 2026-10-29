@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdtempSync,
   mkdirSync,
+  realpathSync,
   symlinkSync,
   rmSync,
   writeFileSync,
@@ -61,6 +62,7 @@ function makeExplainFixture(): {
       '--',
       child,
       'line\nbreak',
+      'quoted"argument',
     ],
   }
 }
@@ -87,10 +89,13 @@ test.each([production, isolated])(
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain('Request preview (no authorization)')
     expect(result.stdout).toMatch(/request ID: sha256:[a-f0-9]{64}\n/u)
+    expect(result.stdout).toContain(`cwd: ${realpathSync(fixture.root)}`)
     expect(result.stdout).toContain('credential: EXAMPLE_TOKEN')
     expect(result.stdout).not.toContain('executable sha256:')
     expect(result.stdout).toContain('pass parent env: EXAMPLE_CONFIG')
-    expect(result.stdout).toContain('line\\x0abreak')
+    expect(result.stdout).toContain('"line\\x0abreak"')
+    expect(result.stdout).toContain('"quoted\\"argument"')
+    expect(result.stdout).toContain('arguments: [\n')
     expect(result.stdout).not.toContain('fake-parent-value-hidden')
     expect(existsSync(fixture.marker)).toBe(false)
   },

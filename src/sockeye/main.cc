@@ -318,8 +318,7 @@ int RunApprovedChild(int argc, char** argv) {
     credential_names += credential.identifier;
   }
   const std::string reason =
-      "Allow " + child_name + " to use " + credential_names +
-      "? Approve with Touch ID.";
+      "Allow " + child_name + " to use " + credential_names + "?";
   if (!context.Authenticate(reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);

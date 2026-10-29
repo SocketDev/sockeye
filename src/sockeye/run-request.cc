@@ -21,6 +21,19 @@ bool InsertUnique(std::set<std::string>& seen, const std::string& value,
   return true;
 }
 
+std::string QuoteVisibleArgument(std::string_view value) {
+  std::string output{"\""};
+  for (const char character : VisibleArgument(value)) {
+    if (character == '\"') {
+      output += "\\\"";
+    } else {
+      output += character;
+    }
+  }
+  output += '\"';
+  return output;
+}
+
 } // namespace
 
 bool PrepareRunRequest(int argc, char** argv, RunOptions& options,
@@ -186,7 +199,7 @@ void RenderRunRequest(FILE* stream, const RunOptions& options,
                        : "Approval request");
   std::fprintf(stream, "  request ID: sha256:%.*s\n",
                static_cast<int>(preview ? digest.size() : 16), digest.data());
-  std::fprintf(stream, "  working directory: %s\n",
+  std::fprintf(stream, "  cwd: %s\n",
                options.working_directory.canonical_path.c_str());
   std::fprintf(stream, "  executable: %s\n",
                options.executable.canonical_path.c_str());
@@ -205,9 +218,18 @@ void RenderRunRequest(FILE* stream, const RunOptions& options,
   for (const std::string& name : options.passed_environment) {
     std::fprintf(stream, "  pass parent env: %s\n", name.c_str());
   }
-  for (std::size_t index = 0; index < options.child_arguments.size(); ++index) {
-    const std::string visible = VisibleArgument(options.child_arguments[index]);
-    std::fprintf(stream, "  arg[%zu]: %s\n", index, visible.c_str());
+  if (options.child_arguments.empty()) {
+    std::fputs("  arguments: []\n", stream);
+  } else {
+    std::fputs("  arguments: [\n", stream);
+    for (std::size_t index = 0; index < options.child_arguments.size();
+         ++index) {
+      const std::string visible =
+          QuoteVisibleArgument(options.child_arguments[index]);
+      std::fprintf(stream, "    %s%s\n", visible.c_str(),
+                   index + 1 < options.child_arguments.size() ? "," : "");
+    }
+    std::fputs("  ]\n", stream);
   }
   if (preview) {
     std::fputs(
