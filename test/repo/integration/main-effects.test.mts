@@ -139,10 +139,25 @@ test('run uses a concise Touch ID reason without exposing the manifest digest', 
     'reason:Allow sockeye-main-effects-test to use EXAMPLE_TOKEN, SECOND_TOKEN?',
   )
   expect(result.stderr).toMatch(/requestId: sha256:[a-f0-9]{16}\n/u)
-  expect(result.stderr).toContain('arguments: [\n    "example-argument"\n  ]')
+  expect(result.stderr).not.toContain('arguments:')
   expect(result.stderr).not.toContain('executable sha256:')
   expect(result.stderr).not.toContain('binding:')
   expect(result.stderr).not.toMatch(/reason:.*request [a-f0-9]{16}/u)
+})
+
+test('request ID lookup has no authorization or launch effects', () => {
+  const result = spawnSync(binary, ['explain', `sha256:${'a'.repeat(64)}`], {
+    encoding: 'utf8',
+    timeout: 10_000,
+    env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
+  })
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stdout).toBe('mock request details\n')
+  expect(
+    [...result.stderr.matchAll(/^effect:(\w+)$/gm)].map(match => match[1]),
+  ).toEqual(['lookup'])
+  expect(result.stderr).not.toContain('approve')
+  expect(result.stderr).not.toContain('launch')
 })
 
 test.each([
@@ -174,10 +189,16 @@ test.each([
     5,
     'terminal approve provider read store invalidate',
   ],
-  ['run', 'success', 23, 'approve read read invalidate launch'],
-  ['run', 'denied', 4, 'approve'],
-  ['run', 'missing', 3, 'approve read invalidate'],
-  ['run', 'launch-failed', 5, 'approve read read invalidate launch'],
+  ['run', 'success', 23, 'record prompt approve read read invalidate launch'],
+  ['run', 'denied', 4, 'record prompt approve'],
+  ['run', 'missing', 3, 'record prompt approve read invalidate'],
+  [
+    'run',
+    'launch-failed',
+    5,
+    'record prompt approve read read invalidate launch',
+  ],
+  ['run', 'prompt-cancelled', 4, 'record prompt'],
 ] as const)(
   '%s %s preserves effect ordering',
   (command, scenario, status, events) => {

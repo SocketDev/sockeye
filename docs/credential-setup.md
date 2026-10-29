@@ -77,6 +77,18 @@ The preview prints current file hashes, credential names, escaped arguments,
 and the full manifest digest. It does not authenticate, read credential
 values, or start the child. It grants no authorization for a later run.
 
+After `sockeye run` prints a short `requestId`, use it to retrieve the saved
+summary:
+
+```sh
+sockeye explain sha256:<request-id>
+```
+
+The summary lists paths, file hashes, credential names and binding IDs, passed
+environment names, and the argument count. It omits argument values and
+environment values. Sockeye keeps at most 128 summaries in a private per-user
+directory. Lookup does not access Keychain or authorize a child.
+
 `run` prepares the request again and requires fresh Touch ID. Parent
 environment values are neither displayed nor bound by the manifest.
 The preview does not validate unbound modules, plugins, or child behavior.

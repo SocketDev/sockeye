@@ -14,16 +14,16 @@ public:
   SecretBuffer();
   ~SecretBuffer();
 
-  SecretBuffer(const SecretBuffer &) = delete;
-  SecretBuffer &operator=(const SecretBuffer &) = delete;
-  SecretBuffer(SecretBuffer &&) = delete;
-  SecretBuffer &operator=(SecretBuffer &&) = delete;
+  SecretBuffer(const SecretBuffer&) = delete;
+  SecretBuffer& operator=(const SecretBuffer&) = delete;
+  SecretBuffer(SecretBuffer&&) = delete;
+  SecretBuffer& operator=(SecretBuffer&&) = delete;
 
-  bool Assign(const void *source, std::size_t length);
+  bool Assign(const void* source, std::size_t length);
   void Clear();
   bool CommitWrittenBytes(std::size_t length);
-  unsigned char *Data();
-  const unsigned char *Data() const;
+  unsigned char* Data();
+  const unsigned char* Data() const;
   bool IsLocked() const;
   std::size_t Size() const;
 
@@ -33,8 +33,8 @@ private:
   std::size_t size_ = 0;
 };
 
-void SecureClearString(std::string &value);
-void SecureZeroBytes(void *value, std::size_t length);
+void SecureClearString(std::string& value);
+void SecureZeroBytes(void* value, std::size_t length);
 
 } // namespace sockeye
 

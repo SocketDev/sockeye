@@ -19,13 +19,13 @@ namespace {
 
 constexpr std::uint64_t kMaxHashedFileBytes = 512ULL * 1024ULL * 1024ULL;
 
-bool HasSafeOwnership(const struct stat &metadata) {
+bool HasSafeOwnership(const struct stat& metadata) {
   return (metadata.st_uid == 0 || metadata.st_uid == geteuid()) &&
          (metadata.st_mode & (S_IWGRP | S_IWOTH)) == 0;
 }
 
 bool InspectFile(std::string_view path, bool require_executable,
-                 FileIdentity &identity, std::string &error) {
+                 FileIdentity& identity, std::string& error) {
   const std::string input(path);
   if (input.empty() || input.front() != '/') {
     error = "Child identity check failed: executable and bound-file paths must "
@@ -140,18 +140,18 @@ bool InspectFile(std::string_view path, bool require_executable,
 
 } // namespace
 
-bool InspectExecutable(std::string_view path, FileIdentity &identity,
-                       std::string &error) {
+bool InspectExecutable(std::string_view path, FileIdentity& identity,
+                       std::string& error) {
   return InspectFile(path, true, identity, error);
 }
 
-bool InspectRegularFile(std::string_view path, FileIdentity &identity,
-                        std::string &error) {
+bool InspectRegularFile(std::string_view path, FileIdentity& identity,
+                        std::string& error) {
   return InspectFile(path, false, identity, error);
 }
 
-bool InspectDirectory(std::string_view path, DirectoryIdentity &identity,
-                      std::string &error) {
+bool InspectDirectory(std::string_view path, DirectoryIdentity& identity,
+                      std::string& error) {
   const std::string input(path);
   if (input.empty() || input.front() != '/') {
     error = "Manifest rejected: --cwd must be an absolute path.";
@@ -184,7 +184,7 @@ bool InspectDirectory(std::string_view path, DirectoryIdentity &identity,
   return true;
 }
 
-bool SameIdentity(const FileIdentity &left, const FileIdentity &right) {
+bool SameIdentity(const FileIdentity& left, const FileIdentity& right) {
   return left.canonical_path == right.canonical_path &&
          left.digest == right.digest && left.device == right.device &&
          left.inode == right.inode &&
@@ -192,7 +192,7 @@ bool SameIdentity(const FileIdentity &left, const FileIdentity &right) {
          left.size == right.size;
 }
 
-std::string DigestHex(const FileIdentity &identity) {
+std::string DigestHex(const FileIdentity& identity) {
   constexpr char kHex[] = "0123456789abcdef";
   std::string output(identity.digest.size() * 2, '0');
   for (std::size_t index = 0; index < identity.digest.size(); ++index) {

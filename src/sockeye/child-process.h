@@ -9,26 +9,26 @@
 
 #include <sys/types.h>
 
-#include "sockeye/secret-buffer.h"
 #include "sockeye/file-identity.h"
+#include "sockeye/secret-buffer.h"
 
 namespace sockeye {
 
 struct CredentialValue {
   std::string identifier;
-  SecretBuffer *value = nullptr;
+  SecretBuffer* value = nullptr;
 };
 
-int LaunchChild(const FileIdentity &executable,
-                const std::vector<FileIdentity> &bound_files,
-                const std::vector<std::string> &arguments,
-                const std::vector<std::string> &passed_environment,
-                const std::vector<CredentialValue> &credentials,
-                const DirectoryIdentity &working_directory, std::string &error);
+int LaunchChild(const FileIdentity& executable,
+                const std::vector<FileIdentity>& bound_files,
+                const std::vector<std::string>& arguments,
+                const std::vector<std::string>& passed_environment,
+                const std::vector<CredentialValue>& credentials,
+                const DirectoryIdentity& working_directory, std::string& error);
 
 #if defined(SOCKEYE_TESTING)
 using BeforeLaunchCheckForTesting = void (*)();
-using WaitForChildForTesting = pid_t (*)(pid_t, int *, int);
+using WaitForChildForTesting = pid_t (*)(pid_t, int*, int);
 
 void SetBeforeLaunchCheckForTesting(BeforeLaunchCheckForTesting hook);
 void SetWaitForChildForTesting(WaitForChildForTesting hook);

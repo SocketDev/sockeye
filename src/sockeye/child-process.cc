@@ -26,18 +26,18 @@ BeforeLaunchCheckForTesting g_before_launch_check = nullptr;
 WaitForChildForTesting g_wait_for_child = ::waitpid;
 #endif
 
-void ClearSensitiveEnvironment(std::vector<std::string> &environment,
-                               const std::vector<std::size_t> &indexes) {
+void ClearSensitiveEnvironment(std::vector<std::string>& environment,
+                               const std::vector<std::size_t>& indexes) {
   for (const std::size_t index : indexes) {
     SecureClearString(environment[index]);
   }
 }
 
-bool IsEnvryptCredential(const CredentialValue &credential) {
+bool IsEnvryptCredential(const CredentialValue& credential) {
   return credential.identifier == kEnvryptCredentialName;
 }
 
-bool MakeCredentialPipe(int (&descriptors)[2], std::string &error) {
+bool MakeCredentialPipe(int (&descriptors)[2], std::string& error) {
   if (pipe(descriptors) != 0 ||
       fcntl(descriptors[0], F_SETFD, FD_CLOEXEC) != 0 ||
       fcntl(descriptors[1], F_SETFD, FD_CLOEXEC) != 0) {
@@ -55,8 +55,8 @@ bool MakeCredentialPipe(int (&descriptors)[2], std::string &error) {
   return true;
 }
 
-bool WriteAll(int descriptor, const void *source, std::size_t length) {
-  const auto *bytes = static_cast<const unsigned char *>(source);
+bool WriteAll(int descriptor, const void* source, std::size_t length) {
+  const auto* bytes = static_cast<const unsigned char*>(source);
   while (length > 0) {
     const ssize_t written = write(descriptor, bytes, length);
     if (written < 0) {
@@ -74,7 +74,7 @@ bool WriteAll(int descriptor, const void *source, std::size_t length) {
   return true;
 }
 
-bool WriteEnvryptCredential(int descriptor, const CredentialValue &credential) {
+bool WriteEnvryptCredential(int descriptor, const CredentialValue& credential) {
   if (credential.value == nullptr || credential.value->Size() == 0 ||
       credential.value->Size() > 65'535) {
     return false;
@@ -84,7 +84,10 @@ bool WriteEnvryptCredential(int descriptor, const CredentialValue &credential) {
   const std::uint16_t value_length =
       static_cast<std::uint16_t>(credential.value->Size());
   const unsigned char header[] = {
-      'E', 'V', '1', 1,
+      'E',
+      'V',
+      '1',
+      1,
       static_cast<unsigned char>(name_length >> 8),
       static_cast<unsigned char>(name_length & 0xff),
       static_cast<unsigned char>(value_length >> 8),
@@ -93,11 +96,12 @@ bool WriteEnvryptCredential(int descriptor, const CredentialValue &credential) {
   return WriteAll(descriptor, header, sizeof(header)) &&
          WriteAll(descriptor, credential.identifier.data(),
                   credential.identifier.size()) &&
-         WriteAll(descriptor, credential.value->Data(), credential.value->Size());
+         WriteAll(descriptor, credential.value->Data(),
+                  credential.value->Size());
 }
 
-int OpenApprovedDirectory(const DirectoryIdentity &approved,
-                          std::string &error) {
+int OpenApprovedDirectory(const DirectoryIdentity& approved,
+                          std::string& error) {
   char resolved[PATH_MAX] = {};
   if (realpath(approved.canonical_path.c_str(), resolved) == nullptr ||
       approved.canonical_path != resolved) {
@@ -128,13 +132,13 @@ int OpenApprovedDirectory(const DirectoryIdentity &approved,
 
 } // namespace
 
-int LaunchChild(const FileIdentity &executable,
-                const std::vector<FileIdentity> &bound_files,
-                const std::vector<std::string> &arguments,
-                const std::vector<std::string> &passed_environment,
-                const std::vector<CredentialValue> &credentials,
-                const DirectoryIdentity &working_directory,
-                std::string &error) {
+int LaunchChild(const FileIdentity& executable,
+                const std::vector<FileIdentity>& bound_files,
+                const std::vector<std::string>& arguments,
+                const std::vector<std::string>& passed_environment,
+                const std::vector<CredentialValue>& credentials,
+                const DirectoryIdentity& working_directory,
+                std::string& error) {
 #if defined(SOCKEYE_TESTING)
   if (g_before_launch_check != nullptr) {
     g_before_launch_check();
@@ -150,7 +154,7 @@ int LaunchChild(const FileIdentity &executable,
     }
     return 6;
   }
-  for (const FileIdentity &approved_file : bound_files) {
+  for (const FileIdentity& approved_file : bound_files) {
     FileIdentity current_file;
     if (!InspectRegularFile(approved_file.canonical_path, current_file,
                             error) ||
@@ -170,10 +174,10 @@ int LaunchChild(const FileIdentity &executable,
   }
 
   std::vector<std::string> environment;
-  const CredentialValue *envrypt_credential = nullptr;
+  const CredentialValue* envrypt_credential = nullptr;
   environment.reserve(passed_environment.size() + credentials.size() + 2);
-  for (const std::string &name : passed_environment) {
-    const char *value = std::getenv(name.c_str());
+  for (const std::string& name : passed_environment) {
+    const char* value = std::getenv(name.c_str());
     if (value == nullptr) {
       close(working_directory_descriptor);
       error = "Child launch refused: an approved pass-through environment "
@@ -185,7 +189,7 @@ int LaunchChild(const FileIdentity &executable,
 
   std::vector<std::size_t> sensitive_indexes;
   sensitive_indexes.reserve(credentials.size());
-  for (const CredentialValue &credential : credentials) {
+  for (const CredentialValue& credential : credentials) {
     if (IsEnvryptCredential(credential)) {
       if (envrypt_credential != nullptr) {
         ClearSensitiveEnvironment(environment, sensitive_indexes);
@@ -206,7 +210,7 @@ int LaunchChild(const FileIdentity &executable,
       return 6;
     }
     std::string entry = credential.identifier + "=";
-    entry.append(reinterpret_cast<const char *>(credential.value->Data()),
+    entry.append(reinterpret_cast<const char*>(credential.value->Data()),
                  credential.value->Size());
     sensitive_indexes.push_back(environment.size());
     environment.push_back(std::move(entry));
@@ -217,9 +221,9 @@ int LaunchChild(const FileIdentity &executable,
     environment.emplace_back("SOCKEYE_CREDENTIAL_FD=3");
   }
 
-  std::vector<char *> environment_pointers;
+  std::vector<char*> environment_pointers;
   environment_pointers.reserve(environment.size() + 1);
-  for (std::string &entry : environment) {
+  for (std::string& entry : environment) {
     environment_pointers.push_back(entry.data());
   }
   environment_pointers.push_back(nullptr);
@@ -229,9 +233,9 @@ int LaunchChild(const FileIdentity &executable,
   child_arguments.push_back(executable.canonical_path);
   child_arguments.insert(child_arguments.end(), arguments.begin(),
                          arguments.end());
-  std::vector<char *> argument_pointers;
+  std::vector<char*> argument_pointers;
   argument_pointers.reserve(child_arguments.size() + 1);
-  for (std::string &argument : child_arguments) {
+  for (std::string& argument : child_arguments) {
     argument_pointers.push_back(argument.data());
   }
   argument_pointers.push_back(nullptr);
@@ -243,7 +247,7 @@ int LaunchChild(const FileIdentity &executable,
     error = "Child launch failed: could not initialize spawn actions.";
     return 6;
   }
-#if defined(__MAC_26_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_26_0 && \
+#if defined(__MAC_26_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_26_0 &&     \
     __MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_26_0
   const int chdir_status = posix_spawn_file_actions_addfchdir(
       &actions, working_directory_descriptor);
@@ -273,13 +277,15 @@ int LaunchChild(const FileIdentity &executable,
                                          kEnvryptCredentialDescriptor) != 0 ||
         posix_spawn_file_actions_addclose(&actions, credential_pipe[1]) != 0 ||
         (credential_pipe[0] != kEnvryptCredentialDescriptor &&
-         posix_spawn_file_actions_addclose(&actions, credential_pipe[0]) != 0)) {
+         posix_spawn_file_actions_addclose(&actions, credential_pipe[0]) !=
+             0)) {
       posix_spawn_file_actions_destroy(&actions);
       close(credential_pipe[0]);
       close(credential_pipe[1]);
       ClearSensitiveEnvironment(environment, sensitive_indexes);
       close(working_directory_descriptor);
-      error = "Child launch failed: could not bind the envrypt-v1 credential pipe.";
+      error =
+          "Child launch failed: could not bind the envrypt-v1 credential pipe.";
       return 6;
     }
   }
@@ -295,13 +301,13 @@ int LaunchChild(const FileIdentity &executable,
   }
   const bool credential_written =
       envrypt_credential == nullptr ||
-      (spawn_status == 0 && WriteEnvryptCredential(credential_pipe[1],
-                                                     *envrypt_credential));
+      (spawn_status == 0 &&
+       WriteEnvryptCredential(credential_pipe[1], *envrypt_credential));
   if (envrypt_credential != nullptr) {
     close(credential_pipe[1]);
   }
   ClearSensitiveEnvironment(environment, sensitive_indexes);
-  for (const CredentialValue &credential : credentials) {
+  for (const CredentialValue& credential : credentials) {
     if (credential.value != nullptr) {
       credential.value->Clear();
     }

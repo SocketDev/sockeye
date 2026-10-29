@@ -16,7 +16,7 @@ namespace {
 
 constexpr unsigned char kEndOfInput = 0x04;
 
-int OpenForegroundTerminal(std::string &error) {
+int OpenForegroundTerminal(std::string& error) {
   const int descriptor = open("/dev/tty", O_RDWR | O_CLOEXEC | O_NOFOLLOW);
   if (descriptor < 0 || !isatty(descriptor) ||
       tcgetpgrp(descriptor) != getpgrp()) {
@@ -47,7 +47,7 @@ bool WriteAll(int descriptor, std::string_view value) {
 
 } // namespace
 
-bool HasForegroundTerminal(std::string &error) {
+bool HasForegroundTerminal(std::string& error) {
   const int descriptor = OpenForegroundTerminal(error);
   if (descriptor < 0) {
     return false;
@@ -56,8 +56,8 @@ bool HasForegroundTerminal(std::string &error) {
   return true;
 }
 
-bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer &output,
-                            std::string &error) {
+bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer& output,
+                            std::string& error) {
   if (!output.IsLocked()) {
     error = "Credential input refused: locked memory is unavailable.";
     return false;
@@ -105,9 +105,9 @@ bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer &output,
       SecureZeroBytes(chunk, sizeof(chunk));
       break;
     }
-    const unsigned char *begin = chunk;
-    const unsigned char *end = chunk + static_cast<std::size_t>(count);
-    const unsigned char *terminator = std::find(begin, end, kEndOfInput);
+    const unsigned char* begin = chunk;
+    const unsigned char* end = chunk + static_cast<std::size_t>(count);
+    const unsigned char* terminator = std::find(begin, end, kEndOfInput);
     const std::size_t copied = static_cast<std::size_t>(terminator - begin);
     if (copied > SecretBuffer::kCapacity - used) {
       SecureZeroBytes(chunk, sizeof(chunk));

@@ -27,12 +27,14 @@ set(CMAKE_OBJCXX_STANDARD 20)
 set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 
 add_executable(sockeye
+  src/sockeye/approval-prompt.mm
   src/sockeye/child-process.cc
   src/sockeye/file-identity.cc
   src/sockeye/input-policy.cc
   src/sockeye/keychain-macos.mm
   src/sockeye/main.cc
   src/sockeye/readiness.cc
+  src/sockeye/request-record.cc
   src/sockeye/run-request.cc
   src/sockeye/one-password.cc
   src/sockeye/secret-buffer.cc
@@ -154,9 +156,20 @@ if(BUILD_TESTING)
     test/repo/unit/native/run-request-test.cc
   )
   target_include_directories(sockeye-run-request-test PRIVATE src)
+  add_executable(sockeye-request-record-test
+    src/sockeye/file-identity.cc
+    src/sockeye/request-record.cc
+    test/repo/unit/native/request-record-test.cc
+  )
+  target_include_directories(sockeye-request-record-test PRIVATE src)
+  target_compile_definitions(sockeye-request-record-test PRIVATE SOCKEYE_TESTING=1)
+  target_compile_options(sockeye-request-record-test PRIVATE
+    "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
+  )
   add_executable(sockeye-preview-isolation-test
     src/sockeye/main.cc
   src/sockeye/readiness.cc
+    test/repo/integration/native/request-record-effects.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
     src/sockeye/input-policy.cc
@@ -168,6 +181,7 @@ if(BUILD_TESTING)
   add_executable(sockeye-doctor-test
     src/sockeye/main.cc
   src/sockeye/readiness.cc
+    test/repo/integration/native/request-record-effects.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
     src/sockeye/input-policy.cc
@@ -179,6 +193,7 @@ if(BUILD_TESTING)
   add_executable(sockeye-main-effects-test
     src/sockeye/main.cc
     src/sockeye/readiness.cc
+    test/repo/integration/native/request-record-main-effects.cc
     src/sockeye/run-request.cc
     src/sockeye/file-identity.cc
     src/sockeye/input-policy.cc
@@ -224,6 +239,7 @@ if(BUILD_TESTING)
     sockeye-keystore-framework-test
     sockeye-one-password-test
     sockeye-run-request-test
+    sockeye-request-record-test
     sockeye-readiness-test
     sockeye-preview-isolation-test
     sockeye-doctor-test
@@ -308,9 +324,11 @@ if(NOT SOCKEYE_COVERAGE)
 endif()
 
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
 find_library(LOCAL_AUTHENTICATION_FRAMEWORK LocalAuthentication REQUIRED)
 find_library(SECURITY_FRAMEWORK Security REQUIRED)
 target_link_libraries(sockeye PRIVATE
+  ${APPKIT_FRAMEWORK}
   ${FOUNDATION_FRAMEWORK}
   ${LOCAL_AUTHENTICATION_FRAMEWORK}
   ${SECURITY_FRAMEWORK}

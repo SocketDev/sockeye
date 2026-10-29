@@ -8,9 +8,9 @@
 
 namespace sockeye {
 
-bool HasForegroundTerminal(std::string &error);
-bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer &output,
-                            std::string &error);
+bool HasForegroundTerminal(std::string& error);
+bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer& output,
+                            std::string& error);
 
 } // namespace sockeye
 

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <set>
+#include <sstream>
 #include <utility>
 
 namespace sockeye {
@@ -192,51 +193,57 @@ std::string CanonicalRunManifest(const RunOptions& options) {
   return manifest;
 }
 
-void RenderRunRequest(FILE* stream, const RunOptions& options,
-                      std::string_view digest, bool preview) {
-  std::fprintf(stream, "%s\n",
-               preview ? "Request preview (no authorization)"
-                       : "Approval request");
-  std::fprintf(stream, "  requestId: sha256:%.*s\n",
-               static_cast<int>(preview ? digest.size() : 16), digest.data());
-  std::fprintf(stream, "  cwd: %s\n",
-               options.working_directory.canonical_path.c_str());
-  std::fprintf(stream, "  executable: %s\n",
-               options.executable.canonical_path.c_str());
+std::string FormatRunRequest(const RunOptions& options, std::string_view digest,
+                             bool preview) {
+  std::ostringstream output;
+  output << (preview ? "Request preview (no authorization)\n"
+                     : "Approval request\n");
+  output << "  requestId: sha256:"
+         << digest.substr(0, preview ? digest.size() : 16) << '\n';
+  output << "  cwd: "
+         << VisibleArgument(options.working_directory.canonical_path) << '\n';
+  output << "  executable: "
+         << VisibleArgument(options.executable.canonical_path) << '\n';
   for (const FileIdentity& file : options.bound_files) {
-    std::fprintf(stream, "  bound file: %s\n", file.canonical_path.c_str());
+    output << "  bound file: " << VisibleArgument(file.canonical_path) << '\n';
     if (preview) {
-      std::fprintf(stream, "    sha256: %s\n", DigestHex(file).c_str());
+      output << "    sha256: " << DigestHex(file) << '\n';
     }
   }
   for (const CredentialRequest& credential : options.credentials) {
-    std::fprintf(stream, "  credential: %s\n", credential.identifier.c_str());
+    output << "  credential: " << credential.identifier << '\n';
     if (preview) {
-      std::fprintf(stream, "    binding: %s\n", credential.binding_id.c_str());
+      output << "    binding: " << credential.binding_id << '\n';
     }
   }
   for (const std::string& name : options.passed_environment) {
-    std::fprintf(stream, "  pass parent env: %s\n", name.c_str());
+    output << "  pass parent env: " << name << '\n';
   }
   if (options.child_arguments.empty()) {
-    std::fputs("  arguments: []\n", stream);
+    output << "  arguments: []\n";
   } else {
-    std::fputs("  arguments: [\n", stream);
+    output << "  arguments: [\n";
     for (std::size_t index = 0; index < options.child_arguments.size();
          ++index) {
       const std::string visible =
           QuoteVisibleArgument(options.child_arguments[index]);
-      std::fprintf(stream, "    %s%s\n", visible.c_str(),
-                   index + 1 < options.child_arguments.size() ? "," : "");
+      output << "    " << visible
+             << (index + 1 < options.child_arguments.size() ? "," : "") << '\n';
     }
-    std::fputs("  ]\n", stream);
+    output << "  ]\n";
   }
   if (preview) {
-    std::fputs(
-        "  Parent environment values are neither displayed nor bound.\n"
-        "  A run prepares this request again and requires fresh Touch ID.\n",
-        stream);
+    output
+        << "  Parent environment values are neither displayed nor bound.\n"
+           "  A run prepares this request again and requires fresh Touch ID.\n";
   }
+  return output.str();
+}
+
+void RenderRunRequest(FILE* stream, const RunOptions& options,
+                      std::string_view digest, bool preview) {
+  const std::string output = FormatRunRequest(options, digest, preview);
+  std::fwrite(output.data(), 1, output.size(), stream);
   std::fflush(stream);
 }
 

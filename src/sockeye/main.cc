@@ -15,11 +15,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "sockeye/approval-prompt.h"
 #include "sockeye/child-process.h"
 #include "sockeye/input-policy.h"
 #include "sockeye/keychain.h"
 #include "sockeye/one-password.h"
 #include "sockeye/readiness.h"
+#include "sockeye/request-record.h"
 #include "sockeye/run-request.h"
 #include "sockeye/secret-buffer.h"
 #include "sockeye/terminal.h"
@@ -49,7 +51,8 @@ void PrintUsage(FILE* stream) {
       "    --cwd <ABSOLUTE_PATH> -- <ABSOLUTE_EXECUTABLE> [ARG ...]\n\n"
       "  sockeye doctor [--credential <NAME> --binding <BINDING_ID>] [--fix]\n"
       "  sockeye capabilities\n"
-      "  sockeye explain <same options as run>\n\n"
+      "  sockeye explain <same options as run>\n"
+      "  sockeye explain <requestId>\n\n"
       "Sockeye has no command that returns credential plaintext. The "
       "run command\n"
       "authenticates one exact child manifest and passes credentials "
@@ -272,7 +275,8 @@ int RunVerify(std::string_view identifier, std::string_view binding_id) {
     return ExitForKeychain(error);
   }
   SecretBuffer value;
-  const KeychainStatus status = ReadCredential(context, binding_id, value, error);
+  const KeychainStatus status =
+      ReadCredential(context, binding_id, value, error);
   value.Clear();
   context.Invalidate();
   if (status != KeychainStatus::kSuccess) {
@@ -283,6 +287,14 @@ int RunVerify(std::string_view identifier, std::string_view binding_id) {
 }
 
 int ExplainRunRequest(int argc, char** argv) {
+  if (argc == 3 && IsRequestRecordId(argv[2])) {
+    std::string error;
+    if (!ExplainRequestRecord(argv[2], stdout, error)) {
+      std::fprintf(stderr, "%s\n", error.c_str());
+      return kNotFoundExit;
+    }
+    return 0;
+  }
   RunOptions options;
   std::string error;
   if (!PrepareRunRequest(argc, argv, options, error)) {
@@ -304,7 +316,16 @@ int RunApprovedChild(int argc, char** argv) {
 
   const std::string manifest = CanonicalRunManifest(options);
   const std::string manifest_digest = DigestText(manifest);
-  RenderRunRequest(stderr, options, manifest_digest, false);
+  std::string record_error;
+  if (!SaveRequestRecord(options, manifest_digest, record_error)) {
+    std::fprintf(stderr, "request details unavailable: %s\n",
+                 record_error.c_str());
+  }
+  std::fprintf(stderr, "requestId: sha256:%.16s\n", manifest_digest.c_str());
+  if (!ShowApprovalPrompt(options, manifest_digest)) {
+    std::fputs("Approval cancelled.\n", stderr);
+    return kDeniedExit;
+  }
 
   AuthorizationContext context;
   KeychainError keychain_error;

@@ -27,6 +27,8 @@ struct RunOptions {
 bool PrepareRunRequest(int argc, char** argv, RunOptions& options,
                        std::string& error);
 std::string CanonicalRunManifest(const RunOptions& options);
+std::string FormatRunRequest(const RunOptions& options, std::string_view digest,
+                             bool preview);
 void RenderRunRequest(FILE* stream, const RunOptions& options,
                       std::string_view digest, bool preview);
 
