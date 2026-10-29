@@ -55,6 +55,8 @@ export {
   waitForNotarySubmission,
 } from './release/notary-service.mts'
 import { displayCommand } from './sign.mts'
+import type { EvidenceRow } from './verify-release.mts'
+import { verifyArchive } from './verify-release.mts'
 
 const logger = getScriptLogger()
 
@@ -241,12 +243,8 @@ export async function notarizeReleaseBundle(
       `${archiveSha256}  ${path.basename(finalArchive)}\n`,
       { mode: 0o600 },
     )
-    const verification = await spawn(
-      'pnpm',
-      ['run', 'verify-release', finalArchive],
-      { cwd: REPO_ROOT },
-    )
-    if (verification.code !== 0) {
+    const verificationRows: EvidenceRow[] = []
+    if (!(await verifyArchive(finalArchive, verificationRows, undefined))) {
       throw new Error(
         `Final release verification failed at ${finalArchive}; no release output was written. Resolve the packaged artifact before publication.`,
       )

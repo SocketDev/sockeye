@@ -30,6 +30,7 @@ import {
   completedNotaryReceiptIsValid,
   writeCompletedNotaryReceipt,
 } from '../../../scripts/repo/release/notary-receipt.mts'
+import { verifyArchive } from '../../../scripts/repo/verify-release.mts'
 
 vi.mock(
   import('@socketsecurity/lib-stable/process/spawn/child'),
@@ -64,6 +65,13 @@ vi.mock(
   }),
 )
 
+vi.mock('../../../scripts/repo/verify-release.mts', async importOriginal => ({
+  ...(await importOriginal<
+    typeof import('../../../scripts/repo/verify-release.mts')
+  >()),
+  verifyArchive: vi.fn(async () => true),
+}))
+
 const submissionId = '12345678-1234-1234-1234-123456789abc'
 const commandResult = {
   args: [],
@@ -73,7 +81,10 @@ const commandResult = {
   stderr: '',
 }
 
-beforeEach(() => vi.resetAllMocks())
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.mocked(verifyArchive).mockResolvedValue(true)
+})
 
 test('parses only notary JSON objects', () => {
   expect(parseNotaryJson('{"status":"Accepted"}', 'example')).toEqual({
@@ -379,9 +390,6 @@ function notarizationCallLabel(cmd: string, args: readonly string[]): string {
       ? 'submission-archive'
       : 'final-archive'
   }
-  if (cmd === 'pnpm') {
-    return 'verify'
-  }
   if (args[0] === 'stapler' && args[1] === 'validate') {
     return 'staple-validate'
   }
@@ -409,38 +417,54 @@ test('runs notarization phases in fail-closed order', async () => {
       'staple',
       'staple-validate',
       'final-archive',
-      'verify',
     ])
+    expect(verifyArchive).toHaveBeenCalledOnce()
+    expect(vi.mocked(verifyArchive).mock.calls[0]?.[0]).toMatch(
+      /\.release\..*\.zip$/u,
+    )
     await expect(fs.stat(output)).resolves.toBeDefined()
   } finally {
     await fs.rm(scratch, { force: true, recursive: true })
   }
 })
 
-test.each([
-  'wait',
-  'log',
-  'staple',
-  'staple-validate',
-  'final-archive',
-  'verify',
-])('does not expose final output when %s fails', async failedPhase => {
+test.each(['wait', 'log', 'staple', 'staple-validate', 'final-archive'])(
+  'does not expose final output when %s fails',
+  async failedPhase => {
+    const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'notary-test-'))
+    try {
+      const bundle = path.join(scratch, 'sockeye.app')
+      const output = path.join(scratch, 'release.zip')
+      await fs.mkdir(bundle)
+      mockNotaryPipeline(JSON.stringify({ id: submissionId }))
+      const pipeline = vi.mocked(spawn).getMockImplementation()!
+      vi.mocked(spawn).mockImplementation((async (cmd, args = []) => {
+        const result = await pipeline(cmd, args)
+        return notarizationCallLabel(cmd, args) === failedPhase
+          ? { ...result, code: 1 }
+          : result
+      }) as typeof spawn)
+      await expect(
+        notarizeReleaseBundle(bundle, output, 'example-notary'),
+      ).rejects.toThrow()
+      await expect(fs.stat(output)).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      await fs.rm(scratch, { force: true, recursive: true })
+    }
+  },
+)
+
+test('does not expose output when final archive verification fails', async () => {
   const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'notary-test-'))
   try {
     const bundle = path.join(scratch, 'sockeye.app')
     const output = path.join(scratch, 'release.zip')
     await fs.mkdir(bundle)
     mockNotaryPipeline(JSON.stringify({ id: submissionId }))
-    const pipeline = vi.mocked(spawn).getMockImplementation()!
-    vi.mocked(spawn).mockImplementation((async (cmd, args = []) => {
-      const result = await pipeline(cmd, args)
-      return notarizationCallLabel(cmd, args) === failedPhase
-        ? { ...result, code: 1 }
-        : result
-    }) as typeof spawn)
+    vi.mocked(verifyArchive).mockResolvedValueOnce(false)
     await expect(
       notarizeReleaseBundle(bundle, output, 'example-notary'),
-    ).rejects.toThrow()
+    ).rejects.toThrow('Final release verification failed')
     await expect(fs.stat(output)).rejects.toMatchObject({ code: 'ENOENT' })
   } finally {
     await fs.rm(scratch, { force: true, recursive: true })
