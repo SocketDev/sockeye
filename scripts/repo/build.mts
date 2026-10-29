@@ -19,7 +19,10 @@ import { runMain } from '../fleet/process/main/run.mts'
 import type { ScriptMeta } from '../fleet/process/main/run.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { ensureNativeCoverageToolchain } from './native-toolchain.mts'
-import { resolveMacosSdkPath } from './paths/macos-sdk.mts'
+import {
+  getCmakeSdkConfigureArgs,
+  resolveMacosSdkPath,
+} from './paths/macos-sdk.mts'
 import {
   getBinaryPath,
   getBuildMode,
@@ -41,6 +44,7 @@ const logger = getScriptLogger()
 
 interface BuildToolchain {
   readonly compilerArgs: string[]
+  readonly configureArgs: string[]
   readonly sdk: string
 }
 
@@ -54,9 +58,17 @@ async function run(command: string, args: string[]): Promise<void> {
   }
 }
 
-async function getBuildToolchain(mode: string): Promise<BuildToolchain> {
+async function getBuildToolchain(
+  mode: string,
+  cmakeBuildDir: string,
+): Promise<BuildToolchain> {
   if (mode !== 'coverage') {
-    return { compilerArgs: [], sdk: await resolveMacosSdkPath() }
+    const sdk = await resolveMacosSdkPath()
+    return {
+      compilerArgs: [],
+      configureArgs: await getCmakeSdkConfigureArgs(cmakeBuildDir, sdk),
+      sdk,
+    }
   }
   const toolchain = await ensureNativeCoverageToolchain()
   return {
@@ -66,6 +78,7 @@ async function getBuildToolchain(mode: string): Promise<BuildToolchain> {
       `-DCMAKE_OBJCXX_COMPILER=${toolchain.clangxx}`,
       `-DFLEET_LLVM_COVERAGE_VERSION=${toolchain.version}`,
     ],
+    configureArgs: [],
     sdk: toolchain.sdk,
   }
 }
@@ -94,12 +107,13 @@ export async function buildSockeye(): Promise<void> {
   const version = getEnvValue('RELEASE_VERSION') ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
   const architecture = targetArch === 'arm64' ? 'arm64' : 'x86_64'
-  const toolchain = await getBuildToolchain(mode)
+  const toolchain = await getBuildToolchain(mode, cmakeBuildDir)
 
   mkdirSync(cmakeBuildDir, { recursive: true })
   mkdirSync(outputDir, { recursive: true })
   logger.info(`Building Sockeye ${version} (${mode}, ${platformArch})…`)
   await run('cmake', [
+    ...toolchain.configureArgs,
     ...toolchain.compilerArgs,
     '-S',
     REPO_ROOT,
