@@ -12,6 +12,7 @@
 #include <string>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 namespace {
 constexpr char kValue[] = "example-placeholder";
@@ -19,6 +20,9 @@ constexpr char kSetBinding[] =
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 constexpr char kImportBinding[] =
     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+constexpr char kPipeImportBinding[] =
+    "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+constexpr char kOldValue[] = "old-fixture-token";
 std::string Scenario() {
   const char* value = std::getenv("SOCKEYE_TEST_SCENARIO");
   return value == nullptr ? "success" : value;
@@ -111,7 +115,17 @@ KeychainStatus DeleteCredential(AuthorizationContext&, std::string_view name,
 KeychainStatus StoreCredential(AuthorizationContext&, std::string_view name,
                                const SecretBuffer& value,
                                KeychainError& error) {
-  assert(authorized && (name == kSetBinding || name == kImportBinding));
+  assert(authorized && (name == kSetBinding || name == kImportBinding ||
+                        name == kPipeImportBinding));
+  assert(value.Size() == sizeof(kValue) - 1 &&
+         std::memcmp(value.Data(), kValue, value.Size()) == 0);
+  Event("store");
+  return Result(error);
+}
+KeychainStatus ReplaceCredential(AuthorizationContext&, std::string_view name,
+                                 const SecretBuffer& value,
+                                 KeychainError& error) {
+  assert(authorized && name == kPipeImportBinding);
   assert(value.Size() == sizeof(kValue) - 1 &&
          std::memcmp(value.Data(), kValue, value.Size()) == 0);
   Event("store");
@@ -122,7 +136,13 @@ KeychainStatus ReadCredential(AuthorizationContext&, std::string_view name,
   assert(authorized);
   Event("read");
   reads.emplace_back(name);
-  if (name == kSetBinding || name == kImportBinding) {
+  if (name == kPipeImportBinding && Scenario() == "import-replace" &&
+      protected_reads++ == 0) {
+    assert(value.Assign(kOldValue, sizeof(kOldValue) - 1));
+    return KeychainStatus::kSuccess;
+  }
+  if (name == kSetBinding || name == kImportBinding ||
+      name == kPipeImportBinding) {
     if (protected_reads++ == 0) {
       error.status = KeychainStatus::kNotFound;
       return error.status;
@@ -140,6 +160,14 @@ bool HasForegroundTerminal(std::string& error) {
 }
 bool ReadSecretFromTerminal(std::string_view, SecretBuffer& output,
                             std::string& error) {
+  Event("input");
+  error = "example input failed";
+  return Scenario() != "input-failed" &&
+         output.Assign(kValue, sizeof(kValue) - 1);
+}
+bool ReadSecretFromPipe(int descriptor, SecretBuffer& output,
+                        std::string& error) {
+  assert(descriptor == STDIN_FILENO && authorized);
   Event("input");
   error = "example input failed";
   return Scenario() != "input-failed" &&

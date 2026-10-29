@@ -38,6 +38,7 @@ add_executable(sockeye
   src/sockeye/run-request.cc
   src/sockeye/one-password.cc
   src/sockeye/secret-buffer.cc
+  src/sockeye/stdin-secret.cc
   src/sockeye/terminal.cc
 )
 
@@ -108,6 +109,16 @@ if(BUILD_TESTING)
     write=SockeyeTestWrite isatty=SockeyeTestIsatty tcgetpgrp=SockeyeTestForegroundGroup
     tcgetattr=SockeyeTestGetAttributes tcsetattr=SockeyeTestSetAttributes
     mlock=SockeyeTestLock munlock=SockeyeTestUnlock
+  )
+  add_executable(sockeye-stdin-secret-test
+    src/sockeye/secret-buffer.cc
+    src/sockeye/stdin-secret.cc
+    test/repo/unit/native/stdin-secret-test.cc
+  )
+  target_include_directories(sockeye-stdin-secret-test PRIVATE src)
+  target_compile_definitions(sockeye-stdin-secret-test PRIVATE
+    isatty=SockeyeStdinIsatty read=SockeyeStdinRead
+    mlock=SockeyeStdinLock munlock=SockeyeStdinUnlock
   )
   add_executable(sockeye-one-password-test
     src/sockeye/one-password.cc
@@ -236,6 +247,7 @@ if(BUILD_TESTING)
     sockeye-file-identity-failures-test
     sockeye-child-process-failures-test
     sockeye-terminal-test
+    sockeye-stdin-secret-test
     sockeye-keychain-framework-test
     sockeye-keystore-framework-test
     sockeye-one-password-test

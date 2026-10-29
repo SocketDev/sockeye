@@ -24,6 +24,7 @@
 #include "sockeye/request-record.h"
 #include "sockeye/run-request.h"
 #include "sockeye/secret-buffer.h"
+#include "sockeye/stdin-secret.h"
 #include "sockeye/terminal.h"
 
 #ifndef SOCKEYE_VERSION
@@ -42,6 +43,7 @@ void PrintUsage(FILE* stream) {
       stream,
       "usage:\n"
       "  sockeye set <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
+      "  sockeye import-stdin <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
       "  sockeye import-1password <CREDENTIAL_NAME> <OP_REFERENCE> --binding "
       "<BINDING_ID>\n"
       "  sockeye delete <CREDENTIAL_NAME> --binding <BINDING_ID>\n"
@@ -63,6 +65,7 @@ void PrintCapabilities(FILE* stream) {
   std::fputs("sockeye-capabilities-v1\n"
              "credential-bindings: sha256-64-lowercase-hex\n"
              "credential-verify: attended-protected-readback-v1\n"
+             "credential-stdin-import: bounded-pipe-v1\n"
              "credential-storage: keychain-biometry-current-set-device-only\n",
              stream);
 }
@@ -100,7 +103,8 @@ bool CredentialValuesMatch(const SecretBuffer& left,
 
 int StoreAndVerifyCredential(AuthorizationContext& context,
                              std::string_view binding_id,
-                             const SecretBuffer& value, KeychainError& error) {
+                             const SecretBuffer& value, KeychainError& error,
+                             bool replace_existing = false) {
   SecretBuffer existing;
   const KeychainStatus existing_status =
       ReadCredential(context, binding_id, existing, error);
@@ -109,11 +113,36 @@ int StoreAndVerifyCredential(AuthorizationContext& context,
     existing.Clear();
     if (matches)
       return 0;
-    error = {KeychainStatus::kConflict, 0,
-             "Credential store refused: the selected binding already holds a "
-             "different value. Use an approved rotation operation."};
-    PrintKeychainError(error);
-    return kSystemExit;
+    if (!replace_existing) {
+      error = {KeychainStatus::kConflict, 0,
+               "Credential store refused: the selected binding already holds a "
+               "different value. Use an approved rotation operation."};
+      PrintKeychainError(error);
+      return kSystemExit;
+    }
+    const KeychainStatus replace_status =
+        ReplaceCredential(context, binding_id, value, error);
+    if (replace_status != KeychainStatus::kSuccess) {
+      PrintKeychainError(error);
+      return ExitForKeychain(error);
+    }
+    SecretBuffer replacement;
+    const KeychainStatus replacement_status =
+        ReadCredential(context, binding_id, replacement, error);
+    const bool replacement_matches =
+        replacement_status == KeychainStatus::kSuccess &&
+        CredentialValuesMatch(replacement, value);
+    replacement.Clear();
+    if (!replacement_matches) {
+      if (replacement_status == KeychainStatus::kSuccess) {
+        error = {KeychainStatus::kIo, 0,
+                 "Credential store verification failed: protected readback "
+                 "differs from the imported value."};
+      }
+      PrintKeychainError(error);
+      return ExitForKeychain(error);
+    }
+    return 0;
   }
   existing.Clear();
   if (existing_status != KeychainStatus::kNotFound) {
@@ -177,6 +206,42 @@ int RunSet(std::string_view identifier, std::string_view binding_id) {
   }
   const int result =
       StoreAndVerifyCredential(context, binding_id, value, error);
+  context.Invalidate();
+  value.Clear();
+  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
+}
+
+int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
+  if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
+    std::fputs("Credential import rejected: name or binding is invalid.\n",
+               stderr);
+    return kUsageExit;
+  }
+
+  std::string terminal_error;
+  if (!HasForegroundTerminal(terminal_error)) {
+    std::fprintf(stderr, "%s\n", terminal_error.c_str());
+    return kDeniedExit;
+  }
+
+  AuthorizationContext context;
+  KeychainError error;
+  const std::string reason =
+      "Allow pnpm to use " + std::string(identifier) + "?";
+  if (!context.Authenticate(reason, error)) {
+    PrintKeychainError(error);
+    return ExitForKeychain(error);
+  }
+
+  SecretBuffer value;
+  std::string input_error;
+  if (!ReadSecretFromPipe(STDIN_FILENO, value, input_error)) {
+    context.Invalidate();
+    std::fprintf(stderr, "%s\n", input_error.c_str());
+    return kUsageExit;
+  }
+  const int result =
+      StoreAndVerifyCredential(context, binding_id, value, error, true);
   context.Invalidate();
   value.Clear();
   return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
@@ -410,6 +475,10 @@ int main(int argc, char** argv) {
   if (argc == 5 && std::strcmp(argv[1], "set") == 0 &&
       std::strcmp(argv[3], "--binding") == 0) {
     return sockeye::RunSet(argv[2], argv[4]);
+  }
+  if (argc == 5 && std::strcmp(argv[1], "import-stdin") == 0 &&
+      std::strcmp(argv[3], "--binding") == 0) {
+    return sockeye::RunStdinImport(argv[2], argv[4]);
   }
   if (argc == 6 && std::strcmp(argv[1], "import-1password") == 0 &&
       std::strcmp(argv[4], "--binding") == 0) {

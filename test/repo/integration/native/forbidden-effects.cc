@@ -36,11 +36,18 @@ KeychainStatus StoreCredential(AuthorizationContext&, std::string_view,
                                const SecretBuffer&, KeychainError&) {
   RejectForbiddenEffect();
 }
+KeychainStatus ReplaceCredential(AuthorizationContext&, std::string_view,
+                                 const SecretBuffer&, KeychainError&) {
+  RejectForbiddenEffect();
+}
 bool ReadOnePasswordReference(std::string_view, SecretBuffer&, std::string&) {
   RejectForbiddenEffect();
 }
 bool HasForegroundTerminal(std::string&) { RejectForbiddenEffect(); }
 bool ReadSecretFromTerminal(std::string_view, SecretBuffer&, std::string&) {
+  RejectForbiddenEffect();
+}
+bool ReadSecretFromPipe(int, SecretBuffer&, std::string&) {
   RejectForbiddenEffect();
 }
 int LaunchChild(const FileIdentity&, const std::vector<FileIdentity>&,

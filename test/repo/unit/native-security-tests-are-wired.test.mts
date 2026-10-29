@@ -42,6 +42,7 @@ test('accepts instrumented security test wiring', () => {
 
 test.each([
   ['CMakeLists.txt', '    sockeye-child-process-test\n', ''],
+  ['CMakeLists.txt', '    sockeye-stdin-secret-test\n', ''],
   ['CMakeLists.txt', '-UNDEBUG', ''],
   [
     'CMakeLists.txt',

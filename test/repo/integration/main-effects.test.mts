@@ -13,6 +13,7 @@ const binding = 'a'.repeat(64)
 const importBinding = 'b'.repeat(64)
 const deleteBinding = 'c'.repeat(64)
 const verifyBinding = 'd'.repeat(64)
+const stdinImportBinding = 'e'.repeat(64)
 beforeAll(() => {
   const object = path.join(
     getCmakeBuildDir(getBuildMode(), `${process.platform}-${process.arch}`),
@@ -31,6 +32,12 @@ beforeAll(() => {
 })
 const commands: Record<string, string[]> = {
   set: ['set', 'EXAMPLE_TOKEN', '--binding', binding],
+  stdinImport: [
+    'import-stdin',
+    'EXAMPLE_TOKEN',
+    '--binding',
+    stdinImportBinding,
+  ],
   delete: ['delete', 'EXAMPLE_TOKEN', '--binding', deleteBinding],
   verify: ['verify', 'EXAMPLE_TOKEN', '--binding', verifyBinding],
   import: [
@@ -103,6 +110,7 @@ test('successful startup establishes process restrictions before dispatch', () =
 
 test.each([
   ['set', `Store Sockeye credential EXAMPLE_TOKEN binding ${binding}`],
+  ['stdinImport', 'Allow pnpm to use EXAMPLE_TOKEN?'],
   [
     'import',
     `Import Sockeye credential EXAMPLE_TOKEN binding ${importBinding} from 1Password`,
@@ -165,6 +173,22 @@ test.each([
   ['set', 'input-failed', 2, 'input'],
   ['set', 'denied', 4, 'input approve'],
   ['set', 'io', 5, 'input approve read store invalidate'],
+  [
+    'stdinImport',
+    'success',
+    0,
+    'terminal approve input read store read invalidate policy',
+  ],
+  [
+    'stdinImport',
+    'import-replace',
+    0,
+    'terminal approve input read store read invalidate policy',
+  ],
+  ['stdinImport', 'no-terminal', 4, 'terminal'],
+  ['stdinImport', 'denied', 4, 'terminal approve'],
+  ['stdinImport', 'input-failed', 2, 'terminal approve input invalidate'],
+  ['stdinImport', 'io', 5, 'terminal approve input read store invalidate'],
   ['delete', 'success', 0, 'terminal approve delete invalidate'],
   ['delete', 'no-terminal', 4, 'terminal'],
   ['delete', 'denied', 4, 'terminal approve'],
@@ -218,6 +242,7 @@ test.each([
 
 test.each([
   ['set', 'invalid-name', '--binding', binding],
+  ['import-stdin', 'invalid-name', '--binding', stdinImportBinding],
   ['delete', 'invalid-name', '--binding', deleteBinding],
   ['verify', 'invalid-name', '--binding', verifyBinding],
   [

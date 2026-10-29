@@ -46,6 +46,12 @@ later `sockeye run` reads the Keychain item after Touch ID; it never expands an
 `op://` reference or starts `op`. This means an Agent-CI manifest cannot turn
 an arbitrary environment value into a 1Password read.
 
+An attended application can hand a credential to Sockeye with
+`sockeye import-stdin NAME --binding ID`. Sockeye accepts a bounded pipe, then
+stores and verifies the value under the protected binding. It rejects terminal
+stdin so the value cannot echo on screen. The command requires a foreground
+terminal for approval and can replace a rotated value in place.
+
 ## What to expect
 
 During direct entry, Touch ID authorizes storing the value. During an import,

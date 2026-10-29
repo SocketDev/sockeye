@@ -62,7 +62,7 @@ describe('Sockeye CLI', () => {
     const result = spawnSync(binaryPath, ['capabilities'], { encoding: 'utf8' })
     expect(result.status).toBe(0)
     expect(result.stdout).toBe(
-      'sockeye-capabilities-v1\ncredential-bindings: sha256-64-lowercase-hex\ncredential-verify: attended-protected-readback-v1\ncredential-storage: keychain-biometry-current-set-device-only',
+      'sockeye-capabilities-v1\ncredential-bindings: sha256-64-lowercase-hex\ncredential-verify: attended-protected-readback-v1\ncredential-stdin-import: bounded-pipe-v1\ncredential-storage: keychain-biometry-current-set-device-only',
     )
     expect(result.stderr).toBe('')
   })
@@ -80,6 +80,20 @@ describe('Sockeye CLI', () => {
     const result = spawnSync(
       binaryPath,
       ['set', 'bad-name', '--binding', binding],
+      {
+        encoding: 'utf8',
+        input: canary,
+      },
+    )
+    expect(result.status).toBe(2)
+    expect(`${result.stdout}${result.stderr}`).not.toContain(canary)
+  })
+
+  test('rejects malformed stdin imports without exposing the secret', () => {
+    const canary = 'sockeye-import-secret-canary'
+    const result = spawnSync(
+      binaryPath,
+      ['import-stdin', 'bad-name', '--binding', binding],
       {
         encoding: 'utf8',
         input: canary,

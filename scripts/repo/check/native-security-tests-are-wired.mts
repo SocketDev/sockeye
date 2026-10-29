@@ -39,6 +39,7 @@ export function checkNativeSecurityTests(repoRoot: string): string[] {
   for (const target of [
     'sockeye-child-process-test',
     'sockeye-input-policy-test',
+    'sockeye-stdin-secret-test',
   ]) {
     if (!targets.split(/\s+/u).includes(target)) {
       issues.push(`${target}: missing sanitizer coverage`)

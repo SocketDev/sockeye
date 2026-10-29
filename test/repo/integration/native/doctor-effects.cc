@@ -87,6 +87,10 @@ KeychainStatus StoreCredential(AuthorizationContext&, std::string_view,
   repaired = scenario != "postcheck-failed";
   return KeychainStatus::kSuccess;
 }
+KeychainStatus ReplaceCredential(AuthorizationContext&, std::string_view,
+                                 const SecretBuffer&, KeychainError&) {
+  ForbiddenDoctorEffect();
+}
 bool ReadOnePasswordReference(std::string_view, SecretBuffer&, std::string&) {
   ForbiddenDoctorEffect();
 }
@@ -96,6 +100,9 @@ bool ReadSecretFromTerminal(std::string_view, SecretBuffer& output,
   ++inputs;
   constexpr unsigned char value[] = "example-placeholder";
   return output.Assign(value, sizeof(value) - 1);
+}
+bool ReadSecretFromPipe(int, SecretBuffer&, std::string&) {
+  ForbiddenDoctorEffect();
 }
 int LaunchChild(const FileIdentity&, const std::vector<FileIdentity>&,
                 const std::vector<std::string>&,
