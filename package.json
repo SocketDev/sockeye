@@ -72,7 +72,7 @@
     "clean": "node scripts/fleet/clean.mts",
     "coordination:claim": "node scripts/fleet/coordination/claim.mts",
     "coordination:mail": "node scripts/fleet/coordination/mail.mts",
-    "cover": "node scripts/fleet/cover/run.mts",
+    "cover": "node scripts/fleet/cover.mts",
     "cover:aggregate": "node scripts/fleet/cover/aggregate.mts",
     "cover:allowance": "node scripts/fleet/cover/allowance.mts",
     "cover:balance": "node scripts/fleet/cover/balance.mts",

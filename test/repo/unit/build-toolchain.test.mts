@@ -38,9 +38,12 @@ beforeEach(() => {
     sdk: '/example/MacOSX.sdk',
     version: '22.1.0',
   })
-  io.spawn.mockResolvedValue({ code: 0 })
+  io.spawn.mockResolvedValue({ code: 0, stdout: '/example/MacOSX.sdk' })
   io.read.mockResolvedValue('{"version":"0.0.0"}')
-  io.stat.mockResolvedValue({ size: 42 })
+  io.stat.mockResolvedValue({
+    isDirectory: () => true,
+    size: 42,
+  })
   io.artifacts.clear()
   for (const mode of ['coverage', 'dev', 'prod']) {
     io.artifacts.add(getBinaryPath(mode, `${process.platform}-${process.arch}`))
@@ -70,8 +73,11 @@ test.each(['dev', 'prod'])(
     vi.stubEnv('BUILD_MODE', mode)
     await buildSockeye()
     expect(io.ensure).not.toHaveBeenCalled()
-    expect(io.spawn.mock.calls[0]?.[1]).not.toContain('--fresh')
-    expect(io.spawn.mock.calls[0]?.[1]).toContain('-DSOCKEYE_COVERAGE=OFF')
+    const configureArgs = io.spawn.mock.calls[1]?.[1]
+    expect(configureArgs).not.toContain(
+      '-DFLEET_LLVM_COVERAGE_VERSION=22.1.0',
+    )
+    expect(configureArgs).toContain('-DSOCKEYE_COVERAGE=OFF')
   },
 )
 test('coverage toolchain failure prevents CMake or addon execution', async () => {
