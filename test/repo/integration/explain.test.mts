@@ -117,7 +117,9 @@ test('run preparation is fresh and the forbidden authorization detector is activ
   expect(secondDigest).not.toBe(firstDigest)
   const run = runExplain(isolated, 'run', fixture.args)
   expect(run.status).toBe(90)
-  expect(run.stderr).toContain(`requestId: sha256:${secondDigest?.slice(0, 16)}`)
+  expect(run.stderr).toContain(
+    `requestId: sha256:${secondDigest?.slice(0, 16)}`,
+  )
   expect(existsSync(fixture.marker)).toBe(false)
 })
 

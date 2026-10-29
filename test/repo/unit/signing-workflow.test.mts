@@ -2,10 +2,23 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({ spawn: vi.fn() }))
+
+vi.mock(
+  '@socketsecurity/lib-stable/process/spawn/child',
+  async importOriginal => ({
+    ...(await importOriginal<
+      typeof import('@socketsecurity/lib-stable/process/spawn/child')
+    >()),
+    spawn: mocks.spawn,
+  }),
+)
 
 import {
   SCRIPT_META,
+  runGh,
   selectSigningWorkflowRun,
 } from '../../../scripts/repo/signing-workflow.mts'
 
@@ -51,6 +64,16 @@ test('selects only the run for the exact source revision', () => {
       { minimumRunId: 2 },
     ),
   ).toBeUndefined()
+})
+
+test('routes GitHub workflow access through pnpm gh', async () => {
+  mocks.spawn.mockResolvedValue({ code: 0, stdout: '{}', stderr: '' })
+  await expect(runGh(['repo', 'view'])).resolves.toBe('{}')
+  expect(mocks.spawn).toHaveBeenCalledExactlyOnceWith(
+    'pnpm',
+    ['gh', 'repo', 'view'],
+    expect.objectContaining({ stdio: 'pipe' }),
+  )
 })
 
 test('describes the entrypoint before GitHub access', () => {

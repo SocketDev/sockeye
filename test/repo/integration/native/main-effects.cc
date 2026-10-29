@@ -167,7 +167,7 @@ bool ReadSecretFromTerminal(std::string_view, SecretBuffer& output,
 }
 bool ReadSecretFromPipe(int descriptor, SecretBuffer& output,
                         std::string& error) {
-  assert(descriptor == STDIN_FILENO && authorized);
+  assert(descriptor == STDIN_FILENO);
   Event("input");
   error = "example input failed";
   return Scenario() != "input-failed" &&

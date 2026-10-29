@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-import { optimiseSvg } from '../fleet/gen/svg-optimize.mts'
+import { optimiseSvg } from '../fleet/gen/svg/optimize.mts'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/main/run.mts'

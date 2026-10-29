@@ -41,3 +41,24 @@ test('rejects the removed ad-hoc local installation path', async () => {
     'Install a Developer ID release artifact',
   )
 })
+
+test('parses an exact local application bundle installation', async () => {
+  const { parseSetupSockeyeOptions } =
+    await import('../../../scripts/repo/setup-sockeye.mts')
+  expect(
+    parseSetupSockeyeOptions([
+      '--app-bundle',
+      '/tmp/sockeye.app',
+      '--expected-version',
+      '0.2.0',
+    ]),
+  ).toEqual({ bundlePath: '/tmp/sockeye.app', expectedVersion: '0.2.0' })
+  expect(() =>
+    parseSetupSockeyeOptions([
+      '--app-bundle',
+      '/tmp/sockeye.app',
+      '--release',
+      'v0.2.0',
+    ]),
+  ).toThrow()
+})

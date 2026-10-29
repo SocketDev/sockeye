@@ -349,8 +349,8 @@ Legend: ✅ done · ◻ todo.
 
 - **`scripts/compile-for-bundle.mts`** - orchestrator: detects a bundle → builds
   the flag set → computes a 16-char cache key `sha256(SOURCE_PATCHED + sorted
-  flags + platform + mode)` → invokes `build.mts --from-checkpoint=source-patched
-  --without-smol=<flags>`. `--dry-run` prints the full plan (manifest summary,
+flags + platform + mode)` → invokes `build.mts --from-checkpoint=source-patched
+--without-smol=<flags>`. `--dry-run` prints the full plan (manifest summary,
   flags, cache key, exact build command) without building - verified against the
   real `firewall/dist/sfw-registry.js`.
 - **Flag passthrough wiring:** `build.mts` gained a `--without-smol=` option
@@ -368,7 +368,7 @@ Legend: ✅ done · ◻ todo.
   contract (stable, order-independent, sensitive to flags/platform/mode, dedup).
 - **Real build run (2026-05-31):** ran a clean trimmed build with the
   sfw-registry feature set (`build.mts --dev --without-smol=quic,http3,smolHttp,
-  tui,keymap,ffi,ilp,treeSitter,qrcode,markdown,--without-sqlite`). Results:
+tui,keymap,ffi,ilp,treeSitter,qrcode,markdown,--without-sqlite`). Results:
   - ✅ Patches apply cleanly to pristine (real `patch -p1`).
   - ✅ **Configure honored every flag** - generated `out/Release/config.gypi`
     shows all 11 dropped features `"false"` (`node_use_smol_quic`…`node_use_sqlite`).
@@ -377,7 +377,7 @@ Legend: ✅ done · ◻ todo.
     errors - confirming the gyp `conditions` correctly dropped them (a malformed
     gate would fail at gyp/ninja, not later).
   - ❌ The build then failed at the **final crypto link** - `ld: symbol(s) not
-    found for architecture arm64` for `ncrypto::Rsa`/`DH_free`/`EC_KEY_free`/
+found for architecture arm64` for `ncrypto::Rsa`/`DH_free`/`EC_KEY_free`/
     `HMAC_CTX_free`. This is a **pre-existing BoringSSL↔ncrypto ABI mismatch on
     this checkout**, NOT a trimming regression: my commit touches zero crypto
     wiring (verified), `ncrypto` lives in the always-on `node_use_openssl` block

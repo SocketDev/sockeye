@@ -74,9 +74,7 @@ test.each(['dev', 'prod'])(
     await buildSockeye()
     expect(io.ensure).not.toHaveBeenCalled()
     const configureArgs = io.spawn.mock.calls[1]?.[1]
-    expect(configureArgs).not.toContain(
-      '-DFLEET_LLVM_COVERAGE_VERSION=22.1.0',
-    )
+    expect(configureArgs).not.toContain('-DFLEET_LLVM_COVERAGE_VERSION=22.1.0')
     expect(configureArgs).toContain('-DSOCKEYE_COVERAGE=OFF')
   },
 )

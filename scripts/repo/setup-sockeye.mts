@@ -20,6 +20,7 @@ import {
 } from '@socketsecurity/lib-stable/process/spawn/child'
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
 import { isPlainObject } from '@socketsecurity/lib-stable/objects/predicates'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { abortScript } from '../fleet/process/script-result.mts'
@@ -39,6 +40,51 @@ const logger = getScriptLogger()
 const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
 const BIN_PATH = path.join(BIN_DIR, 'sockeye')
 const ARCH = process.arch
+
+export type SetupSockeyeOptions =
+  | { readonly bundlePath: string; readonly expectedVersion?: string }
+  | { readonly releaseTag: string }
+
+export function parseSetupSockeyeOptions(
+  args: readonly string[],
+): SetupSockeyeOptions {
+  const bundleIdx = args.indexOf('--app-bundle')
+  const releaseIdx = args.indexOf('--release')
+  const versionIdx = args.indexOf('--expected-version')
+  if (bundleIdx >= 0) {
+    const bundlePath = args[bundleIdx + 1]
+    const expectedVersion = versionIdx >= 0 ? args[versionIdx + 1] : undefined
+    if (
+      releaseIdx >= 0 ||
+      bundlePath === undefined ||
+      (versionIdx >= 0 && expectedVersion === undefined) ||
+      args.length !== (versionIdx >= 0 ? 4 : 2) ||
+      (versionIdx >= 0 && versionIdx < bundleIdx)
+    ) {
+      throw new Error(
+        'Application bundle arguments rejected; expected --app-bundle <path> [--expected-version <version>].',
+      )
+    }
+    return expectedVersion === undefined
+      ? { bundlePath }
+      : { bundlePath, expectedVersion }
+  }
+  if (versionIdx >= 0 || (releaseIdx >= 0 && args.length !== 2)) {
+    throw new Error(
+      'Setup arguments rejected; expected --release <tag> or --app-bundle <path> [--expected-version <version>].',
+    )
+  }
+  const releaseTag = releaseIdx >= 0 ? args[releaseIdx + 1] : 'latest'
+  if (releaseTag === undefined) {
+    throw new Error('Release tag missing after --release.')
+  }
+  if (args.length > 0 && releaseIdx < 0) {
+    throw new Error(
+      `Setup argument rejected at ${args[0]}; expected --release <tag>. Install a Developer ID release artifact.`,
+    )
+  }
+  return { releaseTag }
+}
 
 export function getInstalledSockeyeBinaryPath(): string {
   return BIN_PATH
@@ -94,14 +140,18 @@ export async function installFromRelease(tag: string): Promise<void> {
     }
     logger.success('Checksum verified.')
 
-    const releaseVerification = await spawn('pnpm', [
-      'run',
-      'verify-release',
-      ...(expectedVersion === undefined
-        ? []
-        : ['--expected-version', expectedVersion]),
-      zipPath,
-    ])
+    const releaseVerification = await spawn(
+      'pnpm',
+      [
+        'run',
+        'verify-release',
+        ...(expectedVersion === undefined
+          ? []
+          : ['--expected-version', expectedVersion]),
+        zipPath,
+      ],
+      { shell: isWin32() },
+    )
     if (releaseVerification.code !== 0) {
       logger.fail('Release signature, entitlements, or notarization failed.')
       abortScript(1)
@@ -180,14 +230,18 @@ export async function installReleaseBundle(
     errorOnExist: true,
     force: false,
   })
-  const verify = await spawn('pnpm', [
-    'run',
-    'verify-release',
-    ...(expectedVersion === undefined
-      ? []
-      : ['--expected-version', expectedVersion]),
-    bundle,
-  ])
+  const verify = await spawn(
+    'pnpm',
+    [
+      'run',
+      'verify-release',
+      ...(expectedVersion === undefined
+        ? []
+        : ['--expected-version', expectedVersion]),
+      bundle,
+    ],
+    { shell: isWin32() },
+  )
   if (verify.code !== 0) {
     await safeDelete(installation)
     logger.fail('Installed application failed release verification.')
@@ -207,25 +261,14 @@ export async function installReleaseBundle(
 }
 
 export async function main(): Promise<number> {
-  const args = getScriptArgs()
-  const releaseIdx = args.indexOf('--release')
-  const releaseTag = releaseIdx >= 0 ? args[releaseIdx + 1] : undefined
-
-  if (args.length > 0 && releaseIdx < 0) {
-    throw new Error(
-      `Setup argument rejected at ${args[0]}; expected --release <tag>. Install a Developer ID release artifact.`,
-    )
+  const options = parseSetupSockeyeOptions(getScriptArgs())
+  if ('bundlePath' in options) {
+    await installReleaseBundle(options.bundlePath, {
+      expectedVersion: options.expectedVersion,
+    })
+    return 0
   }
-  if (releaseIdx >= 0 && releaseTag === undefined) {
-    throw new Error(
-      'Release tag missing after --release; expected a published Sockeye tag.',
-    )
-  }
-  if (releaseTag) {
-    await installFromRelease(releaseTag)
-  } else {
-    await installFromRelease('latest')
-  }
+  await installFromRelease(options.releaseTag)
   return 0
 }
 
@@ -235,6 +278,7 @@ const SCRIPT_META: ScriptMeta = {
   help: `Usage: node scripts/repo/setup-sockeye.mts [options]
 
   --release <tag>    download, verify, and install from a GitHub release
+  --app-bundle <path> install a verified local .app bundle
   (no flags)         install from the latest release
 
 The binary installs to ~/.socket/bin/sockeye. The quarantine attribute is

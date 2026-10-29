@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util'
 
 import { errorMessage } from '@socketsecurity/lib-stable/errors/message'
 import { isPlainObject } from '@socketsecurity/lib-stable/objects/predicates'
+import { isWin32 } from '@socketsecurity/lib-stable/constants/platform'
 import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
 import { isMainModule } from '../fleet/process/is-main-module.mts'
@@ -41,22 +42,26 @@ export function parseJsonObject(
     value = JSON.parse(stdout)
   } catch {
     throw new Error(
-      `GitHub ${action} failed; expected JSON metadata. Run pnpm run gh:auth and retry.`,
+      `GitHub ${action} failed; expected JSON metadata. Run \`pnpm gh login\` and retry.`,
     )
   }
   if (!isPlainObject(value)) {
     throw new Error(
-      `GitHub ${action} failed; expected one metadata object. Run pnpm run gh:auth and retry.`,
+      `GitHub ${action} failed; expected one metadata object. Run \`pnpm gh login\` and retry.`,
     )
   }
   return value
 }
 
 export async function runGh(args: string[]): Promise<string> {
-  const result = await spawn('gh', args, { cwd: REPO_ROOT, stdio: 'pipe' })
+  const result = await spawn('pnpm', ['gh', ...args], {
+    cwd: REPO_ROOT,
+    shell: isWin32(),
+    stdio: 'pipe',
+  })
   if (result.code !== 0) {
     throw new Error(
-      `GitHub command failed during ${args.slice(0, 2).join(' ')}. Run pnpm run gh:auth and retry.`,
+      `GitHub command failed during ${args.slice(0, 2).join(' ')}. Run \`pnpm gh login\` and retry.`,
     )
   }
   return result.stdout ?? ''
@@ -181,7 +186,7 @@ export async function main(): Promise<ScriptResult> {
   const repository = repositoryMetadata['nameWithOwner']
   if (!isPlainObject(defaultBranch) || typeof repository !== 'string') {
     throw new Error(
-      'GitHub repository lookup failed; expected a repository name and default branch. Run pnpm run gh:auth and retry.',
+      'GitHub repository lookup failed; expected a repository name and default branch. Run `pnpm gh login` and retry.',
     )
   }
   const branch = values['ref'] ?? defaultBranch['name']

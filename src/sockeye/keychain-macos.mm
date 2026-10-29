@@ -464,6 +464,16 @@ KeychainStatus ReplaceCredential(AuthorizationContext &context,
                "Credential replacement failed: binding is invalid.");
       return error.status;
     }
+    query[(__bridge id)kSecAttrGeneric] = PolicyMarkerData();
+    KeychainError policy_error;
+    SecAccessControlRef required_access =
+        CreateRequiredAccessControl(policy_error);
+    if (required_access == nullptr) {
+      SetError(error, KeychainStatus::kIo, policy_error.os_status,
+               "Credential replacement failed: required access policy is unavailable.");
+      return error.status;
+    }
+    query[(__bridge id)kSecAttrAccessControl] = (__bridge id)required_access;
     query[(__bridge id)kSecUseAuthenticationContext] =
         context.impl_->context;
     NSData *secret =
@@ -474,6 +484,7 @@ KeychainStatus ReplaceCredential(AuthorizationContext &context,
     const OSStatus status =
         SecItemUpdate((__bridge CFDictionaryRef)query,
                       (__bridge CFDictionaryRef)updates);
+    CFRelease(required_access);
     if (status != errSecSuccess) {
       SetOsError(error, status, "Credential replacement");
       return error.status;

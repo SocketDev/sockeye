@@ -218,8 +218,16 @@ int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
     return kUsageExit;
   }
 
+  SecretBuffer value;
+  std::string input_error;
+  if (!ReadSecretFromPipe(STDIN_FILENO, value, input_error)) {
+    std::fprintf(stderr, "%s\n", input_error.c_str());
+    return kUsageExit;
+  }
+
   std::string terminal_error;
   if (!HasForegroundTerminal(terminal_error)) {
+    value.Clear();
     std::fprintf(stderr, "%s\n", terminal_error.c_str());
     return kDeniedExit;
   }
@@ -229,16 +237,9 @@ int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
   const std::string reason =
       "Allow pnpm to use " + std::string(identifier) + "?";
   if (!context.Authenticate(reason, error)) {
+    value.Clear();
     PrintKeychainError(error);
     return ExitForKeychain(error);
-  }
-
-  SecretBuffer value;
-  std::string input_error;
-  if (!ReadSecretFromPipe(STDIN_FILENO, value, input_error)) {
-    context.Invalidate();
-    std::fprintf(stderr, "%s\n", input_error.c_str());
-    return kUsageExit;
   }
   const int result =
       StoreAndVerifyCredential(context, binding_id, value, error, true);

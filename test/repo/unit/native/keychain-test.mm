@@ -187,6 +187,10 @@ void CheckCredentialWrites() {
   assert([keychain_state.last_query[(__bridge id)kSecAttrAccount]
       isEqual:@"binding:v1:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"]);
   assert(keychain_state.last_query[(__bridge id)kSecUseAuthenticationContext] != nil);
+  assert([keychain_state.last_query[(__bridge id)kSecAttrGeneric]
+      isEqual:[@"sockeye:v1:biometry-current-set" dataUsingEncoding:NSUTF8StringEncoding]]);
+  assert([keychain_state.last_query[(__bridge id)kSecAttrAccessControl]
+      isEqual:KeychainPolicyFixture()]);
   assert([keychain_state.last_item[(__bridge id)kSecValueData] length] ==
          sizeof(kValue) - 1);
   assert(keychain_state.last_item[(__bridge id)kSecAttrAccessControl] == nil);
@@ -195,6 +199,10 @@ void CheckCredentialWrites() {
   keychain_state.update_status = errSecAuthFailed;
   assert(sockeye::ReplaceCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
   keychain_state.policy_failure = true;
+  keychain_state.update_status = errSecSuccess;
+  const int updates_before_policy_failure = keychain_state.updates;
+  assert(sockeye::ReplaceCredential(context, kIdentifier, value, error) == KeychainStatus::kIo);
+  assert(keychain_state.updates == updates_before_policy_failure);
   for (bool with_error : {false, true}) {
     keychain_state.policy_error_object = with_error;
     assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kIo);
