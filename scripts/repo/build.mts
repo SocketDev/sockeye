@@ -19,6 +19,7 @@ import { runMain } from '../fleet/process/main/run.mts'
 import type { ScriptMeta } from '../fleet/process/main/run.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
 import { ensureNativeCoverageToolchain } from './native-toolchain.mts'
+import { resolveMacosSdkPath } from './paths/macos-sdk.mts'
 import {
   getBinaryPath,
   getBuildMode,
@@ -38,6 +39,11 @@ export const SCRIPT_META: ScriptMeta = {
 
 const logger = getScriptLogger()
 
+interface BuildToolchain {
+  readonly compilerArgs: string[]
+  readonly sdk: string
+}
+
 async function run(command: string, args: string[]): Promise<void> {
   const result = await spawn(command, args, {
     cwd: REPO_ROOT,
@@ -45,6 +51,22 @@ async function run(command: string, args: string[]): Promise<void> {
   })
   if (result.code !== 0) {
     throw new Error(`${command} failed with exit code ${result.code}`)
+  }
+}
+
+async function getBuildToolchain(mode: string): Promise<BuildToolchain> {
+  if (mode !== 'coverage') {
+    return { compilerArgs: [], sdk: await resolveMacosSdkPath() }
+  }
+  const toolchain = await ensureNativeCoverageToolchain()
+  return {
+    compilerArgs: [
+      '--fresh',
+      `-DCMAKE_CXX_COMPILER=${toolchain.clangxx}`,
+      `-DCMAKE_OBJCXX_COMPILER=${toolchain.clangxx}`,
+      `-DFLEET_LLVM_COVERAGE_VERSION=${toolchain.version}`,
+    ],
+    sdk: toolchain.sdk,
   }
 }
 
@@ -72,29 +94,20 @@ export async function buildSockeye(): Promise<void> {
   const version = getEnvValue('RELEASE_VERSION') ?? packageJson.version
   const buildType = mode === 'prod' ? 'Release' : 'Debug'
   const architecture = targetArch === 'arm64' ? 'arm64' : 'x86_64'
-  const toolchain =
-    mode === 'coverage' ? await ensureNativeCoverageToolchain() : undefined
-  const compilerArgs = toolchain
-    ? [
-        '--fresh',
-        `-DCMAKE_CXX_COMPILER=${toolchain.clangxx}`,
-        `-DCMAKE_OBJCXX_COMPILER=${toolchain.clangxx}`,
-        `-DCMAKE_OSX_SYSROOT=${toolchain.sdk}`,
-        `-DFLEET_LLVM_COVERAGE_VERSION=${toolchain.version}`,
-      ]
-    : []
+  const toolchain = await getBuildToolchain(mode)
 
   mkdirSync(cmakeBuildDir, { recursive: true })
   mkdirSync(outputDir, { recursive: true })
   logger.info(`Building Sockeye ${version} (${mode}, ${platformArch})…`)
   await run('cmake', [
-    ...compilerArgs,
+    ...toolchain.compilerArgs,
     '-S',
     REPO_ROOT,
     '-B',
     cmakeBuildDir,
     `-DCMAKE_BUILD_TYPE=${buildType}`,
     '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
+    `-DCMAKE_OSX_SYSROOT=${toolchain.sdk}`,
     `-DCMAKE_OSX_ARCHITECTURES=${architecture}`,
     `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outputDir}`,
     `-DSOCKEYE_VERSION=${version}`,
