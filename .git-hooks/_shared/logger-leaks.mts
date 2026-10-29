@@ -11,10 +11,7 @@
 // regex had. Gate-free: imports only the vendored acorn (no Node-25 exit), so
 // either hook tree can use it.
 
-import {
-  findMemberCalls,
-  findMemberCallsForPatterns,
-} from '../../.claude/hooks/fleet/_shared/ast/calls.mts'
+import { findMemberCalls } from '../../.claude/hooks/fleet/_shared/ast/calls.mts'
 
 export interface LoggerLeak {
   // 1-based line of the call.
@@ -50,15 +47,17 @@ export const FORBIDDEN_LOGGER_CALLS: ReadonlyArray<{
 // each tree applies its own marker semantics.
 export function findLoggerLeaks(source: string): LoggerLeak[] {
   const leaks: LoggerLeak[] = []
-  const matches = findMemberCallsForPatterns(source, FORBIDDEN_LOGGER_CALLS)
-  for (const match of matches) {
-    const spec = FORBIDDEN_LOGGER_CALLS[match.patternIndex]!
-    leaks.push({
-      line: match.line,
-      text: match.text,
-      fullCall: `${spec.object}.${spec.property}`,
-      replacement: spec.replacement,
-    })
+  for (let i = 0, { length } = FORBIDDEN_LOGGER_CALLS; i < length; i += 1) {
+    const spec = FORBIDDEN_LOGGER_CALLS[i]!
+    const matches = findMemberCalls(source, spec.object, spec.property)
+    for (const match of matches) {
+      leaks.push({
+        line: match.line,
+        text: match.text,
+        fullCall: `${spec.object}.${spec.property}`,
+        replacement: spec.replacement,
+      })
+    }
   }
   return leaks
 }
