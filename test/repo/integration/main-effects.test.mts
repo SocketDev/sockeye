@@ -152,7 +152,7 @@ test('request ID lookup has no authorization or launch effects', () => {
     env: { ...process.env, SOCKEYE_TEST_SCENARIO: 'success' },
   })
   expect(result.status, result.stderr).toBe(0)
-  expect(result.stdout).toBe('mock request details\n')
+  expect(result.stdout).toBe('mock request details')
   expect(
     [...result.stderr.matchAll(/^effect:(\w+)$/gm)].map(match => match[1]),
   ).toEqual(['lookup'])

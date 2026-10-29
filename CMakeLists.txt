@@ -159,6 +159,7 @@ if(BUILD_TESTING)
   add_executable(sockeye-request-record-test
     src/sockeye/file-identity.cc
     src/sockeye/request-record.cc
+    src/sockeye/secret-buffer.cc
     test/repo/unit/native/request-record-test.cc
   )
   target_include_directories(sockeye-request-record-test PRIVATE src)
