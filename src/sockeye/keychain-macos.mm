@@ -218,7 +218,7 @@ struct AuthorizationContext::Impl {
 
 AuthorizationContext::AuthorizationContext() : impl_(std::make_unique<Impl>()) {
   impl_->context.touchIDAuthenticationAllowableReuseDuration = 0.0;
-  impl_->context.localizedCancelTitle = @"Cancel Sockeye request";
+  impl_->context.localizedCancelTitle = @"Cancel";
   impl_->context.localizedFallbackTitle = @"";
 }
 
