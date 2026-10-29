@@ -1,7 +1,9 @@
-// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside the full Node build; a blind split cannot be compile-verified in isolation.
+// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside
+// the full Node build; a blind split cannot be compile-verified in isolation.
 // node:smol-tui V8 binding glue.
 //
-// Five surfaces exposed to JS, all routed through `internalBinding('smol_tui')`:
+// Five surfaces exposed to JS, all routed through
+// `internalBinding('smol_tui')`:
 //
 //   1. ANSI emit       — constants + cold-path `std::string` builders +
 //                        hot-path Uint8Array writers (cursor, fg/bg RGB,
@@ -100,11 +102,11 @@
 
 #include "node.h"
 #include "node_binding.h"
-#include "node_external_reference.h"
 #include "node_debug.h"
+#include "node_external_reference.h"
 #include "util-inl.h"
-#include "v8.h"
 #include "v8-fast-api-calls.h"
+#include "v8.h"
 
 #include <array>
 #include <cstring>
@@ -136,9 +138,9 @@ using v8::Null;
 using v8::Number;
 using v8::Object;
 using v8::String;
-using v8::Uint8Array;
 using v8::Uint16Array;
 using v8::Uint32Array;
+using v8::Uint8Array;
 using v8::Value;
 
 namespace ti = ::tui;
@@ -160,29 +162,27 @@ namespace ti = ::tui;
 //                #h2-Character-Attributes (SGR)
 
 static Local<String> NewOneByteString(Isolate* isolate, const char* literal) {
-  return String::NewFromOneByte(isolate,
-                                reinterpret_cast<const uint8_t*>(literal),
-                                NewStringType::kNormal,
-                                static_cast<int>(std::strlen(literal)))
+  return String::NewFromOneByte(
+             isolate, reinterpret_cast<const uint8_t*>(literal),
+             NewStringType::kNormal, static_cast<int>(std::strlen(literal)))
       .ToLocalChecked();
 }
 
 static void CursorPosition(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
-  uint16_t row = static_cast<uint16_t>(
-      args[0]->Uint32Value(context).FromMaybe(0));
-  uint16_t col = static_cast<uint16_t>(
-      args[1]->Uint32Value(context).FromMaybe(0));
+  uint16_t row =
+      static_cast<uint16_t>(args[0]->Uint32Value(context).FromMaybe(0));
+  uint16_t col =
+      static_cast<uint16_t>(args[1]->Uint32Value(context).FromMaybe(0));
   // ANSI escape sequences are always pure ASCII (digits + brackets +
   // semicolons + final letter). Skip V8's NewFromUtf8 high-bit scan
   // by emitting via NewFromOneByte directly.
   std::string seq = ti::CursorPosition(row, col);
   args.GetReturnValue().Set(
-      String::NewFromOneByte(isolate,
-                             reinterpret_cast<const uint8_t*>(seq.data()),
-                             NewStringType::kNormal,
-                             static_cast<int>(seq.size()))
+      String::NewFromOneByte(
+          isolate, reinterpret_cast<const uint8_t*>(seq.data()),
+          NewStringType::kNormal, static_cast<int>(seq.size()))
           .ToLocalChecked());
 }
 
@@ -194,10 +194,9 @@ static void SetFgRgb(const FunctionCallbackInfo<Value>& args) {
   uint8_t b = static_cast<uint8_t>(args[2]->Uint32Value(context).FromMaybe(0));
   std::string seq = ti::SetFgRgb(r, g, b);
   args.GetReturnValue().Set(
-      String::NewFromOneByte(isolate,
-                             reinterpret_cast<const uint8_t*>(seq.data()),
-                             NewStringType::kNormal,
-                             static_cast<int>(seq.size()))
+      String::NewFromOneByte(
+          isolate, reinterpret_cast<const uint8_t*>(seq.data()),
+          NewStringType::kNormal, static_cast<int>(seq.size()))
           .ToLocalChecked());
 }
 
@@ -209,10 +208,9 @@ static void SetBgRgb(const FunctionCallbackInfo<Value>& args) {
   uint8_t b = static_cast<uint8_t>(args[2]->Uint32Value(context).FromMaybe(0));
   std::string seq = ti::SetBgRgb(r, g, b);
   args.GetReturnValue().Set(
-      String::NewFromOneByte(isolate,
-                             reinterpret_cast<const uint8_t*>(seq.data()),
-                             NewStringType::kNormal,
-                             static_cast<int>(seq.size()))
+      String::NewFromOneByte(
+          isolate, reinterpret_cast<const uint8_t*>(seq.data()),
+          NewStringType::kNormal, static_cast<int>(seq.size()))
           .ToLocalChecked());
 }
 
@@ -250,10 +248,10 @@ static void WriteCursorPosition(const FunctionCallbackInfo<Value>& args) {
   }
   Local<Uint8Array> arr = args[0].As<Uint8Array>();
   uint32_t offset = args[1]->Uint32Value(context).FromMaybe(0);
-  uint16_t row = static_cast<uint16_t>(
-      args[2]->Uint32Value(context).FromMaybe(0));
-  uint16_t col = static_cast<uint16_t>(
-      args[3]->Uint32Value(context).FromMaybe(0));
+  uint16_t row =
+      static_cast<uint16_t>(args[2]->Uint32Value(context).FromMaybe(0));
+  uint16_t col =
+      static_cast<uint16_t>(args[3]->Uint32Value(context).FromMaybe(0));
   char* dst = Uint8ArrayDataAt(arr, offset, ti::kMaxCursorPositionLen);
   if (!dst) {
     args.GetReturnValue().Set(Integer::New(isolate, 0));
@@ -267,11 +265,8 @@ static void WriteCursorPosition(const FunctionCallbackInfo<Value>& args) {
 // (Uint8Array + ints monomorphic). Inlines the ANSI emit straight
 // into the JIT'd renderer flush loop — ~3-4 instructions per call
 // after register allocation, vs the dozen+ for the trampoline path.
-uint32_t FastWriteCursorPosition(Local<Value> receiver,
-                                 Local<Value> buffer_val,
-                                 uint32_t offset,
-                                 uint32_t row,
-                                 uint32_t col,
+uint32_t FastWriteCursorPosition(Local<Value> receiver, Local<Value> buffer_val,
+                                 uint32_t offset, uint32_t row, uint32_t col,
                                  // NOLINTNEXTLINE(runtime/references)
                                  FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.writeCursorPosition");
@@ -282,15 +277,14 @@ uint32_t FastWriteCursorPosition(Local<Value> receiver,
       buf.length() - offset < ti::kMaxCursorPositionLen) {
     return 0;
   }
-  char* dst = reinterpret_cast<char*>(
-      const_cast<uint8_t*>(buf.data())) + offset;
-  return static_cast<uint32_t>(
-      ti::WriteCursorPosition(dst, static_cast<uint16_t>(row),
-                              static_cast<uint16_t>(col)));
+  char* dst =
+      reinterpret_cast<char*>(const_cast<uint8_t*>(buf.data())) + offset;
+  return static_cast<uint32_t>(ti::WriteCursorPosition(
+      dst, static_cast<uint16_t>(row), static_cast<uint16_t>(col)));
 }
 
-static CFunction fast_write_cursor_position(
-    CFunction::Make(FastWriteCursorPosition));
+static CFunction
+    fast_write_cursor_position(CFunction::Make(FastWriteCursorPosition));
 
 static void WriteFgRgb(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -313,26 +307,21 @@ static void WriteFgRgb(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Integer::New(isolate, static_cast<int32_t>(n)));
 }
 
-uint32_t FastWriteFgRgb(Local<Value> receiver,
-                        Local<Value> buffer_val,
-                        uint32_t offset,
-                        uint32_t r,
-                        uint32_t g,
-                        uint32_t b,
+uint32_t FastWriteFgRgb(Local<Value> receiver, Local<Value> buffer_val,
+                        uint32_t offset, uint32_t r, uint32_t g, uint32_t b,
                         // NOLINTNEXTLINE(runtime/references)
                         FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.writeFgRgb");
   HandleScope scope(opts.isolate);
   ArrayBufferViewContents<uint8_t> buf(buffer_val);
-  if (offset > buf.length() ||
-      buf.length() - offset < ti::kMaxRgbSgrLen) {
+  if (offset > buf.length() || buf.length() - offset < ti::kMaxRgbSgrLen) {
     return 0;
   }
-  char* dst = reinterpret_cast<char*>(
-      const_cast<uint8_t*>(buf.data())) + offset;
-  return static_cast<uint32_t>(
-      ti::WriteFgRgb(dst, static_cast<uint8_t>(r),
-                     static_cast<uint8_t>(g), static_cast<uint8_t>(b)));
+  char* dst =
+      reinterpret_cast<char*>(const_cast<uint8_t*>(buf.data())) + offset;
+  return static_cast<uint32_t>(ti::WriteFgRgb(dst, static_cast<uint8_t>(r),
+                                              static_cast<uint8_t>(g),
+                                              static_cast<uint8_t>(b)));
 }
 
 static CFunction fast_write_fg_rgb(CFunction::Make(FastWriteFgRgb));
@@ -358,26 +347,21 @@ static void WriteBgRgb(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Integer::New(isolate, static_cast<int32_t>(n)));
 }
 
-uint32_t FastWriteBgRgb(Local<Value> receiver,
-                        Local<Value> buffer_val,
-                        uint32_t offset,
-                        uint32_t r,
-                        uint32_t g,
-                        uint32_t b,
+uint32_t FastWriteBgRgb(Local<Value> receiver, Local<Value> buffer_val,
+                        uint32_t offset, uint32_t r, uint32_t g, uint32_t b,
                         // NOLINTNEXTLINE(runtime/references)
                         FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.writeBgRgb");
   HandleScope scope(opts.isolate);
   ArrayBufferViewContents<uint8_t> buf(buffer_val);
-  if (offset > buf.length() ||
-      buf.length() - offset < ti::kMaxRgbSgrLen) {
+  if (offset > buf.length() || buf.length() - offset < ti::kMaxRgbSgrLen) {
     return 0;
   }
-  char* dst = reinterpret_cast<char*>(
-      const_cast<uint8_t*>(buf.data())) + offset;
-  return static_cast<uint32_t>(
-      ti::WriteBgRgb(dst, static_cast<uint8_t>(r),
-                     static_cast<uint8_t>(g), static_cast<uint8_t>(b)));
+  char* dst =
+      reinterpret_cast<char*>(const_cast<uint8_t*>(buf.data())) + offset;
+  return static_cast<uint32_t>(ti::WriteBgRgb(dst, static_cast<uint8_t>(r),
+                                              static_cast<uint8_t>(g),
+                                              static_cast<uint8_t>(b)));
 }
 
 static CFunction fast_write_bg_rgb(CFunction::Make(FastWriteBgRgb));
@@ -391,8 +375,8 @@ static void WriteAttributes(const FunctionCallbackInfo<Value>& args) {
   }
   Local<Uint8Array> arr = args[0].As<Uint8Array>();
   uint32_t offset = args[1]->Uint32Value(context).FromMaybe(0);
-  uint8_t attrs = static_cast<uint8_t>(
-      args[2]->Uint32Value(context).FromMaybe(0));
+  uint8_t attrs =
+      static_cast<uint8_t>(args[2]->Uint32Value(context).FromMaybe(0));
   char* dst = Uint8ArrayDataAt(arr, offset, ti::kMaxAttrRunLen);
   if (!dst) {
     args.GetReturnValue().Set(Integer::New(isolate, 0));
@@ -402,21 +386,18 @@ static void WriteAttributes(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Integer::New(isolate, static_cast<int32_t>(n)));
 }
 
-uint32_t FastWriteAttributes(Local<Value> receiver,
-                             Local<Value> buffer_val,
-                             uint32_t offset,
-                             uint32_t attrs,
+uint32_t FastWriteAttributes(Local<Value> receiver, Local<Value> buffer_val,
+                             uint32_t offset, uint32_t attrs,
                              // NOLINTNEXTLINE(runtime/references)
                              FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.writeAttributes");
   HandleScope scope(opts.isolate);
   ArrayBufferViewContents<uint8_t> buf(buffer_val);
-  if (offset > buf.length() ||
-      buf.length() - offset < ti::kMaxAttrRunLen) {
+  if (offset > buf.length() || buf.length() - offset < ti::kMaxAttrRunLen) {
     return 0;
   }
-  char* dst = reinterpret_cast<char*>(
-      const_cast<uint8_t*>(buf.data())) + offset;
+  char* dst =
+      reinterpret_cast<char*>(const_cast<uint8_t*>(buf.data())) + offset;
   return static_cast<uint32_t>(
       ti::WriteAttributes(dst, static_cast<uint8_t>(attrs)));
 }
@@ -519,9 +500,9 @@ static Local<Object> EventToObject(Isolate* isolate, Local<Context> context,
            Boolean::New(isolate, event.modifiers.ctrl))
       .Check();
   if (event.scroll != nullptr) {
-    obj->Set(context, NewOneByteString(isolate, "scrollDirection"),
-             Integer::New(isolate,
-                          static_cast<int32_t>(event.scroll->direction)))
+    obj->Set(
+           context, NewOneByteString(isolate, "scrollDirection"),
+           Integer::New(isolate, static_cast<int32_t>(event.scroll->direction)))
         .Check();
     obj->Set(context, NewOneByteString(isolate, "scrollDelta"),
              Integer::New(isolate, event.scroll->delta))
@@ -562,14 +543,12 @@ static void ParseMouseOne(const FunctionCallbackInfo<Value>& args) {
   Local<Object> result = Object::New(isolate);
   result
       ->Set(context, NewOneByteString(isolate, "consumed"),
-            Integer::NewFromUnsigned(
-                isolate, static_cast<uint32_t>(consumed)))
+            Integer::NewFromUnsigned(isolate, static_cast<uint32_t>(consumed)))
       .Check();
   Local<Value> event_value =
       ok ? EventToObject(isolate, context, it->second->Event()).As<Value>()
          : Null(isolate).As<Value>();
-  result->Set(context, NewOneByteString(isolate, "event"), event_value)
-      .Check();
+  result->Set(context, NewOneByteString(isolate, "event"), event_value).Check();
   args.GetReturnValue().Set(result);
 }
 
@@ -594,8 +573,7 @@ static void LooksLikeMouseSequence(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Boolean::New(isolate, match));
 }
 
-bool FastLooksLikeMouseSequence(Local<Value> receiver,
-                                Local<Value> buffer_val,
+bool FastLooksLikeMouseSequence(Local<Value> receiver, Local<Value> buffer_val,
                                 uint32_t offset,
                                 // NOLINTNEXTLINE(runtime/references)
                                 FastApiCallbackOptions& opts) {
@@ -605,12 +583,11 @@ bool FastLooksLikeMouseSequence(Local<Value> receiver,
   if (offset >= buf.length()) {
     return false;
   }
-  return ti::LooksLikeMouseSequence(buf.data() + offset,
-                                    buf.length() - offset);
+  return ti::LooksLikeMouseSequence(buf.data() + offset, buf.length() - offset);
 }
 
-static CFunction fast_looks_like_mouse_sequence(
-    CFunction::Make(FastLooksLikeMouseSequence));
+static CFunction
+    fast_looks_like_mouse_sequence(CFunction::Make(FastLooksLikeMouseSequence));
 
 // ─── Section 4: Renderer / Cell buffer ────────────────────────────────
 //
@@ -722,8 +699,8 @@ void FastRendererInvalidate(Local<Value> receiver, uint32_t id,
   }
 }
 
-static CFunction fast_renderer_invalidate(
-    CFunction::Make(FastRendererInvalidate));
+static CFunction
+    fast_renderer_invalidate(CFunction::Make(FastRendererInvalidate));
 
 // Helper: build a ti::Cell from args[start..start+7]
 //   codepoint, fgR, fgG, fgB, bgR, bgG, bgB, attrs
@@ -732,20 +709,20 @@ static ti::Cell CellFromArgs(Local<Context> context,
                              int start) {
   ti::Cell c;
   c.codepoint = args[start]->Uint32Value(context).FromMaybe(U' ');
-  c.fg_r = static_cast<uint8_t>(
-      args[start + 1]->Uint32Value(context).FromMaybe(0));
-  c.fg_g = static_cast<uint8_t>(
-      args[start + 2]->Uint32Value(context).FromMaybe(0));
-  c.fg_b = static_cast<uint8_t>(
-      args[start + 3]->Uint32Value(context).FromMaybe(0));
-  c.bg_r = static_cast<uint8_t>(
-      args[start + 4]->Uint32Value(context).FromMaybe(0));
-  c.bg_g = static_cast<uint8_t>(
-      args[start + 5]->Uint32Value(context).FromMaybe(0));
-  c.bg_b = static_cast<uint8_t>(
-      args[start + 6]->Uint32Value(context).FromMaybe(0));
-  c.attrs = static_cast<uint8_t>(
-      args[start + 7]->Uint32Value(context).FromMaybe(0));
+  c.fg_r =
+      static_cast<uint8_t>(args[start + 1]->Uint32Value(context).FromMaybe(0));
+  c.fg_g =
+      static_cast<uint8_t>(args[start + 2]->Uint32Value(context).FromMaybe(0));
+  c.fg_b =
+      static_cast<uint8_t>(args[start + 3]->Uint32Value(context).FromMaybe(0));
+  c.bg_r =
+      static_cast<uint8_t>(args[start + 4]->Uint32Value(context).FromMaybe(0));
+  c.bg_g =
+      static_cast<uint8_t>(args[start + 5]->Uint32Value(context).FromMaybe(0));
+  c.bg_b =
+      static_cast<uint8_t>(args[start + 6]->Uint32Value(context).FromMaybe(0));
+  c.attrs =
+      static_cast<uint8_t>(args[start + 7]->Uint32Value(context).FromMaybe(0));
   return c;
 }
 
@@ -772,12 +749,14 @@ void FastRendererClear(Local<Value> receiver, uint32_t id, uint32_t codepoint,
   if (renderer == nullptr) {
     return;
   }
-  ti::Cell cell{
-      codepoint,
-      static_cast<uint8_t>(fg_r), static_cast<uint8_t>(fg_g),
-      static_cast<uint8_t>(fg_b), static_cast<uint8_t>(bg_r),
-      static_cast<uint8_t>(bg_g), static_cast<uint8_t>(bg_b),
-      static_cast<uint8_t>(attrs)};
+  ti::Cell cell{codepoint,
+                static_cast<uint8_t>(fg_r),
+                static_cast<uint8_t>(fg_g),
+                static_cast<uint8_t>(fg_b),
+                static_cast<uint8_t>(bg_r),
+                static_cast<uint8_t>(bg_g),
+                static_cast<uint8_t>(bg_b),
+                static_cast<uint8_t>(attrs)};
   renderer->Next().Clear(cell);
 }
 
@@ -797,10 +776,10 @@ static void RendererSet(const FunctionCallbackInfo<Value>& args) {
   renderer->Next().Set(x, y, CellFromArgs(context, args, 3));
 }
 
-void FastRendererSet(Local<Value> receiver, uint32_t id, uint32_t x,
-                     uint32_t y, uint32_t codepoint, uint32_t fg_r,
-                     uint32_t fg_g, uint32_t fg_b, uint32_t bg_r,
-                     uint32_t bg_g, uint32_t bg_b, uint32_t attrs,
+void FastRendererSet(Local<Value> receiver, uint32_t id, uint32_t x, uint32_t y,
+                     uint32_t codepoint, uint32_t fg_r, uint32_t fg_g,
+                     uint32_t fg_b, uint32_t bg_r, uint32_t bg_g, uint32_t bg_b,
+                     uint32_t attrs,
                      // NOLINTNEXTLINE(runtime/references)
                      FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.rendererSet");
@@ -808,12 +787,14 @@ void FastRendererSet(Local<Value> receiver, uint32_t id, uint32_t x,
   if (renderer == nullptr) {
     return;
   }
-  ti::Cell cell{
-      codepoint,
-      static_cast<uint8_t>(fg_r), static_cast<uint8_t>(fg_g),
-      static_cast<uint8_t>(fg_b), static_cast<uint8_t>(bg_r),
-      static_cast<uint8_t>(bg_g), static_cast<uint8_t>(bg_b),
-      static_cast<uint8_t>(attrs)};
+  ti::Cell cell{codepoint,
+                static_cast<uint8_t>(fg_r),
+                static_cast<uint8_t>(fg_g),
+                static_cast<uint8_t>(fg_b),
+                static_cast<uint8_t>(bg_r),
+                static_cast<uint8_t>(bg_g),
+                static_cast<uint8_t>(bg_b),
+                static_cast<uint8_t>(attrs)};
   renderer->Next().Set(x, y, cell);
 }
 
@@ -848,17 +829,18 @@ void FastRendererFillRect(Local<Value> receiver, uint32_t id, uint32_t x,
   if (renderer == nullptr) {
     return;
   }
-  ti::Cell cell{
-      codepoint,
-      static_cast<uint8_t>(fg_r), static_cast<uint8_t>(fg_g),
-      static_cast<uint8_t>(fg_b), static_cast<uint8_t>(bg_r),
-      static_cast<uint8_t>(bg_g), static_cast<uint8_t>(bg_b),
-      static_cast<uint8_t>(attrs)};
+  ti::Cell cell{codepoint,
+                static_cast<uint8_t>(fg_r),
+                static_cast<uint8_t>(fg_g),
+                static_cast<uint8_t>(fg_b),
+                static_cast<uint8_t>(bg_r),
+                static_cast<uint8_t>(bg_g),
+                static_cast<uint8_t>(bg_b),
+                static_cast<uint8_t>(attrs)};
   renderer->Next().FillRect(x, y, w, h, cell);
 }
 
-static CFunction fast_renderer_fill_rect(
-    CFunction::Make(FastRendererFillRect));
+static CFunction fast_renderer_fill_rect(CFunction::Make(FastRendererFillRect));
 
 // rendererDrawText(handle, x, y, utf8Bytes, fgR, fgG, fgB, bgR, bgG, bgB,
 //                  attrs)
@@ -872,14 +854,20 @@ static void RendererDrawText(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   Local<Uint8Array> arr = args[3].As<Uint8Array>();
-  uint8_t fg_r = static_cast<uint8_t>(args[4]->Uint32Value(context).FromMaybe(0));
-  uint8_t fg_g = static_cast<uint8_t>(args[5]->Uint32Value(context).FromMaybe(0));
-  uint8_t fg_b = static_cast<uint8_t>(args[6]->Uint32Value(context).FromMaybe(0));
-  uint8_t bg_r = static_cast<uint8_t>(args[7]->Uint32Value(context).FromMaybe(0));
-  uint8_t bg_g = static_cast<uint8_t>(args[8]->Uint32Value(context).FromMaybe(0));
-  uint8_t bg_b = static_cast<uint8_t>(args[9]->Uint32Value(context).FromMaybe(0));
-  uint8_t attrs = static_cast<uint8_t>(
-      args[10]->Uint32Value(context).FromMaybe(0));
+  uint8_t fg_r =
+      static_cast<uint8_t>(args[4]->Uint32Value(context).FromMaybe(0));
+  uint8_t fg_g =
+      static_cast<uint8_t>(args[5]->Uint32Value(context).FromMaybe(0));
+  uint8_t fg_b =
+      static_cast<uint8_t>(args[6]->Uint32Value(context).FromMaybe(0));
+  uint8_t bg_r =
+      static_cast<uint8_t>(args[7]->Uint32Value(context).FromMaybe(0));
+  uint8_t bg_g =
+      static_cast<uint8_t>(args[8]->Uint32Value(context).FromMaybe(0));
+  uint8_t bg_b =
+      static_cast<uint8_t>(args[9]->Uint32Value(context).FromMaybe(0));
+  uint8_t attrs =
+      static_cast<uint8_t>(args[10]->Uint32Value(context).FromMaybe(0));
   ti::Renderer* renderer = LookupRenderer(id);
   if (renderer == nullptr) {
     return;
@@ -905,18 +893,14 @@ void FastRendererDrawText(Local<Value> receiver, uint32_t id, uint32_t x,
     return;
   }
   const char* utf8 = reinterpret_cast<const char*>(buf.data());
-  renderer->Next().DrawText(x, y, utf8, buf.length(),
-                            static_cast<uint8_t>(fg_r),
-                            static_cast<uint8_t>(fg_g),
-                            static_cast<uint8_t>(fg_b),
-                            static_cast<uint8_t>(bg_r),
-                            static_cast<uint8_t>(bg_g),
-                            static_cast<uint8_t>(bg_b),
-                            static_cast<uint8_t>(attrs));
+  renderer->Next().DrawText(
+      x, y, utf8, buf.length(), static_cast<uint8_t>(fg_r),
+      static_cast<uint8_t>(fg_g), static_cast<uint8_t>(fg_b),
+      static_cast<uint8_t>(bg_r), static_cast<uint8_t>(bg_g),
+      static_cast<uint8_t>(bg_b), static_cast<uint8_t>(attrs));
 }
 
-static CFunction fast_renderer_draw_text(
-    CFunction::Make(FastRendererDrawText));
+static CFunction fast_renderer_draw_text(CFunction::Make(FastRendererDrawText));
 
 // rendererFlush(handle, dstBuf, dstCapacity) -> bytesWritten (or
 // kFlushOverflow if dst was too small).
@@ -944,8 +928,7 @@ static void RendererFlush(const FunctionCallbackInfo<Value>& args) {
   // Use Number for the return so the kFlushOverflow sentinel (size_t -1)
   // survives intact — JS observes it as 2^53-1ish; the JS layer checks
   // against the same sentinel exposed in `sizes.flushOverflow`.
-  args.GetReturnValue().Set(
-      Number::New(isolate, static_cast<double>(written)));
+  args.GetReturnValue().Set(Number::New(isolate, static_cast<double>(written)));
 }
 
 // Fast path for the per-frame flush — the hottest call in the binding,
@@ -1018,27 +1001,26 @@ static void RendererDrawBox(const FunctionCallbackInfo<Value>& args) {
   }
   ti::BoxStyle style{};
   // Clamp style to known values; >= 4 falls back to kSingle.
-  style.style = style_idx <= 3
-                    ? static_cast<ti::BorderStyle>(style_idx)
-                    : ti::BorderStyle::kSingle;
+  style.style = style_idx <= 3 ? static_cast<ti::BorderStyle>(style_idx)
+                               : ti::BorderStyle::kSingle;
   style.sides.top = (sides_bits & 0x1) != 0;
   style.sides.right = (sides_bits & 0x2) != 0;
   style.sides.bottom = (sides_bits & 0x4) != 0;
   style.sides.left = (sides_bits & 0x8) != 0;
-  style.border_fg_r = static_cast<uint8_t>(
-      args[7]->Uint32Value(context).FromMaybe(255));
-  style.border_fg_g = static_cast<uint8_t>(
-      args[8]->Uint32Value(context).FromMaybe(255));
-  style.border_fg_b = static_cast<uint8_t>(
-      args[9]->Uint32Value(context).FromMaybe(255));
-  style.bg_r = static_cast<uint8_t>(
-      args[10]->Uint32Value(context).FromMaybe(0));
-  style.bg_g = static_cast<uint8_t>(
-      args[11]->Uint32Value(context).FromMaybe(0));
-  style.bg_b = static_cast<uint8_t>(
-      args[12]->Uint32Value(context).FromMaybe(0));
-  style.attrs = static_cast<uint8_t>(
-      args[13]->Uint32Value(context).FromMaybe(0));
+  style.border_fg_r =
+      static_cast<uint8_t>(args[7]->Uint32Value(context).FromMaybe(255));
+  style.border_fg_g =
+      static_cast<uint8_t>(args[8]->Uint32Value(context).FromMaybe(255));
+  style.border_fg_b =
+      static_cast<uint8_t>(args[9]->Uint32Value(context).FromMaybe(255));
+  style.bg_r =
+      static_cast<uint8_t>(args[10]->Uint32Value(context).FromMaybe(0));
+  style.bg_g =
+      static_cast<uint8_t>(args[11]->Uint32Value(context).FromMaybe(0));
+  style.bg_b =
+      static_cast<uint8_t>(args[12]->Uint32Value(context).FromMaybe(0));
+  style.attrs =
+      static_cast<uint8_t>(args[13]->Uint32Value(context).FromMaybe(0));
   style.fill_background = args[14]->BooleanValue(isolate);
   ti::DrawBox(renderer->Next(), x, y, w, h, style);
 }
@@ -1049,12 +1031,11 @@ static void RendererDrawBox(const FunctionCallbackInfo<Value>& args) {
 // = ~80ns per call. The Fast API form takes uint32_t directly and
 // runs at ~5ns per call.
 void FastRendererDrawBox(Local<Value> receiver, uint32_t id, uint32_t x,
-                         uint32_t y, uint32_t w, uint32_t h,
-                         uint32_t style_idx, uint32_t sides_bits,
-                         uint32_t border_fg_r, uint32_t border_fg_g,
-                         uint32_t border_fg_b, uint32_t bg_r, uint32_t bg_g,
-                         uint32_t bg_b, uint32_t attrs,
-                         bool fill_background,
+                         uint32_t y, uint32_t w, uint32_t h, uint32_t style_idx,
+                         uint32_t sides_bits, uint32_t border_fg_r,
+                         uint32_t border_fg_g, uint32_t border_fg_b,
+                         uint32_t bg_r, uint32_t bg_g, uint32_t bg_b,
+                         uint32_t attrs, bool fill_background,
                          // NOLINTNEXTLINE(runtime/references)
                          FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.rendererDrawBox");
@@ -1063,9 +1044,8 @@ void FastRendererDrawBox(Local<Value> receiver, uint32_t id, uint32_t x,
     return;
   }
   ti::BoxStyle style{};
-  style.style = style_idx <= 3
-                    ? static_cast<ti::BorderStyle>(style_idx)
-                    : ti::BorderStyle::kSingle;
+  style.style = style_idx <= 3 ? static_cast<ti::BorderStyle>(style_idx)
+                               : ti::BorderStyle::kSingle;
   style.sides.top = (sides_bits & 0x1) != 0;
   style.sides.right = (sides_bits & 0x2) != 0;
   style.sides.bottom = (sides_bits & 0x4) != 0;
@@ -1088,8 +1068,7 @@ static CFunction fast_renderer_draw_box(CFunction::Make(FastRendererDrawBox));
 //
 // maxWidth=0 means "wrap to buffer right edge". maxLines=0 means "no
 // limit".
-static void RendererDrawTextWrapped(
-    const FunctionCallbackInfo<Value>& args) {
+static void RendererDrawTextWrapped(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
@@ -1102,20 +1081,20 @@ static void RendererDrawTextWrapped(
     return;
   }
   Local<Uint8Array> arr = args[5].As<Uint8Array>();
-  uint8_t fg_r = static_cast<uint8_t>(
-      args[6]->Uint32Value(context).FromMaybe(255));
-  uint8_t fg_g = static_cast<uint8_t>(
-      args[7]->Uint32Value(context).FromMaybe(255));
-  uint8_t fg_b = static_cast<uint8_t>(
-      args[8]->Uint32Value(context).FromMaybe(255));
-  uint8_t bg_r = static_cast<uint8_t>(
-      args[9]->Uint32Value(context).FromMaybe(0));
-  uint8_t bg_g = static_cast<uint8_t>(
-      args[10]->Uint32Value(context).FromMaybe(0));
-  uint8_t bg_b = static_cast<uint8_t>(
-      args[11]->Uint32Value(context).FromMaybe(0));
-  uint8_t attrs = static_cast<uint8_t>(
-      args[12]->Uint32Value(context).FromMaybe(0));
+  uint8_t fg_r =
+      static_cast<uint8_t>(args[6]->Uint32Value(context).FromMaybe(255));
+  uint8_t fg_g =
+      static_cast<uint8_t>(args[7]->Uint32Value(context).FromMaybe(255));
+  uint8_t fg_b =
+      static_cast<uint8_t>(args[8]->Uint32Value(context).FromMaybe(255));
+  uint8_t bg_r =
+      static_cast<uint8_t>(args[9]->Uint32Value(context).FromMaybe(0));
+  uint8_t bg_g =
+      static_cast<uint8_t>(args[10]->Uint32Value(context).FromMaybe(0));
+  uint8_t bg_b =
+      static_cast<uint8_t>(args[11]->Uint32Value(context).FromMaybe(0));
+  uint8_t attrs =
+      static_cast<uint8_t>(args[12]->Uint32Value(context).FromMaybe(0));
   ti::Renderer* renderer = LookupRenderer(id);
   if (renderer == nullptr) {
     args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, 0));
@@ -1124,9 +1103,9 @@ static void RendererDrawTextWrapped(
   auto store = arr->Buffer()->GetBackingStore();
   const char* utf8 =
       static_cast<const char*>(store->Data()) + arr->ByteOffset();
-  uint32_t lines = ti::DrawTextWrapped(
-      renderer->Next(), x, y, max_width, max_lines, utf8, arr->ByteLength(),
-      fg_r, fg_g, fg_b, bg_r, bg_g, bg_b, attrs);
+  uint32_t lines = ti::DrawTextWrapped(renderer->Next(), x, y, max_width,
+                                       max_lines, utf8, arr->ByteLength(), fg_r,
+                                       fg_g, fg_b, bg_r, bg_g, bg_b, attrs);
   args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, lines));
 }
 
@@ -1135,8 +1114,8 @@ static void RendererDrawTextWrapped(
 // per-element per frame; the slow path's Local<Value>->Uint32Value
 // chain is the dominant per-call cost.
 uint32_t FastRendererDrawTextWrapped(Local<Value> receiver, uint32_t id,
-                                     uint32_t x, uint32_t y,
-                                     uint32_t max_width, uint32_t max_lines,
+                                     uint32_t x, uint32_t y, uint32_t max_width,
+                                     uint32_t max_lines,
                                      Local<Value> buffer_val, uint32_t fg_r,
                                      uint32_t fg_g, uint32_t fg_b,
                                      uint32_t bg_r, uint32_t bg_g,
@@ -1185,8 +1164,8 @@ static void StringWidthBinding(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   std::string buf(input_len, '\0');
-  input->WriteUtf8V2(isolate, buf.data(), input_len,
-                     String::WriteFlags::kNone, nullptr);
+  input->WriteUtf8V2(isolate, buf.data(), input_len, String::WriteFlags::kNone,
+                     nullptr);
   uint32_t width = ti::StringWidth(buf.data(), buf.size());
   args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, width));
 }
@@ -1250,8 +1229,8 @@ uint32_t FastStringWidthFromBytes(Local<Value> receiver,
                          buf.length());
 }
 
-static CFunction fast_string_width_from_bytes(
-    CFunction::Make(FastStringWidthFromBytes));
+static CFunction
+    fast_string_width_from_bytes(CFunction::Make(FastStringWidthFromBytes));
 
 // ─── Section 5: Yoga layout (flexbox) ─────────────────────────────────
 //
@@ -1398,8 +1377,7 @@ void FastYogaInsertChild(Local<Value> receiver, uint32_t parent_id,
   }
 }
 
-static CFunction fast_yoga_insert_child(
-    CFunction::Make(FastYogaInsertChild));
+static CFunction fast_yoga_insert_child(CFunction::Make(FastYogaInsertChild));
 
 static void YogaRemoveChild(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1425,8 +1403,7 @@ void FastYogaRemoveChild(Local<Value> receiver, uint32_t parent_id,
   }
 }
 
-static CFunction fast_yoga_remove_child(
-    CFunction::Make(FastYogaRemoveChild));
+static CFunction fast_yoga_remove_child(CFunction::Make(FastYogaRemoveChild));
 
 // yogaCalculateLayout(nodeId, availWidth, availHeight, ownerDirection)
 // availWidth/availHeight are floats; NaN means unconstrained.
@@ -1434,22 +1411,21 @@ static void YogaCalculateLayout(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
-  float avail_w = static_cast<float>(
-      args[1]->NumberValue(context).FromMaybe(YGUndefined));
-  float avail_h = static_cast<float>(
-      args[2]->NumberValue(context).FromMaybe(YGUndefined));
+  float avail_w =
+      static_cast<float>(args[1]->NumberValue(context).FromMaybe(YGUndefined));
+  float avail_h =
+      static_cast<float>(args[2]->NumberValue(context).FromMaybe(YGUndefined));
   int32_t dir = static_cast<int32_t>(
       args[3]->Int32Value(context).FromMaybe(YGDirectionLTR));
   YGNodeRef node = LookupYogaNode(id);
   if (node == nullptr) {
     return;
   }
-  YGNodeCalculateLayout(node, avail_w, avail_h,
-                        static_cast<YGDirection>(dir));
+  YGNodeCalculateLayout(node, avail_w, avail_h, static_cast<YGDirection>(dir));
 }
 
-void FastYogaCalculateLayout(Local<Value> receiver, uint32_t id,
-                             double avail_w, double avail_h, int32_t dir,
+void FastYogaCalculateLayout(Local<Value> receiver, uint32_t id, double avail_w,
+                             double avail_h, int32_t dir,
                              // NOLINTNEXTLINE(runtime/references)
                              FastApiCallbackOptions& opts) {
   TRACK_V8_FAST_API_CALL("smol_tui.yogaCalculateLayout");
@@ -1462,8 +1438,8 @@ void FastYogaCalculateLayout(Local<Value> receiver, uint32_t id,
                         static_cast<YGDirection>(dir));
 }
 
-static CFunction fast_yoga_calculate_layout(
-    CFunction::Make(FastYogaCalculateLayout));
+static CFunction
+    fast_yoga_calculate_layout(CFunction::Make(FastYogaCalculateLayout));
 
 static void YogaMarkDirty(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1536,8 +1512,8 @@ static void YogaSetWidth(const FunctionCallbackInfo<Value>& args) {
   if (node == nullptr) {
     return;
   }
-  float v = static_cast<float>(
-      args[1]->NumberValue(context).FromMaybe(YGUndefined));
+  float v =
+      static_cast<float>(args[1]->NumberValue(context).FromMaybe(YGUndefined));
   YGNodeStyleSetWidth(node, v);
 }
 
@@ -1560,8 +1536,8 @@ static void YogaSetHeight(const FunctionCallbackInfo<Value>& args) {
   if (node == nullptr) {
     return;
   }
-  float v = static_cast<float>(
-      args[1]->NumberValue(context).FromMaybe(YGUndefined));
+  float v =
+      static_cast<float>(args[1]->NumberValue(context).FromMaybe(YGUndefined));
   YGNodeStyleSetHeight(node, v);
 }
 
@@ -1598,8 +1574,8 @@ void FastYogaSetFlexDirection(Local<Value> receiver, uint32_t id, int32_t v,
   }
 }
 
-static CFunction fast_yoga_set_flex_direction(
-    CFunction::Make(FastYogaSetFlexDirection));
+static CFunction
+    fast_yoga_set_flex_direction(CFunction::Make(FastYogaSetFlexDirection));
 
 static void YogaSetJustifyContent(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1622,8 +1598,8 @@ void FastYogaSetJustifyContent(Local<Value> receiver, uint32_t id, int32_t v,
   }
 }
 
-static CFunction fast_yoga_set_justify_content(
-    CFunction::Make(FastYogaSetJustifyContent));
+static CFunction
+    fast_yoga_set_justify_content(CFunction::Make(FastYogaSetJustifyContent));
 
 static void YogaSetAlignItems(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1646,8 +1622,8 @@ void FastYogaSetAlignItems(Local<Value> receiver, uint32_t id, int32_t v,
   }
 }
 
-static CFunction fast_yoga_set_align_items(
-    CFunction::Make(FastYogaSetAlignItems));
+static CFunction
+    fast_yoga_set_align_items(CFunction::Make(FastYogaSetAlignItems));
 
 static void YogaSetAlignSelf(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1670,8 +1646,8 @@ void FastYogaSetAlignSelf(Local<Value> receiver, uint32_t id, int32_t v,
   }
 }
 
-static CFunction fast_yoga_set_align_self(
-    CFunction::Make(FastYogaSetAlignSelf));
+static CFunction
+    fast_yoga_set_align_self(CFunction::Make(FastYogaSetAlignSelf));
 
 static void YogaSetFlexWrap(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1740,8 +1716,8 @@ void FastYogaSetFlexShrink(Local<Value> receiver, uint32_t id, double v,
   }
 }
 
-static CFunction fast_yoga_set_flex_shrink(
-    CFunction::Make(FastYogaSetFlexShrink));
+static CFunction
+    fast_yoga_set_flex_shrink(CFunction::Make(FastYogaSetFlexShrink));
 
 static void YogaSetFlexBasis(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1750,8 +1726,8 @@ static void YogaSetFlexBasis(const FunctionCallbackInfo<Value>& args) {
   if (node == nullptr) {
     return;
   }
-  float v = static_cast<float>(
-      args[1]->NumberValue(context).FromMaybe(YGUndefined));
+  float v =
+      static_cast<float>(args[1]->NumberValue(context).FromMaybe(YGUndefined));
   YGNodeStyleSetFlexBasis(node, v);
 }
 
@@ -1765,8 +1741,8 @@ void FastYogaSetFlexBasis(Local<Value> receiver, uint32_t id, double v,
   }
 }
 
-static CFunction fast_yoga_set_flex_basis(
-    CFunction::Make(FastYogaSetFlexBasis));
+static CFunction
+    fast_yoga_set_flex_basis(CFunction::Make(FastYogaSetFlexBasis));
 
 // yogaSetMargin(nodeId, edge, value)
 static void YogaSetMargin(const FunctionCallbackInfo<Value>& args) {
@@ -1842,8 +1818,8 @@ void FastYogaSetPositionType(Local<Value> receiver, uint32_t id, int32_t v,
   }
 }
 
-static CFunction fast_yoga_set_position_type(
-    CFunction::Make(FastYogaSetPositionType));
+static CFunction
+    fast_yoga_set_position_type(CFunction::Make(FastYogaSetPositionType));
 
 // yogaSetPosition(nodeId, edge, value)
 static void YogaSetPosition(const FunctionCallbackInfo<Value>& args) {
@@ -1854,8 +1830,8 @@ static void YogaSetPosition(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   int32_t edge = args[1]->Int32Value(context).FromMaybe(0);
-  float v = static_cast<float>(
-      args[2]->NumberValue(context).FromMaybe(YGUndefined));
+  float v =
+      static_cast<float>(args[2]->NumberValue(context).FromMaybe(YGUndefined));
   YGNodeStyleSetPosition(node, static_cast<YGEdge>(edge), v);
 }
 
@@ -2030,8 +2006,8 @@ static void TextBufferSetTabWidth(const FunctionCallbackInfo<Value>& args) {
 // Read an optional RGBA quadruple from a JS Uint16Array(>=4). Any non-array
 // argument (null / undefined) reads as nullopt, which clears the default —
 // mirroring stuie cabi.rs:1039 read_optional_rgba (a null pointer -> None).
-static std::optional<std::array<uint16_t, 4>> ReadOptionalRgba(
-    Local<Value> value) {
+static std::optional<std::array<uint16_t, 4>>
+ReadOptionalRgba(Local<Value> value) {
   if (!value->IsUint16Array()) {
     return std::nullopt;
   }
@@ -2073,8 +2049,8 @@ static void TextBufferSetDefaultBg(const FunctionCallbackInfo<Value>& args) {
 // stuie cabi.rs:1116 -> text_buffer.rs:433 set_default_attributes(). A
 // Uint32Array(>=1) sets the bitset; any non-array argument clears it (null ->
 // None). Stale handle -> no-op.
-static void TextBufferSetDefaultAttributes(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferSetDefaultAttributes(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2132,8 +2108,8 @@ static const uint8_t* Uint8ArrayBytes(Local<Value> value, size_t* len) {
 // stuie cabi.rs:1136 -> text_buffer.rs:445 register_mem. A stale handle yields
 // the failure sentinel kMemRegisterFailed, matching the registry `with`
 // default. The `owned` FFI flag is inert (node-smol always copies the bytes).
-static void TextBufferRegisterMemBuffer(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferRegisterMemBuffer(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2152,8 +2128,8 @@ static void TextBufferRegisterMemBuffer(
 // textBufferReplaceMemBuffer(handle, memId, bytes) -> ok
 // stuie cabi.rs:1151 -> text_buffer.rs:449 replace_mem. memId is a u8 at the
 // FFI boundary (cabi.rs:1153 `mem_id: u8`); a stale handle -> false.
-static void TextBufferReplaceMemBuffer(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferReplaceMemBuffer(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2171,8 +2147,8 @@ static void TextBufferReplaceMemBuffer(
 
 // textBufferClearMemRegistry(handle)
 // stuie cabi.rs:1163 -> text_buffer.rs:453 clear_mem_registry; stale -> no-op.
-static void TextBufferClearMemRegistry(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferClearMemRegistry(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2249,8 +2225,7 @@ static void TextBufferLoadFile(const FunctionCallbackInfo<Value>& args) {
 // Copy up to `max_len` bytes from a readout into a caller-owned Uint8Array,
 // clamping `max_len` to the array's length (stuie's shim sizes the array to
 // max_len; the clamp is defensive). A stale handle or non-array out -> 0.
-static uint32_t WriteReadout(Local<Value> out_value,
-                             uint32_t max_len,
+static uint32_t WriteReadout(Local<Value> out_value, uint32_t max_len,
                              ti::TextBuffer* buffer,
                              uint32_t (ti::TextBuffer::*fn)(uint8_t*, uint32_t)
                                  const) {
@@ -2262,8 +2237,7 @@ static uint32_t WriteReadout(Local<Value> out_value,
     max_len = static_cast<uint32_t>(arr->ByteLength());
   }
   auto store = arr->Buffer()->GetBackingStore();
-  uint8_t* out =
-      static_cast<uint8_t*>(store->Data()) + arr->ByteOffset();
+  uint8_t* out = static_cast<uint8_t*>(store->Data()) + arr->ByteOffset();
   return (buffer->*fn)(out, max_len);
 }
 
@@ -2305,9 +2279,10 @@ static void TextBufferGetTextRange(const FunctionCallbackInfo<Value>& args) {
 
 // textBufferGetTextRangeByCoords(handle, sr, sc, er, ec, out, maxLen)
 //   -> bytesWritten
-// stuie cabi.rs:1241 -> text_buffer.rs:577 get_text_range_by_coords; stale -> 0.
-static void TextBufferGetTextRangeByCoords(
-    const FunctionCallbackInfo<Value>& args) {
+// stuie cabi.rs:1241 -> text_buffer.rs:577 get_text_range_by_coords; stale ->
+// 0.
+static void
+TextBufferGetTextRangeByCoords(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2325,8 +2300,8 @@ static void TextBufferGetTextRangeByCoords(
     }
     auto store = arr->Buffer()->GetBackingStore();
     uint8_t* out = static_cast<uint8_t*>(store->Data()) + arr->ByteOffset();
-    n = buffer->GetTextRangeByCoords(start_row, start_col, end_row, end_col, out,
-                                     max_len);
+    n = buffer->GetTextRangeByCoords(start_row, start_col, end_row, end_col,
+                                     out, max_len);
   }
   args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, n));
 }
@@ -2366,10 +2341,10 @@ static void TextBufferAddHighlight(const FunctionCallbackInfo<Value>& args) {
 }
 
 // textBufferAddHighlightByCharRange(handle, highlightBytes)
-// stuie cabi.rs:1269 -> text_buffer.rs:623 add_highlight_by_char_range; stale ->
-// no-op.
-static void TextBufferAddHighlightByCharRange(
-    const FunctionCallbackInfo<Value>& args) {
+// stuie cabi.rs:1269 -> text_buffer.rs:623 add_highlight_by_char_range; stale
+// -> no-op.
+static void
+TextBufferAddHighlightByCharRange(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2382,8 +2357,8 @@ static void TextBufferAddHighlightByCharRange(
 // textBufferRemoveHighlightsByRef(handle, hlRef)
 // stuie cabi.rs:1274 -> text_buffer.rs:666 remove_highlights_by_ref. hlRef is a
 // u16 at the FFI boundary; stale -> no-op.
-static void TextBufferRemoveHighlightsByRef(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferRemoveHighlightsByRef(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2395,9 +2370,10 @@ static void TextBufferRemoveHighlightsByRef(
 }
 
 // textBufferClearLineHighlights(handle, lineIdx)
-// stuie cabi.rs:1279 -> text_buffer.rs:672 clear_line_highlights; stale -> no-op.
-static void TextBufferClearLineHighlights(
-    const FunctionCallbackInfo<Value>& args) {
+// stuie cabi.rs:1279 -> text_buffer.rs:672 clear_line_highlights; stale ->
+// no-op.
+static void
+TextBufferClearLineHighlights(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2409,9 +2385,10 @@ static void TextBufferClearLineHighlights(
 }
 
 // textBufferClearAllHighlights(handle)
-// stuie cabi.rs:1284 -> text_buffer.rs:678 clear_all_highlights; stale -> no-op.
-static void TextBufferClearAllHighlights(
-    const FunctionCallbackInfo<Value>& args) {
+// stuie cabi.rs:1284 -> text_buffer.rs:678 clear_all_highlights; stale ->
+// no-op.
+static void
+TextBufferClearAllHighlights(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2423,8 +2400,8 @@ static void TextBufferClearAllHighlights(
 
 // textBufferGetHighlightCount(handle) -> count
 // stuie cabi.rs:1289 -> text_buffer.rs:682 get_highlight_count; stale -> 0.
-static void TextBufferGetHighlightCount(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferGetHighlightCount(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2445,12 +2422,12 @@ static void TextBufferSetSyntaxStyle(const FunctionCallbackInfo<Value>& args) {
 }
 
 // textBufferGetLineHighlightsPtr(handle, lineIdx, outCount) -> ptr
-// stuie cabi.rs:1306 -> text_buffer.rs:784 get_line_highlights. Writes the count
-// into outCount (a Uint32Array(>=1)) and returns the heap array's address as a
-// Number (0 when the line has none). The caller frees it via
+// stuie cabi.rs:1306 -> text_buffer.rs:784 get_line_highlights. Writes the
+// count into outCount (a Uint32Array(>=1)) and returns the heap array's address
+// as a Number (0 when the line has none). The caller frees it via
 // textBufferFreeLineHighlights, matching the FFI (ptr, count) contract.
-static void TextBufferGetLineHighlightsPtr(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferGetLineHighlightsPtr(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2479,8 +2456,8 @@ static void TextBufferGetLineHighlightsPtr(
 // textBufferFreeLineHighlights(ptr, count)
 // stuie cabi.rs:1323 -> text_buffer.rs:806 free_line_highlights. `ptr`/`count`
 // must be a pair returned by textBufferGetLineHighlightsPtr, freed once.
-static void TextBufferFreeLineHighlights(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferFreeLineHighlights(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uintptr_t addr =
@@ -2565,7 +2542,8 @@ static void TextBufferViewSetWrapMode(const FunctionCallbackInfo<Value>& args) {
 
 // textBufferViewSetWrapWidth(handle, width) — 0 clears wrapping.
 // stuie cabi.rs:1434 -> text_view.rs:1001 tbv_set_wrap_width; stale -> no-op.
-static void TextBufferViewSetWrapWidth(const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetWrapWidth(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2576,8 +2554,8 @@ static void TextBufferViewSetWrapWidth(const FunctionCallbackInfo<Value>& args) 
 // textBufferViewSetFirstLineOffset(handle, offset)
 // stuie cabi.rs:1439 -> text_view.rs:1007 tbv_set_first_line_offset;
 // stale -> no-op.
-static void TextBufferViewSetFirstLineOffset(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetFirstLineOffset(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2585,8 +2563,9 @@ static void TextBufferViewSetFirstLineOffset(
   ti::TbvSetFirstLineOffset(handle, offset);
 }
 
-// textBufferViewSetViewport(handle, x, y, width, height) — also pins wrap_width.
-// stuie cabi.rs:1444 -> text_view.rs:1011 tbv_set_viewport; stale -> no-op.
+// textBufferViewSetViewport(handle, x, y, width, height) — also pins
+// wrap_width. stuie cabi.rs:1444 -> text_view.rs:1011 tbv_set_viewport; stale
+// -> no-op.
 static void TextBufferViewSetViewport(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
@@ -2601,8 +2580,8 @@ static void TextBufferViewSetViewport(const FunctionCallbackInfo<Value>& args) {
 // textBufferViewSetViewportSize(handle, width, height) — keeps the offset,
 // pins wrap_width. stuie cabi.rs:1449 -> text_view.rs:1018
 // tbv_set_viewport_size; stale -> no-op.
-static void TextBufferViewSetViewportSize(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetViewportSize(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2624,8 +2603,8 @@ static void TextBufferViewSetTruncate(const FunctionCallbackInfo<Value>& args) {
 // textBufferViewSetTabIndicator(handle, codePoint)
 // stuie cabi.rs:1459 -> text_view.rs:1030 tbv_set_tab_indicator;
 // stale -> no-op.
-static void TextBufferViewSetTabIndicator(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetTabIndicator(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2637,8 +2616,8 @@ static void TextBufferViewSetTabIndicator(
 // clears the color (draw falls back to the cell foreground).
 // stuie cabi.rs:1469 -> text_view.rs:1034 tbv_set_tab_indicator_color;
 // stale -> no-op.
-static void TextBufferViewSetTabIndicatorColor(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetTabIndicatorColor(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2650,9 +2629,9 @@ static void TextBufferViewSetTabIndicatorColor(
 // per-line widths, and tab width — the C++ seam for stuie's cross-module
 // text_buffer::content_lines / line_widths / tab_width_cols calls. A
 // stale/missing buffer yields the documented per-helper fallbacks
-// (content_lines empty, line_widths == {0}, tab_width_cols == kDefaultTabWidth),
-// so a view over a destroyed buffer measures as (1 line, 0 cols) / 0 vlines
-// exactly like stuie.
+// (content_lines empty, line_widths == {0}, tab_width_cols ==
+// kDefaultTabWidth), so a view over a destroyed buffer measures as (1 line, 0
+// cols) / 0 vlines exactly like stuie.
 static ti::BufferData ResolveBufferData(uint32_t tb) {
   ti::TextBuffer* buffer = LookupTextBuffer(tb);
   if (buffer == nullptr) {
@@ -2676,8 +2655,8 @@ static bool ResolveU32OutBuffer(const FunctionCallbackInfo<Value>& args,
   }
   Local<Uint32Array> arr = args[1].As<Uint32Array>();
   auto store = arr->Buffer()->GetBackingStore();
-  *out = reinterpret_cast<uint32_t*>(
-      static_cast<uint8_t*>(store->Data()) + arr->ByteOffset());
+  *out = reinterpret_cast<uint32_t*>(static_cast<uint8_t*>(store->Data()) +
+                                     arr->ByteOffset());
   uint32_t requested = args[2]->Uint32Value(context).FromMaybe(0);
   const uint32_t cap = arr->Length();
   const uint32_t cap_entries = cap >= 2 ? (cap - 2) / 4 : 0;
@@ -2687,8 +2666,8 @@ static bool ResolveU32OutBuffer(const FunctionCallbackInfo<Value>& args,
 
 // textBufferViewGetVirtualLineCount(handle) -> u32
 // stuie cabi.rs:1474 -> text_view.rs:1046 tbv_virtual_line_count; stale -> 0.
-static void TextBufferViewGetVirtualLineCount(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewGetVirtualLineCount(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2700,8 +2679,8 @@ static void TextBufferViewGetVirtualLineCount(
 // (lineCount << 32) | widthColsMax, returned as a JS Number (exact for the
 // realistic integer range). stuie cabi.rs:1479 -> text_view.rs:1052
 // tbv_measure; a stale view -> (1 << 32) | 0.
-static void TextBufferViewMeasureForDimensions(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewMeasureForDimensions(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2726,15 +2705,16 @@ static void TextBufferViewGetLineInfo(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   args.GetReturnValue().Set(Integer::NewFromUnsigned(
-      isolate, ti::TbvGetLineInfo(handle, out, max_entries, ResolveBufferData)));
+      isolate,
+      ti::TbvGetLineInfo(handle, out, max_entries, ResolveBufferData)));
 }
 
 // textBufferViewGetLogicalLineInfo(handle, outU32, maxEntries) -> count
 // Serializes the FULL (un-sliced) virtual lines; widthColsMax = the buffer's
 // max LOGICAL line width. stuie cabi.rs:1508 -> text_view.rs:1095
 // tbv_get_logical_line_info.
-static void TextBufferViewGetLogicalLineInfo(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewGetLogicalLineInfo(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2757,18 +2737,19 @@ static void TextBufferViewGetLogicalLineInfo(
 // and the draw-into-a-renderer path. Optional colors arrive as RGBA.buffer
 // (Uint16Array(4)) pointers, read via ReadOptionalRgba (nullopt when absent).
 
-// The TextBufferAccessor the draw/extraction paths read (text_view.hpp): resolve
-// a buffer handle in THIS binding's TextBuffer registry to its live TextBuffer,
-// the C++ seam for stuie's cross-module text_buffer::* calls. A stale/missing
-// buffer resolves to nullptr, yielding the documented empty/zero fallbacks.
+// The TextBufferAccessor the draw/extraction paths read (text_view.hpp):
+// resolve a buffer handle in THIS binding's TextBuffer registry to its live
+// TextBuffer, the C++ seam for stuie's cross-module text_buffer::* calls. A
+// stale/missing buffer resolves to nullptr, yielding the documented empty/zero
+// fallbacks.
 static const ti::TextBuffer* ResolveTextBufferConst(uint32_t tb) {
   return LookupTextBuffer(tb);
 }
 
 // textBufferViewSetSelection(handle, start, end, bgPtr, fgPtr)
 // stuie cabi.rs:1523 -> text_view.rs:1110 tbv_set_selection.
-static void TextBufferViewSetSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewSetSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2780,8 +2761,8 @@ static void TextBufferViewSetSelection(
 
 // textBufferViewUpdateSelection(handle, end, bgPtr, fgPtr)
 // stuie cabi.rs:1544 -> text_view.rs:1124 tbv_update_selection.
-static void TextBufferViewUpdateSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewUpdateSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2792,8 +2773,8 @@ static void TextBufferViewUpdateSelection(
 
 // textBufferViewResetSelection(handle)
 // stuie cabi.rs:1553 -> text_view.rs:1139 tbv_reset_selection.
-static void TextBufferViewResetSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewResetSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2803,8 +2784,8 @@ static void TextBufferViewResetSelection(
 // textBufferViewGetSelection(handle) -> packedInfo (as a JS Number; exact for
 // the realistic (start<<32)|end range). stuie cabi.rs:1559 -> text_view.rs:1145
 // tbv_get_selection; a stale view -> NO_SELECTION (all-ones).
-static void TextBufferViewGetSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewGetSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2813,9 +2794,10 @@ static void TextBufferViewGetSelection(
 }
 
 // textBufferViewSetLocalSelection(handle, ax, ay, fx, fy, bgPtr, fgPtr)
-//   -> changed. stuie cabi.rs:1567 -> text_view.rs:1154 tbv_set_local_selection.
-static void TextBufferViewSetLocalSelection(
-    const FunctionCallbackInfo<Value>& args) {
+//   -> changed. stuie cabi.rs:1567 -> text_view.rs:1154
+//   tbv_set_local_selection.
+static void
+TextBufferViewSetLocalSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2832,8 +2814,8 @@ static void TextBufferViewSetLocalSelection(
 // textBufferViewUpdateLocalSelection(handle, ax, ay, fx, fy, bgPtr, fgPtr)
 //   -> changed. stuie cabi.rs:1587 -> text_view.rs:1170
 //   tbv_update_local_selection.
-static void TextBufferViewUpdateLocalSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewUpdateLocalSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2849,8 +2831,8 @@ static void TextBufferViewUpdateLocalSelection(
 
 // textBufferViewResetLocalSelection(handle)
 // stuie cabi.rs:1611 -> text_view.rs:1185 tbv_reset_local_selection.
-static void TextBufferViewResetLocalSelection(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewResetLocalSelection(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2859,8 +2841,8 @@ static void TextBufferViewResetLocalSelection(
 
 // textBufferViewGetSelectedTextBytes(handle, out, maxLen) -> bytesWritten
 // stuie cabi.rs:1620 -> text_view.rs:1198 tbv_get_selected_text_bytes.
-static void TextBufferViewGetSelectedTextBytes(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewGetSelectedTextBytes(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2881,8 +2863,8 @@ static void TextBufferViewGetSelectedTextBytes(
 
 // textBufferViewGetPlainTextBytes(handle, out, maxLen) -> bytesWritten
 // stuie cabi.rs:1633 -> text_view.rs:1219 tbv_get_plain_text_bytes.
-static void TextBufferViewGetPlainTextBytes(
-    const FunctionCallbackInfo<Value>& args) {
+static void
+TextBufferViewGetPlainTextBytes(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t handle = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2904,11 +2886,10 @@ static void TextBufferViewGetPlainTextBytes(
 // stuie cabi.rs:468 bufferDrawTextBufferView -> text_view.rs:974 tbv_draw_model
 // + text_view.rs:2236 draw_model_into. CROSS-REGISTRY: builds the view's draw
 // model (spans composited over the buffer defaults + selection override +
-// reverse-video + tab-indicator fill + ellipsis-aware truncation) and blits each
-// cluster into the renderer's Next() cell buffer. A stale renderer OR view is a
-// no-op.
-static void BufferDrawTextBufferView(
-    const FunctionCallbackInfo<Value>& args) {
+// reverse-video + tab-indicator fill + ellipsis-aware truncation) and blits
+// each cluster into the renderer's Next() cell buffer. A stale renderer OR view
+// is a no-op.
+static void BufferDrawTextBufferView(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t renderer_id = args[0]->Uint32Value(context).FromMaybe(0);
@@ -2957,17 +2938,15 @@ static void BufferDrawTextBufferView(
       def_fg, def_bg, x, y);
 }
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   Isolate* isolate = Isolate::GetCurrent();
   Local<Object> constants = Object::New(isolate);
 
-#define BIND_CONST(name, value) \
-  constants                     \
-      ->Set(context, NewOneByteString(isolate, name), \
-            NewOneByteString(isolate, value))         \
+#define BIND_CONST(name, value)                                                \
+  constants                                                                    \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            NewOneByteString(isolate, value))                                  \
       .Check();
 
   BIND_CONST("reset", ti::kReset);
@@ -3003,9 +2982,8 @@ static void Initialize(Local<Object> target,
   Local<Object> sizes = Object::New(isolate);
   sizes
       ->Set(context, NewOneByteString(isolate, "maxCursorPositionLen"),
-            Integer::New(
-                isolate,
-                static_cast<int32_t>(ti::kMaxCursorPositionLen)))
+            Integer::New(isolate,
+                         static_cast<int32_t>(ti::kMaxCursorPositionLen)))
       .Check();
   sizes
       ->Set(context, NewOneByteString(isolate, "maxRgbSgrLen"),
@@ -3062,8 +3040,8 @@ static void Initialize(Local<Object> target,
 
   // Renderables (high-level draw helpers). Per-render-tree-node hot
   // path; Fast API saves ~70 ns per call on the dispatch.
-  SetFastMethodNoSideEffect(context, target, "rendererDrawBox",
-                            RendererDrawBox, &fast_renderer_draw_box);
+  SetFastMethodNoSideEffect(context, target, "rendererDrawBox", RendererDrawBox,
+                            &fast_renderer_draw_box);
   SetFastMethodNoSideEffect(context, target, "rendererDrawTextWrapped",
                             RendererDrawTextWrapped,
                             &fast_renderer_draw_text_wrapped);
@@ -3092,7 +3070,8 @@ static void Initialize(Local<Object> target,
   SetMethod(context, target, "textBufferSetDefaultBg", TextBufferSetDefaultBg);
   SetMethod(context, target, "textBufferSetDefaultAttributes",
             TextBufferSetDefaultAttributes);
-  SetMethod(context, target, "textBufferResetDefaults", TextBufferResetDefaults);
+  SetMethod(context, target, "textBufferResetDefaults",
+            TextBufferResetDefaults);
   SetMethod(context, target, "textBufferRegisterMemBuffer",
             TextBufferRegisterMemBuffer);
   SetMethod(context, target, "textBufferReplaceMemBuffer",
@@ -3179,19 +3158,18 @@ static void Initialize(Local<Object> target,
             BufferDrawTextBufferView);
 
   SetFastMethodNoSideEffect(context, target, "yogaCalculateLayout",
-                            YogaCalculateLayout,
-                            &fast_yoga_calculate_layout);
+                            YogaCalculateLayout, &fast_yoga_calculate_layout);
   SetFastMethodNoSideEffect(context, target, "yogaCreateNode", YogaCreateNode,
                             &fast_yoga_create_node);
   SetFastMethodNoSideEffect(context, target, "yogaFreeNode", YogaFreeNode,
                             &fast_yoga_free_node);
   SetMethod(context, target, "yogaGetComputedLayout", YogaGetComputedLayout);
-  SetFastMethodNoSideEffect(context, target, "yogaInsertChild",
-                            YogaInsertChild, &fast_yoga_insert_child);
+  SetFastMethodNoSideEffect(context, target, "yogaInsertChild", YogaInsertChild,
+                            &fast_yoga_insert_child);
   SetFastMethodNoSideEffect(context, target, "yogaMarkDirty", YogaMarkDirty,
                             &fast_yoga_mark_dirty);
-  SetFastMethodNoSideEffect(context, target, "yogaRemoveChild",
-                            YogaRemoveChild, &fast_yoga_remove_child);
+  SetFastMethodNoSideEffect(context, target, "yogaRemoveChild", YogaRemoveChild,
+                            &fast_yoga_remove_child);
   SetFastMethodNoSideEffect(context, target, "yogaSetAlignItems",
                             YogaSetAlignItems, &fast_yoga_set_align_items);
   SetFastMethodNoSideEffect(context, target, "yogaSetAlignSelf",
@@ -3201,12 +3179,12 @@ static void Initialize(Local<Object> target,
   SetFastMethodNoSideEffect(context, target, "yogaSetFlexDirection",
                             YogaSetFlexDirection,
                             &fast_yoga_set_flex_direction);
-  SetFastMethodNoSideEffect(context, target, "yogaSetFlexGrow",
-                            YogaSetFlexGrow, &fast_yoga_set_flex_grow);
+  SetFastMethodNoSideEffect(context, target, "yogaSetFlexGrow", YogaSetFlexGrow,
+                            &fast_yoga_set_flex_grow);
   SetFastMethodNoSideEffect(context, target, "yogaSetFlexShrink",
                             YogaSetFlexShrink, &fast_yoga_set_flex_shrink);
-  SetFastMethodNoSideEffect(context, target, "yogaSetFlexWrap",
-                            YogaSetFlexWrap, &fast_yoga_set_flex_wrap);
+  SetFastMethodNoSideEffect(context, target, "yogaSetFlexWrap", YogaSetFlexWrap,
+                            &fast_yoga_set_flex_wrap);
   SetFastMethodNoSideEffect(context, target, "yogaSetHeight", YogaSetHeight,
                             &fast_yoga_set_height);
   SetFastMethodNoSideEffect(context, target, "yogaSetJustifyContent",
@@ -3219,33 +3197,32 @@ static void Initialize(Local<Object> target,
   SetFastMethodNoSideEffect(context, target, "yogaSetPosition", YogaSetPosition,
                             &fast_yoga_set_position);
   SetFastMethodNoSideEffect(context, target, "yogaSetPositionType",
-                            YogaSetPositionType,
-                            &fast_yoga_set_position_type);
+                            YogaSetPositionType, &fast_yoga_set_position_type);
   SetFastMethodNoSideEffect(context, target, "yogaSetWidth", YogaSetWidth,
                             &fast_yoga_set_width);
 
   // Yoga enum mirrors. Values come straight from YG*.h so JS doesn't
   // hard-code numbers that could drift if Yoga adds a new entry.
   Local<Object> flexDirection = Object::New(isolate);
-#define BIND_FLEX_DIR(name, value)                                  \
-  flexDirection                                                     \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_FLEX_DIR(name, value)                                             \
+  flexDirection                                                                \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_FLEX_DIR("COLUMN", YGFlexDirectionColumn);
   BIND_FLEX_DIR("COLUMN_REVERSE", YGFlexDirectionColumnReverse);
   BIND_FLEX_DIR("ROW", YGFlexDirectionRow);
   BIND_FLEX_DIR("ROW_REVERSE", YGFlexDirectionRowReverse);
 #undef BIND_FLEX_DIR
-  target->Set(context, NewOneByteString(isolate, "flexDirection"),
-              flexDirection)
+  target
+      ->Set(context, NewOneByteString(isolate, "flexDirection"), flexDirection)
       .Check();
 
   Local<Object> justify = Object::New(isolate);
-#define BIND_JUSTIFY(name, value)                                   \
-  justify                                                           \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_JUSTIFY(name, value)                                              \
+  justify                                                                      \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_JUSTIFY("FLEX_START", YGJustifyFlexStart);
   BIND_JUSTIFY("CENTER", YGJustifyCenter);
@@ -3254,14 +3231,13 @@ static void Initialize(Local<Object> target,
   BIND_JUSTIFY("SPACE_AROUND", YGJustifySpaceAround);
   BIND_JUSTIFY("SPACE_EVENLY", YGJustifySpaceEvenly);
 #undef BIND_JUSTIFY
-  target->Set(context, NewOneByteString(isolate, "justify"), justify)
-      .Check();
+  target->Set(context, NewOneByteString(isolate, "justify"), justify).Check();
 
   Local<Object> align = Object::New(isolate);
-#define BIND_ALIGN(name, value)                                     \
-  align                                                             \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_ALIGN(name, value)                                                \
+  align                                                                        \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_ALIGN("AUTO", YGAlignAuto);
   BIND_ALIGN("FLEX_START", YGAlignFlexStart);
@@ -3276,10 +3252,9 @@ static void Initialize(Local<Object> target,
   target->Set(context, NewOneByteString(isolate, "align"), align).Check();
 
   Local<Object> edge = Object::New(isolate);
-#define BIND_EDGE(name, value)                                      \
-  edge                                                              \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_EDGE(name, value)                                                 \
+  edge->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_EDGE("LEFT", YGEdgeLeft);
   BIND_EDGE("TOP", YGEdgeTop);
@@ -3294,10 +3269,9 @@ static void Initialize(Local<Object> target,
   target->Set(context, NewOneByteString(isolate, "edge"), edge).Check();
 
   Local<Object> wrap = Object::New(isolate);
-#define BIND_WRAP(name, value)                                      \
-  wrap                                                              \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_WRAP(name, value)                                                 \
+  wrap->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_WRAP("NO_WRAP", YGWrapNoWrap);
   BIND_WRAP("WRAP", YGWrapWrap);
@@ -3306,24 +3280,23 @@ static void Initialize(Local<Object> target,
   target->Set(context, NewOneByteString(isolate, "wrap"), wrap).Check();
 
   Local<Object> positionType = Object::New(isolate);
-#define BIND_POS(name, value)                                       \
-  positionType                                                      \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_POS(name, value)                                                  \
+  positionType                                                                 \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_POS("STATIC", YGPositionTypeStatic);
   BIND_POS("RELATIVE", YGPositionTypeRelative);
   BIND_POS("ABSOLUTE", YGPositionTypeAbsolute);
 #undef BIND_POS
-  target->Set(context, NewOneByteString(isolate, "positionType"),
-              positionType)
+  target->Set(context, NewOneByteString(isolate, "positionType"), positionType)
       .Check();
 
   Local<Object> direction = Object::New(isolate);
-#define BIND_DIR(name, value)                                       \
-  direction                                                         \
-      ->Set(context, NewOneByteString(isolate, name),               \
-            Integer::New(isolate, static_cast<int32_t>(value)))     \
+#define BIND_DIR(name, value)                                                  \
+  direction                                                                    \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_DIR("INHERIT", YGDirectionInherit);
   BIND_DIR("LTR", YGDirectionLTR);
@@ -3333,10 +3306,10 @@ static void Initialize(Local<Object> target,
       .Check();
 
   Local<Object> events = Object::New(isolate);
-#define BIND_EVENT(name, value) \
-  events                        \
-      ->Set(context, NewOneByteString(isolate, name), \
-            Integer::New(isolate, static_cast<int32_t>(value))) \
+#define BIND_EVENT(name, value)                                                \
+  events                                                                       \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_EVENT("DOWN", ti::MouseEventType::kDown);
   BIND_EVENT("UP", ti::MouseEventType::kUp);
@@ -3352,10 +3325,10 @@ static void Initialize(Local<Object> target,
       .Check();
 
   Local<Object> scrolls = Object::New(isolate);
-#define BIND_SCROLL(name, value) \
-  scrolls                        \
-      ->Set(context, NewOneByteString(isolate, name), \
-            Integer::New(isolate, static_cast<int32_t>(value))) \
+#define BIND_SCROLL(name, value)                                               \
+  scrolls                                                                      \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_SCROLL("UP", ti::ScrollDirection::kUp);
   BIND_SCROLL("DOWN", ti::ScrollDirection::kDown);
@@ -3511,9 +3484,9 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(fast_yoga_set_width);
 }
 
-}  // namespace tui
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace tui
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_tui,
                                     node::socketsecurity::tui::Initialize)

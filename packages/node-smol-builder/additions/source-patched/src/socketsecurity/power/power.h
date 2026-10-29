@@ -19,8 +19,8 @@ namespace power {
 
 bool IsOnAcPowerImpl();
 
-}  // namespace power
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace power
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_POWER_POWER_H_
+#endif // SRC_SOCKETSECURITY_POWER_POWER_H_

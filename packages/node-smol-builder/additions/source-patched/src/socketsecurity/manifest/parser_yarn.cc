@@ -26,7 +26,8 @@
 //      (parseYarnLock)
 //
 // 5. **yarn lockfile format docs**:
-//      classic (v1): https://github.com/yarnpkg/yarn/blob/master/src/lockfile/parse.js
+//      classic (v1):
+//      https://github.com/yarnpkg/yarn/blob/master/src/lockfile/parse.js
 //                    (syml grammar — pre-Berry)
 //      berry (v2+):  https://yarnpkg.com/configuration/yarnrc#lockfileVersion
 //      protocols:    https://yarnpkg.com/protocol/
@@ -77,8 +78,7 @@ namespace manifest {
 namespace {
 
 bool StartsWith(std::string_view s, std::string_view prefix) {
-  return s.size() >= prefix.size() &&
-         s.substr(0, prefix.size()) == prefix;
+  return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
 }
 
 bool EndsWith(std::string_view s, std::string_view suffix) {
@@ -142,8 +142,7 @@ std::string_view ParseYarnDescriptor(std::string_view descriptor) {
     size_t npm_enc_idx = after.find("@npm%3A");
     size_t ws_idx = after.find("@workspace:");
     // Use the first valid occurrence.
-    if (npm_enc_idx != std::string_view::npos &&
-        npm_enc_idx > 0 &&
+    if (npm_enc_idx != std::string_view::npos && npm_enc_idx > 0 &&
         (npm_idx == std::string_view::npos || npm_enc_idx < npm_idx)) {
       npm_idx = npm_enc_idx;
     }
@@ -211,16 +210,14 @@ void SkipIndentedBlock(std::string_view content, size_t& pos) {
   }
 }
 
-}  // namespace
+} // namespace
 
-bool ParseYarnLock(std::string_view content,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
-                   ParseError* /* err */) {
+bool ParseYarnLock(std::string_view content, ParseContext* ctx,
+                   ParsedLockfile* out, ParseError* /* err */) {
   // Berry detection via __metadata: marker.
   bool is_berry = content.find("__metadata:") != std::string_view::npos;
-  out->lockVersion = is_berry ? std::string_view{"berry"}
-                              : std::string_view{"1"};
+  out->lockVersion =
+      is_berry ? std::string_view{"berry"} : std::string_view{"1"};
   out->ecosystem = Ecosystem::kNpm;
 
   size_t pos = 0;
@@ -356,7 +353,8 @@ bool ParseYarnLock(std::string_view content,
         // than the parent's properties); we skip lines until we
         // see something at a shallower indent.
         //
-        // See test/fixtures/sdxgen-bug-regressions/fix4-yarn-depsmeta-inversion/.
+        // See
+        // test/fixtures/sdxgen-bug-regressions/fix4-yarn-depsmeta-inversion/.
         while (pos < content.size()) {
           size_t meol = NextLf(content, pos);
           std::string_view mline = content.substr(pos, meol - pos);
@@ -389,8 +387,7 @@ bool ParseYarnLock(std::string_view content,
       }
       ref.dependencies = std::move(dependencies);
       ref.isOptional = is_optional;
-      ref.depType =
-          is_optional ? DepType::kOptional : DepType::kProd;
+      ref.depType = is_optional ? DepType::kOptional : DepType::kProd;
       out->packages.push_back(std::move(ref));
       AddToIndex(out, out->packages.back().name,
                  static_cast<uint32_t>(out->packages.size() - 1));
@@ -400,6 +397,6 @@ bool ParseYarnLock(std::string_view content,
   return true;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

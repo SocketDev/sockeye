@@ -72,16 +72,18 @@ inline bool NeedsNameEscaping(const char* s, size_t len) {
 
     for (; i + 16 <= len; i += 16) {
       __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s + i));
-      __m128i cmp = _mm_or_si128(
-          _mm_or_si128(_mm_cmpeq_epi8(chunk, space), _mm_cmpeq_epi8(chunk, comma)),
-          _mm_cmpeq_epi8(chunk, equals));
-      if (_mm_movemask_epi8(cmp)) return true;
+      __m128i cmp = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(chunk, space),
+                                              _mm_cmpeq_epi8(chunk, comma)),
+                                 _mm_cmpeq_epi8(chunk, equals));
+      if (_mm_movemask_epi8(cmp))
+        return true;
     }
 
     // Scalar remainder
     for (; i < len; i++) {
       char c = s[i];
-      if (c == ' ' || c == ',' || c == '=') return true;
+      if (c == ' ' || c == ',' || c == '=')
+        return true;
     }
     return false;
   }
@@ -89,12 +91,14 @@ inline bool NeedsNameEscaping(const char* s, size_t len) {
   // Scalar fallback
   for (size_t i = 0; i < len; i++) {
     char c = s[i];
-    if (c == ' ' || c == ',' || c == '=') return true;
+    if (c == ' ' || c == ',' || c == '=')
+      return true;
   }
   return false;
 }
 
-// Check if a string value needs escaping (backslash, quote, newline, carriage return)
+// Check if a string value needs escaping (backslash, quote, newline, carriage
+// return)
 inline bool NeedsStringEscaping(const char* s, size_t len) {
 #if SMOL_HAS_SSE2
   if (len >= 16) {
@@ -106,16 +110,19 @@ inline bool NeedsStringEscaping(const char* s, size_t len) {
 
     for (; i + 16 <= len; i += 16) {
       __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s + i));
-      __m128i cmp = _mm_or_si128(
-          _mm_or_si128(_mm_cmpeq_epi8(chunk, backslash), _mm_cmpeq_epi8(chunk, quote)),
-          _mm_or_si128(_mm_cmpeq_epi8(chunk, newline), _mm_cmpeq_epi8(chunk, cr)));
-      if (_mm_movemask_epi8(cmp)) return true;
+      __m128i cmp = _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(chunk, backslash),
+                                              _mm_cmpeq_epi8(chunk, quote)),
+                                 _mm_or_si128(_mm_cmpeq_epi8(chunk, newline),
+                                              _mm_cmpeq_epi8(chunk, cr)));
+      if (_mm_movemask_epi8(cmp))
+        return true;
     }
 
     // Scalar remainder
     for (; i < len; i++) {
       char c = s[i];
-      if (c == '\\' || c == '"' || c == '\n' || c == '\r') return true;
+      if (c == '\\' || c == '"' || c == '\n' || c == '\r')
+        return true;
     }
     return false;
   }
@@ -123,13 +130,14 @@ inline bool NeedsStringEscaping(const char* s, size_t len) {
   // Scalar fallback
   for (size_t i = 0; i < len; i++) {
     char c = s[i];
-    if (c == '\\' || c == '"' || c == '\n' || c == '\r') return true;
+    if (c == '\\' || c == '"' || c == '\n' || c == '\r')
+      return true;
   }
   return false;
 }
 
-// Check if a symbol value needs escaping (space, comma, equals, newline, carriage return)
-// Uses SIMD for fast scanning of 16+ byte strings
+// Check if a symbol value needs escaping (space, comma, equals, newline,
+// carriage return) Uses SIMD for fast scanning of 16+ byte strings
 inline bool NeedsSymbolEscaping(const char* s, size_t len) {
 #if SMOL_HAS_SSE2
   if (len >= 16) {
@@ -142,19 +150,21 @@ inline bool NeedsSymbolEscaping(const char* s, size_t len) {
 
     for (; i + 16 <= len; i += 16) {
       __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s + i));
-      __m128i cmp1 = _mm_or_si128(
-          _mm_cmpeq_epi8(chunk, space), _mm_cmpeq_epi8(chunk, comma));
-      __m128i cmp2 = _mm_or_si128(
-          _mm_cmpeq_epi8(chunk, equals), _mm_cmpeq_epi8(chunk, newline));
-      __m128i cmp = _mm_or_si128(
-          _mm_or_si128(cmp1, cmp2), _mm_cmpeq_epi8(chunk, cr));
-      if (_mm_movemask_epi8(cmp)) return true;
+      __m128i cmp1 = _mm_or_si128(_mm_cmpeq_epi8(chunk, space),
+                                  _mm_cmpeq_epi8(chunk, comma));
+      __m128i cmp2 = _mm_or_si128(_mm_cmpeq_epi8(chunk, equals),
+                                  _mm_cmpeq_epi8(chunk, newline));
+      __m128i cmp =
+          _mm_or_si128(_mm_or_si128(cmp1, cmp2), _mm_cmpeq_epi8(chunk, cr));
+      if (_mm_movemask_epi8(cmp))
+        return true;
     }
 
     // Scalar remainder
     for (; i < len; i++) {
       char c = s[i];
-      if (c == ' ' || c == ',' || c == '=' || c == '\n' || c == '\r') return true;
+      if (c == ' ' || c == ',' || c == '=' || c == '\n' || c == '\r')
+        return true;
     }
     return false;
   }
@@ -162,7 +172,8 @@ inline bool NeedsSymbolEscaping(const char* s, size_t len) {
   // Scalar fallback
   for (size_t i = 0; i < len; i++) {
     char c = s[i];
-    if (c == ' ' || c == ',' || c == '=' || c == '\n' || c == '\r') return true;
+    if (c == ' ' || c == ',' || c == '=' || c == '\n' || c == '\r')
+      return true;
   }
   return false;
 }
@@ -178,7 +189,8 @@ inline size_t FormatInt64Fast(int64_t value, char* buffer) {
   char temp[21];
   int pos = 20;
   bool negative = value < 0;
-  uint64_t v = negative ? -static_cast<uint64_t>(value) : static_cast<uint64_t>(value);
+  uint64_t v =
+      negative ? -static_cast<uint64_t>(value) : static_cast<uint64_t>(value);
 
   while (v > 0) {
     temp[pos--] = '0' + (v % 10);
@@ -194,17 +206,14 @@ inline size_t FormatInt64Fast(int64_t value, char* buffer) {
   return len;
 }
 
-}  // namespace
+} // namespace
 
 namespace node {
 namespace socketsecurity {
 namespace ilp {
 
 IlpEncoder::IlpEncoder(size_t init_size, size_t max_size)
-    : buffer_(init_size),
-      position_(0),
-      max_size_(max_size),
-      has_fields_(false),
+    : buffer_(init_size), position_(0), max_size_(max_size), has_fields_(false),
       overflow_(false) {}
 
 void IlpEncoder::EnsureCapacity(size_t additional) {
@@ -235,14 +244,17 @@ void IlpEncoder::EnsureCapacity(size_t additional) {
 
 void IlpEncoder::WriteChar(char c) {
   EnsureCapacity(1);
-  if (overflow_) return;
+  if (overflow_)
+    return;
   buffer_[position_++] = c;
 }
 
 void IlpEncoder::WriteBytes(const char* data, size_t len) {
-  if (len == 0) return;
+  if (len == 0)
+    return;
   EnsureCapacity(len);
-  if (overflow_) return;
+  if (overflow_)
+    return;
   std::memcpy(buffer_.data() + position_, data, len);
   position_ += len;
 }
@@ -255,9 +267,11 @@ void IlpEncoder::WriteEscapedName(const char* name, size_t len) {
   }
 
   // Slow path: Table/column names need escaping (space, comma, equals)
-  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity checks.
+  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity
+  // checks.
   EnsureCapacity(len * 2);
-  if (overflow_) return;
+  if (overflow_)
+    return;
   char* dst = buffer_.data() + position_;
   size_t written = 0;
   for (size_t i = 0; i < len; ++i) {
@@ -278,9 +292,11 @@ void IlpEncoder::WriteEscapedString(const char* str, size_t len) {
   }
 
   // Slow path: String values need escaping (backslash, double quote, newline)
-  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity checks.
+  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity
+  // checks.
   EnsureCapacity(len * 2);
-  if (overflow_) return;
+  if (overflow_)
+    return;
   char* dst = buffer_.data() + position_;
   size_t written = 0;
   for (size_t i = 0; i < len; ++i) {
@@ -309,9 +325,11 @@ void IlpEncoder::WriteEscapedSymbol(const char* str, size_t len) {
   }
 
   // Slow path: Symbol values need escaping (space, comma, equals, newline, cr)
-  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity checks.
+  // Pre-allocate worst case (every char escaped) to avoid per-byte capacity
+  // checks.
   EnsureCapacity(len * 2);
-  if (overflow_) return;
+  if (overflow_)
+    return;
   char* dst = buffer_.data() + position_;
   size_t written = 0;
   for (size_t i = 0; i < len; ++i) {
@@ -347,19 +365,19 @@ void IlpEncoder::WriteDouble(double value) {
 int64_t IlpEncoder::ConvertToNanos(int64_t value, TimestampUnit unit) const {
   int64_t multiplier;
   switch (unit) {
-    case TimestampUnit::kNanoseconds:
-      return value;
-    case TimestampUnit::kMicroseconds:
-      multiplier = 1000LL;
-      break;
-    case TimestampUnit::kMilliseconds:
-      multiplier = 1000000LL;
-      break;
-    case TimestampUnit::kSeconds:
-      multiplier = 1000000000LL;
-      break;
-    default:
-      return value;
+  case TimestampUnit::kNanoseconds:
+    return value;
+  case TimestampUnit::kMicroseconds:
+    multiplier = 1000LL;
+    break;
+  case TimestampUnit::kMilliseconds:
+    multiplier = 1000000LL;
+    break;
+  case TimestampUnit::kSeconds:
+    multiplier = 1000000000LL;
+    break;
+  default:
+    return value;
   }
   if (value > INT64_MAX / multiplier || value < INT64_MIN / multiplier) {
     overflow_ = true;
@@ -373,8 +391,8 @@ void IlpEncoder::Table(const char* name, size_t len) {
   has_fields_ = false;
 }
 
-void IlpEncoder::Symbol(const char* name, size_t name_len,
-                        const char* value, size_t value_len) {
+void IlpEncoder::Symbol(const char* name, size_t name_len, const char* value,
+                        size_t value_len) {
   WriteChar(',');
   WriteEscapedName(name, name_len);
   WriteChar('=');
@@ -439,6 +457,6 @@ void IlpEncoder::AtNow() {
   has_fields_ = false;
 }
 
-}  // namespace ilp
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ilp
+} // namespace socketsecurity
+} // namespace node

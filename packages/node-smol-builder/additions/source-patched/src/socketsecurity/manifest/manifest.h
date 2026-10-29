@@ -112,16 +112,13 @@ struct ParseContext {
 // Single dispatch entry point. Routes on (ecosystem, format).
 // Returns true on success (fills `out`); returns false on parse
 // failure (fills `err`). Never throws C++ exceptions.
-bool ParseLockfile(std::string_view content,
-                   Ecosystem ecosystem,
-                   LockFormat format,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
+bool ParseLockfile(std::string_view content, Ecosystem ecosystem,
+                   LockFormat format, ParseContext* ctx, ParsedLockfile* out,
                    ParseError* err);
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_MANIFEST_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_MANIFEST_H_

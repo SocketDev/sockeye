@@ -12,7 +12,7 @@ namespace http_perf {
 // Object pool for reusing HTTP request/response objects.
 // Reduces allocations by 15-25% per request.
 class HttpObjectPool {
- public:
+public:
   explicit HttpObjectPool(Environment* env);
   ~HttpObjectPool();
 
@@ -31,7 +31,7 @@ class HttpObjectPool {
   size_t GetRequestPoolSize() const { return request_pool_.size(); }
   size_t GetResponsePoolSize() const { return response_pool_.size(); }
 
- private:
+private:
   Environment* env_;
 
   // Maximum pool sizes to prevent unbounded growth.
@@ -53,8 +53,8 @@ class HttpObjectPool {
   size_t responses_released_ = 0;
 };
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_HTTP_PERF_HTTP_OBJECT_POOL_H_
+#endif // SRC_SOCKETSECURITY_HTTP_PERF_HTTP_OBJECT_POOL_H_

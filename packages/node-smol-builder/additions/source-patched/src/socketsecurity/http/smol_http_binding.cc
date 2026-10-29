@@ -73,8 +73,8 @@
 #include "node_errors.h"
 #include "node_external_reference.h"
 #include "node_internals.h"
-#include "v8.h"
 #include "v8-fast-api-calls.h"
+#include "v8.h"
 
 #include <new>
 
@@ -84,7 +84,7 @@ namespace smol_http {
 // -- V8 type aliases --
 // These `using` statements let us write `Local<String>` instead of
 // `v8::Local<v8::String>` throughout the file. Pure convenience.
-using v8::CFunction;         // Wraps a C++ function pointer for V8 Fast API
+using v8::CFunction; // Wraps a C++ function pointer for V8 Fast API
 using v8::Context;
 using v8::FunctionCallbackInfo;
 using v8::Int32;
@@ -93,7 +93,7 @@ using v8::Local;
 using v8::Null;
 using v8::Object;
 using v8::String;
-using v8::Value;             // Base type — every JS value is a Value
+using v8::Value; // Base type — every JS value is a Value
 
 // ============================================================================
 // Fast Response Writers (UV stream -- writes directly to socket)
@@ -142,8 +142,8 @@ void SlowWriteJsonDirect(const FunctionCallbackInfo<Value>& args) {
     return;
   }
 
-  bool success = FastResponse::WriteJson(
-    env, socket, status_code, *json_utf8, json_utf8.length());
+  bool success = FastResponse::WriteJson(env, socket, status_code, *json_utf8,
+                                         json_utf8.length());
 
   args.GetReturnValue().Set(success);
 }
@@ -160,9 +160,9 @@ void SlowWriteBinaryDirect(const FunctionCallbackInfo<Value>& args) {
   Local<Object> socket = args[0].As<Object>();
   int status_code = args[1].As<Int32>()->Value();
 
-  // Use Buffer::Data directly — avoids shared_ptr overhead of GetBackingStore().
-  const uint8_t* data = reinterpret_cast<const uint8_t*>(
-    Buffer::Data(args[2]));
+  // Use Buffer::Data directly — avoids shared_ptr overhead of
+  // GetBackingStore().
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(Buffer::Data(args[2]));
   size_t length = Buffer::Length(args[2]);
 
   v8::String::Utf8Value content_type(env->isolate(), args[3]);
@@ -170,8 +170,8 @@ void SlowWriteBinaryDirect(const FunctionCallbackInfo<Value>& args) {
     return;
   }
 
-  bool success = FastResponse::WriteBinary(
-    env, socket, status_code, data, length, *content_type);
+  bool success = FastResponse::WriteBinary(env, socket, status_code, data,
+                                           length, *content_type);
 
   args.GetReturnValue().Set(success);
 }
@@ -210,8 +210,8 @@ void SlowWriteTextDirect(const FunctionCallbackInfo<Value>& args) {
     return;
   }
 
-  bool success = FastResponse::WriteText(
-    env, socket, status_code, *text, text.length());
+  bool success =
+      FastResponse::WriteText(env, socket, status_code, *text, text.length());
 
   args.GetReturnValue().Set(success);
 }
@@ -284,12 +284,11 @@ static HttpObjectPool* GetObjectPool(Environment* env) {
 // Throws a JS Error and returns true when GetObjectPool's allocation
 // failed. Callers should early-return when this returns true. Keeps the
 // repeated Acquire/Release binding bodies terse.
-static bool CheckObjectPoolOrThrow(
-    v8::Isolate* isolate, const HttpObjectPool* pool) {
+static bool CheckObjectPoolOrThrow(v8::Isolate* isolate,
+                                   const HttpObjectPool* pool) {
   if (pool == nullptr) {
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to allocate HTTP object pool")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to allocate HTTP object pool")));
     return true;
   }
   return false;
@@ -298,32 +297,38 @@ static bool CheckObjectPoolOrThrow(
 void AcquireRequest(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   HttpObjectPool* pool = GetObjectPool(env);
-  if (CheckObjectPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckObjectPoolOrThrow(env->isolate(), pool))
+    return;
   Local<Object> req = pool->AcquireRequest();
   args.GetReturnValue().Set(req);
 }
 
 void ReleaseRequest(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
-  if (args.Length() < 1 || !args[0]->IsObject()) return;
+  if (args.Length() < 1 || !args[0]->IsObject())
+    return;
   HttpObjectPool* pool = GetObjectPool(env);
-  if (CheckObjectPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckObjectPoolOrThrow(env->isolate(), pool))
+    return;
   pool->ReleaseRequest(args[0].As<Object>());
 }
 
 void AcquireResponse(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   HttpObjectPool* pool = GetObjectPool(env);
-  if (CheckObjectPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckObjectPoolOrThrow(env->isolate(), pool))
+    return;
   Local<Object> res = pool->AcquireResponse();
   args.GetReturnValue().Set(res);
 }
 
 void ReleaseResponse(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
-  if (args.Length() < 1 || !args[0]->IsObject()) return;
+  if (args.Length() < 1 || !args[0]->IsObject())
+    return;
   HttpObjectPool* pool = GetObjectPool(env);
-  if (CheckObjectPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckObjectPoolOrThrow(env->isolate(), pool))
+    return;
   pool->ReleaseResponse(args[0].As<Object>());
 }
 
@@ -331,17 +336,21 @@ void GetObjectPoolStats(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   Isolate* isolate = env->isolate();
   HttpObjectPool* pool = GetObjectPool(env);
-  if (CheckObjectPoolOrThrow(isolate, pool)) return;
+  if (CheckObjectPoolOrThrow(isolate, pool))
+    return;
 
-  Local<Object> stats = Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
+  Local<Object> stats =
+      Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
   Local<Context> context = env->context();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "requestPoolSize"),
-    v8::Integer::NewFromUnsigned(isolate, pool->GetRequestPoolSize())).Check();
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "responsePoolSize"),
-    v8::Integer::NewFromUnsigned(isolate, pool->GetResponsePoolSize())).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "requestPoolSize"),
+            v8::Integer::NewFromUnsigned(isolate, pool->GetRequestPoolSize()))
+      .Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "responsePoolSize"),
+            v8::Integer::NewFromUnsigned(isolate, pool->GetResponsePoolSize()))
+      .Check();
 
   args.GetReturnValue().Set(stats);
 }
@@ -363,8 +372,8 @@ bool FastIsIoUringAvailable(Local<Value> receiver) {
   return IoUringNetwork::IsAvailable();
 }
 
-static CFunction fast_is_io_uring_available(
-    CFunction::Make(FastIsIoUringAvailable));
+static CFunction
+    fast_is_io_uring_available(CFunction::Make(FastIsIoUringAvailable));
 
 void SlowIsMimallocAvailable(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(
@@ -376,8 +385,8 @@ bool FastIsMimallocAvailable(Local<Value> receiver) {
   return MimallocArrayBufferAllocator::IsMimallocAvailable();
 }
 
-static CFunction fast_is_mimalloc_available(
-    CFunction::Make(FastIsMimallocAvailable));
+static CFunction
+    fast_is_mimalloc_available(CFunction::Make(FastIsMimallocAvailable));
 
 // ============================================================================
 // Module Initialization -- this is where JS meets C++
@@ -402,10 +411,8 @@ static CFunction fast_is_mimalloc_available(
 // every C++ function pointer that might appear in the snapshot.
 // ============================================================================
 
-void Initialize(Local<Object> exports,
-                Local<Value> module,
-                Local<Context> context,
-                void* priv) {
+void Initialize(Local<Object> exports, Local<Value> module,
+                Local<Context> context, void* priv) {
   // Response writers — slow-path only because FastResponse::Write*() calls
   // Object::Get() on the socket to extract the UV stream handle, which
   // triggers JS heap access and violates the V8 fast call contract.
@@ -475,8 +482,8 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(UwsServerStop);
 }
 
-}  // namespace smol_http
-}  // namespace node
+} // namespace smol_http
+} // namespace node
 
 // These two macros register this file as a Node.js internal binding.
 // NODE_BINDING_CONTEXT_AWARE_INTERNAL: tells Node.js "when JS calls
@@ -484,6 +491,7 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
 // NODE_BINDING_EXTERNAL_REFERENCE: tells the V8 snapshot builder about
 //   our C++ function pointers so they survive serialization.
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_http, node::smol_http::Initialize)
-NODE_BINDING_EXTERNAL_REFERENCE(smol_http, node::smol_http::RegisterExternalReferences)
+NODE_BINDING_EXTERNAL_REFERENCE(smol_http,
+                                node::smol_http::RegisterExternalReferences)
 
 #pragma GCC diagnostic pop

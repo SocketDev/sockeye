@@ -19,10 +19,10 @@ extern "C" {
  * Binary format types.
  */
 typedef enum {
-    BINARY_FORMAT_UNKNOWN = 0,
-    BINARY_FORMAT_MACHO,
-    BINARY_FORMAT_ELF,
-    BINARY_FORMAT_PE
+  BINARY_FORMAT_UNKNOWN = 0,
+  BINARY_FORMAT_MACHO,
+  BINARY_FORMAT_ELF,
+  BINARY_FORMAT_PE
 } binary_format_t;
 
 /**

@@ -57,4 +57,4 @@ int __wrap_at_quick_exit(void (*handler)(void)) {
   return fallback_at_quick_exit(handler);
 }
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__

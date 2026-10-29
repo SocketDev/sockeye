@@ -14,7 +14,8 @@
  */
 #define TEMP_PATH_BUFFER_SIZE 1024
 #define CACHE_DIR_BUFFER_SIZE 512
-#define MAX_JSON_CONFIG_SIZE (1024 * 1024)  /* 1 MB maximum for JSON configuration files. */
+#define MAX_JSON_CONFIG_SIZE                                                   \
+  (1024 * 1024) /* 1 MB maximum for JSON configuration files. */
 
 /**
  * Compression buffer overhead.
@@ -25,8 +26,8 @@
 /**
  * PE (Portable Executable) format constants.
  */
-#define PE_SIGNATURE_SIZE 4           /* Size of "PE\0\0" signature. */
-#define PE_SECTION_NAME_MAX_LENGTH 8  /* Maximum length of PE section names. */
+#define PE_SIGNATURE_SIZE 4          /* Size of "PE\0\0" signature. */
+#define PE_SECTION_NAME_MAX_LENGTH 8 /* Maximum length of PE section names. */
 
 /**
  * ELF alignment constants.

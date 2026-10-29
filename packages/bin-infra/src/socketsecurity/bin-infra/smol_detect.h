@@ -2,9 +2,9 @@
  * @file smol_detect.h
  * @brief SMOL stub detection for all binary formats
  *
- * Provides format-specific detection functions for identifying SMOL compressed stubs.
- * Used by binject for repack detection and potentially by binpress/binflate for
- * their own stub detection needs.
+ * Provides format-specific detection functions for identifying SMOL compressed
+ * stubs. Used by binject for repack detection and potentially by
+ * binpress/binflate for their own stub detection needs.
  *
  * Architecture:
  * - Pure C implementations (smol_has_pressed_data_*_impl) for all three
@@ -31,7 +31,7 @@ extern "C" {
  * @param path Path to binary file
  * @return 1 if found, 0 if not found, -1 on error
  */
-int smol_has_pressed_data_macho_impl(const char *path);
+int smol_has_pressed_data_macho_impl(const char* path);
 
 /**
  * Check if ELF binary has .PRESSED_DATA section.
@@ -43,7 +43,7 @@ int smol_has_pressed_data_macho_impl(const char *path);
  * @param path Path to binary file
  * @return 1 if found, 0 if not found, -1 on error
  */
-int smol_has_pressed_data_elf_impl(const char *path);
+int smol_has_pressed_data_elf_impl(const char* path);
 
 /**
  * Check if PE binary has .PRESSED_DATA section.
@@ -55,7 +55,7 @@ int smol_has_pressed_data_elf_impl(const char *path);
  * @param path Path to binary file
  * @return 1 if found, 0 if not found, -1 on error
  */
-int smol_has_pressed_data_pe_impl(const char *path);
+int smol_has_pressed_data_pe_impl(const char* path);
 
 /**
  * Check if ELF binary has PRESSED_DATA section using LIEF.
@@ -66,7 +66,7 @@ int smol_has_pressed_data_pe_impl(const char *path);
  * @param path Path to binary file
  * @return 1 if found, 0 if not found, -1 on error
  */
-int smol_has_pressed_data_elf_lief(const char *path);
+int smol_has_pressed_data_elf_lief(const char* path);
 
 /**
  * Check if PE binary has PRESSED_DATA section using LIEF.
@@ -77,13 +77,15 @@ int smol_has_pressed_data_elf_lief(const char *path);
  * @param path Path to binary file
  * @return 1 if found, 0 if not found, -1 on error
  */
-int smol_has_pressed_data_pe_lief(const char *path);
+int smol_has_pressed_data_pe_lief(const char* path);
 
 /**
- * Check if Mach-O binary has compressed data in __PRESSED_DATA section using LIEF.
+ * Check if Mach-O binary has compressed data in __PRESSED_DATA section using
+ * LIEF.
  *
  * Reads section content directly via LIEF and searches for magic marker.
- * This eliminates arbitrary search size limits by reading exact section content.
+ * This eliminates arbitrary search size limits by reading exact section
+ * content.
  *
  * @param path Path to binary file
  * @param marker_part1 First part of magic marker
@@ -91,10 +93,10 @@ int smol_has_pressed_data_pe_lief(const char *path);
  * @param marker_part3 Third part of magic marker
  * @return 1 if compressed data found, 0 if not found, -1 on error
  */
-int smol_has_compressed_data_macho_lief(const char *path,
-                                         const char *marker_part1,
-                                         const char *marker_part2,
-                                         const char *marker_part3);
+int smol_has_compressed_data_macho_lief(const char* path,
+                                        const char* marker_part1,
+                                        const char* marker_part2,
+                                        const char* marker_part3);
 
 /**
  * Check if ELF binary has compressed data in PRESSED_DATA section using LIEF.
@@ -107,10 +109,10 @@ int smol_has_compressed_data_macho_lief(const char *path,
  * @param marker_part3 Third part of magic marker
  * @return 1 if compressed data found, 0 if not found, -1 on error
  */
-int smol_has_compressed_data_elf_lief(const char *path,
-                                       const char *marker_part1,
-                                       const char *marker_part2,
-                                       const char *marker_part3);
+int smol_has_compressed_data_elf_lief(const char* path,
+                                      const char* marker_part1,
+                                      const char* marker_part2,
+                                      const char* marker_part3);
 
 /**
  * Check if PE binary has compressed data in PRESSED_DATA section using LIEF.
@@ -123,10 +125,9 @@ int smol_has_compressed_data_elf_lief(const char *path,
  * @param marker_part3 Third part of magic marker
  * @return 1 if compressed data found, 0 if not found, -1 on error
  */
-int smol_has_compressed_data_pe_lief(const char *path,
-                                      const char *marker_part1,
-                                      const char *marker_part2,
-                                      const char *marker_part3);
+int smol_has_compressed_data_pe_lief(const char* path, const char* marker_part1,
+                                     const char* marker_part2,
+                                     const char* marker_part3);
 
 /**
  * Extract Node.js version from binary using multiple strategies.
@@ -134,7 +135,8 @@ int smol_has_compressed_data_pe_lief(const char *path,
  * Attempts version extraction in order:
  * 1. Stub: PRESSED_DATA section with SMFG config (node_version in config)
  * 2. node-smol: SMOL_NODE_VER section (embedded during node-smol build)
- * 3. PE: VS_VERSION_INFO resource (standard Windows version info for plain Node.js)
+ * 3. PE: VS_VERSION_INFO resource (standard Windows version info for plain
+ * Node.js)
  * 4. All: SMOL_CONFIG section (works for injected binaries)
  *
  * @param binary_path Path to node-smol or Node.js binary

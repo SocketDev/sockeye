@@ -53,10 +53,10 @@
 
 #include <openssl/ssl.h>
 
+#include "env-inl.h"
 #include "node.h"
 #include "node_binding.h"
 #include "node_external_reference.h"
-#include "env-inl.h"
 #include "util.h"
 #include "uv.h"
 #include "v8.h"
@@ -124,10 +124,9 @@ EngineSlot* LookupEngineSlot(uint32_t engine_id) {
 namespace {
 
 Local<String> NewOneByteString(Isolate* isolate, const char* literal) {
-  return String::NewFromOneByte(isolate,
-                                reinterpret_cast<const uint8_t*>(literal),
-                                NewStringType::kNormal,
-                                static_cast<int>(std::strlen(literal)))
+  return String::NewFromOneByte(
+             isolate, reinterpret_cast<const uint8_t*>(literal),
+             NewStringType::kNormal, static_cast<int>(std::strlen(literal)))
       .ToLocalChecked();
 }
 
@@ -172,7 +171,7 @@ bool BindRequiredCallback(Isolate* isolate, Local<Context> context,
   return true;
 }
 
-}  // namespace
+} // namespace
 
 // ─── Section 1: Global init / cleanup ────────────────────────────────
 //
@@ -192,8 +191,8 @@ static void GlobalInit(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   Local<Context> context = isolate->GetCurrentContext();
-  int32_t flags = args[0]->Int32Value(context).FromMaybe(
-      LSQUIC_GLOBAL_CLIENT | LSQUIC_GLOBAL_SERVER);
+  int32_t flags = args[0]->Int32Value(context).FromMaybe(LSQUIC_GLOBAL_CLIENT |
+                                                         LSQUIC_GLOBAL_SERVER);
   const int r = lsquic_global_init(flags);
   if (r == 0) {
     g_lsquic_inited.store(true, std::memory_order_release);
@@ -218,21 +217,20 @@ static void GlobalCleanup(const FunctionCallbackInfo<Value>& args) {
 static void BindVersionEnum(Isolate* isolate, Local<Context> context,
                             Local<Object> target) {
   Local<Object> versions = Object::New(isolate);
-#define BIND_VERSION(name, value)                                        \
-  versions                                                               \
-      ->Set(context, NewOneByteString(isolate, name),                    \
-            Integer::New(isolate, static_cast<int32_t>(value)))          \
+#define BIND_VERSION(name, value)                                              \
+  versions                                                                     \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_VERSION("Q043", LSQVER_043);
   BIND_VERSION("Q046", LSQVER_046);
   BIND_VERSION("Q050", LSQVER_050);
   BIND_VERSION("ID27", LSQVER_ID27);
   BIND_VERSION("ID29", LSQVER_ID29);
-  BIND_VERSION("I001", LSQVER_I001);  // RFC 9000 / QUIC v1
-  BIND_VERSION("I002", LSQVER_I002);  // RFC 9369 / QUIC v2
+  BIND_VERSION("I001", LSQVER_I001); // RFC 9000 / QUIC v1
+  BIND_VERSION("I002", LSQVER_I002); // RFC 9369 / QUIC v2
 #undef BIND_VERSION
-  target->Set(context, NewOneByteString(isolate, "version"), versions)
-      .Check();
+  target->Set(context, NewOneByteString(isolate, "version"), versions).Check();
 
   Local<Object> globalFlags = Object::New(isolate);
   globalFlags
@@ -243,8 +241,7 @@ static void BindVersionEnum(Isolate* isolate, Local<Context> context,
       ->Set(context, NewOneByteString(isolate, "SERVER"),
             Integer::New(isolate, LSQUIC_GLOBAL_SERVER))
       .Check();
-  target
-      ->Set(context, NewOneByteString(isolate, "globalFlags"), globalFlags)
+  target->Set(context, NewOneByteString(isolate, "globalFlags"), globalFlags)
       .Check();
 }
 
@@ -299,14 +296,14 @@ static void CreateEngine(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   Local<Context> context = isolate->GetCurrentContext();
-  unsigned flags = static_cast<unsigned>(
-      args[0]->Uint32Value(context).FromMaybe(0));
+  unsigned flags =
+      static_cast<unsigned>(args[0]->Uint32Value(context).FromMaybe(0));
 
   // Validate callbacks object.
   if (args.Length() < 2 || !args[1]->IsObject()) {
-    isolate->ThrowException(v8::Exception::TypeError(NewOneByteString(
-        isolate,
-        "createEngine(flags, callbacks, settings?): callbacks must be an object")));
+    isolate->ThrowException(v8::Exception::TypeError(
+        NewOneByteString(isolate, "createEngine(flags, callbacks, settings?): "
+                                  "callbacks must be an object")));
     return;
   }
   Local<Object> callbacks = args[1].As<Object>();
@@ -503,9 +500,10 @@ namespace {
 // Using libuv here means no <arpa/inet.h> / <winsock2.h> includes —
 // libuv abstracts the platform split. Same pattern Node's
 // cares_wrap.cc uses (uv_inet_pton).
-size_t PackSockaddr(Isolate* isolate, Local<Context> context,
-                    Local<Value> val, struct sockaddr_storage* out) {
-  if (!val->IsObject()) return 0;
+size_t PackSockaddr(Isolate* isolate, Local<Context> context, Local<Value> val,
+                    struct sockaddr_storage* out) {
+  if (!val->IsObject())
+    return 0;
   Local<Object> obj = val.As<Object>();
   Local<Value> familyVal;
   if (!obj->Get(context, NewOneByteString(isolate, "family"))
@@ -515,36 +513,40 @@ size_t PackSockaddr(Isolate* isolate, Local<Context> context,
   int family = familyVal->Int32Value(context).FromMaybe(4);
   Local<Value> portVal;
   Local<Value> addrVal;
-  if (!obj->Get(context, NewOneByteString(isolate, "port"))
-           .ToLocal(&portVal) ||
+  if (!obj->Get(context, NewOneByteString(isolate, "port")).ToLocal(&portVal) ||
       !obj->Get(context, NewOneByteString(isolate, "address"))
            .ToLocal(&addrVal)) {
     return 0;
   }
   int port = portVal->Int32Value(context).FromMaybe(0);
-  if (!addrVal->IsString()) return 0;
+  if (!addrVal->IsString())
+    return 0;
   String::Utf8Value addrStr(isolate, addrVal);
-  if (*addrStr == nullptr) return 0;
+  if (*addrStr == nullptr)
+    return 0;
 
   std::memset(out, 0, sizeof(*out));
   if (family == 6) {
     auto* sin6 = reinterpret_cast<struct sockaddr_in6*>(out);
-    if (uv_ip6_addr(*addrStr, port, sin6) != 0) return 0;
+    if (uv_ip6_addr(*addrStr, port, sin6) != 0)
+      return 0;
     return sizeof(struct sockaddr_in6);
   }
   auto* sin = reinterpret_cast<struct sockaddr_in*>(out);
-  if (uv_ip4_addr(*addrStr, port, sin) != 0) return 0;
+  if (uv_ip4_addr(*addrStr, port, sin) != 0)
+    return 0;
   return sizeof(struct sockaddr_in);
 }
 
-}  // namespace
+} // namespace
 
 static void EngineProcessConns(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
   lsquic_engine_t* engine =
       LookupEngine(args[0]->Uint32Value(context).FromMaybe(0));
-  if (engine == nullptr) return;
+  if (engine == nullptr)
+    return;
   lsquic_engine_process_conns(engine);
 }
 
@@ -563,8 +565,8 @@ static void EnginePacketIn(const FunctionCallbackInfo<Value>& args) {
   }
   auto arr = args[1].As<v8::Uint8Array>();
   auto store = arr->Buffer()->GetBackingStore();
-  const unsigned char* data = static_cast<const unsigned char*>(
-      store->Data()) + arr->ByteOffset();
+  const unsigned char* data =
+      static_cast<const unsigned char*>(store->Data()) + arr->ByteOffset();
   const size_t len = arr->ByteLength();
 
   struct sockaddr_storage local_sa{};
@@ -577,8 +579,7 @@ static void EnginePacketIn(const FunctionCallbackInfo<Value>& args) {
   }
   int ecn = args[4]->Int32Value(context).FromMaybe(0);
   int r = lsquic_engine_packet_in(
-      engine, data, len,
-      reinterpret_cast<const struct sockaddr*>(&local_sa),
+      engine, data, len, reinterpret_cast<const struct sockaddr*>(&local_sa),
       reinterpret_cast<const struct sockaddr*>(&peer_sa), nullptr, ecn);
   args.GetReturnValue().Set(Integer::New(isolate, r));
 }
@@ -616,8 +617,8 @@ static void EngineQuicVersions(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, 0));
     return;
   }
-  args.GetReturnValue().Set(Integer::NewFromUnsigned(
-      isolate, lsquic_engine_quic_versions(engine)));
+  args.GetReturnValue().Set(
+      Integer::NewFromUnsigned(isolate, lsquic_engine_quic_versions(engine)));
 }
 
 // ─── Section 5: Engine connect (outbound) ────────────────────────────
@@ -673,8 +674,8 @@ static void EngineConnect(const FunctionCallbackInfo<Value>& args) {
   String::Utf8Value sni(isolate, args[4]);
   const char* sni_cstr = (*sni == nullptr) ? nullptr : *sni;
 
-  unsigned short plpmtu = static_cast<unsigned short>(
-      args[5]->Uint32Value(context).FromMaybe(0));
+  unsigned short plpmtu =
+      static_cast<unsigned short>(args[5]->Uint32Value(context).FromMaybe(0));
 
   // sess_resume and token are optional Uint8Arrays. nullptr if not
   // provided — lsquic does a 1-RTT handshake instead of 0-RTT.
@@ -683,8 +684,8 @@ static void EngineConnect(const FunctionCallbackInfo<Value>& args) {
   if (args[6]->IsUint8Array()) {
     auto arr = args[6].As<v8::Uint8Array>();
     auto store = arr->Buffer()->GetBackingStore();
-    sess_resume = static_cast<const unsigned char*>(store->Data()) +
-                  arr->ByteOffset();
+    sess_resume =
+        static_cast<const unsigned char*>(store->Data()) + arr->ByteOffset();
     sess_resume_len = arr->ByteLength();
   }
   const unsigned char* token = nullptr;
@@ -692,8 +693,8 @@ static void EngineConnect(const FunctionCallbackInfo<Value>& args) {
   if (args[7]->IsUint8Array()) {
     auto arr = args[7].As<v8::Uint8Array>();
     auto store = arr->Buffer()->GetBackingStore();
-    token = static_cast<const unsigned char*>(store->Data()) +
-            arr->ByteOffset();
+    token =
+        static_cast<const unsigned char*>(store->Data()) + arr->ByteOffset();
     token_sz = arr->ByteLength();
   }
 
@@ -701,8 +702,8 @@ static void EngineConnect(const FunctionCallbackInfo<Value>& args) {
       engine, static_cast<enum lsquic_version>(version),
       reinterpret_cast<const struct sockaddr*>(&local_sa),
       reinterpret_cast<const struct sockaddr*>(&peer_sa),
-      /*peer_ctx=*/nullptr, /*conn_ctx=*/nullptr, sni_cstr, plpmtu,
-      sess_resume, sess_resume_len, token, token_sz);
+      /*peer_ctx=*/nullptr, /*conn_ctx=*/nullptr, sni_cstr, plpmtu, sess_resume,
+      sess_resume_len, token, token_sz);
   if (conn == nullptr) {
     args.GetReturnValue().Set(Integer::NewFromUnsigned(isolate, 0));
     return;
@@ -738,7 +739,8 @@ static void ConnClose(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   lsquic_conn_t* conn = LookupConn(id);
-  if (conn == nullptr) return;
+  if (conn == nullptr)
+    return;
   lsquic_conn_close(conn);
   // Note: the connection isn't actually freed by lsquic_conn_close;
   // lsquic will invoke on_conn_closed (when callbacks are wired in
@@ -769,9 +771,9 @@ static void ConnGetStatus(const FunctionCallbackInfo<Value>& args) {
            Integer::New(isolate, static_cast<int32_t>(status)))
       .Check();
   if (errbuf[0] != '\0') {
-    Local<String> err = String::NewFromUtf8(isolate, errbuf,
-                                              NewStringType::kNormal)
-                            .ToLocalChecked();
+    Local<String> err =
+        String::NewFromUtf8(isolate, errbuf, NewStringType::kNormal)
+            .ToLocalChecked();
     out->Set(context, NewOneByteString(isolate, "error"), err).Check();
   }
   args.GetReturnValue().Set(out);
@@ -798,8 +800,7 @@ static void ConnGetCID(const FunctionCallbackInfo<Value>& args) {
   const size_t len = cid->len;
   auto backing = v8::ArrayBuffer::NewBackingStore(isolate, len);
   std::memcpy(backing->Data(), cid->idbuf, len);
-  Local<v8::ArrayBuffer> ab =
-      v8::ArrayBuffer::New(isolate, std::move(backing));
+  Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(isolate, std::move(backing));
   Local<v8::Uint8Array> arr = v8::Uint8Array::New(ab, 0, len);
   args.GetReturnValue().Set(arr);
 }
@@ -844,10 +845,10 @@ static void ConnGetSNI(const FunctionCallbackInfo<Value>& args) {
 static void BindConnStatus(Isolate* isolate, Local<Context> context,
                            Local<Object> target) {
   Local<Object> connStatus = Object::New(isolate);
-#define BIND_STATUS(name, value)                                         \
-  connStatus                                                             \
-      ->Set(context, NewOneByteString(isolate, name),                    \
-            Integer::New(isolate, static_cast<int32_t>(value)))          \
+#define BIND_STATUS(name, value)                                               \
+  connStatus                                                                   \
+      ->Set(context, NewOneByteString(isolate, name),                          \
+            Integer::New(isolate, static_cast<int32_t>(value)))                \
       .Check();
   BIND_STATUS("HSK_IN_PROGRESS", LSCONN_ST_HSK_IN_PROGRESS);
   BIND_STATUS("CONNECTED", LSCONN_ST_CONNECTED);
@@ -860,8 +861,7 @@ static void BindConnStatus(Isolate* isolate, Local<Context> context,
   BIND_STATUS("CLOSED", LSCONN_ST_CLOSED);
   BIND_STATUS("PEER_GOING_AWAY", LSCONN_ST_PEER_GOING_AWAY);
 #undef BIND_STATUS
-  target
-      ->Set(context, NewOneByteString(isolate, "connStatus"), connStatus)
+  target->Set(context, NewOneByteString(isolate, "connStatus"), connStatus)
       .Check();
 }
 
@@ -882,17 +882,14 @@ static void BindEngineFlags(Isolate* isolate, Local<Context> context,
       ->Set(context, NewOneByteString(isolate, "HTTP"),
             Integer::New(isolate, LSENG_HTTP))
       .Check();
-  target
-      ->Set(context, NewOneByteString(isolate, "engineFlags"), engineFlags)
+  target->Set(context, NewOneByteString(isolate, "engineFlags"), engineFlags)
       .Check();
 }
 
 // ─── Initialize / RegisterExternalReferences ─────────────────────────
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   Isolate* isolate = Isolate::GetCurrent();
 
   SetMethod(context, target, "globalInit", GlobalInit);
@@ -947,9 +944,9 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   RegisterHttp3ExternalReferences(registry);
 }
 
-}  // namespace quic
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace quic
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_quic,
                                     node::socketsecurity::quic::Initialize)

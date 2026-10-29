@@ -30,7 +30,8 @@
 //     binding.getVFSConfig()        → { mode, prefix } object
 //     binding.tarCalculateChecksum() → number
 //     binding.tarIsZeroBlock()       → boolean
-// User: require('node:smol-vfs') → lib/smol-vfs.js → vfs/loader.js → this binding
+// User: require('node:smol-vfs') → lib/smol-vfs.js → vfs/loader.js → this
+// binding
 //
 // KEY CONCEPTS FOR JS DEVELOPERS
 // - Isolate: An Isolate is one JavaScript runtime — each Worker thread
@@ -72,12 +73,12 @@
 #include "node_errors.h"
 #include "node_external_reference.h"
 #include "node_internals.h"
-#include "util-inl.h"
+#include "socketsecurity/bin-infra/segment_names.h"
+#include "socketsecurity/binject/vfs_config.h"
 #include "socketsecurity/build-infra/debug_common.h"
 #include "socketsecurity/build-infra/file_io_common.h"
-#include "socketsecurity/binject/vfs_config.h"
-#include "socketsecurity/bin-infra/segment_names.h"
 #include "socketsecurity/simd/simd.h"
+#include "util-inl.h"
 #include "v8-fast-api-calls.h"
 
 // "Postject" is the tool Node.js uses to inject data into compiled binaries.
@@ -94,11 +95,11 @@
 
 // Linux-specific includes for memfd_create
 #ifdef __linux__
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
 #endif
 
 // "using" declarations — these bring V8 types into the current scope so we
@@ -107,16 +108,16 @@
 //   const { Isolate, Local, Object, Value } = require('v8');
 using v8::ArrayBuffer;
 using v8::BackingStore;
+using v8::CFunction;
 using v8::Context;
+using v8::FastApiCallbackOptions;
 using v8::FunctionCallbackInfo;
+using v8::HandleScope;
 using v8::Isolate;
 using v8::Local;
 using v8::Null;
 using v8::Object;
 using v8::Value;
-using v8::CFunction;
-using v8::FastApiCallbackOptions;
-using v8::HandleScope;
 
 namespace node {
 namespace smol_vfs {
@@ -134,8 +135,8 @@ namespace smol_vfs {
 // that gets assigned on first function call and never changes.
 // ============================================================================
 
-// VFS section detection - call postject_find_resource only once during static init.
-// Returns: {blob_pointer, size, section_exists}
+// VFS section detection - call postject_find_resource only once during static
+// init. Returns: {blob_pointer, size, section_exists}
 struct VFSInfo {
   const char* blob;
   size_t size;
@@ -153,9 +154,7 @@ static VFSInfo GetVFSInfo() {
     options.macho_section_name = "__SMOL_VFS_BLOB";
 
     const char* blob = static_cast<const char*>(
-        postject_find_resource("SMOL_VFS_BLOB",
-                               &size,
-                               &options));
+        postject_find_resource("SMOL_VFS_BLOB", &size, &options));
 
     return {blob, size, blob != nullptr};
   }();
@@ -166,7 +165,8 @@ static VFSInfo GetVFSInfo() {
 // Find SMOL_VFS_BLOB resource injected via binject
 // Note: Mach-O section names are limited to 16 characters
 // VFS data is stored in NODE_SEA segment's __SMOL_VFS_BLOB section
-// Returns empty string_view if section doesn't exist or is 0 bytes (compat mode)
+// Returns empty string_view if section doesn't exist or is 0 bytes (compat
+// mode)
 static std::string_view FindVFSBlob() {
   const VFSInfo info = GetVFSInfo();
 
@@ -183,8 +183,8 @@ bool HasVFSBlob() {
   return GetVFSInfo().section_exists;
 }
 
-// VFS config detection - call postject_find_resource only once during static init.
-// Returns: {blob_pointer, size, section_exists}
+// VFS config detection - call postject_find_resource only once during static
+// init. Returns: {blob_pointer, size, section_exists}
 struct VFSConfigInfo {
   const char* blob;
   size_t size;
@@ -203,14 +203,14 @@ static VFSConfigInfo GetVFSConfigInfo() {
     options.macho_segment_name = "NODE_SEA";
     options.macho_section_name = MACHO_SECTION_SMOL_VFS_CONFIG;
 
-    DEBUG_LOG("GetVFSConfigInfo: Calling postject_find_resource for SMOL_VFS_CFG\n");
+    DEBUG_LOG(
+        "GetVFSConfigInfo: Calling postject_find_resource for SMOL_VFS_CFG\n");
     const char* blob = static_cast<const char*>(
-        postject_find_resource(SMOL_VFS_CONFIG_RESOURCE_NAME,
-                               &size,
-                               &options));
+        postject_find_resource(SMOL_VFS_CONFIG_RESOURCE_NAME, &size, &options));
 
-    DEBUG_LOG("GetVFSConfigInfo: postject_find_resource returned blob=%p size=%zu\n",
-            (void*)blob, size);
+    DEBUG_LOG(
+        "GetVFSConfigInfo: postject_find_resource returned blob=%p size=%zu\n",
+        (void*)blob, size);
 
     return {blob, size, blob != nullptr};
   }();
@@ -221,8 +221,7 @@ static VFSConfigInfo GetVFSConfigInfo() {
 
 // Helper: Read little-endian uint16_t
 static uint16_t read_le16(const uint8_t* data) {
-  return static_cast<uint16_t>(data[0]) |
-         (static_cast<uint16_t>(data[1]) << 8);
+  return static_cast<uint16_t>(data[0]) | (static_cast<uint16_t>(data[1]) << 8);
 }
 
 // Helper: Read little-endian uint32_t
@@ -235,8 +234,7 @@ static uint32_t read_le32(const uint8_t* data) {
 
 // Deserialize VFS config from SVFG format
 // Returns null object if config not found or invalid
-static bool DeserializeVFSConfig(const char* data,
-                                 std::string& mode,
+static bool DeserializeVFSConfig(const char* data, std::string& mode,
                                  std::string& prefix) {
   DEBUG_LOG("DeserializeVFSConfig: START data=%p\n", (void*)data);
   if (!data) {
@@ -251,7 +249,8 @@ static bool DeserializeVFSConfig(const char* data,
   DEBUG_LOG("DeserializeVFSConfig: Reading magic at offset %zu\n", offset);
   uint32_t magic = read_le32(buf + offset);
   offset += 4;
-  DEBUG_LOG("DeserializeVFSConfig: magic=0x%08X (expected 0x%08X)\n", magic, VFS_CONFIG_MAGIC);
+  DEBUG_LOG("DeserializeVFSConfig: magic=0x%08X (expected 0x%08X)\n", magic,
+            VFS_CONFIG_MAGIC);
   if (magic != VFS_CONFIG_MAGIC) {
     DEBUG_LOG("DeserializeVFSConfig: Invalid magic, returning false\n");
     return false;
@@ -261,7 +260,8 @@ static bool DeserializeVFSConfig(const char* data,
   DEBUG_LOG("DeserializeVFSConfig: Reading version at offset %zu\n", offset);
   uint16_t version = read_le16(buf + offset);
   offset += 2;
-  DEBUG_LOG("DeserializeVFSConfig: version=%u (expected %u)\n", version, VFS_CONFIG_VERSION);
+  DEBUG_LOG("DeserializeVFSConfig: version=%u (expected %u)\n", version,
+            VFS_CONFIG_VERSION);
   if (version != VFS_CONFIG_VERSION) {
     DEBUG_LOG("DeserializeVFSConfig: Invalid version, returning false\n");
     return false;
@@ -272,10 +272,12 @@ static bool DeserializeVFSConfig(const char* data,
   DEBUG_LOG("DeserializeVFSConfig: Skipped padding, offset now %zu\n", offset);
 
   // Read mode (2-byte length prefix + up to 32 bytes)
-  DEBUG_LOG("DeserializeVFSConfig: Reading mode length at offset %zu\n", offset);
+  DEBUG_LOG("DeserializeVFSConfig: Reading mode length at offset %zu\n",
+            offset);
   uint16_t mode_len = read_le16(buf + offset);
   offset += 2;
-  DEBUG_LOG("DeserializeVFSConfig: mode_len=%u (max %u)\n", mode_len, MAX_VFS_MODE_LEN);
+  DEBUG_LOG("DeserializeVFSConfig: mode_len=%u (max %u)\n", mode_len,
+            MAX_VFS_MODE_LEN);
   if (mode_len > MAX_VFS_MODE_LEN) {
     DEBUG_LOG("DeserializeVFSConfig: mode_len too large, returning false\n");
     return false;
@@ -285,10 +287,12 @@ static bool DeserializeVFSConfig(const char* data,
   DEBUG_LOG("DeserializeVFSConfig: mode='%s'\n", mode.c_str());
 
   // Read prefix (2-byte length prefix + up to 64 bytes)
-  DEBUG_LOG("DeserializeVFSConfig: Reading prefix length at offset %zu\n", offset);
+  DEBUG_LOG("DeserializeVFSConfig: Reading prefix length at offset %zu\n",
+            offset);
   uint16_t prefix_len = read_le16(buf + offset);
   offset += 2;
-  DEBUG_LOG("DeserializeVFSConfig: prefix_len=%u (max %u)\n", prefix_len, MAX_VFS_PREFIX_LEN);
+  DEBUG_LOG("DeserializeVFSConfig: prefix_len=%u (max %u)\n", prefix_len,
+            MAX_VFS_PREFIX_LEN);
   if (prefix_len > MAX_VFS_PREFIX_LEN) {
     DEBUG_LOG("DeserializeVFSConfig: prefix_len too large, returning false\n");
     return false;
@@ -304,8 +308,8 @@ static bool DeserializeVFSConfig(const char* data,
 // ============================================================================
 // Section 2: JavaScript Bindings
 // ============================================================================
-// Each function below is callable from JavaScript via internalBinding('smol_vfs').
-// They follow a pattern:
+// Each function below is callable from JavaScript via
+// internalBinding('smol_vfs'). They follow a pattern:
 //   1. Get the Isolate (the JS runtime instance)
 //   2. Read arguments from `args[0]`, `args[1]`, etc.
 //   3. Do the work in C++
@@ -315,25 +319,26 @@ static bool DeserializeVFSConfig(const char* data,
 // ============================================================================
 
 // JavaScript binding: internalBinding('smol_vfs').getVFSBlob()
-// Returns the raw VFS TAR archive as an ArrayBuffer, or undefined if not present.
+// Returns the raw VFS TAR archive as an ArrayBuffer, or undefined if not
+// present.
 static void GetVFSBlob(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   std::string_view blob = FindVFSBlob();
   if (blob.empty()) {
-    return;  // Return undefined if no VFS blob
+    return; // Return undefined if no VFS blob
   }
 
   // Create ArrayBuffer with VFS blob data
   std::unique_ptr<BackingStore> backing = ArrayBuffer::NewBackingStore(
-      const_cast<char*>(blob.data()),
-      blob.size(),
+      const_cast<char*>(blob.data()), blob.size(),
       [](void*, size_t, void*) {
         // No-op deleter since data is static
       },
       nullptr);
 
-  Local<ArrayBuffer> array_buffer = ArrayBuffer::New(isolate, std::move(backing));
+  Local<ArrayBuffer> array_buffer =
+      ArrayBuffer::New(isolate, std::move(backing));
   args.GetReturnValue().Set(array_buffer);
 }
 
@@ -362,11 +367,12 @@ static void GetVFSConfig(const FunctionCallbackInfo<Value>& args) {
   DEBUG_LOG("GetVFSConfig: Calling GetVFSConfigInfo()\n");
   const VFSConfigInfo info = GetVFSConfigInfo();
   DEBUG_LOG("GetVFSConfig: section_exists=%d size=%zu (expected %d)\n",
-          info.section_exists, info.size, VFS_CFG_SIZE);
+            info.section_exists, info.size, VFS_CFG_SIZE);
 
   if (!info.section_exists || info.size != VFS_CFG_SIZE) {
-    DEBUG_LOG("GetVFSConfig: Config not found or wrong size, returning undefined\n");
-    return;  // Return undefined if config not found or wrong size
+    DEBUG_LOG(
+        "GetVFSConfig: Config not found or wrong size, returning undefined\n");
+    return; // Return undefined if config not found or wrong size
   }
 
   // Deserialize SVFG format
@@ -374,22 +380,25 @@ static void GetVFSConfig(const FunctionCallbackInfo<Value>& args) {
   std::string mode, prefix;
   if (!DeserializeVFSConfig(info.blob, mode, prefix)) {
     DEBUG_LOG("GetVFSConfig: Deserialization failed, returning undefined\n");
-    return;  // Return undefined if deserialization failed
+    return; // Return undefined if deserialization failed
   }
 
   // Create JavaScript object {mode, prefix}
   DEBUG_LOG("GetVFSConfig: Creating JavaScript object\n");
-  Local<Object> config_obj = Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
+  Local<Object> config_obj =
+      Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
 
-  Local<v8::String> mode_str = node::OneByteString(isolate, mode.c_str(), mode.length());
-  Local<v8::String> prefix_str = node::OneByteString(isolate, prefix.c_str(), prefix.length());
+  Local<v8::String> mode_str =
+      node::OneByteString(isolate, mode.c_str(), mode.length());
+  Local<v8::String> prefix_str =
+      node::OneByteString(isolate, prefix.c_str(), prefix.length());
 
-  config_obj->Set(context,
-                  node::FIXED_ONE_BYTE_STRING(isolate, "mode"),
-                  mode_str).Check();
-  config_obj->Set(context,
-                  node::FIXED_ONE_BYTE_STRING(isolate, "prefix"),
-                  prefix_str).Check();
+  config_obj
+      ->Set(context, node::FIXED_ONE_BYTE_STRING(isolate, "mode"), mode_str)
+      .Check();
+  config_obj
+      ->Set(context, node::FIXED_ONE_BYTE_STRING(isolate, "prefix"), prefix_str)
+      .Check();
 
   DEBUG_LOG("GetVFSConfig: Returning config object\n");
   args.GetReturnValue().Set(config_obj);
@@ -427,7 +436,8 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
 
   // Validate arguments
   if (args.Length() < 2) {
-    THROW_ERR_MISSING_ARGS(env, "createMemfd requires 2 arguments (name, content)");
+    THROW_ERR_MISSING_ARGS(env,
+                           "createMemfd requires 2 arguments (name, content)");
     return;
   }
 
@@ -449,9 +459,8 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
   // null-check `*utf8` before dereferencing."
   v8::String::Utf8Value name_utf8(isolate, args[0]);
   if (*name_utf8 == nullptr) {
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to convert memfd name to UTF-8")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to convert memfd name to UTF-8")));
     return;
   }
   const char* name = *name_utf8;
@@ -480,7 +489,8 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
   if (fd == -1) {
     // memfd_create failed - return undefined to signal fallback to tmpfs
     // Common causes: kernel < 3.17, seccomp filter, restricted container
-    DEBUG_LOG("[VFS] memfd_create failed for '%s': %s (errno=%d), falling back to tmpfs\n",
+    DEBUG_LOG("[VFS] memfd_create failed for '%s': %s (errno=%d), falling back "
+              "to tmpfs\n",
               name, strerror(errno), errno);
     return;
   }
@@ -489,7 +499,7 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
   ssize_t written = write_eintr(fd, data, length);
   if (written != static_cast<ssize_t>(length)) {
     close(fd);
-    return;  // Write failed - return undefined
+    return; // Write failed - return undefined
   }
 
   // Seek back to beginning so file can be read
@@ -499,7 +509,8 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
   }
 
   // Return path to /proc/self/fd/<fd>
-  // This path can be used like a regular file path for dlopen(), require(), etc.
+  // This path can be used like a regular file path for dlopen(), require(),
+  // etc.
   char fd_path[64];
   snprintf(fd_path, sizeof(fd_path), "/proc/self/fd/%d", fd);
 
@@ -512,7 +523,7 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
   }
   g_memfds.push_back(fd);
 }
-#endif  // __linux__
+#endif // __linux__
 
 // ============================================================================
 // Section 4: SIMD-Accelerated TAR Utilities
@@ -526,7 +537,8 @@ static void CreateMemfd(const FunctionCallbackInfo<Value>& args) {
 //
 // The code has three paths, selected at compile time:
 //   - SSE2 (Intel/AMD x86_64): Processes 16 bytes at a time using __m128i
-//   - NEON (ARM, e.g. Apple Silicon): Processes 16 bytes at a time using uint8x16_t
+//   - NEON (ARM, e.g. Apple Silicon): Processes 16 bytes at a time using
+//   uint8x16_t
 //   - Scalar fallback: One byte at a time (any CPU)
 //
 // #if SMOL_HAS_SSE2 / #elif SMOL_HAS_NEON / #else are compile-time switches —
@@ -546,13 +558,16 @@ uint32_t CalculateChecksum(const uint8_t* header) {
 
   // Process bytes 0-143 (9 chunks of 16 bytes = 144 bytes)
   for (int i = 0; i < 144; i += 16) {
-    __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(header + i));
+    __m128i chunk =
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(header + i));
     // Unpack to 16-bit integers and accumulate
     __m128i lo = _mm_unpacklo_epi8(chunk, zero);
     __m128i hi = _mm_unpackhi_epi8(chunk, zero);
-    acc = _mm_add_epi32(acc, _mm_add_epi32(
-        _mm_add_epi32(_mm_unpacklo_epi16(lo, zero), _mm_unpackhi_epi16(lo, zero)),
-        _mm_add_epi32(_mm_unpacklo_epi16(hi, zero), _mm_unpackhi_epi16(hi, zero))));
+    acc = _mm_add_epi32(
+        acc, _mm_add_epi32(_mm_add_epi32(_mm_unpacklo_epi16(lo, zero),
+                                         _mm_unpackhi_epi16(lo, zero)),
+                           _mm_add_epi32(_mm_unpacklo_epi16(hi, zero),
+                                         _mm_unpackhi_epi16(hi, zero))));
   }
 
   // Add bytes 144-147 (4 bytes before checksum field)
@@ -561,14 +576,18 @@ uint32_t CalculateChecksum(const uint8_t* header) {
   // Checksum field (148-155) treated as 8 spaces (8 * 32 = 256)
   sum += 256;
 
-  // Process bytes 156-507 (22 chunks of 16 = 352 bytes, last chunk at i=492 covers 492-507)
+  // Process bytes 156-507 (22 chunks of 16 = 352 bytes, last chunk at i=492
+  // covers 492-507)
   for (int i = 156; i + 16 <= 508; i += 16) {
-    __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(header + i));
+    __m128i chunk =
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(header + i));
     __m128i lo = _mm_unpacklo_epi8(chunk, zero);
     __m128i hi = _mm_unpackhi_epi8(chunk, zero);
-    acc = _mm_add_epi32(acc, _mm_add_epi32(
-        _mm_add_epi32(_mm_unpacklo_epi16(lo, zero), _mm_unpackhi_epi16(lo, zero)),
-        _mm_add_epi32(_mm_unpacklo_epi16(hi, zero), _mm_unpackhi_epi16(hi, zero))));
+    acc = _mm_add_epi32(
+        acc, _mm_add_epi32(_mm_add_epi32(_mm_unpacklo_epi16(lo, zero),
+                                         _mm_unpackhi_epi16(lo, zero)),
+                           _mm_add_epi32(_mm_unpacklo_epi16(hi, zero),
+                                         _mm_unpackhi_epi16(hi, zero))));
   }
 
   // Remaining bytes 508-511 (4 bytes after last SSE2 chunk)
@@ -600,7 +619,8 @@ uint32_t CalculateChecksum(const uint8_t* header) {
   // Checksum field
   sum += 256;
 
-  // Process bytes 156-507 (22 chunks of 16 = 352 bytes, last chunk at i=492 covers 492-507)
+  // Process bytes 156-507 (22 chunks of 16 = 352 bytes, last chunk at i=492
+  // covers 492-507)
   for (int i = 156; i + 16 <= 508; i += 16) {
     uint8x16_t chunk = vld1q_u8(header + i);
     uint16x8_t lo = vmovl_u8(vget_low_u8(chunk));
@@ -641,7 +661,8 @@ bool IsZeroBlock(const uint8_t* block) {
   if (smol::simd::g_has_avx2) {
     __m256i zero = _mm256_setzero_si256();
     for (int i = 0; i < 512; i += 32) {
-      __m256i chunk = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(block + i));
+      __m256i chunk =
+          _mm256_loadu_si256(reinterpret_cast<const __m256i*>(block + i));
       if (!_mm256_testz_si256(chunk, chunk)) {
         return false;
       }
@@ -653,7 +674,8 @@ bool IsZeroBlock(const uint8_t* block) {
 #if SMOL_HAS_SSE2
   __m128i zero = _mm_setzero_si128();
   for (int i = 0; i < 512; i += 16) {
-    __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(block + i));
+    __m128i chunk =
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(block + i));
     if (_mm_movemask_epi8(_mm_cmpeq_epi8(chunk, zero)) != 0xFFFF) {
       return false;
     }
@@ -667,7 +689,8 @@ bool IsZeroBlock(const uint8_t* block) {
     uint8x16_t cmp = vceqq_u8(chunk, zero);
     // Check if all bytes are equal to zero
     uint64x2_t cmp64 = vreinterpretq_u64_u8(cmp);
-    if (vgetq_lane_u64(cmp64, 0) != ~0ULL || vgetq_lane_u64(cmp64, 1) != ~0ULL) {
+    if (vgetq_lane_u64(cmp64, 0) != ~0ULL ||
+        vgetq_lane_u64(cmp64, 1) != ~0ULL) {
       return false;
     }
   }
@@ -703,7 +726,7 @@ int64_t ParseOctal(const uint8_t* data, size_t len) {
   return result;
 }
 
-}  // namespace tar
+} // namespace tar
 
 // JavaScript bindings for TAR utilities
 static void TarCalculateChecksum(const FunctionCallbackInfo<Value>& args) {
@@ -711,7 +734,8 @@ static void TarCalculateChecksum(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(isolate);
 
   if (args.Length() < 2) {
-    THROW_ERR_MISSING_ARGS(env, "tarCalculateChecksum requires 2 arguments (buffer, offset)");
+    THROW_ERR_MISSING_ARGS(
+        env, "tarCalculateChecksum requires 2 arguments (buffer, offset)");
     return;
   }
 
@@ -735,7 +759,8 @@ static void TarCalculateChecksum(const FunctionCallbackInfo<Value>& args) {
     length = ab->ByteLength();
   }
 
-  uint32_t offset = args[1]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
+  uint32_t offset =
+      args[1]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
 
   // Overflow-safe bounds check. `offset + 512` is computed at uint32_t
   // (both operands promote to uint32_t in C++) and only THEN widened
@@ -757,7 +782,8 @@ static void TarIsZeroBlock(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(isolate);
 
   if (args.Length() < 2) {
-    THROW_ERR_MISSING_ARGS(env, "tarIsZeroBlock requires 2 arguments (buffer, offset)");
+    THROW_ERR_MISSING_ARGS(
+        env, "tarIsZeroBlock requires 2 arguments (buffer, offset)");
     return;
   }
 
@@ -781,7 +807,8 @@ static void TarIsZeroBlock(const FunctionCallbackInfo<Value>& args) {
     length = ab->ByteLength();
   }
 
-  uint32_t offset = args[1]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
+  uint32_t offset =
+      args[1]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
 
   // Overflow-safe bounds check — see TarCalculateChecksum above for
   // rationale (uint32_t + 512 wraps; widening to size_t happens only
@@ -800,7 +827,8 @@ static void TarParseOctal(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(isolate);
 
   if (args.Length() < 3) {
-    THROW_ERR_MISSING_ARGS(env, "tarParseOctal requires 3 arguments (buffer, offset, length)");
+    THROW_ERR_MISSING_ARGS(
+        env, "tarParseOctal requires 3 arguments (buffer, offset, length)");
     return;
   }
 
@@ -877,12 +905,10 @@ bool FastCanBuildSea(Local<Value> receiver,
 
 static CFunction fast_can_build_sea(CFunction::Make(FastCanBuildSea));
 
-uint32_t FastTarCalculateChecksum(
-    Local<Value> receiver,
-    Local<Value> buffer_val,
-    uint32_t offset,
-    // NOLINTNEXTLINE(runtime/references)
-    FastApiCallbackOptions& options) {
+uint32_t FastTarCalculateChecksum(Local<Value> receiver,
+                                  Local<Value> buffer_val, uint32_t offset,
+                                  // NOLINTNEXTLINE(runtime/references)
+                                  FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_vfs.tarCalculateChecksum");
   HandleScope scope(options.isolate);
   ArrayBufferViewContents<uint8_t> buffer(buffer_val);
@@ -894,11 +920,10 @@ uint32_t FastTarCalculateChecksum(
   return tar::CalculateChecksum(buffer.data() + offset);
 }
 
-static CFunction fast_tar_calculate_checksum(
-    CFunction::Make(FastTarCalculateChecksum));
+static CFunction
+    fast_tar_calculate_checksum(CFunction::Make(FastTarCalculateChecksum));
 
-bool FastTarIsZeroBlock(Local<Value> receiver,
-                        Local<Value> buffer_val,
+bool FastTarIsZeroBlock(Local<Value> receiver, Local<Value> buffer_val,
                         uint32_t offset,
                         // NOLINTNEXTLINE(runtime/references)
                         FastApiCallbackOptions& options) {
@@ -929,23 +954,21 @@ static CFunction fast_tar_is_zero_block(CFunction::Make(FastTarIsZeroBlock));
 // NODE_BINDING_CONTEXT_AWARE_INTERNAL at the bottom tells Node.js that
 // 'smol_vfs' is an internal binding with these init functions.
 // ============================================================================
-static void Initialize(Local<Object> target,
-                       Local<Value> unused,
-                       Local<Context> context,
-                       void* priv) {
+static void Initialize(Local<Object> target, Local<Value> unused,
+                       Local<Context> context, void* priv) {
   DEBUG_INIT("smol:vfs");
   SetMethod(context, target, "getVFSBlob", GetVFSBlob);
-  SetFastMethodNoSideEffect(
-      context, target, "hasVFSBlob", HasVFSBlobBinding, &fast_has_vfs_blob);
-  SetFastMethodNoSideEffect(
-      context, target, "canBuildSea", CanBuildSeaBinding, &fast_can_build_sea);
+  SetFastMethodNoSideEffect(context, target, "hasVFSBlob", HasVFSBlobBinding,
+                            &fast_has_vfs_blob);
+  SetFastMethodNoSideEffect(context, target, "canBuildSea", CanBuildSeaBinding,
+                            &fast_can_build_sea);
   SetMethod(context, target, "getVFSConfig", GetVFSConfig);
 
   // SIMD-accelerated TAR utilities
   SetFastMethodNoSideEffect(context, target, "tarCalculateChecksum",
                             TarCalculateChecksum, &fast_tar_calculate_checksum);
-  SetFastMethodNoSideEffect(context, target, "tarIsZeroBlock",
-                            TarIsZeroBlock, &fast_tar_is_zero_block);
+  SetFastMethodNoSideEffect(context, target, "tarIsZeroBlock", TarIsZeroBlock,
+                            &fast_tar_is_zero_block);
 }
 
 static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
@@ -963,12 +986,13 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(fast_tar_is_zero_block);
 }
 
-}  // namespace smol_vfs
-}  // namespace node
+} // namespace smol_vfs
+} // namespace node
 
 // Register as internal binding (like all Node.js bindings)
 // Access via process.binding() is enabled by adding to processBindingAllowList
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_vfs, node::smol_vfs::Initialize)
-NODE_BINDING_EXTERNAL_REFERENCE(smol_vfs, node::smol_vfs::RegisterExternalReferences)
+NODE_BINDING_EXTERNAL_REFERENCE(smol_vfs,
+                                node::smol_vfs::RegisterExternalReferences)
 
 #pragma GCC diagnostic pop

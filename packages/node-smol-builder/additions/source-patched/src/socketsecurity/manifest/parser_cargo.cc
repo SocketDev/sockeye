@@ -97,8 +97,7 @@ namespace manifest {
 namespace {
 
 bool StartsWith(std::string_view s, std::string_view prefix) {
-  return s.size() >= prefix.size() &&
-         s.substr(0, prefix.size()) == prefix;
+  return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
 }
 
 std::string_view TrimAscii(std::string_view s) {
@@ -133,7 +132,8 @@ std::string_view StripQuotes(std::string_view s) {
 // stripping). Source: socket-lib's `valueAfterEquals`.
 std::string_view ValueAfterEquals(std::string_view line) {
   size_t eq = line.find('=');
-  if (eq == std::string_view::npos) return std::string_view{};
+  if (eq == std::string_view::npos)
+    return std::string_view{};
   return TrimAscii(line.substr(eq + 1));
 }
 
@@ -143,7 +143,8 @@ std::string_view ValueAfterEquals(std::string_view line) {
 std::string_view ExtractCargoDepName(std::string_view entry) {
   std::string_view s = StripQuotes(entry);
   size_t sp = s.find(' ');
-  if (sp == std::string_view::npos) return s;
+  if (sp == std::string_view::npos)
+    return s;
   return s.substr(0, sp);
 }
 
@@ -158,7 +159,8 @@ void ParseInlineDeps(std::string_view value, ParseContext* ctx,
     return;
   }
   std::string_view inner = TrimAscii(value.substr(lb + 1, rb - lb - 1));
-  if (inner.empty()) return;
+  if (inner.empty())
+    return;
   size_t i = 0;
   while (i < inner.size()) {
     // Skip whitespace + commas.
@@ -166,17 +168,18 @@ void ParseInlineDeps(std::string_view value, ParseContext* ctx,
            (inner[i] == ' ' || inner[i] == '\t' || inner[i] == ',')) {
       ++i;
     }
-    if (i >= inner.size()) break;
+    if (i >= inner.size())
+      break;
     if (inner[i] == '"') {
       size_t close = inner.find('"', i + 1);
-      if (close == std::string_view::npos) break;
+      if (close == std::string_view::npos)
+        break;
       std::string_view raw = inner.substr(i + 1, close - i - 1);
       out->push_back(ctx->intern.Intern(ExtractCargoDepName(raw)));
       i = close + 1;
     } else {
       size_t comma = inner.find(',', i);
-      size_t next =
-          comma == std::string_view::npos ? inner.size() : comma;
+      size_t next = comma == std::string_view::npos ? inner.size() : comma;
       std::string_view raw = TrimAscii(inner.substr(i, next - i));
       out->push_back(ctx->intern.Intern(ExtractCargoDepName(raw)));
       i = next;
@@ -210,7 +213,8 @@ struct CargoEntry {
 };
 
 void FlushEntry(ParseContext* /* ctx */, ParsedLockfile* out, CargoEntry& e) {
-  if (e.name.empty()) return;
+  if (e.name.empty())
+    return;
   PackageRef ref;
   ref.name = e.name;
   ref.version = e.version;
@@ -238,12 +242,10 @@ void FlushEntry(ParseContext* /* ctx */, ParsedLockfile* out, CargoEntry& e) {
              static_cast<uint32_t>(out->packages.size() - 1));
 }
 
-}  // namespace
+} // namespace
 
-bool ParseCargoLock(std::string_view content,
-                    ParseContext* ctx,
-                    ParsedLockfile* out,
-                    ParseError* /* err */) {
+bool ParseCargoLock(std::string_view content, ParseContext* ctx,
+                    ParsedLockfile* out, ParseError* /* err */) {
   out->ecosystem = Ecosystem::kCargo;
   // Pre-fill with the v1 default. Top-level `version = N` overrides
   // below.
@@ -307,17 +309,15 @@ bool ParseCargoLock(std::string_view content,
 
       // Single-line key = value.
       if (StartsWith(trimmed, "name")) {
-        cur.name = ctx->intern.Intern(
-            StripQuotes(ValueAfterEquals(trimmed)));
+        cur.name = ctx->intern.Intern(StripQuotes(ValueAfterEquals(trimmed)));
       } else if (StartsWith(trimmed, "version")) {
-        cur.version = ctx->intern.Intern(
-            StripQuotes(ValueAfterEquals(trimmed)));
+        cur.version =
+            ctx->intern.Intern(StripQuotes(ValueAfterEquals(trimmed)));
       } else if (StartsWith(trimmed, "source")) {
-        cur.source = ctx->intern.Intern(
-            StripQuotes(ValueAfterEquals(trimmed)));
+        cur.source = ctx->intern.Intern(StripQuotes(ValueAfterEquals(trimmed)));
       } else if (StartsWith(trimmed, "checksum")) {
-        cur.checksum = ctx->intern.Intern(
-            StripQuotes(ValueAfterEquals(trimmed)));
+        cur.checksum =
+            ctx->intern.Intern(StripQuotes(ValueAfterEquals(trimmed)));
       } else if (StartsWith(trimmed, "dependencies")) {
         std::string_view value = ValueAfterEquals(trimmed);
         // Inline form: `dependencies = [ "a", "b" ]` on one line.
@@ -333,8 +333,8 @@ bool ParseCargoLock(std::string_view content,
       // Top-level scalars (only `version = N` for the lockVersion
       // captured today).
       if (StartsWith(trimmed, "version")) {
-        out->lockVersion = ctx->intern.Intern(
-            StripQuotes(ValueAfterEquals(trimmed)));
+        out->lockVersion =
+            ctx->intern.Intern(StripQuotes(ValueAfterEquals(trimmed)));
       }
     }
   }
@@ -346,6 +346,6 @@ bool ParseCargoLock(std::string_view content,
   return true;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

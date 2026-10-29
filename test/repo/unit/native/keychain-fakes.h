@@ -15,7 +15,7 @@ struct KeychainFakeState {
   bool require_access_control_query = false;
   LABiometryType biometry = LABiometryTypeTouchID;
   NSInteger error_code = LAErrorBiometryNotAvailable;
-  NSString *error_domain = LAErrorDomain;
+  NSString* error_domain = LAErrorDomain;
   std::vector<OSStatus> query_statuses = {errSecSuccess};
   std::size_t query_index = 0;
   id query_result = nil;
@@ -28,30 +28,35 @@ struct KeychainFakeState {
   int additions = 0;
   int updates = 0;
   int deletions = 0;
-  NSDictionary *last_query = nil;
-  NSDictionary *last_item = nil;
+  NSDictionary* last_query = nil;
+  NSDictionary* last_item = nil;
 };
 extern KeychainFakeState keychain_state;
-NSData *KeychainPolicyFixture();
-NSData *KeychainReturnedPolicyFixture();
+NSData* KeychainPolicyFixture();
+NSData* KeychainReturnedPolicyFixture();
 void ResetKeychainFake();
 
 @interface SockeyeTestLAContext : NSObject
 @property NSTimeInterval touchIDAuthenticationAllowableReuseDuration;
-@property(copy) NSString *localizedCancelTitle;
-@property(copy) NSString *localizedFallbackTitle;
+@property(copy) NSString* localizedCancelTitle;
+@property(copy) NSString* localizedFallbackTitle;
 @property BOOL interactionNotAllowed;
 @property(readonly) LABiometryType biometryType;
-- (BOOL)canEvaluatePolicy:(LAPolicy)policy error:(NSError **)error;
-- (void)evaluatePolicy:(LAPolicy)policy localizedReason:(NSString *)reason reply:(void (^)(BOOL, NSError *))reply;
+- (BOOL)canEvaluatePolicy:(LAPolicy)policy error:(NSError**)error;
+- (void)evaluatePolicy:(LAPolicy)policy
+       localizedReason:(NSString*)reason
+                 reply:(void (^)(BOOL, NSError*))reply;
 - (void)invalidate;
 @end
 
-OSStatus SockeyeTestCopyMatching(CFDictionaryRef query, CFTypeRef *result);
-OSStatus SockeyeTestAdd(CFDictionaryRef item, CFTypeRef *result);
+OSStatus SockeyeTestCopyMatching(CFDictionaryRef query, CFTypeRef* result);
+OSStatus SockeyeTestAdd(CFDictionaryRef item, CFTypeRef* result);
 OSStatus SockeyeTestUpdate(CFDictionaryRef query, CFDictionaryRef updates);
 OSStatus SockeyeTestDelete(CFDictionaryRef query);
-SecAccessControlRef SockeyeTestCreateAccess(CFAllocatorRef allocator, CFTypeRef protection, SecAccessControlCreateFlags flags, CFErrorRef *error);
+SecAccessControlRef SockeyeTestCreateAccess(CFAllocatorRef allocator,
+                                            CFTypeRef protection,
+                                            SecAccessControlCreateFlags flags,
+                                            CFErrorRef* error);
 CFTypeID SockeyeTestAccessType();
 
 #define LAContext SockeyeTestLAContext

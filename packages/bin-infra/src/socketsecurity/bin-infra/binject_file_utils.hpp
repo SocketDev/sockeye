@@ -8,12 +8,12 @@
 #ifndef BINJECT_FILE_UTILS_HPP
 #define BINJECT_FILE_UTILS_HPP
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <cerrno>
 #include <fcntl.h>
-#include <sys/stat.h>
 #include <limits.h>
+#include <sys/stat.h>
 
 extern "C" {
 #include "socketsecurity/build-infra/file_io_common.h"
@@ -31,7 +31,8 @@ extern "C" {
 #include <unistd.h>
 #endif
 
-// Forward declare binject error codes (avoid including binject.h header dependency)
+// Forward declare binject error codes (avoid including binject.h header
+// dependency)
 #ifndef BINJECT_OK
 #define BINJECT_OK 0
 #define BINJECT_ERROR -1
@@ -46,191 +47,203 @@ namespace binject {
 
 #ifdef _WIN32
 inline int rename_open_file(int fd, const char* output) {
-    HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-    if (handle == INVALID_HANDLE_VALUE) return -1;
-    int relative_size = MultiByteToWideChar(CP_ACP, 0, output, -1, nullptr, 0);
-    if (relative_size == 0) return -1;
-    wchar_t* relative = static_cast<wchar_t*>(
-        malloc(static_cast<size_t>(relative_size) * sizeof(wchar_t)));
-    if (!relative) return -1;
-    if (MultiByteToWideChar(CP_ACP, 0, output, -1, relative,
-                            relative_size) == 0) {
-        free(relative);
-        return -1;
-    }
-    DWORD absolute_size = GetFullPathNameW(relative, 0, nullptr, nullptr);
-    wchar_t* absolute = absolute_size == 0
-        ? nullptr
-        : static_cast<wchar_t*>(
-            malloc(static_cast<size_t>(absolute_size) * sizeof(wchar_t)));
-    if (!absolute || GetFullPathNameW(relative, absolute_size, absolute,
-                                      nullptr) == 0) {
-        free(relative);
-        free(absolute);
-        return -1;
-    }
+  HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+  if (handle == INVALID_HANDLE_VALUE)
+    return -1;
+  int relative_size = MultiByteToWideChar(CP_ACP, 0, output, -1, nullptr, 0);
+  if (relative_size == 0)
+    return -1;
+  wchar_t* relative = static_cast<wchar_t*>(
+      malloc(static_cast<size_t>(relative_size) * sizeof(wchar_t)));
+  if (!relative)
+    return -1;
+  if (MultiByteToWideChar(CP_ACP, 0, output, -1, relative, relative_size) ==
+      0) {
     free(relative);
-    size_t name_bytes = wcslen(absolute) * sizeof(wchar_t);
-    size_t info_size = sizeof(FILE_RENAME_INFO) + name_bytes;
-    FILE_RENAME_INFO* info = static_cast<FILE_RENAME_INFO*>(malloc(info_size));
-    if (!info) {
-        free(absolute);
-        return -1;
-    }
-    memset(info, 0, info_size);
-    info->ReplaceIfExists = TRUE;
-    info->FileNameLength = static_cast<DWORD>(name_bytes);
-    memcpy(info->FileName, absolute, name_bytes);
-    BOOL renamed = SetFileInformationByHandle(
-        handle, FileRenameInfo, info, static_cast<DWORD>(info_size));
-    free(info);
+    return -1;
+  }
+  DWORD absolute_size = GetFullPathNameW(relative, 0, nullptr, nullptr);
+  wchar_t* absolute =
+      absolute_size == 0
+          ? nullptr
+          : static_cast<wchar_t*>(
+                malloc(static_cast<size_t>(absolute_size) * sizeof(wchar_t)));
+  if (!absolute ||
+      GetFullPathNameW(relative, absolute_size, absolute, nullptr) == 0) {
+    free(relative);
     free(absolute);
-    return renamed ? 0 : -1;
+    return -1;
+  }
+  free(relative);
+  size_t name_bytes = wcslen(absolute) * sizeof(wchar_t);
+  size_t info_size = sizeof(FILE_RENAME_INFO) + name_bytes;
+  FILE_RENAME_INFO* info = static_cast<FILE_RENAME_INFO*>(malloc(info_size));
+  if (!info) {
+    free(absolute);
+    return -1;
+  }
+  memset(info, 0, info_size);
+  info->ReplaceIfExists = TRUE;
+  info->FileNameLength = static_cast<DWORD>(name_bytes);
+  memcpy(info->FileName, absolute, name_bytes);
+  BOOL renamed = SetFileInformationByHandle(handle, FileRenameInfo, info,
+                                            static_cast<DWORD>(info_size));
+  free(info);
+  free(absolute);
+  return renamed ? 0 : -1;
 }
 
 inline void delete_open_file(int fd) {
-    HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-    if (handle == INVALID_HANDLE_VALUE) return;
-    FILE_DISPOSITION_INFO info = {};
-    info.DeleteFile = TRUE;
-    SetFileInformationByHandle(
-        handle, FileDispositionInfo, &info, sizeof(info));
+  HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+  if (handle == INVALID_HANDLE_VALUE)
+    return;
+  FILE_DISPOSITION_INFO info = {};
+  info.DeleteFile = TRUE;
+  SetFileInformationByHandle(handle, FileDispositionInfo, &info, sizeof(info));
 }
 #endif
 
 struct reserved_temp_file {
-    int fd;
+  int fd;
 #ifndef _WIN32
-    int directory_fd;
+  int directory_fd;
 #endif
-    char directory[PATH_MAX];
-    char path[PATH_MAX];
-    char write_path[PATH_MAX];
+  char directory[PATH_MAX];
+  char path[PATH_MAX];
+  char write_path[PATH_MAX];
 };
 
 inline void cleanup_temp_file(reserved_temp_file* temp) {
 #ifdef _WIN32
-    if (temp->fd >= 0) delete_open_file(temp->fd);
+  if (temp->fd >= 0)
+    delete_open_file(temp->fd);
 #endif
-    if (temp->fd >= 0) {
-        POSIX_CLOSE(temp->fd);
-        temp->fd = -1;
-    }
+  if (temp->fd >= 0) {
+    POSIX_CLOSE(temp->fd);
+    temp->fd = -1;
+  }
 #ifdef _WIN32
-    _rmdir(temp->directory);
+  _rmdir(temp->directory);
 #else
-    bool remove_directory = true;
-    if (temp->directory_fd >= 0) {
-        struct stat descriptor_stat;
-        struct stat path_stat;
-        remove_directory = fstat(temp->directory_fd, &descriptor_stat) == 0 &&
-            lstat(temp->directory, &path_stat) == 0 &&
-            descriptor_stat.st_dev == path_stat.st_dev &&
-            descriptor_stat.st_ino == path_stat.st_ino;
-        unlinkat(temp->directory_fd, "output", 0);
-        close(temp->directory_fd);
-        temp->directory_fd = -1;
-    }
-    if (remove_directory) rmdir(temp->directory);
+  bool remove_directory = true;
+  if (temp->directory_fd >= 0) {
+    struct stat descriptor_stat;
+    struct stat path_stat;
+    remove_directory = fstat(temp->directory_fd, &descriptor_stat) == 0 &&
+                       lstat(temp->directory, &path_stat) == 0 &&
+                       descriptor_stat.st_dev == path_stat.st_dev &&
+                       descriptor_stat.st_ino == path_stat.st_ino;
+    unlinkat(temp->directory_fd, "output", 0);
+    close(temp->directory_fd);
+    temp->directory_fd = -1;
+  }
+  if (remove_directory)
+    rmdir(temp->directory);
 #endif
 }
 
 inline int create_temp_file(const char* base_path, reserved_temp_file* temp) {
-    temp->fd = -1;
+  temp->fd = -1;
 #ifndef _WIN32
-    temp->directory_fd = -1;
+  temp->directory_fd = -1;
 #endif
-    temp->directory[0] = '\0';
-    temp->path[0] = '\0';
-    temp->write_path[0] = '\0';
-    if (create_parent_directories(base_path) != 0) return -1;
-    int written = snprintf(temp->directory, sizeof(temp->directory),
-                           "%s.tmp.XXXXXX", base_path);
-    if (written < 0 || (size_t)written >= sizeof(temp->directory)) {
-        fprintf(stderr, "Error: Temporary path too long (would be truncated)\n");
-        return -1;
-    }
+  temp->directory[0] = '\0';
+  temp->path[0] = '\0';
+  temp->write_path[0] = '\0';
+  if (create_parent_directories(base_path) != 0)
+    return -1;
+  int written = snprintf(temp->directory, sizeof(temp->directory),
+                         "%s.tmp.XXXXXX", base_path);
+  if (written < 0 || (size_t)written >= sizeof(temp->directory)) {
+    fprintf(stderr, "Error: Temporary path too long (would be truncated)\n");
+    return -1;
+  }
 #ifdef _WIN32
-    if (_mktemp_s(temp->directory, sizeof(temp->directory)) != 0 ||
-        _mkdir(temp->directory) != 0) return -1;
+  if (_mktemp_s(temp->directory, sizeof(temp->directory)) != 0 ||
+      _mkdir(temp->directory) != 0)
+    return -1;
 #else
-    if (!mkdtemp(temp->directory)) return -1;
-    temp->directory_fd = open(temp->directory,
-                              O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
-    if (temp->directory_fd < 0) {
-        cleanup_temp_file(temp);
-        return -1;
-    }
+  if (!mkdtemp(temp->directory))
+    return -1;
+  temp->directory_fd =
+      open(temp->directory, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+  if (temp->directory_fd < 0) {
+    cleanup_temp_file(temp);
+    return -1;
+  }
 #endif
-    written = snprintf(temp->path, sizeof(temp->path), "%s%coutput",
-                       temp->directory,
+  written =
+      snprintf(temp->path, sizeof(temp->path), "%s%coutput", temp->directory,
 #ifdef _WIN32
-                       '\\'
+               '\\'
 #else
-                       '/'
+               '/'
 #endif
-    );
-    if (written < 0 || (size_t)written >= sizeof(temp->path)) {
-        cleanup_temp_file(temp);
-        return -1;
-    }
+      );
+  if (written < 0 || (size_t)written >= sizeof(temp->path)) {
+    cleanup_temp_file(temp);
+    return -1;
+  }
 #ifdef _WIN32
-    HANDLE handle = CreateFileA(
-        temp->path, GENERIC_READ | GENERIC_WRITE | DELETE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-        CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (handle != INVALID_HANDLE_VALUE) {
-        temp->fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle),
-                                   _O_RDWR | _O_BINARY | _O_NOINHERIT);
-        if (temp->fd < 0) CloseHandle(handle);
-    }
-    written = snprintf(temp->write_path, sizeof(temp->write_path), "%s", temp->path);
+  HANDLE handle = CreateFileA(temp->path, GENERIC_READ | GENERIC_WRITE | DELETE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                              CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (handle != INVALID_HANDLE_VALUE) {
+    temp->fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle),
+                               _O_RDWR | _O_BINARY | _O_NOINHERIT);
+    if (temp->fd < 0)
+      CloseHandle(handle);
+  }
+  written =
+      snprintf(temp->write_path, sizeof(temp->write_path), "%s", temp->path);
 #else
-    temp->fd = openat(temp->directory_fd, "output",
-                      O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0600);
-    written = snprintf(temp->write_path, sizeof(temp->write_path),
-                       "/dev/fd/%d", temp->fd);
+  temp->fd = openat(temp->directory_fd, "output",
+                    O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0600);
+  written = snprintf(temp->write_path, sizeof(temp->write_path), "/dev/fd/%d",
+                     temp->fd);
 #endif
-    if (temp->fd < 0 || written < 0 ||
-        (size_t)written >= sizeof(temp->write_path)) {
-        cleanup_temp_file(temp);
-        return -1;
-    }
-    return 0;
+  if (temp->fd < 0 || written < 0 ||
+      (size_t)written >= sizeof(temp->write_path)) {
+    cleanup_temp_file(temp);
+    return -1;
+  }
+  return 0;
 }
 
-inline int write_temp_file(reserved_temp_file* temp,
-                           const uint8_t* data,
+inline int write_temp_file(reserved_temp_file* temp, const uint8_t* data,
                            size_t size) {
 #ifdef _WIN32
-    if (_chsize_s(temp->fd, 0) != 0 || _lseeki64(temp->fd, 0, SEEK_SET) < 0) {
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+  if (_chsize_s(temp->fd, 0) != 0 || _lseeki64(temp->fd, 0, SEEK_SET) < 0) {
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 #else
-    if (ftruncate(temp->fd, 0) != 0 || lseek(temp->fd, 0, SEEK_SET) < 0) {
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+  if (ftruncate(temp->fd, 0) != 0 || lseek(temp->fd, 0, SEEK_SET) < 0) {
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 #endif
-    size_t offset = 0;
-    while (offset < size) {
+  size_t offset = 0;
+  while (offset < size) {
 #ifdef _WIN32
-        size_t remaining = size - offset;
-        unsigned int chunk = remaining > INT_MAX
-            ? static_cast<unsigned int>(INT_MAX)
-            : static_cast<unsigned int>(remaining);
-        int written = _write(temp->fd, data + offset, chunk);
+    size_t remaining = size - offset;
+    unsigned int chunk = remaining > INT_MAX
+                             ? static_cast<unsigned int>(INT_MAX)
+                             : static_cast<unsigned int>(remaining);
+    int written = _write(temp->fd, data + offset, chunk);
 #else
-        ssize_t written = write(temp->fd, data + offset, size - offset);
+    ssize_t written = write(temp->fd, data + offset, size - offset);
 #endif
-        if (written <= 0) return BINJECT_ERROR_WRITE_FAILED;
-        offset += static_cast<size_t>(written);
-    }
+    if (written <= 0)
+      return BINJECT_ERROR_WRITE_FAILED;
+    offset += static_cast<size_t>(written);
+  }
 #ifdef _WIN32
-    if (_commit(temp->fd) != 0) return BINJECT_ERROR_WRITE_FAILED;
+  if (_commit(temp->fd) != 0)
+    return BINJECT_ERROR_WRITE_FAILED;
 #else
-    if (fsync(temp->fd) != 0) return BINJECT_ERROR_WRITE_FAILED;
+  if (fsync(temp->fd) != 0)
+    return BINJECT_ERROR_WRITE_FAILED;
 #endif
-    return BINJECT_OK;
+  return BINJECT_OK;
 }
 
 /**
@@ -244,45 +257,49 @@ inline int write_temp_file(reserved_temp_file* temp,
  * @param out_size Optional pointer to receive file size
  * @return BINJECT_OK on success, BINJECT_ERROR_WRITE_FAILED otherwise
  */
-inline int verify_file_written(reserved_temp_file* temp, long* out_size = nullptr) {
-    printf("Verifying file was created...\n");
-    if (temp->fd < 0) {
-        fprintf(stderr, "Error: LIEF write() failed - file not readable: %s\n", temp->path);
-        fprintf(stderr, "  errno: %d (%s)\n", errno, strerror(errno));
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+inline int verify_file_written(reserved_temp_file* temp,
+                               long* out_size = nullptr) {
+  printf("Verifying file was created...\n");
+  if (temp->fd < 0) {
+    fprintf(stderr, "Error: LIEF write() failed - file not readable: %s\n",
+            temp->path);
+    fprintf(stderr, "  errno: %d (%s)\n", errno, strerror(errno));
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 
 #ifdef _WIN32
-    struct _stat64 st;
-    int inspect_result = _fstat64(temp->fd, &st);
+  struct _stat64 st;
+  int inspect_result = _fstat64(temp->fd, &st);
 #else
-    struct stat st;
-    int inspect_result = fstat(temp->fd, &st);
+  struct stat st;
+  int inspect_result = fstat(temp->fd, &st);
 #endif
-    int inspect_errno = errno;
-    if (inspect_result != 0) {
-        fprintf(stderr, "Error: LIEF write() failed - cannot inspect file: %s\n", temp->path);
-        fprintf(stderr, "  errno: %d (%s)\n", inspect_errno, strerror(inspect_errno));
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+  int inspect_errno = errno;
+  if (inspect_result != 0) {
+    fprintf(stderr, "Error: LIEF write() failed - cannot inspect file: %s\n",
+            temp->path);
+    fprintf(stderr, "  errno: %d (%s)\n", inspect_errno,
+            strerror(inspect_errno));
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 
-    if (st.st_size == 0) {
-        fprintf(stderr, "Error: LIEF write() created empty file\n");
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+  if (st.st_size == 0) {
+    fprintf(stderr, "Error: LIEF write() created empty file\n");
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 
 #ifndef _WIN32
-    if (fchmod(temp->fd, 0755) != 0) {
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+  if (fchmod(temp->fd, 0755) != 0) {
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 #endif
 
-    printf("  File created successfully (%ld bytes)\n", (long)st.st_size);
-    if (out_size) {
-        *out_size = st.st_size;
-    }
+  printf("  File created successfully (%ld bytes)\n", (long)st.st_size);
+  if (out_size) {
+    *out_size = st.st_size;
+  }
 
-    return BINJECT_OK;
+  return BINJECT_OK;
 }
 
 /**
@@ -294,40 +311,41 @@ inline int verify_file_written(reserved_temp_file* temp, long* out_size = nullpt
  */
 inline int atomic_rename(reserved_temp_file* temp, const char* output) {
 #ifdef _WIN32
-    if (_commit(temp->fd) != 0 || rename_open_file(temp->fd, output) != 0) {
-        cleanup_temp_file(temp);
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
-    POSIX_CLOSE(temp->fd);
-    temp->fd = -1;
+  if (_commit(temp->fd) != 0 || rename_open_file(temp->fd, output) != 0) {
+    cleanup_temp_file(temp);
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
+  POSIX_CLOSE(temp->fd);
+  temp->fd = -1;
 #else
-    struct stat descriptor_stat;
-    struct stat path_stat;
-    if (fstat(temp->fd, &descriptor_stat) != 0) {
-        cleanup_temp_file(temp);
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
-    if (renameat(temp->directory_fd, "output", AT_FDCWD, output) != 0) {
-        fprintf(stderr, "Error: Failed to move temporary file to output: %s\n", output);
-        fprintf(stderr, "  errno: %d (%s)\n", errno, strerror(errno));
-        cleanup_temp_file(temp);
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
-    if (lstat(output, &path_stat) != 0 ||
-        descriptor_stat.st_dev != path_stat.st_dev ||
-        descriptor_stat.st_ino != path_stat.st_ino) {
-        cleanup_temp_file(temp);
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
-    POSIX_CLOSE(temp->fd);
-    temp->fd = -1;
+  struct stat descriptor_stat;
+  struct stat path_stat;
+  if (fstat(temp->fd, &descriptor_stat) != 0) {
+    cleanup_temp_file(temp);
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
+  if (renameat(temp->directory_fd, "output", AT_FDCWD, output) != 0) {
+    fprintf(stderr, "Error: Failed to move temporary file to output: %s\n",
+            output);
+    fprintf(stderr, "  errno: %d (%s)\n", errno, strerror(errno));
+    cleanup_temp_file(temp);
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
+  if (lstat(output, &path_stat) != 0 ||
+      descriptor_stat.st_dev != path_stat.st_dev ||
+      descriptor_stat.st_ino != path_stat.st_ino) {
+    cleanup_temp_file(temp);
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
+  POSIX_CLOSE(temp->fd);
+  temp->fd = -1;
 #endif
 #ifdef _WIN32
-    _rmdir(temp->directory);
+  _rmdir(temp->directory);
 #else
-    cleanup_temp_file(temp);
+  cleanup_temp_file(temp);
 #endif
-    return BINJECT_OK;
+  return BINJECT_OK;
 }
 
 /**
@@ -347,35 +365,34 @@ inline int atomic_rename(reserved_temp_file* temp, const char* output) {
  * @param write_callback Function that writes binary to temp file
  * @return BINJECT_OK on success, error code otherwise
  */
-inline int atomic_write_workflow(
-    const char* output_path,
-    int (*write_callback)(const char* tmpfile, void* user_data),
-    void* user_data = nullptr
-) {
-    reserved_temp_file temp;
-    if (create_temp_file(output_path, &temp) != 0) {
-        fprintf(stderr, "Error: Output path too long for temporary file\n");
-        return BINJECT_ERROR_WRITE_FAILED;
-    }
+inline int atomic_write_workflow(const char* output_path,
+                                 int (*write_callback)(const char* tmpfile,
+                                                       void* user_data),
+                                 void* user_data = nullptr) {
+  reserved_temp_file temp;
+  if (create_temp_file(output_path, &temp) != 0) {
+    fprintf(stderr, "Error: Output path too long for temporary file\n");
+    return BINJECT_ERROR_WRITE_FAILED;
+  }
 
-    printf("Writing modified binary to temp file...\n");
+  printf("Writing modified binary to temp file...\n");
 
-    // Caller writes to temp file
-    int result = write_callback(temp.write_path, user_data);
-    if (result != BINJECT_OK) {
-        cleanup_temp_file(&temp);
-        return result;
-    }
+  // Caller writes to temp file
+  int result = write_callback(temp.write_path, user_data);
+  if (result != BINJECT_OK) {
+    cleanup_temp_file(&temp);
+    return result;
+  }
 
-    // Verify write succeeded
-    result = verify_file_written(&temp);
-    if (result != BINJECT_OK) {
-        cleanup_temp_file(&temp);
-        return result;
-    }
+  // Verify write succeeded
+  result = verify_file_written(&temp);
+  if (result != BINJECT_OK) {
+    cleanup_temp_file(&temp);
+    return result;
+  }
 
-    // Atomic rename
-    return atomic_rename(&temp, output_path);
+  // Atomic rename
+  return atomic_rename(&temp, output_path);
 }
 
 } // namespace binject

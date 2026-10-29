@@ -39,7 +39,7 @@ bool CFStringsAreEqual(CFStringRef a, CFStringRef b) {
   return CFStringCompare(a, b, 0) == kCFCompareEqualTo;
 }
 
-}  // namespace
+} // namespace
 
 bool IsOnAcPowerImpl() {
   CFTypeRef snapshot = IOPSCopyPowerSourcesInfo();
@@ -94,6 +94,6 @@ bool IsOnAcPowerImpl() {
   return on_ac;
 }
 
-}  // namespace power
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace power
+} // namespace socketsecurity
+} // namespace node

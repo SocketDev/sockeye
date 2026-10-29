@@ -1,11 +1,11 @@
 #ifndef SRC_SOCKETSECURITY_HTTP_UWS_SERVER_H_
 #define SRC_SOCKETSECURITY_HTTP_UWS_SERVER_H_
 
-#include "v8.h"
-#include "node.h"
-#include "env.h"
 #include "env-inl.h"
+#include "env.h"
+#include "node.h"
 #include "node_internals.h"
+#include "v8.h"
 
 #include <App.h>
 #include <string>
@@ -19,13 +19,13 @@ namespace smol_http {
 // any JS calls on subsequent requests. This is the uWS StaticRoute pattern.
 struct StaticResponse {
   bool is_static = false;
-  std::string raw_response;        // cached body
-  std::string content_type;        // "text/plain" or "application/json"
+  std::string raw_response; // cached body
+  std::string content_type; // "text/plain" or "application/json"
   size_t raw_length = 0;
 };
 
 class UwsServer {
- public:
+public:
   static UwsServer* Create(Environment* env);
   ~UwsServer();
 
@@ -77,7 +77,7 @@ class UwsServer {
   // Try to pre-compute a static response by calling the handler once.
   void TryMakeStatic(uint32_t handler_id);
 
- private:
+private:
   explicit UwsServer(Environment* env);
 
   // Second-phase init. The constructor only does trivial field setup so it
@@ -87,13 +87,11 @@ class UwsServer {
   bool Init();
 
   static void HandleRequest(uWS::HttpResponse<false>* res,
-                            uWS::HttpRequest* req,
-                            UwsServer* server,
+                            uWS::HttpRequest* req, UwsServer* server,
                             uint32_t handler_id);
 
   static void HandleDynamicRequest(uWS::HttpResponse<false>* res,
-                                   uWS::HttpRequest* req,
-                                   UwsServer* server,
+                                   uWS::HttpRequest* req, UwsServer* server,
                                    uint32_t handler_id);
 
   // Body fully buffered (possibly empty — uWS always calls the data
@@ -101,8 +99,7 @@ class UwsServer {
   // the JS handler. Shared by every Tier-3 method, not just QUERY/POST/PUT:
   // reading the body was previously unimplemented for ALL methods.
   static void FinishDynamicRequest(uWS::HttpResponse<false>* res,
-                                   UwsServer* server,
-                                   uint32_t handler_id,
+                                   UwsServer* server, uint32_t handler_id,
                                    v8::Global<v8::Object>&& js_req_global,
                                    std::string&& body);
 
@@ -116,7 +113,7 @@ void UwsServerAddRoute(const v8::FunctionCallbackInfo<v8::Value>& args);
 void UwsServerListen(const v8::FunctionCallbackInfo<v8::Value>& args);
 void UwsServerStop(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-}  // namespace smol_http
-}  // namespace node
+} // namespace smol_http
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_HTTP_UWS_SERVER_H_
+#endif // SRC_SOCKETSECURITY_HTTP_UWS_SERVER_H_

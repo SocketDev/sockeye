@@ -40,9 +40,9 @@
 #endif
 
 extern "C" {
+#include "socketsecurity/binject/binject.h"
 #include "socketsecurity/binject/vfs_config.h"
 #include "socketsecurity/binject/vfs_utils.h"
-#include "socketsecurity/binject/binject.h"
 #include "socketsecurity/build-infra/tmpdir_common.h"
 }
 
@@ -52,15 +52,13 @@ extern "C" {
 namespace node {
 namespace sea {
 
-std::optional<std::string> PrepareVfsArchive(
-    const SmolVfsConfig& vfs_config,
-    const std::string& sea_config_path) {
+std::optional<std::string>
+PrepareVfsArchive(const SmolVfsConfig& vfs_config,
+                  const std::string& sea_config_path) {
   per_process::Debug(DebugCategory::SEA, "Preparing VFS archive\n");
-  per_process::Debug(DebugCategory::SEA,
-                     "  mode: %s\n",
+  per_process::Debug(DebugCategory::SEA, "  mode: %s\n",
                      vfs_config.mode.c_str());
-  per_process::Debug(DebugCategory::SEA,
-                     "  source: %s\n",
+  per_process::Debug(DebugCategory::SEA, "  source: %s\n",
                      vfs_config.source.c_str());
 
   // Handle compat mode (no VFS embedding).
@@ -82,8 +80,7 @@ std::optional<std::string> PrepareVfsArchive(
   std::string source_path(resolved_path);
   free(resolved_path);
 
-  per_process::Debug(DebugCategory::SEA,
-                     "  resolved path: %s\n",
+  per_process::Debug(DebugCategory::SEA, "  resolved path: %s\n",
                      source_path.c_str());
 
   // Detect source type.
@@ -92,8 +89,7 @@ std::optional<std::string> PrepareVfsArchive(
   per_process::Debug(DebugCategory::SEA, "  source type: %d\n", source_type);
 
   if (source_type == VFS_SOURCE_NOT_FOUND) {
-    fprintf(stderr, "Warning: VFS source not found: %s\n",
-            source_path.c_str());
+    fprintf(stderr, "Warning: VFS source not found: %s\n", source_path.c_str());
     return std::nullopt;
   }
 
@@ -108,8 +104,7 @@ std::optional<std::string> PrepareVfsArchive(
 
   if (source_type == VFS_SOURCE_TAR_GZ) {
     // Already a .tar.gz — use as-is.
-    per_process::Debug(DebugCategory::SEA,
-                       "Source is .tar.gz, using as-is\n");
+    per_process::Debug(DebugCategory::SEA, "Source is .tar.gz, using as-is\n");
     archive_path = strdup(source_path.c_str());
   } else if (source_type == VFS_SOURCE_TAR) {
     // .tar file — needs compression.
@@ -117,8 +112,7 @@ std::optional<std::string> PrepareVfsArchive(
     archive_path = compress_tar_archive(source_path.c_str());
   } else if (source_type == VFS_SOURCE_DIR) {
     // Directory — needs archiving + compression.
-    per_process::Debug(DebugCategory::SEA,
-                       "Creating .tar.gz from directory\n");
+    per_process::Debug(DebugCategory::SEA, "Creating .tar.gz from directory\n");
     archive_path = create_vfs_archive_from_dir(source_path.c_str());
   }
 
@@ -130,8 +124,7 @@ std::optional<std::string> PrepareVfsArchive(
 
   long archive_size = get_file_size(archive_path);
   per_process::Debug(DebugCategory::SEA,
-                     "VFS archive prepared: %s (%ld bytes)\n",
-                     archive_path,
+                     "VFS archive prepared: %s (%ld bytes)\n", archive_path,
                      archive_size);
 
   std::string result(archive_path);
@@ -140,8 +133,8 @@ std::optional<std::string> PrepareVfsArchive(
   return result;
 }
 
-std::optional<std::vector<uint8_t>> SerializeVfsConfig(
-    const SmolVfsConfig& config) {
+std::optional<std::vector<uint8_t>>
+SerializeVfsConfig(const SmolVfsConfig& config) {
   // Populate C config struct from C++ struct.
   vfs_config_t vfs_cfg;
   vfs_config_init(&vfs_cfg);
@@ -157,28 +150,22 @@ std::optional<std::vector<uint8_t>> SerializeVfsConfig(
   std::vector<uint8_t> result(data, data + VFS_CFG_SIZE);
   free(data);
 
-  per_process::Debug(DebugCategory::SEA,
-                     "Serialized VFS config (%zu bytes)\n",
+  per_process::Debug(DebugCategory::SEA, "Serialized VFS config (%zu bytes)\n",
                      result.size());
   return result;
 }
 
-bool InjectSeaAndVfs(const std::string& executable_path,
-                     const std::string& output_path,
-                     const std::vector<uint8_t>& sea_blob,
-                     const std::optional<std::string>& vfs_archive,
-                     const std::string& vfs_mode,
-                     const std::optional<std::vector<uint8_t>>& vfs_config_blob) {
+bool InjectSeaAndVfs(
+    const std::string& executable_path, const std::string& output_path,
+    const std::vector<uint8_t>& sea_blob,
+    const std::optional<std::string>& vfs_archive, const std::string& vfs_mode,
+    const std::optional<std::vector<uint8_t>>& vfs_config_blob) {
   per_process::Debug(DebugCategory::SEA,
                      "Injecting SEA blob + VFS into executable\n");
-  per_process::Debug(DebugCategory::SEA,
-                     "  executable: %s\n",
+  per_process::Debug(DebugCategory::SEA, "  executable: %s\n",
                      executable_path.c_str());
-  per_process::Debug(DebugCategory::SEA,
-                     "  output: %s\n",
-                     output_path.c_str());
-  per_process::Debug(DebugCategory::SEA,
-                     "  SEA blob: %zu bytes\n",
+  per_process::Debug(DebugCategory::SEA, "  output: %s\n", output_path.c_str());
+  per_process::Debug(DebugCategory::SEA, "  SEA blob: %zu bytes\n",
                      sea_blob.size());
 
   // Write SEA blob to a UNIQUE temporary file (binject_batch expects
@@ -198,14 +185,17 @@ bool InjectSeaAndVfs(const std::string& executable_path,
   int sea_fd = mkstemp(sea_tmp);
   if (sea_fd < 0) {
     int saved_errno = errno;
-    fprintf(stderr, "Error: Failed to create temporary SEA blob file: %s (errno: %d)\n",
+    fprintf(stderr,
+            "Error: Failed to create temporary SEA blob file: %s (errno: %d)\n",
             sea_tmp, saved_errno);
     return false;
   }
   FILE* f = fdopen(sea_fd, "wb");
   if (!f) {
     int saved_errno = errno;
-    fprintf(stderr, "Error: Failed to open temporary SEA blob file handle: %s (errno: %d)\n",
+    fprintf(stderr,
+            "Error: Failed to open temporary SEA blob file handle: %s (errno: "
+            "%d)\n",
             sea_tmp, saved_errno);
     close(sea_fd);
     POSIX_UNLINK(sea_tmp);
@@ -215,8 +205,10 @@ bool InjectSeaAndVfs(const std::string& executable_path,
   size_t written = fwrite(sea_blob.data(), 1, sea_blob.size(), f);
   if (written != sea_blob.size()) {
     int saved_errno = errno;
-    fprintf(stderr, "Error: Failed to write SEA blob: wrote %zu of %zu bytes (errno: %d)\n",
-            written, sea_blob.size(), saved_errno);
+    fprintf(
+        stderr,
+        "Error: Failed to write SEA blob: wrote %zu of %zu bytes (errno: %d)\n",
+        written, sea_blob.size(), saved_errno);
     fclose(f);
     POSIX_UNLINK(sea_tmp);
     return false;
@@ -230,9 +222,7 @@ bool InjectSeaAndVfs(const std::string& executable_path,
     return false;
   }
 
-  per_process::Debug(DebugCategory::SEA,
-                     "  wrote SEA blob to %s\n",
-                     sea_tmp);
+  per_process::Debug(DebugCategory::SEA, "  wrote SEA blob to %s\n", sea_tmp);
 
   // Prepare VFS parameters.
   const char* vfs_tmp = nullptr;
@@ -254,7 +244,8 @@ bool InjectSeaAndVfs(const std::string& executable_path,
         per_process::Debug(DebugCategory::SEA, "  VFS mode: on-disk\n");
       } else {
         vfs_in_memory = 0;
-        per_process::Debug(DebugCategory::SEA, "  VFS mode: on-disk (default)\n");
+        per_process::Debug(DebugCategory::SEA,
+                           "  VFS mode: on-disk (default)\n");
       }
     }
   } else {
@@ -262,30 +253,23 @@ bool InjectSeaAndVfs(const std::string& executable_path,
   }
 
   // Call binject_batch() C API.
-  const uint8_t* vfs_config_data = vfs_config_blob.has_value()
-                                      ? vfs_config_blob->data()
-                                      : nullptr;
+  const uint8_t* vfs_config_data =
+      vfs_config_blob.has_value() ? vfs_config_blob->data() : nullptr;
 
-  int binject_result = binject_batch(executable_path.c_str(),
-                                      output_path.c_str(),
-                                      sea_tmp,
-                                      vfs_tmp,
-                                      vfs_in_memory,
-                                      0,
-                                      vfs_config_data);
+  int binject_result =
+      binject_batch(executable_path.c_str(), output_path.c_str(), sea_tmp,
+                    vfs_tmp, vfs_in_memory, 0, vfs_config_data);
 
   // Cleanup temporary files.
   POSIX_UNLINK(sea_tmp);
 
   if (binject_result != BINJECT_OK) {
-    fprintf(stderr,
-            "Error: binject_batch() failed with code %d\n",
+    fprintf(stderr, "Error: binject_batch() failed with code %d\n",
             binject_result);
     return false;
   }
 
-  per_process::Debug(DebugCategory::SEA,
-                     "Successfully injected SEA + VFS\n");
+  per_process::Debug(DebugCategory::SEA, "Successfully injected SEA + VFS\n");
   return true;
 }
 
@@ -317,13 +301,9 @@ bool PrepareAndInjectSea(const SeaConfig& config,
     }
   }
 
-  return InjectSeaAndVfs(config.executable_path,
-                         config.output_path,
-                         sea_blob,
-                         vfs_archive,
-                         vfs_mode,
-                         vfs_config_blob);
+  return InjectSeaAndVfs(config.executable_path, config.output_path, sea_blob,
+                         vfs_archive, vfs_mode, vfs_config_blob);
 }
 
-}  // namespace sea
-}  // namespace node
+} // namespace sea
+} // namespace node

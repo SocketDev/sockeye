@@ -28,7 +28,7 @@ void ReplaceApprovedExecutable() {
   assert(close(descriptor) == 0);
 }
 
-pid_t ReapThenFailWait(pid_t child, int *status, int options) {
+pid_t ReapThenFailWait(pid_t child, int* status, int options) {
   [[maybe_unused]] const pid_t result = waitpid(child, status, options);
   assert(result == child);
   errno = EIO;
@@ -50,8 +50,8 @@ std::string MakeExecutable() {
 }
 
 int ReadEnvryptCredential() {
-  const char *protocol = std::getenv("SOCKEYE_CREDENTIAL_PROTOCOL");
-  const char *descriptor = std::getenv("SOCKEYE_CREDENTIAL_FD");
+  const char* protocol = std::getenv("SOCKEYE_CREDENTIAL_PROTOCOL");
+  const char* descriptor = std::getenv("SOCKEYE_CREDENTIAL_FD");
   if (protocol == nullptr || descriptor == nullptr ||
       std::string(protocol) != "envrypt-v1" || std::string(descriptor) != "3") {
     return 1;
@@ -59,7 +59,8 @@ int ReadEnvryptCredential() {
   std::array<unsigned char, 91> record = {};
   std::size_t used = 0;
   while (used < record.size()) {
-    const ssize_t read_count = read(3, record.data() + used, record.size() - used);
+    const ssize_t read_count =
+        read(3, record.data() + used, record.size() - used);
     if (read_count <= 0) {
       return 1;
     }
@@ -83,7 +84,7 @@ int ReadEnvryptCredential() {
 
 } // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (argc == 2 && std::string(argv[1]) == "--read-envrypt-v1") {
     return ReadEnvryptCredential();
   }
@@ -98,7 +99,8 @@ int main(int argc, char **argv) {
   [[maybe_unused]] char current_directory[PATH_MAX] = {};
   assert(getcwd(current_directory, sizeof(current_directory)) != nullptr);
   DirectoryIdentity working_directory;
-  assert(sockeye::InspectDirectory(current_directory, working_directory, error));
+  assert(
+      sockeye::InspectDirectory(current_directory, working_directory, error));
 
   g_replacement_path = executable_path;
   sockeye::SetBeforeLaunchCheckForTesting(ReplaceApprovedExecutable);
@@ -128,8 +130,9 @@ int main(int argc, char **argv) {
   assert(secret.Assign(kPrivateKey, sizeof(kPrivateKey) - 1));
   const sockeye::CredentialValue credential{"ENVRYPT_PRIVATE_KEY", &secret};
   error.clear();
-  [[maybe_unused]] const int credential_status = sockeye::LaunchChild(
-      self, {}, {"--read-envrypt-v1"}, {}, {credential}, working_directory, error);
+  [[maybe_unused]] const int credential_status =
+      sockeye::LaunchChild(self, {}, {"--read-envrypt-v1"}, {}, {credential},
+                           working_directory, error);
   assert(credential_status == 0);
   assert(error.empty());
 

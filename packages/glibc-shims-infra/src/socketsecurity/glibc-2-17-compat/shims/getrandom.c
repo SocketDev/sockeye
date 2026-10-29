@@ -39,4 +39,4 @@ ssize_t __wrap_getrandom(void* buf, size_t buflen, unsigned int flags) {
 #endif
 }
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__

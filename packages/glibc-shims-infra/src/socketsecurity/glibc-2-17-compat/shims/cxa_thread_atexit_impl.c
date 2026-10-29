@@ -1,7 +1,8 @@
 // __cxa_thread_atexit_impl — glibc 2.18 — libstdc++ thread_local destructors.
 //
 // Portions adapted from libc++abi 19.1.0 under Apache-2.0 WITH LLVM-exception.
-// Source: https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/libcxxabi/src/cxa_thread_atexit.cpp
+// Source:
+// https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/libcxxabi/src/cxa_thread_atexit.cpp
 // Attribution retained in the repo LICENSE file.
 //
 // Limitations inherited from the libc++abi port:
@@ -64,8 +65,7 @@ static __attribute__((destructor)) void run_main_thread_dtors(void) {
 
 typedef int (*cxa_thread_atexit_fn_t)(void (*)(void*), void*, void*);
 
-static int fallback_thread_atexit(dtor_fn_t dtor, void* obj,
-                                  void* dso_symbol) {
+static int fallback_thread_atexit(dtor_fn_t dtor, void* obj, void* dso_symbol) {
   (void)dso_symbol;
   pthread_once(&dtors_key_once, create_dtors_key);
 
@@ -103,4 +103,4 @@ int __wrap___cxa_thread_atexit_impl(void (*dtor)(void*), void* obj,
   return fallback_thread_atexit(dtor, obj, dso_symbol);
 }
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__

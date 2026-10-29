@@ -33,10 +33,10 @@
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
+#include "env-inl.h"
 #include "node.h"
 #include "node_binding.h"
 #include "node_external_reference.h"
-#include "env-inl.h"
 #include "util.h"
 #include "v8.h"
 
@@ -64,10 +64,9 @@ using v8::Value;
 namespace {
 
 Local<String> NewOneByte(Isolate* isolate, const char* literal) {
-  return String::NewFromOneByte(isolate,
-                                reinterpret_cast<const uint8_t*>(literal),
-                                NewStringType::kNormal,
-                                static_cast<int>(std::strlen(literal)))
+  return String::NewFromOneByte(
+             isolate, reinterpret_cast<const uint8_t*>(literal),
+             NewStringType::kNormal, static_cast<int>(std::strlen(literal)))
       .ToLocalChecked();
 }
 
@@ -78,11 +77,11 @@ Local<String> NewOneByte(Isolate* isolate, const char* literal) {
 // the type tag picks the conversion at apply time.
 
 enum class FieldType {
-  kUnsigned,        // `unsigned` in C
-  kUnsignedLong,    // `unsigned long`
-  kInt,             // `int`
-  kInt8,            // `int` field used as 0/1 boolean
-  kUnsignedShort,   // `unsigned short`
+  kUnsigned,      // `unsigned` in C
+  kUnsignedLong,  // `unsigned long`
+  kInt,           // `int`
+  kInt8,          // `int` field used as 0/1 boolean
+  kUnsignedShort, // `unsigned short`
 };
 
 struct SettingRow {
@@ -96,8 +95,8 @@ struct SettingRow {
 // this subset covers the ~30 settings users actually touch (the
 // remainder are advanced tuning or deprecated). Extending this table
 // is the documented path for niche settings.
-#define LSQUIC_SETTING(name, c_field, type) \
-  { name, offsetof(lsquic_engine_settings, c_field), type }
+#define LSQUIC_SETTING(name, c_field, type)                                    \
+  {name, offsetof(lsquic_engine_settings, c_field), type}
 
 constexpr SettingRow kSettings[] = {
     // Versioning
@@ -193,45 +192,45 @@ bool SetField(Isolate* isolate, Local<Context> context, Local<Value> v,
               uint8_t* base, const SettingRow& row) {
   uint8_t* target = base + row.offset;
   switch (row.type) {
-    case FieldType::kUnsigned: {
-      uint32_t n = v->Uint32Value(context).FromMaybe(0);
-      *reinterpret_cast<unsigned*>(target) = static_cast<unsigned>(n);
-      return true;
-    }
-    case FieldType::kUnsignedLong: {
-      // Accept Number; lsquic uses unsigned long for ms-scale timeouts.
-      double d = v->NumberValue(context).FromMaybe(0.0);
-      if (d < 0) d = 0;
-      *reinterpret_cast<unsigned long*>(target) =
-          static_cast<unsigned long>(d);
-      return true;
-    }
-    case FieldType::kInt: {
-      int32_t n = v->Int32Value(context).FromMaybe(0);
-      *reinterpret_cast<int*>(target) = static_cast<int>(n);
-      return true;
-    }
-    case FieldType::kInt8: {
-      // Accept boolean or 0/1; lsquic uses `int` for these.
-      int b = v->BooleanValue(isolate) ? 1 : 0;
-      *reinterpret_cast<int*>(target) = b;
-      return true;
-    }
-    case FieldType::kUnsignedShort: {
-      uint32_t n = v->Uint32Value(context).FromMaybe(0);
-      if (n > 0xffff) n = 0xffff;
-      *reinterpret_cast<unsigned short*>(target) = static_cast<unsigned short>(n);
-      return true;
-    }
+  case FieldType::kUnsigned: {
+    uint32_t n = v->Uint32Value(context).FromMaybe(0);
+    *reinterpret_cast<unsigned*>(target) = static_cast<unsigned>(n);
+    return true;
+  }
+  case FieldType::kUnsignedLong: {
+    // Accept Number; lsquic uses unsigned long for ms-scale timeouts.
+    double d = v->NumberValue(context).FromMaybe(0.0);
+    if (d < 0)
+      d = 0;
+    *reinterpret_cast<unsigned long*>(target) = static_cast<unsigned long>(d);
+    return true;
+  }
+  case FieldType::kInt: {
+    int32_t n = v->Int32Value(context).FromMaybe(0);
+    *reinterpret_cast<int*>(target) = static_cast<int>(n);
+    return true;
+  }
+  case FieldType::kInt8: {
+    // Accept boolean or 0/1; lsquic uses `int` for these.
+    int b = v->BooleanValue(isolate) ? 1 : 0;
+    *reinterpret_cast<int*>(target) = b;
+    return true;
+  }
+  case FieldType::kUnsignedShort: {
+    uint32_t n = v->Uint32Value(context).FromMaybe(0);
+    if (n > 0xffff)
+      n = 0xffff;
+    *reinterpret_cast<unsigned short*>(target) = static_cast<unsigned short>(n);
+    return true;
+  }
   }
   return false;
 }
 
-}  // namespace
+} // namespace
 
 bool ApplyJsSettings(Isolate* isolate, Local<Context> context,
-                     Local<Value> settings_arg,
-                     lsquic_engine_settings* out) {
+                     Local<Value> settings_arg, lsquic_engine_settings* out) {
   if (settings_arg.IsEmpty() || !settings_arg->IsObject()) {
     // No settings — leave defaults populated by lsquic_engine_init_settings.
     return true;
@@ -322,9 +321,8 @@ void SetServerCertContext(const FunctionCallbackInfo<Value>& args) {
 
   if (!args[1]->IsUint8Array() || !args[2]->IsUint8Array()) {
     isolate->ThrowException(v8::Exception::TypeError(NewOneByte(
-        isolate,
-        "setServerCertContext(engineHandle, certPem, keyPem): "
-        "certPem and keyPem must be Uint8Array")));
+        isolate, "setServerCertContext(engineHandle, certPem, keyPem): "
+                 "certPem and keyPem must be Uint8Array")));
     return;
   }
   auto cert_arr = args[1].As<Uint8Array>();
@@ -340,9 +338,9 @@ void SetServerCertContext(const FunctionCallbackInfo<Value>& args) {
                              key_arr->ByteLength());
   if (ctx == nullptr) {
     isolate->ThrowException(v8::Exception::Error(NewOneByte(
-        isolate,
-        "setServerCertContext: failed to parse PEM cert or key "
-        "(check that both are PEM-encoded and that the key matches the cert)")));
+        isolate, "setServerCertContext: failed to parse PEM cert or key "
+                 "(check that both are PEM-encoded and that the key matches "
+                 "the cert)")));
     return;
   }
 
@@ -351,8 +349,8 @@ void SetServerCertContext(const FunctionCallbackInfo<Value>& args) {
   auto it = r.engines.find(engine_id);
   if (it == r.engines.end()) {
     SSL_CTX_free(ctx);
-    isolate->ThrowException(v8::Exception::Error(NewOneByte(
-        isolate, "setServerCertContext: unknown engineHandle")));
+    isolate->ThrowException(v8::Exception::Error(
+        NewOneByte(isolate, "setServerCertContext: unknown engineHandle")));
     return;
   }
   // Replace any prior cert context.
@@ -363,11 +361,11 @@ void SetServerCertContext(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Boolean::New(isolate, true));
 }
 
-}  // namespace
+} // namespace
 
-extern "C" struct ssl_ctx_st* LookupCertTrampoline(
-    void* lsquic_cert_lookup_ctx, const struct sockaddr* /*local*/,
-    const char* /*sni*/) {
+extern "C" struct ssl_ctx_st*
+LookupCertTrampoline(void* lsquic_cert_lookup_ctx,
+                     const struct sockaddr* /*local*/, const char* /*sni*/) {
   auto* slot = static_cast<EngineSlot*>(lsquic_cert_lookup_ctx);
   if (slot == nullptr) {
     return nullptr;
@@ -383,6 +381,6 @@ void RegisterSettingsExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(SetServerCertContext);
 }
 
-}  // namespace quic
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace quic
+} // namespace socketsecurity
+} // namespace node

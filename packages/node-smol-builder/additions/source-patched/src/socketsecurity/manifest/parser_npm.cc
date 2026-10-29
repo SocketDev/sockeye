@@ -24,8 +24,9 @@
 //      (parseLockFile / parsePkgLock — search for those names)
 //
 // 5. **npm lockfile docs**:
-//      v1 spec (legacy): https://docs.npmjs.com/cli/v6/configuring-npm/package-lock-json
-//      v2/v3 spec:       https://docs.npmjs.com/cli/v10/configuring-npm/package-lock-json
+//      v1 spec (legacy):
+//      https://docs.npmjs.com/cli/v6/configuring-npm/package-lock-json v2/v3
+//      spec: https://docs.npmjs.com/cli/v10/configuring-npm/package-lock-json
 //      v2/v3 changelog:  https://github.com/npm/cli/blob/latest/CHANGELOG.md
 //      arborist (canonical npm lockfile reader/writer):
 //        https://github.com/npm/cli/tree/latest/workspaces/arborist
@@ -151,7 +152,7 @@ struct JsonValue {
 };
 
 class JsonParser {
- public:
+public:
   JsonParser(std::string_view text, Arena* arena)
       : text_(text), arena_(arena) {}
 
@@ -164,7 +165,7 @@ class JsonParser {
     return pos_ == text_.size();
   }
 
- private:
+private:
   bool ParseValue(JsonValue* out) {
     SkipWhitespace();
     if (pos_ >= text_.size()) {
@@ -172,24 +173,29 @@ class JsonParser {
     }
     char c = text_[pos_];
     switch (c) {
-      case '{': return ParseObject(out);
-      case '[': return ParseArray(out);
-      case '"': return ParseString(out);
-      case 't':
-      case 'f': return ParseBool(out);
-      case 'n': return ParseNull(out);
-      default:
-        if (c == '-' || (c >= '0' && c <= '9')) {
-          return ParseNumber(out);
-        }
-        return false;
+    case '{':
+      return ParseObject(out);
+    case '[':
+      return ParseArray(out);
+    case '"':
+      return ParseString(out);
+    case 't':
+    case 'f':
+      return ParseBool(out);
+    case 'n':
+      return ParseNull(out);
+    default:
+      if (c == '-' || (c >= '0' && c <= '9')) {
+        return ParseNumber(out);
+      }
+      return false;
     }
   }
 
   bool ParseObject(JsonValue* out) {
     out->kind = JsonKind::kObject;
     out->o = std::make_shared<JsonObject>();
-    ++pos_;  // consume '{'
+    ++pos_; // consume '{'
     SkipWhitespace();
     if (Peek() == '}') {
       ++pos_;
@@ -205,7 +211,7 @@ class JsonParser {
       if (Peek() != ':') {
         return false;
       }
-      ++pos_;  // consume ':'
+      ++pos_; // consume ':'
       JsonValue val;
       if (!ParseValue(&val)) {
         return false;
@@ -228,7 +234,7 @@ class JsonParser {
   bool ParseArray(JsonValue* out) {
     out->kind = JsonKind::kArray;
     out->a = std::make_shared<JsonArray>();
-    ++pos_;  // consume '['
+    ++pos_; // consume '['
     SkipWhitespace();
     if (Peek() == ']') {
       ++pos_;
@@ -264,8 +270,7 @@ class JsonParser {
     // Fast path: scan for closing `"` without escapes. If we see a
     // backslash, fall through to the slow path that materializes an
     // arena copy.
-    while (pos_ < text_.size() && text_[pos_] != '"' &&
-           text_[pos_] != '\\') {
+    while (pos_ < text_.size() && text_[pos_] != '"' && text_[pos_] != '\\') {
       ++pos_;
     }
     if (pos_ >= text_.size()) {
@@ -285,44 +290,66 @@ class JsonParser {
       char c = text_[pos_];
       if (c == '\\') {
         ++pos_;
-        if (pos_ >= text_.size()) return false;
+        if (pos_ >= text_.size())
+          return false;
         char esc = text_[pos_];
         switch (esc) {
-          case '"':  buf.push_back('"');  break;
-          case '\\': buf.push_back('\\'); break;
-          case '/':  buf.push_back('/');  break;
-          case 'b':  buf.push_back('\b'); break;
-          case 'f':  buf.push_back('\f'); break;
-          case 'n':  buf.push_back('\n'); break;
-          case 'r':  buf.push_back('\r'); break;
-          case 't':  buf.push_back('\t'); break;
-          case 'u': {
-            // Parse 4 hex digits. ASCII range only — non-ASCII codes
-            // pass through as a raw `?` placeholder; lockfile usage
-            // never relies on the decoded form (package names and
-            // versions are ASCII), so we don't pay UTF-8 encoding
-            // costs here.
-            if (pos_ + 4 >= text_.size()) return false;
-            uint32_t code = 0;
-            for (int i = 0; i < 4; ++i) {
-              ++pos_;
-              char h = text_[pos_];
-              uint32_t d;
-              if (h >= '0' && h <= '9') d = h - '0';
-              else if (h >= 'a' && h <= 'f') d = 10 + (h - 'a');
-              else if (h >= 'A' && h <= 'F') d = 10 + (h - 'A');
-              else return false;
-              code = (code << 4) | d;
-            }
-            if (code < 0x80) {
-              buf.push_back(static_cast<char>(code));
-            } else {
-              buf.push_back('?');
-            }
-            break;
-          }
-          default:
+        case '"':
+          buf.push_back('"');
+          break;
+        case '\\':
+          buf.push_back('\\');
+          break;
+        case '/':
+          buf.push_back('/');
+          break;
+        case 'b':
+          buf.push_back('\b');
+          break;
+        case 'f':
+          buf.push_back('\f');
+          break;
+        case 'n':
+          buf.push_back('\n');
+          break;
+        case 'r':
+          buf.push_back('\r');
+          break;
+        case 't':
+          buf.push_back('\t');
+          break;
+        case 'u': {
+          // Parse 4 hex digits. ASCII range only — non-ASCII codes
+          // pass through as a raw `?` placeholder; lockfile usage
+          // never relies on the decoded form (package names and
+          // versions are ASCII), so we don't pay UTF-8 encoding
+          // costs here.
+          if (pos_ + 4 >= text_.size())
             return false;
+          uint32_t code = 0;
+          for (int i = 0; i < 4; ++i) {
+            ++pos_;
+            char h = text_[pos_];
+            uint32_t d;
+            if (h >= '0' && h <= '9')
+              d = h - '0';
+            else if (h >= 'a' && h <= 'f')
+              d = 10 + (h - 'a');
+            else if (h >= 'A' && h <= 'F')
+              d = 10 + (h - 'A');
+            else
+              return false;
+            code = (code << 4) | d;
+          }
+          if (code < 0x80) {
+            buf.push_back(static_cast<char>(code));
+          } else {
+            buf.push_back('?');
+          }
+          break;
+        }
+        default:
+          return false;
         }
         ++pos_;
       } else {
@@ -330,8 +357,9 @@ class JsonParser {
         ++pos_;
       }
     }
-    if (pos_ >= text_.size()) return false;
-    ++pos_;  // closing "
+    if (pos_ >= text_.size())
+      return false;
+    ++pos_; // closing "
     out->s = arena_->Copy(buf);
     return true;
   }
@@ -363,27 +391,23 @@ class JsonParser {
   bool ParseNumber(JsonValue* out) {
     out->kind = JsonKind::kNumber;
     size_t start = pos_;
-    if (text_[pos_] == '-') ++pos_;
-    while (pos_ < text_.size() && text_[pos_] >= '0' &&
-           text_[pos_] <= '9') {
+    if (text_[pos_] == '-')
+      ++pos_;
+    while (pos_ < text_.size() && text_[pos_] >= '0' && text_[pos_] <= '9') {
       ++pos_;
     }
     if (pos_ < text_.size() && text_[pos_] == '.') {
       ++pos_;
-      while (pos_ < text_.size() && text_[pos_] >= '0' &&
-             text_[pos_] <= '9') {
+      while (pos_ < text_.size() && text_[pos_] >= '0' && text_[pos_] <= '9') {
         ++pos_;
       }
     }
-    if (pos_ < text_.size() &&
-        (text_[pos_] == 'e' || text_[pos_] == 'E')) {
+    if (pos_ < text_.size() && (text_[pos_] == 'e' || text_[pos_] == 'E')) {
       ++pos_;
-      if (pos_ < text_.size() &&
-          (text_[pos_] == '+' || text_[pos_] == '-')) {
+      if (pos_ < text_.size() && (text_[pos_] == '+' || text_[pos_] == '-')) {
         ++pos_;
       }
-      while (pos_ < text_.size() && text_[pos_] >= '0' &&
-             text_[pos_] <= '9') {
+      while (pos_ < text_.size() && text_[pos_] >= '0' && text_[pos_] <= '9') {
         ++pos_;
       }
     }
@@ -393,12 +417,16 @@ class JsonParser {
     out->n = 0;
     bool neg = false;
     size_t i = 0;
-    if (!num.empty() && num[0] == '-') { neg = true; ++i; }
+    if (!num.empty() && num[0] == '-') {
+      neg = true;
+      ++i;
+    }
     for (; i < num.size() && num[i] >= '0' && num[i] <= '9'; ++i) {
       out->n = out->n * 10 + (num[i] - '0');
     }
-    if (neg) out->n = -out->n;
-    out->s = num;  // keep raw view for stringy callers
+    if (neg)
+      out->n = -out->n;
+    out->s = num; // keep raw view for stringy callers
     return true;
   }
 
@@ -413,9 +441,7 @@ class JsonParser {
     }
   }
 
-  char Peek() const {
-    return pos_ < text_.size() ? text_[pos_] : '\0';
-  }
+  char Peek() const { return pos_ < text_.size() ? text_[pos_] : '\0'; }
 
   std::string_view text_;
   size_t pos_ = 0;
@@ -428,13 +454,15 @@ class JsonParser {
 
 const JsonValue* ObjectGet(const JsonObject& obj, std::string_view key) {
   for (const auto& [k, v] : obj) {
-    if (k == key) return &v;
+    if (k == key)
+      return &v;
   }
   return nullptr;
 }
 
 std::string_view AsString(const JsonValue* v) {
-  if (v && v->kind == JsonKind::kString) return v->s;
+  if (v && v->kind == JsonKind::kString)
+    return v->s;
   return std::string_view{};
 }
 
@@ -488,9 +516,12 @@ void AddToIndex(ParsedLockfile* out, std::string_view name, uint32_t idx) {
 // (1, 2, 3) so we don't need a general formatter. Returns
 // arena-owned.
 std::string_view IntToView(Arena* arena, int n) {
-  if (n == 1) return std::string_view{"1"};
-  if (n == 2) return std::string_view{"2"};
-  if (n == 3) return std::string_view{"3"};
+  if (n == 1)
+    return std::string_view{"1"};
+  if (n == 2)
+    return std::string_view{"2"};
+  if (n == 3)
+    return std::string_view{"3"};
   // Fallback for unexpected values.
   char buf[16];
   int len = std::snprintf(buf, sizeof(buf), "%d", n);
@@ -498,9 +529,12 @@ std::string_view IntToView(Arena* arena, int n) {
 }
 
 DepType ClassifyDep(const JsonObject& pkg) {
-  if (AsBool(ObjectGet(pkg, "dev"))) return DepType::kDev;
-  if (AsBool(ObjectGet(pkg, "optional"))) return DepType::kOptional;
-  if (AsBool(ObjectGet(pkg, "peer"))) return DepType::kPeer;
+  if (AsBool(ObjectGet(pkg, "dev")))
+    return DepType::kDev;
+  if (AsBool(ObjectGet(pkg, "optional")))
+    return DepType::kOptional;
+  if (AsBool(ObjectGet(pkg, "peer")))
+    return DepType::kPeer;
   return DepType::kProd;
 }
 
@@ -512,9 +546,8 @@ PackageRef BuildRefV2V3(ParseContext* ctx, std::string_view name_view,
   PackageRef ref;
   ref.name = ctx->intern.Intern(name_view);
   std::string_view version = AsString(ObjectGet(pkg, "version"));
-  ref.version = ctx->intern.Intern(version.empty()
-                                       ? std::string_view{"0.0.0"}
-                                       : version);
+  ref.version =
+      ctx->intern.Intern(version.empty() ? std::string_view{"0.0.0"} : version);
   std::string_view resolved = AsString(ObjectGet(pkg, "resolved"));
   if (!resolved.empty()) {
     ref.resolved = ctx->intern.Intern(resolved);
@@ -552,18 +585,18 @@ PackageRef BuildRefV2V3(ParseContext* ctx, std::string_view name_view,
 
 constexpr size_t kMaxV1Depth = 64;
 
-bool FlattenV1(ParseContext* ctx, ParsedLockfile* out,
-               const JsonObject& deps,
-               std::unordered_set<std::string>* visited,
-               size_t depth) {
+bool FlattenV1(ParseContext* ctx, ParsedLockfile* out, const JsonObject& deps,
+               std::unordered_set<std::string>* visited, size_t depth) {
   if (depth > kMaxV1Depth) {
     return false;
   }
   for (const auto& [alias_name, pkg_v] : deps) {
-    if (pkg_v.kind != JsonKind::kObject || !pkg_v.o) continue;
+    if (pkg_v.kind != JsonKind::kObject || !pkg_v.o)
+      continue;
     const JsonObject& pkg = *pkg_v.o;
     std::string_view raw_version = AsString(ObjectGet(pkg, "version"));
-    if (raw_version.empty()) raw_version = "0.0.0";
+    if (raw_version.empty())
+      raw_version = "0.0.0";
 
     // ---- FIX 1: v1 alias extraction ----
     //
@@ -575,7 +608,8 @@ bool FlattenV1(ParseContext* ctx, ParsedLockfile* out,
     // npm v1 encodes aliased installs as:
     //   "string-width-cjs": {
     //     "version": "npm:string-width@4.2.3",
-    //     "resolved": "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
+    //     "resolved":
+    //     "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
     //   }
     //
     // The PackageRef's `name` field should be "string-width" (real),
@@ -587,8 +621,7 @@ bool FlattenV1(ParseContext* ctx, ParsedLockfile* out,
     // `_index`. See the AddToIndex call below (uses alias_name).
     std::string_view real_name = alias_name;
     std::string_view real_version = raw_version;
-    if (raw_version.size() >= 4 &&
-        raw_version.substr(0, 4) == "npm:") {
+    if (raw_version.size() >= 4 && raw_version.substr(0, 4) == "npm:") {
       std::string_view rest = raw_version.substr(4);
       // `<real>@<ver>` — lastIndexOf to handle scoped names
       // (`@scope/name@1.0.0` has the version after the LAST `@`).
@@ -652,8 +685,7 @@ bool FlattenV1(ParseContext* ctx, ParsedLockfile* out,
 
     // Recurse into nested `dependencies`.
     const JsonValue* child_deps = ObjectGet(pkg, "dependencies");
-    if (child_deps && child_deps->kind == JsonKind::kObject &&
-        child_deps->o) {
+    if (child_deps && child_deps->kind == JsonKind::kObject && child_deps->o) {
       visited->insert(key);
       if (!FlattenV1(ctx, out, *child_deps->o, visited, depth + 1)) {
         return false;
@@ -664,12 +696,10 @@ bool FlattenV1(ParseContext* ctx, ParsedLockfile* out,
   return true;
 }
 
-}  // namespace
+} // namespace
 
-bool ParseNpmLock(std::string_view content,
-                  ParseContext* ctx,
-                  ParsedLockfile* out,
-                  ParseError* err) {
+bool ParseNpmLock(std::string_view content, ParseContext* ctx,
+                  ParsedLockfile* out, ParseError* err) {
   JsonValue root;
   JsonParser p(content, &ctx->arena);
   if (!p.Parse(&root)) {
@@ -695,10 +725,12 @@ bool ParseNpmLock(std::string_view content,
       // Parse leading int from the string.
       int v = 0;
       for (char c : lv->s) {
-        if (c < '0' || c > '9') break;
+        if (c < '0' || c > '9')
+          break;
         v = v * 10 + (c - '0');
       }
-      if (v > 0) lock_version = v;
+      if (v > 0)
+        lock_version = v;
     }
   }
   out->lockVersion = IntToView(&ctx->arena, lock_version);
@@ -711,7 +743,8 @@ bool ParseNpmLock(std::string_view content,
         // Root package — skip.
         continue;
       }
-      if (pkg_v.kind != JsonKind::kObject || !pkg_v.o) continue;
+      if (pkg_v.kind != JsonKind::kObject || !pkg_v.o)
+        continue;
       const JsonObject& pkg = *pkg_v.o;
 
       // ---- FIX 2a/2b: prefer pkg.name over path-derived ----
@@ -766,6 +799,6 @@ bool ParseNpmLock(std::string_view content,
   return true;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

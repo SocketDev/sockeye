@@ -80,8 +80,7 @@ namespace {
 // --- View helpers --- //
 
 bool StartsWith(std::string_view s, std::string_view prefix) {
-  return s.size() >= prefix.size() &&
-         s.substr(0, prefix.size()) == prefix;
+  return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
 }
 
 bool EndsWith(std::string_view s, std::string_view suffix) {
@@ -138,8 +137,8 @@ int DetectLockfileVersion(std::string_view content) {
   pos += kKey.size();
   // Skip spaces and quotes.
   while (pos < content.size() &&
-         (content[pos] == ' ' || content[pos] == '\t' ||
-          content[pos] == '\'' || content[pos] == '"')) {
+         (content[pos] == ' ' || content[pos] == '\t' || content[pos] == '\'' ||
+          content[pos] == '"')) {
     ++pos;
   }
   // Parse digits (only the major matters — `9.0` and `9` both → 9).
@@ -147,8 +146,7 @@ int DetectLockfileVersion(std::string_view content) {
     return 0;
   }
   int v = 0;
-  while (pos < content.size() && content[pos] >= '0' &&
-         content[pos] <= '9') {
+  while (pos < content.size() && content[pos] >= '0' && content[pos] <= '9') {
     v = v * 10 + (content[pos] - '0');
     ++pos;
   }
@@ -264,12 +262,10 @@ struct ImporterCursor {
   bool active = false;
 };
 
-}  // namespace
+} // namespace
 
-bool ParsePnpmLock(std::string_view content,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
-                   ParseError* /* err */) {
+bool ParsePnpmLock(std::string_view content, ParseContext* ctx,
+                   ParsedLockfile* out, ParseError* /* err */) {
   int lock_version = DetectLockfileVersion(content);
   // Render lockVersion as a string view into a static lookup table to
   // avoid arena traffic for the common case.
@@ -278,12 +274,18 @@ bool ParsePnpmLock(std::string_view content,
   static constexpr std::string_view kV9{"9"};
   static constexpr std::string_view kV0{"0"};
   switch (lock_version) {
-    case 5: out->lockVersion = kV5; break;
-    case 6: out->lockVersion = kV6; break;
-    case 9: out->lockVersion = kV9; break;
-    default:
-      out->lockVersion = kV0;
-      break;
+  case 5:
+    out->lockVersion = kV5;
+    break;
+  case 6:
+    out->lockVersion = kV6;
+    break;
+  case 9:
+    out->lockVersion = kV9;
+    break;
+  default:
+    out->lockVersion = kV0;
+    break;
   }
   out->ecosystem = Ecosystem::kNpm;
 
@@ -516,8 +518,8 @@ bool ParsePnpmLock(std::string_view content,
     // structure (sub-property checks short-circuit before
     // isPackageEntry fires); the C++ port uses a flat single-pass
     // loop, so the guard has to be explicit here.
-    bool is_pkg_entry = indent >= 2 && indent <= 4 &&
-                        EndsWith(trimmed, ":") && trimmed.size() > 1 &&
+    bool is_pkg_entry = indent >= 2 && indent <= 4 && EndsWith(trimmed, ":") &&
+                        trimmed.size() > 1 &&
                         (!has_cur || indent <= cur_indent);
     if (is_pkg_entry) {
       flush_cur();
@@ -564,16 +566,14 @@ bool ParsePnpmLock(std::string_view content,
         if (i_pos != std::string_view::npos) {
           std::string_view rest = TrimAscii(trimmed.substr(i_pos + 10));
           // Strip leading-space / quote / opening-brace cruft.
-          while (!rest.empty() &&
-                 (rest[0] == ' ' || rest[0] == '\'' || rest[0] == '"' ||
-                  rest[0] == '{')) {
+          while (!rest.empty() && (rest[0] == ' ' || rest[0] == '\'' ||
+                                   rest[0] == '"' || rest[0] == '{')) {
             rest.remove_prefix(1);
           }
           // Stop at first space, comma, `}`.
           size_t stop = 0;
-          while (stop < rest.size() && rest[stop] != ' ' &&
-                 rest[stop] != ',' && rest[stop] != '}' &&
-                 rest[stop] != '\'' && rest[stop] != '"') {
+          while (stop < rest.size() && rest[stop] != ' ' && rest[stop] != ',' &&
+                 rest[stop] != '}' && rest[stop] != '\'' && rest[stop] != '"') {
             ++stop;
           }
           if (stop > 0) {
@@ -588,9 +588,8 @@ bool ParsePnpmLock(std::string_view content,
             rest.remove_prefix(1);
           }
           size_t stop = 0;
-          while (stop < rest.size() && rest[stop] != ' ' &&
-                 rest[stop] != ',' && rest[stop] != '}' &&
-                 rest[stop] != '\'' && rest[stop] != '"') {
+          while (stop < rest.size() && rest[stop] != ' ' && rest[stop] != ',' &&
+                 rest[stop] != '}' && rest[stop] != '\'' && rest[stop] != '"') {
             ++stop;
           }
           if (stop > 0) {
@@ -604,8 +603,7 @@ bool ParsePnpmLock(std::string_view content,
                  (StartsWith(trimmed, "peerDependencies:") ||
                   StartsWith(trimmed, "optionalDependencies:") ||
                   StartsWith(trimmed, "engines:") ||
-                  StartsWith(trimmed, "os:") ||
-                  StartsWith(trimmed, "cpu:") ||
+                  StartsWith(trimmed, "os:") || StartsWith(trimmed, "cpu:") ||
                   StartsWith(trimmed, "bin:"))) {
         // Exited the dependencies: block via a sibling header.
         cur_in_deps = false;
@@ -673,6 +671,6 @@ bool ParsePnpmLock(std::string_view content,
   return true;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

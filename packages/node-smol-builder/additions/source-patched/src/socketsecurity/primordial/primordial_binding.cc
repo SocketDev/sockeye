@@ -17,7 +17,8 @@
 //
 // Each fast-pathed function has THREE pieces:
 //
-//   1. **Slow path** — a normal `void Slow*(const FunctionCallbackInfo<Value>&)`
+//   1. **Slow path** — a normal `void Slow*(const
+//   FunctionCallbackInfo<Value>&)`
 //      function with full polymorphic semantics. Used as the V8-side
 //      fallback when args don't match the typed signature.
 //
@@ -93,8 +94,8 @@
 #include "node_binding.h"
 #include "node_external_reference.h"
 #include "util.h"
-#include "v8.h"
 #include "v8-fast-api-calls.h"
+#include "v8.h"
 
 #include <chrono>
 #include <cmath>
@@ -129,26 +130,25 @@ using v8::Value;
 // The slow path coerces args[0] to a double via NumberValue (handles
 // strings, bigints, etc. with the same coercion JS would). If args is
 // empty, returns NaN to match Math.abs() / Math.floor() / etc.
-#define DEFINE_FAST_DOUBLE_DOUBLE(NAME, OP)                              \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 1) {                                             \
-      args.GetReturnValue().Set(                                         \
-          std::numeric_limits<double>::quiet_NaN());                     \
-      return;                                                            \
-    }                                                                    \
-    double v;                                                            \
-    if (!args[0]->NumberValue(context).To(&v)) {                         \
-      return;                                                            \
-    }                                                                    \
-    args.GetReturnValue().Set(OP(v));                                    \
-  }                                                                      \
-  static double Fast##NAME(Local<Value> recv, double v,                  \
-                           /* NOLINTNEXTLINE(runtime/references) */      \
-                           FastApiCallbackOptions& opts) {               \
-    return OP(v);                                                        \
-  }                                                                      \
+#define DEFINE_FAST_DOUBLE_DOUBLE(NAME, OP)                                    \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 1) {                                                   \
+      args.GetReturnValue().Set(std::numeric_limits<double>::quiet_NaN());     \
+      return;                                                                  \
+    }                                                                          \
+    double v;                                                                  \
+    if (!args[0]->NumberValue(context).To(&v)) {                               \
+      return;                                                                  \
+    }                                                                          \
+    args.GetReturnValue().Set(OP(v));                                          \
+  }                                                                            \
+  static double Fast##NAME(Local<Value> recv,                                  \
+                           double v, /* NOLINTNEXTLINE(runtime/references) */  \
+                           FastApiCallbackOptions& opts) {                     \
+    return OP(v);                                                              \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (double) -> bool
@@ -156,61 +156,65 @@ using v8::Value;
 // Slow path requires args[0] to be a Number (not coerced) — matches
 // Number.isFinite / isNaN / isInteger / isSafeInteger semantics where
 // non-numbers always return false.
-#define DEFINE_FAST_DOUBLE_BOOL(NAME, OP)                                \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    if (args.Length() < 1 || !args[0]->IsNumber()) {                     \
-      args.GetReturnValue().Set(false);                                  \
-      return;                                                            \
-    }                                                                    \
-    double v = args[0].As<Number>()->Value();                            \
-    args.GetReturnValue().Set(OP(v));                                    \
-  }                                                                      \
-  static bool Fast##NAME(Local<Value> recv, double v,                    \
-                         /* NOLINTNEXTLINE(runtime/references) */        \
-                         FastApiCallbackOptions& opts) {                 \
-    return OP(v);                                                        \
-  }                                                                      \
+#define DEFINE_FAST_DOUBLE_BOOL(NAME, OP)                                      \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    if (args.Length() < 1 || !args[0]->IsNumber()) {                           \
+      args.GetReturnValue().Set(false);                                        \
+      return;                                                                  \
+    }                                                                          \
+    double v = args[0].As<Number>()->Value();                                  \
+    args.GetReturnValue().Set(OP(v));                                          \
+  }                                                                            \
+  static bool Fast##NAME(Local<Value> recv,                                    \
+                         double v, /* NOLINTNEXTLINE(runtime/references) */    \
+                         FastApiCallbackOptions& opts) {                       \
+    return OP(v);                                                              \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (int32, int32) -> int32
-#define DEFINE_FAST_INT32_INT32_INT32(NAME, OP)                          \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 2) {                                             \
-      args.GetReturnValue().Set(0);                                      \
-      return;                                                            \
-    }                                                                    \
-    int32_t a, b;                                                        \
-    if (!args[0]->Int32Value(context).To(&a)) return;                    \
-    if (!args[1]->Int32Value(context).To(&b)) return;                    \
-    args.GetReturnValue().Set(OP(a, b));                                 \
-  }                                                                      \
-  static int32_t Fast##NAME(Local<Value> recv, int32_t a, int32_t b,     \
-                            /* NOLINTNEXTLINE(runtime/references) */     \
-                            FastApiCallbackOptions& opts) {              \
-    return OP(a, b);                                                     \
-  }                                                                      \
+#define DEFINE_FAST_INT32_INT32_INT32(NAME, OP)                                \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 2) {                                                   \
+      args.GetReturnValue().Set(0);                                            \
+      return;                                                                  \
+    }                                                                          \
+    int32_t a, b;                                                              \
+    if (!args[0]->Int32Value(context).To(&a))                                  \
+      return;                                                                  \
+    if (!args[1]->Int32Value(context).To(&b))                                  \
+      return;                                                                  \
+    args.GetReturnValue().Set(OP(a, b));                                       \
+  }                                                                            \
+  static int32_t Fast##NAME(                                                   \
+      Local<Value> recv, int32_t a,                                            \
+      int32_t b, /* NOLINTNEXTLINE(runtime/references) */                      \
+      FastApiCallbackOptions& opts) {                                          \
+    return OP(a, b);                                                           \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (uint32) -> int32
-#define DEFINE_FAST_UINT32_INT32(NAME, OP)                               \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 1) {                                             \
-      args.GetReturnValue().Set(32);                                     \
-      return;                                                            \
-    }                                                                    \
-    uint32_t v;                                                          \
-    if (!args[0]->Uint32Value(context).To(&v)) return;                   \
-    args.GetReturnValue().Set(OP(v));                                    \
-  }                                                                      \
-  static int32_t Fast##NAME(Local<Value> recv, uint32_t v,               \
-                            /* NOLINTNEXTLINE(runtime/references) */     \
-                            FastApiCallbackOptions& opts) {              \
-    return OP(v);                                                        \
-  }                                                                      \
+#define DEFINE_FAST_UINT32_INT32(NAME, OP)                                     \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 1) {                                                   \
+      args.GetReturnValue().Set(32);                                           \
+      return;                                                                  \
+    }                                                                          \
+    uint32_t v;                                                                \
+    if (!args[0]->Uint32Value(context).To(&v))                                 \
+      return;                                                                  \
+    args.GetReturnValue().Set(OP(v));                                          \
+  }                                                                            \
+  static int32_t Fast##NAME(                                                   \
+      Local<Value> recv, uint32_t v, /* NOLINTNEXTLINE(runtime/references) */  \
+      FastApiCallbackOptions& opts) {                                          \
+    return OP(v);                                                              \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (double, double) -> double — for Math.atan2, pow, hypot.
@@ -218,25 +222,26 @@ using v8::Value;
 // Note: NOT used for Math.max / Math.min — those are variadic in JS,
 // and the fast path can only specialize the 2-arg case. They get
 // their own slow + fast pair below for clarity.
-#define DEFINE_FAST_DOUBLE_DOUBLE_DOUBLE(NAME, OP)                       \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 2) {                                             \
-      args.GetReturnValue().Set(                                         \
-          std::numeric_limits<double>::quiet_NaN());                     \
-      return;                                                            \
-    }                                                                    \
-    double a, b;                                                         \
-    if (!args[0]->NumberValue(context).To(&a)) return;                   \
-    if (!args[1]->NumberValue(context).To(&b)) return;                   \
-    args.GetReturnValue().Set(OP(a, b));                                 \
-  }                                                                      \
-  static double Fast##NAME(Local<Value> recv, double a, double b,        \
-                           /* NOLINTNEXTLINE(runtime/references) */      \
-                           FastApiCallbackOptions& opts) {               \
-    return OP(a, b);                                                     \
-  }                                                                      \
+#define DEFINE_FAST_DOUBLE_DOUBLE_DOUBLE(NAME, OP)                             \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 2) {                                                   \
+      args.GetReturnValue().Set(std::numeric_limits<double>::quiet_NaN());     \
+      return;                                                                  \
+    }                                                                          \
+    double a, b;                                                               \
+    if (!args[0]->NumberValue(context).To(&a))                                 \
+      return;                                                                  \
+    if (!args[1]->NumberValue(context).To(&b))                                 \
+      return;                                                                  \
+    args.GetReturnValue().Set(OP(a, b));                                       \
+  }                                                                            \
+  static double Fast##NAME(Local<Value> recv, double a,                        \
+                           double b, /* NOLINTNEXTLINE(runtime/references) */  \
+                           FastApiCallbackOptions& opts) {                     \
+    return OP(a, b);                                                           \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (Local<Value>) -> bool
@@ -249,19 +254,20 @@ using v8::Value;
 // array-map pointer. Inlining that single comparison turns this into
 // roughly 3-4 instructions in the hot caller — about as fast as it
 // gets.
-#define DEFINE_FAST_VALUE_BOOL(NAME, OP)                                 \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    if (args.Length() < 1) {                                             \
-      args.GetReturnValue().Set(false);                                  \
-      return;                                                            \
-    }                                                                    \
-    args.GetReturnValue().Set(OP(args[0]));                              \
-  }                                                                      \
-  static bool Fast##NAME(Local<Value> recv, Local<Value> v,              \
-                         /* NOLINTNEXTLINE(runtime/references) */        \
-                         FastApiCallbackOptions& opts) {                 \
-    return OP(v);                                                        \
-  }                                                                      \
+#define DEFINE_FAST_VALUE_BOOL(NAME, OP)                                       \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    if (args.Length() < 1) {                                                   \
+      args.GetReturnValue().Set(false);                                        \
+      return;                                                                  \
+    }                                                                          \
+    args.GetReturnValue().Set(OP(args[0]));                                    \
+  }                                                                            \
+  static bool Fast##NAME(                                                      \
+      Local<Value> recv,                                                       \
+      Local<Value> v, /* NOLINTNEXTLINE(runtime/references) */                 \
+      FastApiCallbackOptions& opts) {                                          \
+    return OP(v);                                                              \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: () -> double
@@ -272,15 +278,15 @@ using v8::Value;
 // can inline the *call* into the hot caller, even though the syscall
 // itself is fixed cost — meaningful win in tight monitoring loops
 // (think: 10M `Date.now()` calls/sec for performance traces).
-#define DEFINE_FAST_VOID_DOUBLE(NAME, OP)                                \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    args.GetReturnValue().Set(OP());                                     \
-  }                                                                      \
-  static double Fast##NAME(Local<Value> recv,                            \
-                           /* NOLINTNEXTLINE(runtime/references) */      \
-                           FastApiCallbackOptions& opts) {               \
-    return OP();                                                         \
-  }                                                                      \
+#define DEFINE_FAST_VOID_DOUBLE(NAME, OP)                                      \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    args.GetReturnValue().Set(OP());                                           \
+  }                                                                            \
+  static double Fast##NAME(                                                    \
+      Local<Value> recv, /* NOLINTNEXTLINE(runtime/references) */              \
+      FastApiCallbackOptions& opts) {                                          \
+    return OP();                                                               \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (FastOneByteString) -> double
@@ -297,30 +303,30 @@ using v8::Value;
 //
 // The slow path falls back to V8's full coercion (handles two-byte
 // strings, BigInt-as-string, leading whitespace, etc.).
-#define DEFINE_FAST_STRING_DOUBLE(NAME, OP)                              \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 1) {                                             \
-      args.GetReturnValue().Set(                                         \
-          std::numeric_limits<double>::quiet_NaN());                     \
-      return;                                                            \
-    }                                                                    \
-    v8::Local<v8::String> s;                                             \
-    if (!args[0]->ToString(context).ToLocal(&s)) return;                 \
-    size_t len = s->Utf8LengthV2(isolate);                               \
-    std::string buf(len, '\0');                                          \
-    s->WriteUtf8V2(isolate, buf.data(), len,                             \
-                   v8::String::WriteFlags::kReplaceInvalidUtf8);         \
-    args.GetReturnValue().Set(OP(buf.data(),                             \
-                                  static_cast<uint32_t>(buf.size())));   \
-  }                                                                      \
-  static double Fast##NAME(Local<Value> recv,                            \
-                           const v8::FastOneByteString& s,               \
-                           /* NOLINTNEXTLINE(runtime/references) */      \
-                           FastApiCallbackOptions& opts) {               \
-    return OP(s.data, s.length);                                         \
-  }                                                                      \
+#define DEFINE_FAST_STRING_DOUBLE(NAME, OP)                                    \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 1) {                                                   \
+      args.GetReturnValue().Set(std::numeric_limits<double>::quiet_NaN());     \
+      return;                                                                  \
+    }                                                                          \
+    v8::Local<v8::String> s;                                                   \
+    if (!args[0]->ToString(context).ToLocal(&s))                               \
+      return;                                                                  \
+    size_t len = s->Utf8LengthV2(isolate);                                     \
+    std::string buf(len, '\0');                                                \
+    s->WriteUtf8V2(isolate, buf.data(), len,                                   \
+                   v8::String::WriteFlags::kReplaceInvalidUtf8);               \
+    args.GetReturnValue().Set(                                                 \
+        OP(buf.data(), static_cast<uint32_t>(buf.size())));                    \
+  }                                                                            \
+  static double Fast##NAME(                                                    \
+      Local<Value> recv,                                                       \
+      const v8::FastOneByteString& s, /* NOLINTNEXTLINE(runtime/references) */ \
+      FastApiCallbackOptions& opts) {                                          \
+    return OP(s.data, s.length);                                               \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (FastOneByteString) -> bool
@@ -336,37 +342,38 @@ using v8::Value;
 // JS callers see roughly:
 //   ASCII:    `'hello'.isWellFormed()`   → fast path → ~3-4 inlined insns
 //   non-ASCII `'café'.isWellFormed()` → slow path → V8 spec impl
-#define DEFINE_FAST_STRING_BOOL(NAME, OP)                                \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 1) {                                             \
-      args.GetReturnValue().Set(false);                                  \
-      return;                                                            \
-    }                                                                    \
-    v8::Local<v8::String> s;                                             \
-    if (!args[0]->ToString(context).ToLocal(&s)) return;                 \
-    /* V8 stores strings in 1-byte or 2-byte encodings. 1-byte is */    \
-    /* always well-formed (no surrogates representable). 2-byte needs */ \
-    /* a scan. We read into a heap buffer to avoid stack overflow for */ \
-    /* very long strings (V8's max string length is ~1GB on 64-bit). */  \
-    int32_t len = s->Length();                                           \
-    if (len == 0) {                                                      \
-      args.GetReturnValue().Set(true);                                   \
-      return;                                                            \
-    }                                                                    \
-    std::vector<uint16_t> buf(static_cast<size_t>(len));                 \
-    s->WriteV2(isolate, 0, static_cast<uint32_t>(len), buf.data());      \
-    args.GetReturnValue().Set(OP(buf.data(), len));                      \
-  }                                                                      \
-  static bool Fast##NAME(Local<Value> recv,                              \
-                         const v8::FastOneByteString& s,                 \
-                         /* NOLINTNEXTLINE(runtime/references) */        \
-                         FastApiCallbackOptions& opts) {                 \
-    /* One-byte strings are Latin-1: every code unit is in 0x00..0xFF, */ \
-    /* outside the surrogate range 0xD800..0xDFFF. Always well-formed. */ \
-    return true;                                                         \
-  }                                                                      \
+#define DEFINE_FAST_STRING_BOOL(NAME, OP)                                      \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 1) {                                                   \
+      args.GetReturnValue().Set(false);                                        \
+      return;                                                                  \
+    }                                                                          \
+    v8::Local<v8::String> s;                                                   \
+    if (!args[0]->ToString(context).ToLocal(&s))                               \
+      return;                                                                  \
+    /* V8 stores strings in 1-byte or 2-byte encodings. 1-byte is */           \
+    /* always well-formed (no surrogates representable). 2-byte needs */       \
+    /* a scan. We read into a heap buffer to avoid stack overflow for */       \
+    /* very long strings (V8's max string length is ~1GB on 64-bit). */        \
+    int32_t len = s->Length();                                                 \
+    if (len == 0) {                                                            \
+      args.GetReturnValue().Set(true);                                         \
+      return;                                                                  \
+    }                                                                          \
+    std::vector<uint16_t> buf(static_cast<size_t>(len));                       \
+    s->WriteV2(isolate, 0, static_cast<uint32_t>(len), buf.data());            \
+    args.GetReturnValue().Set(OP(buf.data(), len));                            \
+  }                                                                            \
+  static bool Fast##NAME(                                                      \
+      Local<Value> recv,                                                       \
+      const v8::FastOneByteString& s, /* NOLINTNEXTLINE(runtime/references) */ \
+      FastApiCallbackOptions& opts) {                                          \
+    /* One-byte strings are Latin-1: every code unit is in 0x00..0xFF, */      \
+    /* outside the surrogate range 0xD800..0xDFFF. Always well-formed. */      \
+    return true;                                                               \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // Signature: (FastOneByteString, int32) -> int32 — for charCodeAt
@@ -387,41 +394,40 @@ using v8::Value;
 // byte load: ~2 instructions of inlined code.
 //
 // Only one entry uses this macro (charCodeAt), so it's hardcoded.
-#define DEFINE_FAST_STRING_INT32_INT32(NAME)                             \
-  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {      \
-    Isolate* isolate = args.GetIsolate();                                \
-    Local<Context> context = isolate->GetCurrentContext();               \
-    if (args.Length() < 2) {                                             \
-      args.GetReturnValue().Set(                                         \
-          std::numeric_limits<double>::quiet_NaN());                     \
-      return;                                                            \
-    }                                                                    \
-    v8::Local<v8::String> s;                                             \
-    if (!args[0]->ToString(context).ToLocal(&s)) return;                 \
-    int32_t idx;                                                         \
-    if (!args[1]->Int32Value(context).To(&idx)) return;                  \
-    if (idx < 0 || idx >= s->Length()) {                                 \
-      args.GetReturnValue().Set(                                         \
-          std::numeric_limits<double>::quiet_NaN());                     \
-      return;                                                            \
-    }                                                                    \
-    uint16_t buf;                                                        \
-    s->WriteV2(isolate, static_cast<uint32_t>(idx), 1, &buf);            \
-    args.GetReturnValue().Set(static_cast<int32_t>(buf));                \
-  }                                                                      \
-  static int32_t Fast##NAME(Local<Value> recv,                           \
-                            const v8::FastOneByteString& s,              \
-                            int32_t idx,                                 \
-                            /* NOLINTNEXTLINE(runtime/references) */     \
-                            FastApiCallbackOptions& opts) {              \
-    if (idx < 0 || static_cast<uint32_t>(idx) >= s.length) {             \
-      /* -1 sentinel: caller (primordials.ts wrapper) maps to NaN to */  \
-      /* match spec. -1 is never a valid charCodeAt result (range 0.. */ \
-      /* 65535 only) so the sentinel is unambiguous. */                  \
-      return -1;                                                         \
-    }                                                                    \
-    return static_cast<int32_t>(static_cast<uint8_t>(s.data[idx]));      \
-  }                                                                      \
+#define DEFINE_FAST_STRING_INT32_INT32(NAME)                                   \
+  static void Slow##NAME(const FunctionCallbackInfo<Value>& args) {            \
+    Isolate* isolate = args.GetIsolate();                                      \
+    Local<Context> context = isolate->GetCurrentContext();                     \
+    if (args.Length() < 2) {                                                   \
+      args.GetReturnValue().Set(std::numeric_limits<double>::quiet_NaN());     \
+      return;                                                                  \
+    }                                                                          \
+    v8::Local<v8::String> s;                                                   \
+    if (!args[0]->ToString(context).ToLocal(&s))                               \
+      return;                                                                  \
+    int32_t idx;                                                               \
+    if (!args[1]->Int32Value(context).To(&idx))                                \
+      return;                                                                  \
+    if (idx < 0 || idx >= s->Length()) {                                       \
+      args.GetReturnValue().Set(std::numeric_limits<double>::quiet_NaN());     \
+      return;                                                                  \
+    }                                                                          \
+    uint16_t buf;                                                              \
+    s->WriteV2(isolate, static_cast<uint32_t>(idx), 1, &buf);                  \
+    args.GetReturnValue().Set(static_cast<int32_t>(buf));                      \
+  }                                                                            \
+  static int32_t Fast##NAME(                                                   \
+      Local<Value> recv, const v8::FastOneByteString& s,                       \
+      int32_t idx, /* NOLINTNEXTLINE(runtime/references) */                    \
+      FastApiCallbackOptions& opts) {                                          \
+    if (idx < 0 || static_cast<uint32_t>(idx) >= s.length) {                   \
+      /* -1 sentinel: caller (primordials.ts wrapper) maps to NaN to */        \
+      /* match spec. -1 is never a valid charCodeAt result (range 0.. */       \
+      /* 65535 only) so the sentinel is unambiguous. */                        \
+      return -1;                                                               \
+    }                                                                          \
+    return static_cast<int32_t>(static_cast<uint8_t>(s.data[idx]));            \
+  }                                                                            \
   static CFunction fast_##NAME(CFunction::Make(Fast##NAME))
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -437,7 +443,8 @@ using v8::Value;
 // JS rounds half-toward-+∞ (`round(-0.5) === -0`, not `-1`). C's
 // std::round is half-away-from-zero, so we re-derive.
 inline double JsMathRound(double v) {
-  if (std::isnan(v) || std::isinf(v)) return v;
+  if (std::isnan(v) || std::isinf(v))
+    return v;
   return std::floor(v + 0.5);
 }
 
@@ -445,10 +452,13 @@ inline double JsMathRound(double v) {
 // Spec: https://tc39.es/ecma262/#sec-math.sign
 // Returns +0 for +0, -0 for -0, NaN for NaN.
 inline double JsMathSign(double v) {
-  if (std::isnan(v)) return v;
-  if (v > 0) return 1;
-  if (v < 0) return -1;
-  return v;  // preserves +0 / -0
+  if (std::isnan(v))
+    return v;
+  if (v > 0)
+    return 1;
+  if (v < 0)
+    return -1;
+  return v; // preserves +0 / -0
 }
 
 // ─── Math.imul ─────────────────────────────────────────────────────────
@@ -456,8 +466,7 @@ inline double JsMathSign(double v) {
 // 32-bit signed multiplication with defined wrap-on-overflow.
 // Cast through unsigned for defined behavior, then back.
 inline int32_t JsMathImul(int32_t a, int32_t b) {
-  uint32_t product =
-      static_cast<uint32_t>(a) * static_cast<uint32_t>(b);
+  uint32_t product = static_cast<uint32_t>(a) * static_cast<uint32_t>(b);
   return static_cast<int32_t>(product);
 }
 
@@ -466,7 +475,8 @@ inline int32_t JsMathImul(int32_t a, int32_t b) {
 // Count leading zeros in uint32. JS spec returns 32 for 0; C's
 // __builtin_clz is undefined for 0, so guard.
 inline int32_t JsMathClz32(uint32_t v) {
-  if (v == 0) return 32;
+  if (v == 0)
+    return 32;
   return __builtin_clz(v);
 }
 
@@ -475,11 +485,13 @@ inline int32_t JsMathClz32(uint32_t v) {
 inline bool JsIsFinite(double v) { return std::isfinite(v); }
 inline bool JsIsNaN(double v) { return std::isnan(v); }
 inline bool JsIsInteger(double v) {
-  if (!std::isfinite(v)) return false;
+  if (!std::isfinite(v))
+    return false;
   return std::trunc(v) == v;
 }
 inline bool JsIsSafeInteger(double v) {
-  if (!JsIsInteger(v)) return false;
+  if (!JsIsInteger(v))
+    return false;
   // 2^53 - 1
   return std::fabs(v) <= 9007199254740991.0;
 }
@@ -495,10 +507,10 @@ inline bool JsStringIsWellFormed(const uint16_t* data, int32_t len) {
   for (int32_t i = 0; i < len; ++i) {
     uint16_t c = data[i];
     if (c < 0xD800 || c > 0xDFFF) {
-      continue;  // Not a surrogate.
+      continue; // Not a surrogate.
     }
     if (c >= 0xDC00) {
-      return false;  // Low surrogate without preceding high.
+      return false; // Low surrogate without preceding high.
     }
     // High surrogate — must be followed by a low surrogate.
     if (i + 1 >= len) {
@@ -508,7 +520,7 @@ inline bool JsStringIsWellFormed(const uint16_t* data, int32_t len) {
     if (next < 0xDC00 || next > 0xDFFF) {
       return false;
     }
-    ++i;  // Skip the low surrogate; pair is valid.
+    ++i; // Skip the low surrogate; pair is valid.
   }
   return true;
 }
@@ -575,8 +587,7 @@ inline bool JsArrayIsArray(Local<Value> v) { return v->IsArray(); }
 inline double JsDateNow() {
   using namespace std::chrono;
   return static_cast<double>(
-      duration_cast<milliseconds>(
-          system_clock::now().time_since_epoch())
+      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
           .count());
 }
 
@@ -626,9 +637,11 @@ inline double JsParseFloat(const char* data, uint32_t length) {
   buf[span] = '\0';
   char* endptr;
   double result = std::strtod(buf, &endptr);
-  if (heapbuf) delete[] heapbuf;
+  if (heapbuf)
+    delete[] heapbuf;
   // strtod returns 0 on no-conversion; parseFloat must return NaN.
-  if (endptr == buf) return std::numeric_limits<double>::quiet_NaN();
+  if (endptr == buf)
+    return std::numeric_limits<double>::quiet_NaN();
   return result;
 }
 
@@ -777,20 +790,17 @@ DEFINE_FAST_STRING_BOOL(StringIsWellFormed, JsStringIsWellFormed);
 // `NoSideEffect` tells V8's optimizer the call is pure — unlocks LICM
 // (loop-invariant code motion) and CSE (common subexpression elimination)
 // on the JIT'd caller side.
-#define REGISTER_FAST(TARGET, JSNAME, NAME)                              \
-  SetFastMethodNoSideEffect(context, TARGET, JSNAME, Slow##NAME,         \
-                            &fast_##NAME)
+#define REGISTER_FAST(TARGET, JSNAME, NAME)                                    \
+  SetFastMethodNoSideEffect(context, TARGET, JSNAME, Slow##NAME, &fast_##NAME)
 
-#define EXTREF_FAST(NAME)                                                \
-  do {                                                                   \
-    registry->Register(Slow##NAME);                                      \
-    registry->Register(fast_##NAME);                                     \
+#define EXTREF_FAST(NAME)                                                      \
+  do {                                                                         \
+    registry->Register(Slow##NAME);                                            \
+    registry->Register(fast_##NAME);                                           \
   } while (0)
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   REGISTER_FAST(target, "arrayIsArray", ArrayIsArray);
   REGISTER_FAST(target, "dateNow", DateNow);
   REGISTER_FAST(target, "mathAbs", MathAbs);
@@ -880,13 +890,12 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   EXTREF_FAST(StringIsWellFormed);
 }
 
-}  // namespace primordial
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace primordial
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_primordial,
-    node::socketsecurity::primordial::Initialize)
+    smol_primordial, node::socketsecurity::primordial::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_primordial,
     node::socketsecurity::primordial::RegisterExternalReferences)

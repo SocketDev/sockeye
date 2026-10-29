@@ -53,43 +53,38 @@ Session FindSession(uint32_t id) {
 
 const char* StatusCode(smol_ai_status status) {
   switch (status) {
-    case SMOL_AI_ERROR_ARGUMENT:
-      return "ERR_SMOL_AI_ARGUMENT";
-    case SMOL_AI_ERROR_CANCELLED:
-      return "ERR_SMOL_AI_ABORTED";
-    case SMOL_AI_ERROR_CONTEXT:
-      return "ERR_SMOL_AI_CONTEXT";
-    case SMOL_AI_ERROR_MODEL:
-      return "ERR_SMOL_AI_MODEL";
-    case SMOL_AI_ERROR_RUNTIME:
-      return "ERR_SMOL_AI_RUNTIME";
-    case SMOL_AI_OK:
-      return "ERR_SMOL_AI_UNKNOWN";
+  case SMOL_AI_ERROR_ARGUMENT:
+    return "ERR_SMOL_AI_ARGUMENT";
+  case SMOL_AI_ERROR_CANCELLED:
+    return "ERR_SMOL_AI_ABORTED";
+  case SMOL_AI_ERROR_CONTEXT:
+    return "ERR_SMOL_AI_CONTEXT";
+  case SMOL_AI_ERROR_MODEL:
+    return "ERR_SMOL_AI_MODEL";
+  case SMOL_AI_ERROR_RUNTIME:
+    return "ERR_SMOL_AI_RUNTIME";
+  case SMOL_AI_OK:
+    return "ERR_SMOL_AI_UNKNOWN";
   }
   return "ERR_SMOL_AI_UNKNOWN";
 }
 
-Local<Value> ErrorValue(Isolate* isolate,
-                        Local<Context> context,
-                        const char* message,
-                        const char* code) {
+Local<Value> ErrorValue(Isolate* isolate, Local<Context> context,
+                        const char* message, const char* code) {
   Local<String> text;
   if (!String::NewFromUtf8(isolate, message).ToLocal(&text)) {
     text = FIXED_ONE_BYTE_STRING(isolate, "language model operation failed");
   }
   Local<Value> error = Exception::Error(text);
   error.As<Object>()
-      ->Set(context,
-            FIXED_ONE_BYTE_STRING(isolate, "code"),
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "code"),
             OneByteString(isolate, code))
       .Check();
   return error;
 }
 
-void CallResult(Environment* env,
-                Global<Function>* callback,
-                Local<Value> error,
-                Local<Value> value) {
+void CallResult(Environment* env, Global<Function>* callback,
+                Local<Value> error, Local<Value> value) {
   Isolate* isolate = env->isolate();
   Local<Context> context = env->context();
   Local<Value> argv[] = {error, value};
@@ -99,19 +94,17 @@ void CallResult(Environment* env,
   callback->Reset();
 }
 
-bool ReadOptions(Isolate* isolate,
-                 Local<Context> context,
-                 Local<Value> value,
+bool ReadOptions(Isolate* isolate, Local<Context> context, Local<Value> value,
                  smol_ai_options* options) {
-  if (!value->IsObject()) return false;
+  if (!value->IsObject())
+    return false;
   Local<Object> object = value.As<Object>();
   Local<Value> max_tokens;
   Local<Value> seed;
   Local<Value> temperature;
   Local<Value> threads;
   Local<Value> top_k;
-  if (!object
-           ->Get(context, FIXED_ONE_BYTE_STRING(isolate, "maxTokens"))
+  if (!object->Get(context, FIXED_ONE_BYTE_STRING(isolate, "maxTokens"))
            .ToLocal(&max_tokens) ||
       !object->Get(context, FIXED_ONE_BYTE_STRING(isolate, "seed"))
            .ToLocal(&seed) ||
@@ -133,13 +126,10 @@ bool ReadOptions(Isolate* isolate,
 }
 
 class CreateWork final : public ThreadPoolWork {
- public:
-  CreateWork(Environment* env,
-             std::string path,
-             smol_ai_options options,
+public:
+  CreateWork(Environment* env, std::string path, smol_ai_options options,
              Local<Function> callback)
-      : ThreadPoolWork(env, "smol_ai.createSession"),
-        path_(std::move(path)),
+      : ThreadPoolWork(env, "smol_ai.createSession"), path_(std::move(path)),
         options_(options) {
     callback_.Reset(env->isolate(), callback);
   }
@@ -156,13 +146,13 @@ class CreateWork final : public ThreadPoolWork {
     Local<Context> context = environment->context();
     Context::Scope context_scope(context);
     if (status != 0 || status_ != SMOL_AI_OK || session_ == nullptr) {
-      if (session_ != nullptr) smol_ai_session_destroy(session_);
-      CallResult(environment,
-                 &callback_,
-                 ErrorValue(isolate,
-                            context,
-                            error_[0] == '\0' ? "language model initialization failed"
-                                              : error_.data(),
+      if (session_ != nullptr)
+        smol_ai_session_destroy(session_);
+      CallResult(environment, &callback_,
+                 ErrorValue(isolate, context,
+                            error_[0] == '\0'
+                                ? "language model initialization failed"
+                                : error_.data(),
                             StatusCode(status_)),
                  Undefined(isolate));
       delete this;
@@ -176,20 +166,18 @@ class CreateWork final : public ThreadPoolWork {
     }
     Local<Object> result = Object::New(isolate);
     result
-        ->Set(context,
-              FIXED_ONE_BYTE_STRING(isolate, "handle"),
+        ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "handle"),
               Integer::NewFromUnsigned(isolate, id))
         .Check();
     result
-        ->Set(context,
-              FIXED_ONE_BYTE_STRING(isolate, "inputQuota"),
+        ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "inputQuota"),
               Integer::New(isolate, smol_ai_session_input_quota(session_)))
         .Check();
     CallResult(environment, &callback_, Undefined(isolate), result);
     delete this;
   }
 
- private:
+private:
   std::string path_;
   smol_ai_options options_{};
   smol_ai_session* session_ = nullptr;
@@ -199,13 +187,10 @@ class CreateWork final : public ThreadPoolWork {
 };
 
 class PromptWork final : public ThreadPoolWork {
- public:
-  PromptWork(Environment* env,
-             Session session,
-             std::string input,
+public:
+  PromptWork(Environment* env, Session session, std::string input,
              Local<Function> callback)
-      : ThreadPoolWork(env, "smol_ai.prompt"),
-        session_(std::move(session)),
+      : ThreadPoolWork(env, "smol_ai.prompt"), session_(std::move(session)),
         input_(std::move(input)) {
     callback_.Reset(env->isolate(), callback);
   }
@@ -213,13 +198,9 @@ class PromptWork final : public ThreadPoolWork {
   ~PromptWork() override { smol_ai_string_free(output_); }
 
   void DoThreadPoolWork() override {
-    status_ = smol_ai_session_prompt(session_.get(),
-                                     input_.data(),
-                                     input_.size(),
-                                     &output_,
-                                     &output_size_,
-                                     error_.data(),
-                                     error_.size());
+    status_ = smol_ai_session_prompt(session_.get(), input_.data(),
+                                     input_.size(), &output_, &output_size_,
+                                     error_.data(), error_.size());
   }
 
   void AfterThreadPoolWork(int status) override {
@@ -229,10 +210,8 @@ class PromptWork final : public ThreadPoolWork {
     Local<Context> context = environment->context();
     Context::Scope context_scope(context);
     if (status != 0 || status_ != SMOL_AI_OK) {
-      CallResult(environment,
-                 &callback_,
-                 ErrorValue(isolate,
-                            context,
+      CallResult(environment, &callback_,
+                 ErrorValue(isolate, context,
                             error_[0] == '\0' ? "language model prompt failed"
                                               : error_.data(),
                             StatusCode(status_)),
@@ -241,15 +220,11 @@ class PromptWork final : public ThreadPoolWork {
       return;
     }
     Local<String> result;
-    if (!String::NewFromUtf8(isolate,
-                             output_,
-                             v8::NewStringType::kNormal,
+    if (!String::NewFromUtf8(isolate, output_, v8::NewStringType::kNormal,
                              static_cast<int>(output_size_))
              .ToLocal(&result)) {
-      CallResult(environment,
-                 &callback_,
-                 ErrorValue(isolate,
-                            context,
+      CallResult(environment, &callback_,
+                 ErrorValue(isolate, context,
                             "language model returned invalid UTF-8",
                             "ERR_SMOL_AI_RUNTIME"),
                  Undefined(isolate));
@@ -259,7 +234,7 @@ class PromptWork final : public ThreadPoolWork {
     delete this;
   }
 
- private:
+private:
   Session session_;
   std::string input_;
   char* output_ = nullptr;
@@ -335,7 +310,8 @@ void Prompt(const FunctionCallbackInfo<Value>& args) {
 void Cancel(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = args.GetIsolate()->GetCurrentContext();
   Session session = FindSession(args[0]->Uint32Value(context).FromMaybe(0));
-  if (session) smol_ai_session_cancel(session.get());
+  if (session)
+    smol_ai_session_cancel(session.get());
 }
 
 void Destroy(const FunctionCallbackInfo<Value>& args) {
@@ -367,11 +343,13 @@ void MeasureInputUsage(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   String::Utf8Value input(isolate, args[1]);
-  if (*input == nullptr) return;
+  if (*input == nullptr)
+    return;
   int32_t measured = 0;
   std::array<char, kErrorSize> error{};
-  const smol_ai_status status = smol_ai_session_measure_input(
-      session.get(), *input, input.length(), &measured, error.data(), error.size());
+  const smol_ai_status status =
+      smol_ai_session_measure_input(session.get(), *input, input.length(),
+                                    &measured, error.data(), error.size());
   if (status != SMOL_AI_OK) {
     isolate->ThrowException(
         ErrorValue(isolate, context, error.data(), StatusCode(status)));
@@ -380,10 +358,8 @@ void MeasureInputUsage(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Integer::New(isolate, measured));
 }
 
-void Initialize(Local<Object> target,
-                Local<Value> unused,
-                Local<Context> context,
-                void* priv) {
+void Initialize(Local<Object> target, Local<Value> unused,
+                Local<Context> context, void* priv) {
   Isolate* isolate = Isolate::GetCurrent();
   SetMethod(context, target, "cancel", Cancel);
   SetMethod(context, target, "createSession", CreateSession);
@@ -392,8 +368,7 @@ void Initialize(Local<Object> target,
   SetMethod(context, target, "measureInputUsage", MeasureInputUsage);
   SetMethod(context, target, "prompt", Prompt);
   target
-      ->Set(context,
-            FIXED_ONE_BYTE_STRING(isolate, "runtimeId"),
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "runtimeId"),
             FIXED_ONE_BYTE_STRING(isolate, "llama.cpp-b9940"))
       .Check();
 }
@@ -407,10 +382,10 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(Prompt);
 }
 
-}  // namespace
-}  // namespace language_model
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace
+} // namespace language_model
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(
     smol_ai, node::socketsecurity::language_model::Initialize)

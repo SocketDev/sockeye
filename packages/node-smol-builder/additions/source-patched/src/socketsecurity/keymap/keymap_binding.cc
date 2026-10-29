@@ -83,7 +83,7 @@ constexpr uint32_t kModMeta = 1u << 3;
 // with modifiers in canonical order, all lowercase. Computed once at
 // parse time; stored as a string for O(1) hash lookup at match time.
 struct ChordStep {
-  std::string match_key;  // e.g. "ctrl+x"
+  std::string match_key; // e.g. "ctrl+x"
 };
 
 // One binding: a sequence of chord steps + the command to fire on the
@@ -119,7 +119,7 @@ struct Keymap {
 };
 
 class KeymapRegistry {
- public:
+public:
   uint32_t Add(std::unique_ptr<Keymap> keymap) {
     std::lock_guard<std::mutex> lock(mu_);
     const uint32_t id = next_id_++;
@@ -138,7 +138,7 @@ class KeymapRegistry {
     map_.erase(id);
   }
 
- private:
+private:
   std::mutex mu_;
   std::unordered_map<uint32_t, std::unique_ptr<Keymap>> map_;
   uint32_t next_id_ = 1;
@@ -244,8 +244,8 @@ std::unique_ptr<Keymap> ParseRulesJson(const std::string& json) {
   size_t i = 0;
   const size_t n = json.size();
   auto skip_ws = [&]() {
-    while (i < n && (json[i] == ' ' || json[i] == '\t' ||
-                     json[i] == '\n' || json[i] == '\r')) {
+    while (i < n && (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' ||
+                     json[i] == '\r')) {
       ++i;
     }
   };
@@ -267,7 +267,7 @@ std::unique_ptr<Keymap> ParseRulesJson(const std::string& json) {
       return false;
     }
     out->assign(json.data() + start, i - start);
-    ++i;  // skip closing quote
+    ++i; // skip closing quote
     return true;
   };
 
@@ -328,7 +328,7 @@ std::unique_ptr<Keymap> ParseRulesJson(const std::string& json) {
   return km;
 }
 
-}  // namespace
+} // namespace
 
 static void CreateKeymap(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -339,8 +339,8 @@ static void CreateKeymap(const FunctionCallbackInfo<Value>& args) {
   Local<String> rules_str = args[0].As<String>();
   const size_t len = rules_str->Utf8LengthV2(isolate);
   std::string rules(len, '\0');
-  rules_str->WriteUtf8V2(isolate, rules.data(), len,
-                         String::WriteFlags::kNone, nullptr);
+  rules_str->WriteUtf8V2(isolate, rules.data(), len, String::WriteFlags::kNone,
+                         nullptr);
 
   auto km = ParseRulesJson(rules);
   if (km == nullptr) {
@@ -491,10 +491,8 @@ static void MatchKey(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().SetNull();
 }
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   SetMethod(context, target, "createKeymap", CreateKeymap);
   SetMethod(context, target, "destroyKeymap", DestroyKeymap);
   SetMethod(context, target, "matchKey", MatchKey);
@@ -508,11 +506,11 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(ResetChord);
 }
 
-}  // namespace keymap
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace keymap
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_keymap, node::socketsecurity::keymap::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_keymap,
+                                    node::socketsecurity::keymap::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_keymap, node::socketsecurity::keymap::RegisterExternalReferences)

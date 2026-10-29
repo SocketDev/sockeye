@@ -13,19 +13,19 @@
  */
 
 #ifndef _WIN32
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 #endif
 
 static inline void redirect_stdin_if_piped(void) {
 #ifndef _WIN32
-    if (!isatty(STDIN_FILENO)) {
-        int devnull = open("/dev/null", O_RDONLY);
-        if (devnull >= 0) {
-            dup2(devnull, STDIN_FILENO);
-            close(devnull);
-        }
+  if (!isatty(STDIN_FILENO)) {
+    int devnull = open("/dev/null", O_RDONLY);
+    if (devnull >= 0) {
+      dup2(devnull, STDIN_FILENO);
+      close(devnull);
     }
+  }
 #endif
 }
 

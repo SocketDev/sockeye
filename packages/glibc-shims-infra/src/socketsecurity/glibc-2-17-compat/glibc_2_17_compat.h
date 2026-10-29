@@ -10,7 +10,8 @@
 // Pattern per shim:
 //   1. -Wl,--wrap=<symbol> in ldflags (see lib/link-flags.mts).
 //   2. The linker rewrites caller's `<symbol>(...)` to `__wrap_<symbol>(...)`.
-//   3. __wrap_<symbol> looks up the real glibc symbol via dlsym(RTLD_NEXT, ...).
+//   3. __wrap_<symbol> looks up the real glibc symbol via dlsym(RTLD_NEXT,
+//   ...).
 //   4. If present → forward to real (glibc >= introduction version).
 //   5. If absent  → fall back to a 2.17-compatible implementation.
 
@@ -48,9 +49,9 @@ __attribute__((noreturn)) void __wrap_quick_exit(int code);
 int __wrap_at_quick_exit(void (*handler)(void));
 
 #ifdef __cplusplus
-}  // extern "C"
+} // extern "C"
 #endif
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__
 
-#endif  // SOCKETSECURITY_GLIBC_2_17_COMPAT_H_
+#endif // SOCKETSECURITY_GLIBC_2_17_COMPAT_H_

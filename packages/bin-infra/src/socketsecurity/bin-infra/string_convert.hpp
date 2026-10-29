@@ -23,12 +23,12 @@ namespace binject {
  * For PE resource names which are ASCII constants.
  */
 inline std::u16string to_u16string(const std::string& str) {
-    std::u16string result;
-    result.reserve(str.size());
-    for (char c : str) {
-        result.push_back(static_cast<char16_t>(static_cast<unsigned char>(c)));
-    }
-    return result;
+  std::u16string result;
+  result.reserve(str.size());
+  for (char c : str) {
+    result.push_back(static_cast<char16_t>(static_cast<unsigned char>(c)));
+  }
+  return result;
 }
 
 /**
@@ -37,16 +37,16 @@ inline std::u16string to_u16string(const std::string& str) {
  * Non-ASCII characters are replaced with '?'.
  */
 inline std::string from_u16string(const std::u16string& str) {
-    std::string result;
-    result.reserve(str.size());
-    for (char16_t c : str) {
-        if (c <= 0x7F) {
-            result.push_back(static_cast<char>(c));
-        } else {
-            result.push_back('?');
-        }
+  std::string result;
+  result.reserve(str.size());
+  for (char16_t c : str) {
+    if (c <= 0x7F) {
+      result.push_back(static_cast<char>(c));
+    } else {
+      result.push_back('?');
     }
-    return result;
+  }
+  return result;
 }
 
 } // namespace binject

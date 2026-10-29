@@ -96,14 +96,12 @@ bool ParseRange(const char* source, size_t len, bool loose, Range* out);
 // Spec satisfies: does `v` match `r`? `include_prerelease` controls
 // whether prerelease versions are matchable in non-prerelease ranges
 // (the `includePrerelease` option in JS semver).
-bool RangeSatisfies(const SemVer& v,
-                    const Range& r,
-                    bool include_prerelease);
+bool RangeSatisfies(const SemVer& v, const Range& r, bool include_prerelease);
 
-}  // namespace versions
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace versions
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
+#endif // NODE_WANT_INTERNALS
 
-#endif  // SRC_SOCKETSECURITY_VERSIONS_VERSIONS_H_
+#endif // SRC_SOCKETSECURITY_VERSIONS_VERSIONS_H_

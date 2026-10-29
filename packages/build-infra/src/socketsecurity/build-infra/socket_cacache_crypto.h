@@ -27,12 +27,12 @@
 #include <string.h>
 
 #if defined(__APPLE__)
-    #include <CommonCrypto/CommonDigest.h>
+#include <CommonCrypto/CommonDigest.h>
 #elif defined(__linux__)
-    #include <openssl/sha.h>
+#include <openssl/sha.h>
 #elif defined(_WIN32)
-    #include <windows.h>
-    #include <wincrypt.h>
+#include <wincrypt.h>
+#include <windows.h>
 #endif
 
 #ifdef __cplusplus
@@ -40,12 +40,12 @@ extern "C" {
 #endif
 
 #if defined(__GNUC__) || __has_attribute(unused)
-#  define SCACHE_UNUSED __attribute__((unused))
+#define SCACHE_UNUSED __attribute__((unused))
 #else
-#  define SCACHE_UNUSED
+#define SCACHE_UNUSED
 #endif
 
-#define SCACHE_SHA1_LEN   20
+#define SCACHE_SHA1_LEN 20
 #define SCACHE_SHA256_LEN 32
 #define SCACHE_SHA512_LEN 64
 
@@ -54,113 +54,125 @@ extern "C" {
  * ======================================================================== */
 
 SCACHE_UNUSED
-static int scache_sha1(const unsigned char *data, size_t len, unsigned char *out) {
+static int scache_sha1(const unsigned char* data, size_t len,
+                       unsigned char* out) {
 #if defined(__APPLE__)
-    CC_SHA1(data, (CC_LONG)len, out);
-    return 0;
+  CC_SHA1(data, (CC_LONG)len, out);
+  return 0;
 #elif defined(__linux__)
-    SHA1(data, len, out);
-    return 0;
+  SHA1(data, len, out);
+  return 0;
 #elif defined(_WIN32)
-    HCRYPTPROV hProv = 0;
-    HCRYPTHASH hHash = 0;
-    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
-        return -1;
-    if (!CryptCreateHash(hProv, CALG_SHA1, 0, 0, &hHash)) {
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    DWORD hash_len = SCACHE_SHA1_LEN;
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
+  HCRYPTPROV hProv = 0;
+  HCRYPTHASH hHash = 0;
+  if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES,
+                           CRYPT_VERIFYCONTEXT))
+    return -1;
+  if (!CryptCreateHash(hProv, CALG_SHA1, 0, 0, &hHash)) {
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
     CryptDestroyHash(hHash);
     CryptReleaseContext(hProv, 0);
-    return 0;
-#else
-    (void)data; (void)len; (void)out;
     return -1;
+  }
+  DWORD hash_len = SCACHE_SHA1_LEN;
+  if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  CryptDestroyHash(hHash);
+  CryptReleaseContext(hProv, 0);
+  return 0;
+#else
+  (void)data;
+  (void)len;
+  (void)out;
+  return -1;
 #endif
 }
 
 SCACHE_UNUSED
-static int scache_sha256(const unsigned char *data, size_t len, unsigned char *out) {
+static int scache_sha256(const unsigned char* data, size_t len,
+                         unsigned char* out) {
 #if defined(__APPLE__)
-    CC_SHA256(data, (CC_LONG)len, out);
-    return 0;
+  CC_SHA256(data, (CC_LONG)len, out);
+  return 0;
 #elif defined(__linux__)
-    SHA256(data, len, out);
-    return 0;
+  SHA256(data, len, out);
+  return 0;
 #elif defined(_WIN32)
-    HCRYPTPROV hProv = 0;
-    HCRYPTHASH hHash = 0;
-    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
-        return -1;
-    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    DWORD hash_len = SCACHE_SHA256_LEN;
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
+  HCRYPTPROV hProv = 0;
+  HCRYPTHASH hHash = 0;
+  if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES,
+                           CRYPT_VERIFYCONTEXT))
+    return -1;
+  if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
     CryptDestroyHash(hHash);
     CryptReleaseContext(hProv, 0);
-    return 0;
-#else
-    (void)data; (void)len; (void)out;
     return -1;
+  }
+  DWORD hash_len = SCACHE_SHA256_LEN;
+  if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  CryptDestroyHash(hHash);
+  CryptReleaseContext(hProv, 0);
+  return 0;
+#else
+  (void)data;
+  (void)len;
+  (void)out;
+  return -1;
 #endif
 }
 
 SCACHE_UNUSED
-static int scache_sha512(const unsigned char *data, size_t len, unsigned char *out) {
+static int scache_sha512(const unsigned char* data, size_t len,
+                         unsigned char* out) {
 #if defined(__APPLE__)
-    CC_SHA512(data, (CC_LONG)len, out);
-    return 0;
+  CC_SHA512(data, (CC_LONG)len, out);
+  return 0;
 #elif defined(__linux__)
-    SHA512(data, len, out);
-    return 0;
+  SHA512(data, len, out);
+  return 0;
 #elif defined(_WIN32)
-    HCRYPTPROV hProv = 0;
-    HCRYPTHASH hHash = 0;
-    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
-        return -1;
-    if (!CryptCreateHash(hProv, CALG_SHA_512, 0, 0, &hHash)) {
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
-    DWORD hash_len = SCACHE_SHA512_LEN;
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return -1;
-    }
+  HCRYPTPROV hProv = 0;
+  HCRYPTHASH hHash = 0;
+  if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES,
+                           CRYPT_VERIFYCONTEXT))
+    return -1;
+  if (!CryptCreateHash(hProv, CALG_SHA_512, 0, 0, &hHash)) {
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  if (!CryptHashData(hHash, data, (DWORD)len, 0)) {
     CryptDestroyHash(hHash);
     CryptReleaseContext(hProv, 0);
-    return 0;
-#else
-    (void)data; (void)len; (void)out;
     return -1;
+  }
+  DWORD hash_len = SCACHE_SHA512_LEN;
+  if (!CryptGetHashParam(hHash, HP_HASHVAL, out, &hash_len, 0)) {
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+    return -1;
+  }
+  CryptDestroyHash(hHash);
+  CryptReleaseContext(hProv, 0);
+  return 0;
+#else
+  (void)data;
+  (void)len;
+  (void)out;
+  return -1;
 #endif
 }
 
@@ -169,11 +181,11 @@ static int scache_sha512(const unsigned char *data, size_t len, unsigned char *o
  * ======================================================================== */
 
 SCACHE_UNUSED
-static void scache_hex(const unsigned char *data, size_t len, char *out) {
-    for (size_t i = 0; i < len; i++) {
-        snprintf(out + (i * 2), 3, "%02x", data[i]);
-    }
-    out[len * 2] = '\0';
+static void scache_hex(const unsigned char* data, size_t len, char* out) {
+  for (size_t i = 0; i < len; i++) {
+    snprintf(out + (i * 2), 3, "%02x", data[i]);
+  }
+  out[len * 2] = '\0';
 }
 
 static const char scache_b64_table[] =
@@ -184,26 +196,29 @@ static const char scache_b64_table[] =
  * Output must be at least ((len + 2) / 3 * 4 + 1) bytes.
  */
 SCACHE_UNUSED
-static void scache_base64(const unsigned char *data, size_t len, char *out) {
-    size_t i, j;
-    for (i = 0, j = 0; i + 2 < len; i += 3) {
-        out[j++] = scache_b64_table[(data[i] >> 2) & 0x3F];
-        out[j++] = scache_b64_table[((data[i] & 0x03) << 4) | ((data[i+1] >> 4) & 0x0F)];
-        out[j++] = scache_b64_table[((data[i+1] & 0x0F) << 2) | ((data[i+2] >> 6) & 0x03)];
-        out[j++] = scache_b64_table[data[i+2] & 0x3F];
+static void scache_base64(const unsigned char* data, size_t len, char* out) {
+  size_t i, j;
+  for (i = 0, j = 0; i + 2 < len; i += 3) {
+    out[j++] = scache_b64_table[(data[i] >> 2) & 0x3F];
+    out[j++] =
+        scache_b64_table[((data[i] & 0x03) << 4) | ((data[i + 1] >> 4) & 0x0F)];
+    out[j++] = scache_b64_table[((data[i + 1] & 0x0F) << 2) |
+                                ((data[i + 2] >> 6) & 0x03)];
+    out[j++] = scache_b64_table[data[i + 2] & 0x3F];
+  }
+  if (i < len) {
+    out[j++] = scache_b64_table[(data[i] >> 2) & 0x3F];
+    if (i + 1 < len) {
+      out[j++] = scache_b64_table[((data[i] & 0x03) << 4) |
+                                  ((data[i + 1] >> 4) & 0x0F)];
+      out[j++] = scache_b64_table[(data[i + 1] & 0x0F) << 2];
+    } else {
+      out[j++] = scache_b64_table[(data[i] & 0x03) << 4];
+      out[j++] = '=';
     }
-    if (i < len) {
-        out[j++] = scache_b64_table[(data[i] >> 2) & 0x3F];
-        if (i + 1 < len) {
-            out[j++] = scache_b64_table[((data[i] & 0x03) << 4) | ((data[i+1] >> 4) & 0x0F)];
-            out[j++] = scache_b64_table[(data[i+1] & 0x0F) << 2];
-        } else {
-            out[j++] = scache_b64_table[(data[i] & 0x03) << 4];
-            out[j++] = '=';
-        }
-        out[j++] = '=';
-    }
-    out[j] = '\0';
+    out[j++] = '=';
+  }
+  out[j] = '\0';
 }
 
 /**
@@ -211,13 +226,13 @@ static void scache_base64(const unsigned char *data, size_t len, char *out) {
  * Output must be at least 96 bytes (7 prefix + 88 base64 + 1 null).
  */
 SCACHE_UNUSED
-static int scache_integrity(const unsigned char *data, size_t len, char *out) {
-    unsigned char hash[SCACHE_SHA512_LEN];
-    if (scache_sha512(data, len, hash) != 0)
-        return -1;
-    memcpy(out, "sha512-", 7);
-    scache_base64(hash, SCACHE_SHA512_LEN, out + 7);
-    return 0;
+static int scache_integrity(const unsigned char* data, size_t len, char* out) {
+  unsigned char hash[SCACHE_SHA512_LEN];
+  if (scache_sha512(data, len, hash) != 0)
+    return -1;
+  memcpy(out, "sha512-", 7);
+  scache_base64(hash, SCACHE_SHA512_LEN, out + 7);
+  return 0;
 }
 
 #ifdef __cplusplus

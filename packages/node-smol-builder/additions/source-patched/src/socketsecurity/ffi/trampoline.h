@@ -1,9 +1,9 @@
 #ifndef SRC_SOCKETSECURITY_FFI_TRAMPOLINE_H_
 #define SRC_SOCKETSECURITY_FFI_TRAMPOLINE_H_
 
-#include "v8.h"
-#include "v8-fast-api-calls.h"
 #include "socketsecurity/ffi/types.h"
+#include "v8-fast-api-calls.h"
+#include "v8.h"
 #include <atomic>
 #include <cstdint>
 #include <thread>
@@ -23,7 +23,7 @@ namespace ffi {
 // This approach is version-resilient: no assembly to maintain across
 // architectures, and the CFunction descriptors are generated at compile time.
 class FFITrampoline {
- public:
+public:
   // Check if the V8 Fast API is compatible with our expectations.
   static bool CanUseFastPath();
 
@@ -33,8 +33,7 @@ class FFITrampoline {
   static void FastVoidNoArgs(v8::Local<v8::Value> receiver,
                              v8::FastApiCallbackOptions& options);
   // void f(int32_t)
-  static void FastVoidInt32(v8::Local<v8::Value> receiver,
-                            int32_t a0,
+  static void FastVoidInt32(v8::Local<v8::Value> receiver, int32_t a0,
                             v8::FastApiCallbackOptions& options);
   // void f(pointer)
   static void FastVoidPtr(v8::Local<v8::Value> receiver,
@@ -45,12 +44,11 @@ class FFITrampoline {
   static int32_t FastInt32NoArgs(v8::Local<v8::Value> receiver,
                                  v8::FastApiCallbackOptions& options);
   // int32_t f(int32_t)
-  static int32_t FastInt32Int32(v8::Local<v8::Value> receiver,
-                                int32_t a0,
+  static int32_t FastInt32Int32(v8::Local<v8::Value> receiver, int32_t a0,
                                 v8::FastApiCallbackOptions& options);
   // int32_t f(int32_t, int32_t)
-  static int32_t FastInt32Int32Int32(v8::Local<v8::Value> receiver,
-                                     int32_t a0, int32_t a1,
+  static int32_t FastInt32Int32Int32(v8::Local<v8::Value> receiver, int32_t a0,
+                                     int32_t a1,
                                      v8::FastApiCallbackOptions& options);
   // int32_t f(int32_t, int32_t, int32_t)
   static int32_t FastInt32Int32Int32Int32(v8::Local<v8::Value> receiver,
@@ -62,14 +60,13 @@ class FFITrampoline {
                               v8::FastApiCallbackOptions& options);
   // int32_t f(pointer, int32_t)
   static int32_t FastInt32PtrInt32(v8::Local<v8::Value> receiver,
-                                   v8::Local<v8::Value> a0,
-                                   int32_t a1,
+                                   v8::Local<v8::Value> a0, int32_t a1,
                                    v8::FastApiCallbackOptions& options);
   // int32_t f(pointer, pointer)
   static int32_t FastInt32PtrPtr(v8::Local<v8::Value> receiver,
-                                  v8::Local<v8::Value> a0,
-                                  v8::Local<v8::Value> a1,
-                                  v8::FastApiCallbackOptions& options);
+                                 v8::Local<v8::Value> a0,
+                                 v8::Local<v8::Value> a1,
+                                 v8::FastApiCallbackOptions& options);
 
   // pointer f(void)
   static void* FastPtrNoArgs(v8::Local<v8::Value> receiver,
@@ -79,24 +76,20 @@ class FFITrampoline {
                           v8::Local<v8::Value> a0,
                           v8::FastApiCallbackOptions& options);
   // pointer f(int32_t)
-  static void* FastPtrInt32(v8::Local<v8::Value> receiver,
-                            int32_t a0,
+  static void* FastPtrInt32(v8::Local<v8::Value> receiver, int32_t a0,
                             v8::FastApiCallbackOptions& options);
 
   // double f(void)
   static double FastF64NoArgs(v8::Local<v8::Value> receiver,
                               v8::FastApiCallbackOptions& options);
   // double f(double)
-  static double FastF64F64(v8::Local<v8::Value> receiver,
-                           double a0,
+  static double FastF64F64(v8::Local<v8::Value> receiver, double a0,
                            v8::FastApiCallbackOptions& options);
   // double f(double, double)
-  static double FastF64F64F64(v8::Local<v8::Value> receiver,
-                              double a0, double a1,
-                              v8::FastApiCallbackOptions& options);
+  static double FastF64F64F64(v8::Local<v8::Value> receiver, double a0,
+                              double a1, v8::FastApiCallbackOptions& options);
   // double f(int32_t)
-  static double FastF64Int32(v8::Local<v8::Value> receiver,
-                             int32_t a0,
+  static double FastF64Int32(v8::Local<v8::Value> receiver, int32_t a0,
                              v8::FastApiCallbackOptions& options);
 
   // Get the CFunction descriptor for a given FFI signature.
@@ -106,7 +99,7 @@ class FFITrampoline {
   // Set the function pointer that the next trampoline call will invoke.
   static void SetActiveTarget(void* fn_ptr);
 
- private:
+private:
   static thread_local void* active_fn_ptr_;
 };
 
@@ -123,10 +116,10 @@ class FFITrampoline {
 
 // Per-slot data for the callback trampoline pool.
 struct CallbackSlotData {
-  void* env;               // Environment* (opaque to avoid header dep)
-  void* js_fn;             // v8::Global<v8::Function>* (opaque)
+  void* env;   // Environment* (opaque to avoid header dep)
+  void* js_fn; // v8::Global<v8::Function>* (opaque)
   FFISignature signature;
-  std::thread::id thread_id;  // Owning thread — callbacks must fire here
+  std::thread::id thread_id; // Owning thread — callbacks must fire here
   std::atomic<bool> allocated;
 };
 
@@ -149,8 +142,8 @@ void CallbackPoolSetData(uint32_t slot, CallbackSlotData* data);
 // Get the native function pointer for a slot (to hand to C code).
 void* CallbackPoolGetPtr(uint32_t slot, const FFISignature& sig);
 
-}  // namespace ffi
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ffi
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_FFI_TRAMPOLINE_H_
+#endif // SRC_SOCKETSECURITY_FFI_TRAMPOLINE_H_

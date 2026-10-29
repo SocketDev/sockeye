@@ -18,18 +18,19 @@ namespace elf_note_utils {
  * Align a value up to the specified alignment.
  */
 inline uint64_t align_up(uint64_t value, uint64_t alignment) {
-    return (value + alignment - 1) & ~(alignment - 1);
+  return (value + alignment - 1) & ~(alignment - 1);
 }
 
 /**
  * Structure representing a note to be added to an ELF binary.
  */
 struct NoteEntry {
-    const char* name;
-    std::vector<uint8_t> data;
+  const char* name;
+  std::vector<uint8_t> data;
 
-    NoteEntry(const char* n, const std::vector<uint8_t>& d) : name(n), data(d) {}
-    NoteEntry(const char* n, const uint8_t* d, size_t sz) : name(n), data(d, d + sz) {}
+  NoteEntry(const char* n, const std::vector<uint8_t>& d) : name(n), data(d) {}
+  NoteEntry(const char* n, const uint8_t* d, size_t sz)
+      : name(n), data(d, d + sz) {}
 };
 
 /**

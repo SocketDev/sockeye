@@ -16,7 +16,8 @@
  *   if (!(sec.rfind("__", 0) == 0)) sec = "__" + sec;  // Mach-O only
  *
  * Platform-specific details:
- * - Mach-O: Uses custom segments (e.g., "NODE_SEA") with sections (e.g., "__NODE_SEA_BLOB")
+ * - Mach-O: Uses custom segments (e.g., "NODE_SEA") with sections (e.g.,
+ * "__NODE_SEA_BLOB")
  * - ELF: Uses PT_NOTE segments with owner names (e.g., "NODE_SEA_BLOB")
  * - PE: Uses RT_RCDATA resources with names (e.g., "NODE_SEA_BLOB")
  */
@@ -30,7 +31,8 @@
 #define SMOL_VFS_RESOURCE_NAME "SMOL_VFS_BLOB"
 #define SMOL_VFS_CONFIG_RESOURCE_NAME "SMOL_VFS_CFG"
 #define PRESSED_DATA_RESOURCE_NAME "PRESSED_DATA"
-// SMOL Node Version - shortened to fit Mach-O 16-char section name limit (15 with __ prefix)
+// SMOL Node Version - shortened to fit Mach-O 16-char section name limit (15
+// with __ prefix)
 #define SMOL_NODE_VER_RESOURCE_NAME "SMOL_NODE_VER"
 
 // Mach-O segment names (no underscores)
@@ -48,7 +50,8 @@
 #define ELF_SECTION_PRESSED_DATA "." PRESSED_DATA_RESOURCE_NAME
 
 // ELF note names (use logical names directly)
-// These are note owner names that Node.js searches for via postject_find_resource()
+// These are note owner names that Node.js searches for via
+// postject_find_resource()
 #define ELF_NOTE_NODE_SEA_BLOB NODE_SEA_RESOURCE_NAME
 #define ELF_NOTE_SMOL_VFS_BLOB SMOL_VFS_RESOURCE_NAME
 #define ELF_NOTE_SMOL_VFS_CONFIG SMOL_VFS_CONFIG_RESOURCE_NAME
@@ -70,7 +73,8 @@
 
 // NODE_SEA fuse string (from Node.js)
 #define NODE_SEA_FUSE_STRING "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2"
-#define NODE_SEA_FUSE_UNFLIPPED "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2:0"
+#define NODE_SEA_FUSE_UNFLIPPED                                                \
+  "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2:0"
 #define NODE_SEA_FUSE_FLIPPED "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2:1"
 
 #endif /* SEGMENT_NAMES_H */

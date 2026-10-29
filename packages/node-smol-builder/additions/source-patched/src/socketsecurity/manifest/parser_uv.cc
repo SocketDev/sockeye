@@ -150,7 +150,8 @@ struct UvEntry {
 };
 
 void FlushEntry(ParsedLockfile* out, UvEntry& e) {
-  if (e.name.empty()) return;
+  if (e.name.empty())
+    return;
   PackageRef ref;
   ref.name = e.name;
   ref.version = e.version;
@@ -191,8 +192,8 @@ void ApplySource(std::string_view table, ParseContext* ctx, UvEntry* e) {
   }
 }
 
-bool FailUnrecognized(ParseError* err, size_t line_no,
-                      std::string_view saw, const char* wanted) {
+bool FailUnrecognized(ParseError* err, size_t line_no, std::string_view saw,
+                      const char* wanted) {
   std::string msg =
       "uv.lock is not in uv's canonical lockfile layout. Where: line ";
   msg += std::to_string(line_no);
@@ -200,10 +201,9 @@ bool FailUnrecognized(ParseError* err, size_t line_no,
   msg.append(saw.substr(0, 120));
   msg += "`; wanted: ";
   msg += wanted;
-  msg +=
-      ". Fix: regenerate with `uv lock` — this parser reads only the "
-      "canonical layout uv writes (astral-sh/uv#20648, pinned 0.12.1) "
-      "and has no general-TOML fallback.";
+  msg += ". Fix: regenerate with `uv lock` — this parser reads only the "
+         "canonical layout uv writes (astral-sh/uv#20648, pinned 0.12.1) "
+         "and has no general-TOML fallback.";
   err->message = std::move(msg);
   err->code = "ERR_INVALID_LOCKFILE";
   return false;
@@ -212,18 +212,15 @@ bool FailUnrecognized(ParseError* err, size_t line_no,
 // Top-level keys of the Lock wire struct (deserialize.rs's Root map
 // plus the array-valued markers). Anything else is non-canonical.
 bool IsKnownTopLevelKey(std::string_view key) {
-  return key == "version" || key == "revision" ||
-         key == "requires-python" || key == "resolution-markers" ||
-         key == "supported-markers" || key == "required-environments" ||
-         key == "conflicts";
+  return key == "version" || key == "revision" || key == "requires-python" ||
+         key == "resolution-markers" || key == "supported-markers" ||
+         key == "required-environments" || key == "conflicts";
 }
 
-}  // namespace
+} // namespace
 
-bool ParseUvLock(std::string_view content,
-                 ParseContext* ctx,
-                 ParsedLockfile* out,
-                 ParseError* err) {
+bool ParseUvLock(std::string_view content, ParseContext* ctx,
+                 ParsedLockfile* out, ParseError* err) {
   out->ecosystem = Ecosystem::kPypi;
   out->lockVersion = std::string_view{"1"};
 
@@ -360,8 +357,7 @@ bool ParseUvLock(std::string_view content,
       // An entry sharing the opening line (`dependencies = [ { name = "x"
       // },`) would be dropped silently for the roles this parser reads;
       // canonical uv output opens with a bare `[`, so anything else fails.
-      if (array_role != ArrayRole::kIgnore && !value.empty() &&
-          value != "[") {
+      if (array_role != ArrayRole::kIgnore && !value.empty() && value != "[") {
         return FailUnrecognized(err, line_no, trimmed,
                                 "a bare `[` opening the array");
       }
@@ -369,57 +365,57 @@ bool ParseUvLock(std::string_view content,
     }
 
     switch (section) {
-      case Section::kTop:
-        if (!IsKnownTopLevelKey(key)) {
-          return FailUnrecognized(
-              err, line_no, trimmed,
-              "a top-level key uv's lockfile writer emits (version, "
-              "revision, requires-python, resolution-markers, ...)");
-        }
-        if (key == "version") {
-          saw_version = true;
-          out->lockVersion = ctx->intern.Intern(uvscan::StripQuotes(value));
-        }
-        break;
-      case Section::kPackage:
-        if (key == "name") {
-          cur.name = uvscan::NormalizePep503(uvscan::StripQuotes(value), ctx);
-        } else if (key == "version") {
-          cur.version = ctx->intern.Intern(uvscan::StripQuotes(value));
-        } else if (key == "source") {
-          ApplySource(value, ctx, &cur);
-        } else if (key == "sdist") {
-          std::string_view hash;
-          if (uvscan::InlineTableString(value, "hash", &hash)) {
-            cur.integrity = ctx->intern.Intern(hash);
-          }
-        } else if (key == "dependencies") {
-          // Single-line form: `dependencies = [{ name = "x" }]`.
-          uvscan::ParseInlineEntries(value, ctx, &cur.dependencies);
-        }
-        // Other keys (wheels single-line, resolution-markers, future
-        // canonical additions) are skimmed: shape already validated
-        // by the `key = value` + balanced-bracket checks above.
-        break;
-      case Section::kGroups: {
-        // Single-line group form: `http2 = [{ name = "h2" }]`.
-        std::vector<std::string_view> names;
-        uvscan::ParseInlineEntries(value, ctx, &names);
-        for (std::string_view n : names) {
-          if (group_is_dev) {
-            dev_names.insert(n);
-          } else {
-            optional_names.insert(n);
-          }
-        }
-        break;
+    case Section::kTop:
+      if (!IsKnownTopLevelKey(key)) {
+        return FailUnrecognized(
+            err, line_no, trimmed,
+            "a top-level key uv's lockfile writer emits (version, "
+            "revision, requires-python, resolution-markers, ...)");
       }
-      case Section::kOptions:
-      case Section::kManifest:
-      case Section::kMetadata:
-        // Recognized tables whose contents don't feed PackageRef
-        // rows. The `key = value` shape check above still applies.
-        break;
+      if (key == "version") {
+        saw_version = true;
+        out->lockVersion = ctx->intern.Intern(uvscan::StripQuotes(value));
+      }
+      break;
+    case Section::kPackage:
+      if (key == "name") {
+        cur.name = uvscan::NormalizePep503(uvscan::StripQuotes(value), ctx);
+      } else if (key == "version") {
+        cur.version = ctx->intern.Intern(uvscan::StripQuotes(value));
+      } else if (key == "source") {
+        ApplySource(value, ctx, &cur);
+      } else if (key == "sdist") {
+        std::string_view hash;
+        if (uvscan::InlineTableString(value, "hash", &hash)) {
+          cur.integrity = ctx->intern.Intern(hash);
+        }
+      } else if (key == "dependencies") {
+        // Single-line form: `dependencies = [{ name = "x" }]`.
+        uvscan::ParseInlineEntries(value, ctx, &cur.dependencies);
+      }
+      // Other keys (wheels single-line, resolution-markers, future
+      // canonical additions) are skimmed: shape already validated
+      // by the `key = value` + balanced-bracket checks above.
+      break;
+    case Section::kGroups: {
+      // Single-line group form: `http2 = [{ name = "h2" }]`.
+      std::vector<std::string_view> names;
+      uvscan::ParseInlineEntries(value, ctx, &names);
+      for (std::string_view n : names) {
+        if (group_is_dev) {
+          dev_names.insert(n);
+        } else {
+          optional_names.insert(n);
+        }
+      }
+      break;
+    }
+    case Section::kOptions:
+    case Section::kManifest:
+    case Section::kMetadata:
+      // Recognized tables whose contents don't feed PackageRef
+      // rows. The `key = value` shape check above still applies.
+      break;
     }
   }
 
@@ -456,6 +452,6 @@ bool ParseUvLock(std::string_view content,
   return true;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

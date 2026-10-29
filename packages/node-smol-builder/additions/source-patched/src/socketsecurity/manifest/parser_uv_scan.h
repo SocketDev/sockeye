@@ -63,10 +63,10 @@ std::string_view ExtractUvDepName(std::string_view entry, ParseContext* ctx);
 void ParseInlineEntries(std::string_view value, ParseContext* ctx,
                         std::vector<std::string_view>* out);
 
-}  // namespace uvscan
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace uvscan
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_PARSER_UV_SCAN_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_PARSER_UV_SCAN_H_

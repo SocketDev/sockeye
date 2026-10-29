@@ -36,7 +36,7 @@ bool ReadOnlineByte(const char* path) {
   return n > 0 && buf[0] == '1';
 }
 
-}  // namespace
+} // namespace
 
 bool IsOnAcPowerImpl() {
   const char* base = "/sys/class/power_supply";
@@ -57,8 +57,8 @@ bool IsOnAcPowerImpl() {
     // <base> is fixed-len 24, sysfs entry names are short — 256 char
     // buffer is well over what's needed.
     char path[256];
-    int written = snprintf(path, sizeof(path),
-                           "%s/%s/online", base, entry->d_name);
+    int written =
+        snprintf(path, sizeof(path), "%s/%s/online", base, entry->d_name);
     if (written <= 0 || static_cast<size_t>(written) >= sizeof(path)) {
       continue;
     }
@@ -76,6 +76,6 @@ bool IsOnAcPowerImpl() {
   return on_ac;
 }
 
-}  // namespace power
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace power
+} // namespace socketsecurity
+} // namespace node

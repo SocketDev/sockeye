@@ -1,6 +1,7 @@
 /**
  * @file compression_constants.h
- * @brief Shared compression constants for binpress (compression) and binflate (decompression)
+ * @brief Shared compression constants for binpress (compression) and binflate
+ * (decompression)
  *
  * This header defines constants used by both the compression tools (binpress)
  * and decompression stubs (binflate) to ensure consistency across platforms.
@@ -10,7 +11,8 @@
 #define COMPRESSION_CONSTANTS_H
 
 /**
- * Magic marker to identify the start of compressed data in self-extracting binaries.
+ * Magic marker to identify the start of compressed data in self-extracting
+ * binaries.
  *
  * The marker is split into three parts to prevent it from appearing in the
  * decompressor stub itself, which would cause false positives when searching
@@ -30,7 +32,8 @@
 
 /**
  * Total length of the magic marker string (in bytes).
- * Must match: strlen(MAGIC_MARKER_PART1) + strlen(MAGIC_MARKER_PART2) + strlen(MAGIC_MARKER_PART3)
+ * Must match: strlen(MAGIC_MARKER_PART1) + strlen(MAGIC_MARKER_PART2) +
+ * strlen(MAGIC_MARKER_PART3)
  *
  * Calculation: 6 + 13 + 13 = 32 bytes
  */
@@ -72,7 +75,8 @@
  * - Version (2 bytes): 2
  * - Flags (2 bytes): prompt flag, promptDefault
  * - Numeric values (16 bytes): interval, notifyInterval
- * - String fields (1168 bytes): binname, command, url, tag, skipEnv, fakeArgvEnv, nodeVersion
+ * - String fields (1168 bytes): binname, command, url, tag, skipEnv,
+ * fakeArgvEnv, nodeVersion
  *
  * v2 adds 16 bytes for nodeVersion field (v1 was 1176 bytes, v2 is 1192 bytes).
  */
@@ -80,14 +84,18 @@
 #define SMOL_CONFIG_BINARY_LEN 1192
 
 /**
- * Total metadata header size (appears after magic marker, before compressed data).
- * Calculation: SIZE_HEADER_LEN + CACHE_KEY_LEN + PLATFORM_METADATA_LEN + INTEGRITY_HASH_LEN + SMOL_CONFIG_FLAG_LEN
- * = 16 + 16 + 3 + 64 + 1 = 100 bytes (without smol config data)
- * = 100 + 1192 = 1292 bytes (with smol config data, SMFG v2)
+ * Total metadata header size (appears after magic marker, before compressed
+ * data). Calculation: SIZE_HEADER_LEN + CACHE_KEY_LEN + PLATFORM_METADATA_LEN +
+ * INTEGRITY_HASH_LEN + SMOL_CONFIG_FLAG_LEN = 16 + 16 + 3 + 64 + 1 = 100 bytes
+ * (without smol config data) = 100 + 1192 = 1292 bytes (with smol config data,
+ * SMFG v2)
  *
- * Note: SMOL_CONFIG_FLAG_LEN is always present, SMOL_CONFIG_BINARY_LEN is conditional.
+ * Note: SMOL_CONFIG_FLAG_LEN is always present, SMOL_CONFIG_BINARY_LEN is
+ * conditional.
  */
-#define METADATA_HEADER_LEN (SIZE_HEADER_LEN + CACHE_KEY_LEN + PLATFORM_METADATA_LEN + INTEGRITY_HASH_LEN + SMOL_CONFIG_FLAG_LEN)
+#define METADATA_HEADER_LEN                                                    \
+  (SIZE_HEADER_LEN + CACHE_KEY_LEN + PLATFORM_METADATA_LEN +                   \
+   INTEGRITY_HASH_LEN + SMOL_CONFIG_FLAG_LEN)
 
 /* Platform values. */
 #define PLATFORM_LINUX 0
@@ -106,7 +114,8 @@
 #define LIBC_NA 255
 
 /**
- * Binflate marker to identify the embedded binflate tool in self-extracting binaries.
+ * Binflate marker to identify the embedded binflate tool in self-extracting
+ * binaries.
  *
  * Similar to the compressed data marker, this marker is split into three parts
  * to prevent it from appearing in the binary itself.
@@ -125,7 +134,8 @@
 
 /**
  * Total length of the binflate marker string (in bytes).
- * Must match: strlen(BINFLATE_MARKER_PART1) + strlen(BINFLATE_MARKER_PART2) + strlen(BINFLATE_MARKER_PART3)
+ * Must match: strlen(BINFLATE_MARKER_PART1) + strlen(BINFLATE_MARKER_PART2) +
+ * strlen(BINFLATE_MARKER_PART3)
  *
  * Calculation: 12 + 9 + 12 = 33 bytes
  */

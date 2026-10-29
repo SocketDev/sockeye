@@ -54,7 +54,7 @@ constexpr size_t kMaxValue = 8192;
 // the JS wrapper can branch on err.message ('denied' / 'keystore-unavailable' /
 // 'keystore-io').
 void ThrowKeystore(Isolate* isolate, int rc) {
-  const char* code = rc == KEYSTORE_ERR_DENIED       ? "denied"
+  const char* code = rc == KEYSTORE_ERR_DENIED        ? "denied"
                      : rc == KEYSTORE_ERR_UNAVAILABLE ? "keystore-unavailable"
                                                       : "keystore-io";
   isolate->ThrowException(
@@ -105,7 +105,7 @@ void Delete(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
-}  // namespace
+} // namespace
 
 static void Initialize(Local<Object> target, Local<Value> unused,
                        Local<Context> context, void* priv) {
@@ -120,11 +120,11 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(Delete);
 }
 
-}  // namespace keychain
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace keychain
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_keychain, node::socketsecurity::keychain::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_keychain,
+                                    node::socketsecurity::keychain::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_keychain, node::socketsecurity::keychain::RegisterExternalReferences)

@@ -65,7 +65,8 @@ extern "C" {
  *     free(output);
  * }
  */
-char* spawn_command(const char* command, const char* const args[], size_t max_output_size);
+char* spawn_command(const char* command, const char* const args[],
+                    size_t max_output_size);
 
 #ifdef __cplusplus
 }

@@ -26,13 +26,15 @@ extern "C" {
  *
  * @param input         Input data buffer
  * @param input_size    Size of input data in bytes
- * @param output        Pointer to receive allocated output buffer (caller must free)
+ * @param output        Pointer to receive allocated output buffer (caller must
+ * free)
  * @param output_size   Pointer to receive size of compressed data
- * @param level         Compression level (1=fastest, 6=default, 9=best, 12=max for libdeflate)
+ * @param level         Compression level (1=fastest, 6=default, 9=best, 12=max
+ * for libdeflate)
  * @return              GZIP_OK on success, error code on failure
  */
-int gzip_compress(const uint8_t *input, size_t input_size,
-                  uint8_t **output, size_t *output_size, int level);
+int gzip_compress(const uint8_t* input, size_t input_size, uint8_t** output,
+                  size_t* output_size, int level);
 
 /**
  * Get the maximum compressed size for a given input size.

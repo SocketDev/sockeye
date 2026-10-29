@@ -15,22 +15,19 @@ namespace node {
 namespace socketsecurity {
 namespace manifest {
 
-bool ParseLockfile(std::string_view content,
-                   Ecosystem ecosystem,
-                   LockFormat format,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
+bool ParseLockfile(std::string_view content, Ecosystem ecosystem,
+                   LockFormat format, ParseContext* ctx, ParsedLockfile* out,
                    ParseError* err) {
   if (ecosystem == Ecosystem::kNpm) {
     switch (format) {
-      case LockFormat::kPnpm:
-        return ParsePnpmLock(content, ctx, out, err);
-      case LockFormat::kYarn:
-        return ParseYarnLock(content, ctx, out, err);
-      case LockFormat::kNpm:
-        return ParseNpmLock(content, ctx, out, err);
-      default:
-        break;
+    case LockFormat::kPnpm:
+      return ParsePnpmLock(content, ctx, out, err);
+    case LockFormat::kYarn:
+      return ParseYarnLock(content, ctx, out, err);
+    case LockFormat::kNpm:
+      return ParseNpmLock(content, ctx, out, err);
+    default:
+      break;
     }
   }
   if (ecosystem == Ecosystem::kCargo && format == LockFormat::kCargo) {
@@ -44,6 +41,6 @@ bool ParseLockfile(std::string_view content,
   return false;
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

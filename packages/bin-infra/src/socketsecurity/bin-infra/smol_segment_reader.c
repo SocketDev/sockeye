@@ -55,8 +55,8 @@
 #include "smol_segment_reader_metadata.c"
 
 /* Per-format header parsing. Must precede the version part. */
-#include "smol_segment_reader_macho.c"
 #include "smol_segment_reader_elf.c"
+#include "smol_segment_reader_macho.c"
 #include "smol_segment_reader_pe.c"
 
 /* Detection and version phases, built on the parsers above. */

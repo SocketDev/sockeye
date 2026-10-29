@@ -12,9 +12,9 @@
 /* Ensure PATH_MAX is defined */
 #ifndef PATH_MAX
 #ifdef _WIN32
-#define PATH_MAX 260  /* Windows MAX_PATH */
+#define PATH_MAX 260 /* Windows MAX_PATH */
 #else
-#define PATH_MAX 4096  /* POSIX fallback */
+#define PATH_MAX 4096 /* POSIX fallback */
 #endif
 #endif
 
@@ -26,7 +26,8 @@ extern "C" {
  * Resolve relative path to absolute path with fallback.
  *
  * Uses realpath() on POSIX, _fullpath() on Windows.
- * Falls back to original path if resolution fails (e.g., file doesn't exist yet).
+ * Falls back to original path if resolution fails (e.g., file doesn't exist
+ * yet).
  *
  * This function is critical for file operations where relative paths cause
  * fopen() or other syscalls to fail due to working directory context issues.
@@ -40,7 +41,7 @@ extern "C" {
  *   const char *abs_path = resolve_absolute_path("../foo/bar.txt", resolved);
  *   FILE *fp = fopen(abs_path, "rb");
  */
-const char* resolve_absolute_path(const char *path, char *resolved_path);
+const char* resolve_absolute_path(const char* path, char* resolved_path);
 
 /**
  * Check if path is absolute.
@@ -52,7 +53,7 @@ const char* resolve_absolute_path(const char *path, char *resolved_path);
  * @param path Path to check
  * @return 1 if absolute, 0 if relative
  */
-int is_absolute_path(const char *path);
+int is_absolute_path(const char* path);
 
 /**
  * Join two path components with proper separator handling.
@@ -73,7 +74,7 @@ int is_absolute_path(const char *path);
  *   path_join(full_path, "/path/to", "file.txt");
  *   // full_path = "/path/to/file.txt"
  */
-int path_join(char *result, const char *base_path, const char *component);
+int path_join(char* result, const char* base_path, const char* component);
 
 /**
  * Normalize path separators for current platform.
@@ -85,7 +86,7 @@ int path_join(char *result, const char *base_path, const char *component);
  *
  * @param path Path to normalize (modified in place)
  */
-void normalize_path_separators(char *path);
+void normalize_path_separators(char* path);
 
 #ifdef __cplusplus
 }

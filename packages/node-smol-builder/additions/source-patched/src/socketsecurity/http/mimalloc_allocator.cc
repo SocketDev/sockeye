@@ -22,11 +22,9 @@ namespace http_perf {
 
 MimallocArrayBufferAllocator::MimallocArrayBufferAllocator()
     : stats_{0, 0, 0, 0, IsMimallocAvailable()},
-      use_mimalloc_(stats_.mimalloc_detected) {
-}
+      use_mimalloc_(stats_.mimalloc_detected) {}
 
-MimallocArrayBufferAllocator::~MimallocArrayBufferAllocator() {
-}
+MimallocArrayBufferAllocator::~MimallocArrayBufferAllocator() {}
 
 bool MimallocArrayBufferAllocator::IsMimallocAvailable() {
   // Check if mimalloc is available at runtime.
@@ -55,7 +53,8 @@ bool MimallocArrayBufferAllocator::IsMimallocAvailable() {
     void* mi_free_sym = dlsym(handle, "mi_free");
     void* mi_version_sym = dlsym(handle, "mi_version");
     dlclose(handle);
-    return (mi_malloc_sym != nullptr && mi_free_sym != nullptr && mi_version_sym != nullptr);
+    return (mi_malloc_sym != nullptr && mi_free_sym != nullptr &&
+            mi_version_sym != nullptr);
   }
 
   return false;
@@ -73,7 +72,7 @@ bool MimallocArrayBufferAllocator::IsMimallocAvailable() {
   }
   return (module != NULL);
 #else
-  return false;  // Platform not supported for runtime detection.
+  return false; // Platform not supported for runtime detection.
 #endif
 }
 
@@ -101,7 +100,8 @@ void* MimallocArrayBufferAllocator::AllocateUninitialized(size_t length) {
 }
 
 void MimallocArrayBufferAllocator::Free(void* data, size_t length) {
-  if (!data) return;
+  if (!data)
+    return;
 
   stats_.frees++;
   stats_.bytes_freed += length;
@@ -111,6 +111,6 @@ void MimallocArrayBufferAllocator::Free(void* data, size_t length) {
   std::free(data);
 }
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node

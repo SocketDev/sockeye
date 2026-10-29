@@ -16,20 +16,20 @@
 /* Unix-specific includes for EINTR wrappers and system calls */
 #ifndef _WIN32
 #include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <fcntl.h> /* For open(), O_* constants */
 #include <limits.h>
+#include <strings.h> /* For strcasecmp */
 #include <sys/stat.h>
-#include <fcntl.h>  /* For open(), O_* constants */
-#include <strings.h>  /* For strcasecmp */
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 /* Cross-platform file position functions and compatibility */
 #ifdef _WIN32
-#include <sys/types.h>
+#include <direct.h> /* For _mkdir */
+#include <io.h>     /* For _chmod */
 #include <sys/stat.h>
-#include <io.h>      /* For _chmod */
-#include <direct.h>  /* For _mkdir */
+#include <sys/types.h>
 /* Windows uses _ftelli64() for 64-bit file positions */
 #define ftello(fp) _ftelli64(fp)
 #define fseeko(fp, offset, whence) _fseeki64(fp, offset, whence)
@@ -41,9 +41,9 @@
 /* Cross-platform path and file type macros */
 #ifndef PATH_MAX
 #ifdef _WIN32
-#define PATH_MAX 260  /* Windows MAX_PATH */
+#define PATH_MAX 260 /* Windows MAX_PATH */
 #else
-#define PATH_MAX 4096  /* POSIX fallback */
+#define PATH_MAX 4096 /* POSIX fallback */
 #endif
 #endif
 
@@ -77,7 +77,7 @@ extern "C" {
  * @param size Pointer to receive file size
  * @return FILE_IO_OK on success, error code on failure
  */
-int file_io_read(const char *path, uint8_t **data, size_t *size);
+int file_io_read(const char* path, uint8_t** data, size_t* size);
 
 /**
  * Write buffer to file.
@@ -87,7 +87,7 @@ int file_io_read(const char *path, uint8_t **data, size_t *size);
  * @param size Size of buffer in bytes
  * @return FILE_IO_OK on success, error code on failure
  */
-int file_io_write(const char *path, const uint8_t *data, size_t size);
+int file_io_write(const char* path, const uint8_t* data, size_t size);
 
 /**
  * Copy file from source to destination.
@@ -97,7 +97,7 @@ int file_io_write(const char *path, const uint8_t *data, size_t size);
  * @param dest Destination file path
  * @return FILE_IO_OK on success, error code on failure
  */
-int file_io_copy(const char *source, const char *dest);
+int file_io_copy(const char* source, const char* dest);
 
 /**
  * Sync file data to disk (cross-platform fsync).
@@ -107,7 +107,7 @@ int file_io_copy(const char *source, const char *dest);
  * @param fp FILE pointer to sync
  * @return FILE_IO_OK on success, FILE_IO_ERROR on failure
  */
-int file_io_sync(FILE *fp);
+int file_io_sync(FILE* fp);
 
 /**
  * Sync file descriptor to disk (cross-platform fsync).
@@ -132,7 +132,7 @@ int file_io_sync_fd(int fd);
  * @param path Path to the file to sync
  * @return FILE_IO_OK on success, FILE_IO_ERROR on failure
  */
-int fsync_file_by_path(const char *path);
+int fsync_file_by_path(const char* path);
 
 /**
  * Set close-on-exec flag (FD_CLOEXEC on POSIX, non-inheritable on Windows).
@@ -154,27 +154,27 @@ int file_io_set_cloexec(int fd);
  * @return File descriptor on success, -1 on failure
  */
 #ifdef _WIN32
-#include <io.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <share.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <io.h>
+#include <share.h>
+#include <sys/stat.h>
 
-static inline int mkstemp_portable(char *tmpl) {
-    errno_t err = _mktemp_s(tmpl, strlen(tmpl) + 1);
-    if (err != 0) {
-        errno = err;
-        return -1;
-    }
+static inline int mkstemp_portable(char* tmpl) {
+  errno_t err = _mktemp_s(tmpl, strlen(tmpl) + 1);
+  if (err != 0) {
+    errno = err;
+    return -1;
+  }
 
-    int fd;
-    err = _sopen_s(&fd, tmpl, _O_RDWR | _O_CREAT | _O_EXCL | _O_BINARY,
-                   _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (err != 0) {
-        errno = err;
-        return -1;
-    }
-    return fd;
+  int fd;
+  err = _sopen_s(&fd, tmpl, _O_RDWR | _O_CREAT | _O_EXCL | _O_BINARY,
+                 _SH_DENYNO, _S_IREAD | _S_IWRITE);
+  if (err != 0) {
+    errno = err;
+    return -1;
+  }
+  return fd;
 }
 
 #define mkstemp mkstemp_portable
@@ -190,15 +190,15 @@ static inline int mkstemp_portable(char *tmpl) {
  * @param count Number of bytes to read
  * @return Number of bytes read on success, -1 on error
  */
-static inline ssize_t read_eintr(int fd, void *buf, size_t count) {
+static inline ssize_t read_eintr(int fd, void* buf, size_t count) {
 #ifndef _WIN32
-    ssize_t ret;
-    do {
-        ret = read(fd, buf, count);
-    } while (ret == -1 && errno == EINTR);
-    return ret;
+  ssize_t ret;
+  do {
+    ret = read(fd, buf, count);
+  } while (ret == -1 && errno == EINTR);
+  return ret;
 #else
-    return _read(fd, buf, (unsigned int)count);
+  return _read(fd, buf, (unsigned int)count);
 #endif
 }
 
@@ -212,15 +212,15 @@ static inline ssize_t read_eintr(int fd, void *buf, size_t count) {
  * @param count Number of bytes to write
  * @return Number of bytes written on success, -1 on error
  */
-static inline ssize_t write_eintr(int fd, const void *buf, size_t count) {
+static inline ssize_t write_eintr(int fd, const void* buf, size_t count) {
 #ifndef _WIN32
-    ssize_t ret;
-    do {
-        ret = write(fd, buf, count);
-    } while (ret == -1 && errno == EINTR);
-    return ret;
+  ssize_t ret;
+  do {
+    ret = write(fd, buf, count);
+  } while (ret == -1 && errno == EINTR);
+  return ret;
 #else
-    return _write(fd, buf, (unsigned int)count);
+  return _write(fd, buf, (unsigned int)count);
 #endif
 }
 

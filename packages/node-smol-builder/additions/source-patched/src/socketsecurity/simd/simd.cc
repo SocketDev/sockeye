@@ -9,5 +9,5 @@ namespace simd {
 // Global AVX2 detection flag - set by Init() at module load
 bool g_has_avx2 = false;
 
-}  // namespace simd
-}  // namespace smol
+} // namespace simd
+} // namespace smol

@@ -2,7 +2,8 @@
  * bsdsock_compat.h - Cross-platform BSD socket compatibility for Windows
  *
  * Provides:
- * - Socket handle type (socket_handle_t) that works on Windows (SOCKET) and POSIX (int)
+ * - Socket handle type (socket_handle_t) that works on Windows (SOCKET) and
+ * POSIX (int)
  * - Error code macros (BSD_GET_SOCK_ERROR, BSD_WOULD_BLOCK, etc.)
  * - Socket close macro (BSD_CLOSE_SOCK)
  * - MSG_NOSIGNAL definition (0 on Windows where it's not needed)
@@ -47,11 +48,11 @@ typedef uintptr_t socket_handle_t;
 /*
  * Error code macros - map Windows WSA errors to BSD-style access.
  */
-#define BSD_GET_SOCK_ERROR()   WSAGetLastError()
-#define BSD_CLOSE_SOCK(s)      closesocket((SOCKET)(s))
-#define BSD_WOULD_BLOCK        WSAEWOULDBLOCK
-#define BSD_IN_PROGRESS        WSAEWOULDBLOCK
-#define BSD_INTERRUPTED        WSAEINTR
+#define BSD_GET_SOCK_ERROR() WSAGetLastError()
+#define BSD_CLOSE_SOCK(s) closesocket((SOCKET)(s))
+#define BSD_WOULD_BLOCK WSAEWOULDBLOCK
+#define BSD_IN_PROGRESS WSAEWOULDBLOCK
+#define BSD_INTERRUPTED WSAEINTR
 
 /*
  * MSG_NOSIGNAL doesn't exist on Windows (SIGPIPE not a concern).
@@ -97,7 +98,8 @@ static inline bool BsdSetNonBlocking(socket_handle_t sock, bool non_blocking) {
  * Poll a single socket for events.
  * Returns: >0 if events ready, 0 on timeout, <0 on error.
  */
-static inline int BsdPollSocket(socket_handle_t sock, short events, int timeout_ms) {
+static inline int BsdPollSocket(socket_handle_t sock, short events,
+                                int timeout_ms) {
   WSAPOLLFD pfd;
   pfd.fd = (SOCKET)(sock);
   pfd.events = events;
@@ -110,7 +112,7 @@ static inline int BsdPollSocket(socket_handle_t sock, short events, int timeout_
  */
 #define BSD_SOCKET_CAST(s) ((SOCKET)(s))
 
-#else  /* POSIX / BSD */
+#else /* POSIX / BSD */
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -130,11 +132,11 @@ typedef int socket_handle_t;
 /*
  * Error code macros - direct mapping to errno and constants.
  */
-#define BSD_GET_SOCK_ERROR()   errno
-#define BSD_CLOSE_SOCK(s)      close(s)
-#define BSD_WOULD_BLOCK        EAGAIN
-#define BSD_IN_PROGRESS        EINPROGRESS
-#define BSD_INTERRUPTED        EINTR
+#define BSD_GET_SOCK_ERROR() errno
+#define BSD_CLOSE_SOCK(s) close(s)
+#define BSD_WOULD_BLOCK EAGAIN
+#define BSD_IN_PROGRESS EINPROGRESS
+#define BSD_INTERRUPTED EINTR
 
 /*
  * No-op on POSIX - WSAStartup not needed.
@@ -146,7 +148,8 @@ typedef int socket_handle_t;
  */
 static inline bool BsdSetNonBlocking(socket_handle_t sock, bool non_blocking) {
   int flags = fcntl(sock, F_GETFL, 0);
-  if (flags < 0) return false;
+  if (flags < 0)
+    return false;
   if (non_blocking) {
     flags |= O_NONBLOCK;
   } else {
@@ -159,7 +162,8 @@ static inline bool BsdSetNonBlocking(socket_handle_t sock, bool non_blocking) {
  * Poll a single socket for events.
  * Returns: >0 if events ready, 0 on timeout, <0 on error.
  */
-static inline int BsdPollSocket(socket_handle_t sock, short events, int timeout_ms) {
+static inline int BsdPollSocket(socket_handle_t sock, short events,
+                                int timeout_ms) {
   struct pollfd pfd = {0};
   pfd.fd = sock;
   pfd.events = events;
@@ -171,6 +175,6 @@ static inline int BsdPollSocket(socket_handle_t sock, short events, int timeout_
  */
 #define BSD_SOCKET_CAST(s) (s)
 
-#endif  /* _WIN32 */
+#endif /* _WIN32 */
 
-#endif  /* BSDSOCK_COMPAT_H */
+#endif /* BSDSOCK_COMPAT_H */

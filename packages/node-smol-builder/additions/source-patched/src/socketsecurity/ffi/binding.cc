@@ -1,4 +1,5 @@
-// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside the full Node build; a blind split cannot be compile-verified in isolation.
+// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside
+// the full Node build; a blind split cannot be compile-verified in isolation.
 // ============================================================================
 // binding.cc -- The main implementation of node:smol-ffi
 // ============================================================================
@@ -20,8 +21,8 @@
 // native addon (.node file) for every C library you want to use.
 //
 // HOW JS USES THIS
-// JS: internalBinding('smol_ffi') --> returns object with .open(), .call(), etc.
-// User: require('node:smol-ffi') --> lib/smol-ffi.js -->
+// JS: internalBinding('smol_ffi') --> returns object with .open(), .call(),
+// etc. User: require('node:smol-ffi') --> lib/smol-ffi.js -->
 //       lib/internal/socketsecurity/ffi.js --> internalBinding('smol_ffi')
 //
 // KEY CONCEPTS FOR JS DEVELOPERS
@@ -80,13 +81,13 @@
 #include "util-inl.h"
 #include "v8.h"
 
-#include <uv.h>
-#include <cstring>
-#include <new>
 #include <climits>
 #include <cmath>
+#include <cstring>
+#include <new>
 #include <thread>
 #include <type_traits>
+#include <uv.h>
 
 namespace node {
 namespace socketsecurity {
@@ -227,9 +228,8 @@ FFIState* FFIBinding::GetStateOrThrow(Environment* env) {
   FFIState* state = GetState(env);
   if (state == nullptr) {
     v8::Isolate* isolate = env->isolate();
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to allocate FFI state")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to allocate FFI state")));
   }
   return state;
 }
@@ -257,33 +257,56 @@ bool FFIBinding::ContainsNullByte(const char* str, size_t len) {
 // Returns kVoid as the default for unrecognized strings.
 
 FFIType FFIBinding::ParseTypeString(Isolate* isolate, Local<Value> val) {
-  if (!val->IsString()) return FFIType::kVoid;
+  if (!val->IsString())
+    return FFIType::kVoid;
 
   String::Utf8Value type_str(isolate, val);
-  if (*type_str == nullptr) return FFIType::kVoid;
+  if (*type_str == nullptr)
+    return FFIType::kVoid;
 
   const char* s = *type_str;
-  if (strcmp(s, "void") == 0)    return FFIType::kVoid;
-  if (strcmp(s, "bool") == 0)    return FFIType::kBool;
-  if (strcmp(s, "i8") == 0)      return FFIType::kInt8;
-  if (strcmp(s, "u8") == 0)      return FFIType::kUint8;
-  if (strcmp(s, "i16") == 0)     return FFIType::kInt16;
-  if (strcmp(s, "u16") == 0)     return FFIType::kUint16;
-  if (strcmp(s, "int") == 0)     return FFIType::kInt32;
-  if (strcmp(s, "i32") == 0)     return FFIType::kInt32;
-  if (strcmp(s, "uint") == 0)    return FFIType::kUint32;
-  if (strcmp(s, "u32") == 0)     return FFIType::kUint32;
-  if (strcmp(s, "i64") == 0)     return FFIType::kInt64;
-  if (strcmp(s, "u64") == 0)     return FFIType::kUint64;
-  if (strcmp(s, "f32") == 0)     return FFIType::kFloat32;
-  if (strcmp(s, "float") == 0)   return FFIType::kFloat32;
-  if (strcmp(s, "f64") == 0)     return FFIType::kFloat64;
-  if (strcmp(s, "double") == 0)  return FFIType::kFloat64;
-  if (strcmp(s, "pointer") == 0) return FFIType::kPointer;
-  if (strcmp(s, "ptr") == 0)     return FFIType::kPointer;
-  if (strcmp(s, "string") == 0)  return FFIType::kString;
-  if (strcmp(s, "str") == 0)     return FFIType::kString;
-  if (strcmp(s, "buffer") == 0)  return FFIType::kBuffer;
+  if (strcmp(s, "void") == 0)
+    return FFIType::kVoid;
+  if (strcmp(s, "bool") == 0)
+    return FFIType::kBool;
+  if (strcmp(s, "i8") == 0)
+    return FFIType::kInt8;
+  if (strcmp(s, "u8") == 0)
+    return FFIType::kUint8;
+  if (strcmp(s, "i16") == 0)
+    return FFIType::kInt16;
+  if (strcmp(s, "u16") == 0)
+    return FFIType::kUint16;
+  if (strcmp(s, "int") == 0)
+    return FFIType::kInt32;
+  if (strcmp(s, "i32") == 0)
+    return FFIType::kInt32;
+  if (strcmp(s, "uint") == 0)
+    return FFIType::kUint32;
+  if (strcmp(s, "u32") == 0)
+    return FFIType::kUint32;
+  if (strcmp(s, "i64") == 0)
+    return FFIType::kInt64;
+  if (strcmp(s, "u64") == 0)
+    return FFIType::kUint64;
+  if (strcmp(s, "f32") == 0)
+    return FFIType::kFloat32;
+  if (strcmp(s, "float") == 0)
+    return FFIType::kFloat32;
+  if (strcmp(s, "f64") == 0)
+    return FFIType::kFloat64;
+  if (strcmp(s, "double") == 0)
+    return FFIType::kFloat64;
+  if (strcmp(s, "pointer") == 0)
+    return FFIType::kPointer;
+  if (strcmp(s, "ptr") == 0)
+    return FFIType::kPointer;
+  if (strcmp(s, "string") == 0)
+    return FFIType::kString;
+  if (strcmp(s, "str") == 0)
+    return FFIType::kString;
+  if (strcmp(s, "buffer") == 0)
+    return FFIType::kBuffer;
 
   return FFIType::kVoid;
 }
@@ -305,23 +328,23 @@ void FFIBinding::Open(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 1 || !args[0]->IsString()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "open() requires a string path")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "open() requires a string path")
+            .ToLocalChecked()));
     return;
   }
 
   String::Utf8Value path(isolate, args[0]);
   if (*path == nullptr) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Invalid path").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Invalid path").ToLocalChecked()));
     return;
   }
 
   // Null-byte check.
   if (ContainsNullByte(*path, path.length())) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "Library path must not contain null bytes")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Library path must not contain null bytes")
+            .ToLocalChecked()));
     return;
   }
 
@@ -337,9 +360,9 @@ void FFIBinding::Open(const FunctionCallbackInfo<Value>& args) {
   auto lib = std::unique_ptr<FFILibrary>(new (std::nothrow) FFILibrary());
   if (!lib) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to allocate FFI library")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "Out of memory: failed to allocate FFI library")
+            .ToLocalChecked()));
     return;
   }
   lib->handle = nullptr;
@@ -357,9 +380,9 @@ void FFIBinding::Open(const FunctionCallbackInfo<Value>& args) {
     const char* errmsg = uv_dlerror(&uv_lib);
     Local<String> err_str;
     if (!String::NewFromUtf8(isolate, errmsg ? errmsg : "dlopen failed")
-            .ToLocal(&err_str)) {
-      err_str = FIXED_ONE_BYTE_STRING(
-          isolate, "dlopen failed (non-UTF-8 error)");
+             .ToLocal(&err_str)) {
+      err_str =
+          FIXED_ONE_BYTE_STRING(isolate, "dlopen failed (non-UTF-8 error)");
     }
     isolate->ThrowException(Exception::Error(err_str));
     uv_dlclose(&uv_lib);
@@ -373,9 +396,9 @@ void FFIBinding::Open(const FunctionCallbackInfo<Value>& args) {
   if (!stored_lib) {
     uv_dlclose(&uv_lib);
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to allocate FFI library handle")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate, "Out of memory: failed to allocate FFI library handle")
+            .ToLocalChecked()));
     return;
   }
   lib->handle = stored_lib;
@@ -391,14 +414,15 @@ void FFIBinding::Open(const FunctionCallbackInfo<Value>& args) {
 }
 
 // JS: binding.close(libraryId)
-// Unloads a library and cleans up all functions and callbacks that belong to it.
+// Unloads a library and cleans up all functions and callbacks that belong to
+// it.
 void FFIBinding::Close(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   if (args.Length() < 1) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "close() requires a library ID")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "close() requires a library ID")
+            .ToLocalChecked()));
     return;
   }
 
@@ -414,7 +438,7 @@ void FFIBinding::Close(const FunctionCallbackInfo<Value>& args) {
   auto it = state->libraries.find(id);
   if (it == state->libraries.end()) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Library not found").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Library not found").ToLocalChecked()));
     return;
   }
 
@@ -472,9 +496,8 @@ void FFIBinding::Dlsym(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 2 || !args[1]->IsString()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "dlsym() requires (libraryId, symbolName)")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "dlsym() requires (libraryId, symbolName)")
+            .ToLocalChecked()));
     return;
   }
 
@@ -488,23 +511,22 @@ void FFIBinding::Dlsym(const FunctionCallbackInfo<Value>& args) {
   auto lib_it = state->libraries.find(lib_id);
   if (lib_it == state->libraries.end() || lib_it->second->closed) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Library not found or closed")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Library not found or closed")
+            .ToLocalChecked()));
     return;
   }
 
   String::Utf8Value symbol_name(isolate, args[1]);
   if (*symbol_name == nullptr) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Invalid symbol name").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Invalid symbol name").ToLocalChecked()));
     return;
   }
 
   if (ContainsNullByte(*symbol_name, symbol_name.length())) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "Symbol name must not contain null bytes")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Symbol name must not contain null bytes")
+            .ToLocalChecked()));
     return;
   }
 
@@ -516,16 +538,16 @@ void FFIBinding::Dlsym(const FunctionCallbackInfo<Value>& args) {
     const char* errmsg = uv_dlerror(uv_lib);
     Local<String> err_str;
     if (!String::NewFromUtf8(isolate, errmsg ? errmsg : "Symbol not found")
-            .ToLocal(&err_str)) {
-      err_str = FIXED_ONE_BYTE_STRING(
-          isolate, "dlsym failed (non-UTF-8 error)");
+             .ToLocal(&err_str)) {
+      err_str =
+          FIXED_ONE_BYTE_STRING(isolate, "dlsym failed (non-UTF-8 error)");
     }
     isolate->ThrowException(Exception::Error(err_str));
     return;
   }
 
   args.GetReturnValue().Set(
-    BigInt::NewFromUnsigned(isolate, reinterpret_cast<uint64_t>(ptr)));
+      BigInt::NewFromUnsigned(isolate, reinterpret_cast<uint64_t>(ptr)));
 }
 
 // JS: const [fnId, hasFast] = binding.sym(libId, 'sqrt', 'f64', ['f64'])
@@ -538,9 +560,10 @@ void FFIBinding::Sym(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 3) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "sym() requires (libraryId, name, returnType, [paramTypes])")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate,
+            "sym() requires (libraryId, name, returnType, [paramTypes])")
+            .ToLocalChecked()));
     return;
   }
 
@@ -554,24 +577,23 @@ void FFIBinding::Sym(const FunctionCallbackInfo<Value>& args) {
   auto lib_it = state->libraries.find(lib_id);
   if (lib_it == state->libraries.end() || lib_it->second->closed) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Library not found or closed")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Library not found or closed")
+            .ToLocalChecked()));
     return;
   }
 
   String::Utf8Value symbol_name(isolate, args[1]);
   if (*symbol_name == nullptr) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Invalid symbol name").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Invalid symbol name").ToLocalChecked()));
     return;
   }
 
   // Null-byte check on symbol name.
   if (ContainsNullByte(*symbol_name, symbol_name.length())) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "Symbol name must not contain null bytes")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Symbol name must not contain null bytes")
+            .ToLocalChecked()));
     return;
   }
 
@@ -584,9 +606,9 @@ void FFIBinding::Sym(const FunctionCallbackInfo<Value>& args) {
     const char* errmsg = uv_dlerror(uv_lib);
     Local<String> err_str;
     if (!String::NewFromUtf8(isolate, errmsg ? errmsg : "Symbol not found")
-            .ToLocal(&err_str)) {
-      err_str = FIXED_ONE_BYTE_STRING(
-          isolate, "dlsym failed (non-UTF-8 error)");
+             .ToLocal(&err_str)) {
+      err_str =
+          FIXED_ONE_BYTE_STRING(isolate, "dlsym failed (non-UTF-8 error)");
     }
     isolate->ThrowException(Exception::Error(err_str));
     return;
@@ -605,8 +627,8 @@ void FFIBinding::Sym(const FunctionCallbackInfo<Value>& args) {
     sig.param_count = param_arr->Length();
     if (sig.param_count > kMaxFFIParams) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Too many parameters (max 16)")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Too many parameters (max 16)")
+              .ToLocalChecked()));
       return;
     }
     for (size_t i = 0; i < sig.param_count; ++i) {
@@ -632,9 +654,9 @@ void FFIBinding::Sym(const FunctionCallbackInfo<Value>& args) {
   auto func = std::unique_ptr<FFIFunction>(new (std::nothrow) FFIFunction());
   if (!func) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to allocate FFI function")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "Out of memory: failed to allocate FFI function")
+            .ToLocalChecked()));
     return;
   }
   func->fn_ptr = fn_ptr;
@@ -674,9 +696,9 @@ void FFIBinding::RegisterFunction(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 2) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "registerFunction(ptr, returnType, [paramTypes])")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "registerFunction(ptr, returnType, [paramTypes])")
+            .ToLocalChecked()));
     return;
   }
 
@@ -690,18 +712,18 @@ void FFIBinding::RegisterFunction(const FunctionCallbackInfo<Value>& args) {
   // no legitimate use — calling them would segfault the process.
   if (!args[0]->IsBigInt()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "registerFunction: ptr must be a BigInt")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "registerFunction: ptr must be a BigInt")
+            .ToLocalChecked()));
     return;
   }
   bool lossless;
   uint64_t raw = args[0].As<BigInt>()->Uint64Value(&lossless);
   if (!lossless || raw == 0) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "registerFunction: ptr must be a non-zero BigInt fitting in uint64")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate,
+            "registerFunction: ptr must be a non-zero BigInt fitting in uint64")
+            .ToLocalChecked()));
     return;
   }
   // Cast to function pointer. Same ABI-dependent reinterpret_cast pattern
@@ -721,8 +743,8 @@ void FFIBinding::RegisterFunction(const FunctionCallbackInfo<Value>& args) {
     sig.param_count = param_arr->Length();
     if (sig.param_count > kMaxFFIParams) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Too many parameters (max 16)")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Too many parameters (max 16)")
+              .ToLocalChecked()));
       return;
     }
     for (size_t i = 0; i < sig.param_count; ++i) {
@@ -741,9 +763,9 @@ void FFIBinding::RegisterFunction(const FunctionCallbackInfo<Value>& args) {
   auto func = std::unique_ptr<FFIFunction>(new (std::nothrow) FFIFunction());
   if (!func) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to allocate FFI function")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "Out of memory: failed to allocate FFI function")
+            .ToLocalChecked()));
     return;
   }
   func->fn_ptr = fn_ptr;
@@ -776,9 +798,9 @@ void FFIBinding::UnregisterFunction(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 1) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "unregisterFunction() requires a function ID")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "unregisterFunction() requires a function ID")
+            .ToLocalChecked()));
     return;
   }
 
@@ -835,7 +857,8 @@ void FFIBinding::SetTarget(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
 
-  if (args.Length() < 1) return;
+  if (args.Length() < 1)
+    return;
 
   Environment* env = Environment::GetCurrent(args);
   FFIState* state = GetStateOrThrow(env);
@@ -845,7 +868,8 @@ void FFIBinding::SetTarget(const FunctionCallbackInfo<Value>& args) {
 
   uint32_t fn_id = args[0]->Uint32Value(context).FromMaybe(0);
   auto fn_it = state->functions.find(fn_id);
-  if (fn_it == state->functions.end()) return;
+  if (fn_it == state->functions.end())
+    return;
 
   FFITrampoline::SetActiveTarget(fn_it->second->fn_ptr);
 }
@@ -861,8 +885,8 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 1) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "call() requires a function ID")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "call() requires a function ID")
+            .ToLocalChecked()));
     return;
   }
 
@@ -876,7 +900,7 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
   auto fn_it = state->functions.find(fn_id);
   if (fn_it == state->functions.end()) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Function not found").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Function not found").ToLocalChecked()));
     return;
   }
 
@@ -886,8 +910,8 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
   size_t js_arg_count = args.Length() - 1;
   if (js_arg_count != sig.param_count) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "Wrong number of arguments")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Wrong number of arguments")
+            .ToLocalChecked()));
     return;
   }
 
@@ -940,160 +964,160 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
     string_storage[i] = nullptr;
 
     switch (sig.param_types[i]) {
-      case FFIType::kBool:
-        arg_values[i].b = js_arg->BooleanValue(isolate);
-        break;
-      case FFIType::kInt8: {
-        int32_t v = js_arg->Int32Value(context).FromMaybe(0);
-        if (!ValidateI8(v)) {
-          isolate->ThrowException(Exception::RangeError(
+    case FFIType::kBool:
+      arg_values[i].b = js_arg->BooleanValue(isolate);
+      break;
+    case FFIType::kInt8: {
+      int32_t v = js_arg->Int32Value(context).FromMaybe(0);
+      if (!ValidateI8(v)) {
+        isolate->ThrowException(Exception::RangeError(
             String::NewFromUtf8(isolate,
-              "Value out of range for int8 (-128 to 127)")
-              .ToLocalChecked()));
-          goto cleanup;
-        }
-        arg_values[i].i8 = static_cast<int8_t>(v);
-        break;
-      }
-      case FFIType::kUint8: {
-        uint32_t v = js_arg->Uint32Value(context).FromMaybe(0);
-        if (!ValidateU8(v)) {
-          isolate->ThrowException(Exception::RangeError(
-            String::NewFromUtf8(isolate,
-              "Value out of range for uint8 (0 to 255)")
-              .ToLocalChecked()));
-          goto cleanup;
-        }
-        arg_values[i].u8 = static_cast<uint8_t>(v);
-        break;
-      }
-      case FFIType::kInt16: {
-        int32_t v = js_arg->Int32Value(context).FromMaybe(0);
-        if (!ValidateI16(v)) {
-          isolate->ThrowException(Exception::RangeError(
-            String::NewFromUtf8(isolate,
-              "Value out of range for int16 (-32768 to 32767)")
-              .ToLocalChecked()));
-          goto cleanup;
-        }
-        arg_values[i].i16 = static_cast<int16_t>(v);
-        break;
-      }
-      case FFIType::kUint16: {
-        uint32_t v = js_arg->Uint32Value(context).FromMaybe(0);
-        if (!ValidateU16(v)) {
-          isolate->ThrowException(Exception::RangeError(
-            String::NewFromUtf8(isolate,
-              "Value out of range for uint16 (0 to 65535)")
-              .ToLocalChecked()));
-          goto cleanup;
-        }
-        arg_values[i].u16 = static_cast<uint16_t>(v);
-        break;
-      }
-      case FFIType::kInt32:
-        arg_values[i].i32 = js_arg->Int32Value(context).FromMaybe(0);
-        break;
-      case FFIType::kUint32:
-        arg_values[i].u32 = js_arg->Uint32Value(context).FromMaybe(0);
-        break;
-      case FFIType::kInt64:
-        if (js_arg->IsBigInt()) {
-          bool lossless;
-          arg_values[i].i64 = js_arg.As<BigInt>()->Int64Value(&lossless);
-          if (!lossless) {
-            isolate->ThrowException(Exception::RangeError(
-              String::NewFromUtf8(isolate,
-                "BigInt value does not fit in int64")
+                                "Value out of range for int8 (-128 to 127)")
                 .ToLocalChecked()));
-            goto cleanup;
-          }
-        } else {
-          arg_values[i].i64 =
+        goto cleanup;
+      }
+      arg_values[i].i8 = static_cast<int8_t>(v);
+      break;
+    }
+    case FFIType::kUint8: {
+      uint32_t v = js_arg->Uint32Value(context).FromMaybe(0);
+      if (!ValidateU8(v)) {
+        isolate->ThrowException(Exception::RangeError(
+            String::NewFromUtf8(isolate,
+                                "Value out of range for uint8 (0 to 255)")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      arg_values[i].u8 = static_cast<uint8_t>(v);
+      break;
+    }
+    case FFIType::kInt16: {
+      int32_t v = js_arg->Int32Value(context).FromMaybe(0);
+      if (!ValidateI16(v)) {
+        isolate->ThrowException(Exception::RangeError(
+            String::NewFromUtf8(
+                isolate, "Value out of range for int16 (-32768 to 32767)")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      arg_values[i].i16 = static_cast<int16_t>(v);
+      break;
+    }
+    case FFIType::kUint16: {
+      uint32_t v = js_arg->Uint32Value(context).FromMaybe(0);
+      if (!ValidateU16(v)) {
+        isolate->ThrowException(Exception::RangeError(
+            String::NewFromUtf8(isolate,
+                                "Value out of range for uint16 (0 to 65535)")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      arg_values[i].u16 = static_cast<uint16_t>(v);
+      break;
+    }
+    case FFIType::kInt32:
+      arg_values[i].i32 = js_arg->Int32Value(context).FromMaybe(0);
+      break;
+    case FFIType::kUint32:
+      arg_values[i].u32 = js_arg->Uint32Value(context).FromMaybe(0);
+      break;
+    case FFIType::kInt64:
+      if (js_arg->IsBigInt()) {
+        bool lossless;
+        arg_values[i].i64 = js_arg.As<BigInt>()->Int64Value(&lossless);
+        if (!lossless) {
+          isolate->ThrowException(Exception::RangeError(
+              String::NewFromUtf8(isolate, "BigInt value does not fit in int64")
+                  .ToLocalChecked()));
+          goto cleanup;
+        }
+      } else {
+        arg_values[i].i64 =
             static_cast<int64_t>(js_arg->IntegerValue(context).FromMaybe(0));
-        }
-        break;
-      case FFIType::kUint64:
-        if (js_arg->IsBigInt()) {
-          bool lossless;
-          arg_values[i].u64 = js_arg.As<BigInt>()->Uint64Value(&lossless);
-          if (!lossless) {
-            isolate->ThrowException(Exception::RangeError(
-              String::NewFromUtf8(isolate,
-                "BigInt value does not fit in uint64")
-                .ToLocalChecked()));
-            goto cleanup;
-          }
-        } else {
-          arg_values[i].u64 =
-            static_cast<uint64_t>(js_arg->IntegerValue(context).FromMaybe(0));
-        }
-        break;
-      case FFIType::kFloat32:
-        arg_values[i].f32 =
-          static_cast<float>(js_arg->NumberValue(context).FromMaybe(0.0));
-        break;
-      case FFIType::kFloat64:
-        arg_values[i].f64 = js_arg->NumberValue(context).FromMaybe(0.0);
-        break;
-      case FFIType::kPointer:
-        if (js_arg->IsNull() || js_arg->IsUndefined()) {
-          arg_values[i].ptr = nullptr;
-        } else if (js_arg->IsArrayBufferView()) {
-          arg_values[i].ptr = Buffer::Data(js_arg);
-        } else if (js_arg->IsArrayBuffer()) {
-          auto store = js_arg.As<ArrayBuffer>()->GetBackingStore();
-          arg_values[i].ptr = store ? store->Data() : nullptr;
-        } else if (js_arg->IsBigInt()) {
-          bool lossless;
-          arg_values[i].ptr = reinterpret_cast<void*>(
-            js_arg.As<BigInt>()->Uint64Value(&lossless));
-        } else {
-          arg_values[i].ptr = nullptr;
-        }
-        break;
-      case FFIType::kString: {
-        if (js_arg->IsNull() || js_arg->IsUndefined()) {
-          arg_values[i].ptr = nullptr;
-        } else {
-          String::Utf8Value str(isolate, js_arg);
-          if (*str == nullptr) {
-            arg_values[i].ptr = nullptr;
-            break;
-          }
-          size_t len = str.length();
-          // -fno-exceptions: std::nothrow + null-check + ThrowException so
-          // OOM surfaces as a JS Error instead of aborting the process.
-          char* copy = new (std::nothrow) char[len + 1];
-          if (!copy) {
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Out of memory: failed to allocate FFI string argument")
-                .ToLocalChecked()));
-            goto cleanup;
-          }
-          memcpy(copy, *str, len);
-          copy[len] = '\0';
-          string_storage[i] = copy;
-          arg_values[i].ptr = copy;
-        }
-        break;
       }
-      case FFIType::kBuffer:
-        if (js_arg->IsArrayBufferView()) {
-          arg_values[i].ptr = Buffer::Data(js_arg);
-        } else if (js_arg->IsArrayBuffer()) {
-          auto store = js_arg.As<ArrayBuffer>()->GetBackingStore();
-          arg_values[i].ptr = store ? store->Data() : nullptr;
-        } else if (js_arg->IsNull() || js_arg->IsUndefined()) {
-          arg_values[i].ptr = nullptr;
-        } else {
-          arg_values[i].ptr = nullptr;
+      break;
+    case FFIType::kUint64:
+      if (js_arg->IsBigInt()) {
+        bool lossless;
+        arg_values[i].u64 = js_arg.As<BigInt>()->Uint64Value(&lossless);
+        if (!lossless) {
+          isolate->ThrowException(Exception::RangeError(
+              String::NewFromUtf8(isolate,
+                                  "BigInt value does not fit in uint64")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
-        break;
-      default:
+      } else {
+        arg_values[i].u64 =
+            static_cast<uint64_t>(js_arg->IntegerValue(context).FromMaybe(0));
+      }
+      break;
+    case FFIType::kFloat32:
+      arg_values[i].f32 =
+          static_cast<float>(js_arg->NumberValue(context).FromMaybe(0.0));
+      break;
+    case FFIType::kFloat64:
+      arg_values[i].f64 = js_arg->NumberValue(context).FromMaybe(0.0);
+      break;
+    case FFIType::kPointer:
+      if (js_arg->IsNull() || js_arg->IsUndefined()) {
         arg_values[i].ptr = nullptr;
-        break;
+      } else if (js_arg->IsArrayBufferView()) {
+        arg_values[i].ptr = Buffer::Data(js_arg);
+      } else if (js_arg->IsArrayBuffer()) {
+        auto store = js_arg.As<ArrayBuffer>()->GetBackingStore();
+        arg_values[i].ptr = store ? store->Data() : nullptr;
+      } else if (js_arg->IsBigInt()) {
+        bool lossless;
+        arg_values[i].ptr = reinterpret_cast<void*>(
+            js_arg.As<BigInt>()->Uint64Value(&lossless));
+      } else {
+        arg_values[i].ptr = nullptr;
+      }
+      break;
+    case FFIType::kString: {
+      if (js_arg->IsNull() || js_arg->IsUndefined()) {
+        arg_values[i].ptr = nullptr;
+      } else {
+        String::Utf8Value str(isolate, js_arg);
+        if (*str == nullptr) {
+          arg_values[i].ptr = nullptr;
+          break;
+        }
+        size_t len = str.length();
+        // -fno-exceptions: std::nothrow + null-check + ThrowException so
+        // OOM surfaces as a JS Error instead of aborting the process.
+        char* copy = new (std::nothrow) char[len + 1];
+        if (!copy) {
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate,
+                  "Out of memory: failed to allocate FFI string argument")
+                  .ToLocalChecked()));
+          goto cleanup;
+        }
+        memcpy(copy, *str, len);
+        copy[len] = '\0';
+        string_storage[i] = copy;
+        arg_values[i].ptr = copy;
+      }
+      break;
+    }
+    case FFIType::kBuffer:
+      if (js_arg->IsArrayBufferView()) {
+        arg_values[i].ptr = Buffer::Data(js_arg);
+      } else if (js_arg->IsArrayBuffer()) {
+        auto store = js_arg.As<ArrayBuffer>()->GetBackingStore();
+        arg_values[i].ptr = store ? store->Data() : nullptr;
+      } else if (js_arg->IsNull() || js_arg->IsUndefined()) {
+        arg_values[i].ptr = nullptr;
+      } else {
+        arg_values[i].ptr = nullptr;
+      }
+      break;
+    default:
+      arg_values[i].ptr = nullptr;
+      break;
     }
   }
 
@@ -1104,7 +1128,8 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
   for (size_t i = 0; i < sig.param_count; ++i) {
     memcpy(&arg_regs[i], &arg_values[i],
            FFITypeSize(sig.param_types[i]) < sizeof(uintptr_t)
-             ? FFITypeSize(sig.param_types[i]) : sizeof(uintptr_t));
+               ? FFITypeSize(sig.param_types[i])
+               : sizeof(uintptr_t));
   }
 
 // Shorthand macros for accessing arguments in the dispatch code below.
@@ -1145,69 +1170,70 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
       FFIType p0 = sig.param_types[0];
       if (p0 == FFIType::kFloat64) {
         switch (sig.return_type) {
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(double))fn)(ARG_F64(0));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kFloat32: {
-            float ret = ((float(*)(double))fn)(ARG_F64(0));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kInt32:
-          case FFIType::kBool: {
-            int32_t ret = ((int32_t(*)(double))fn)(ARG_F64(0));
-            result = sig.return_type == FFIType::kBool
-              ? Boolean::New(isolate, ret != 0).As<Value>()
-              : Int32::New(isolate, ret).As<Value>();
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(double))fn)(ARG_F64(0));
-            result = Undefined(isolate);
-            break;
-          case FFIType::kPointer: {
-            void* ret = ((void*(*)(double))fn)(ARG_F64(0));
-            result = ret ? BigInt::NewFromUnsigned(isolate,
-              reinterpret_cast<uint64_t>(ret)).As<Value>()
-              : Null(isolate).As<Value>();
-            break;
-          }
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for float-param function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat64: {
+          double ret = ((double (*)(double))fn)(ARG_F64(0));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kFloat32: {
+          float ret = ((float (*)(double))fn)(ARG_F64(0));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kInt32:
+        case FFIType::kBool: {
+          int32_t ret = ((int32_t (*)(double))fn)(ARG_F64(0));
+          result = sig.return_type == FFIType::kBool
+                       ? Boolean::New(isolate, ret != 0).As<Value>()
+                       : Int32::New(isolate, ret).As<Value>();
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(double))fn)(ARG_F64(0));
+          result = Undefined(isolate);
+          break;
+        case FFIType::kPointer: {
+          void* ret = ((void* (*)(double))fn)(ARG_F64(0));
+          result = ret ? BigInt::NewFromUnsigned(
+                             isolate, reinterpret_cast<uint64_t>(ret))
+                             .As<Value>()
+                       : Null(isolate).As<Value>();
+          break;
+        }
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate, "Unsupported return type for float-param function")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
       } else if (p0 == FFIType::kFloat32) {
         switch (sig.return_type) {
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(float))fn)(ARG_F32(0));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kFloat32: {
-            float ret = ((float(*)(float))fn)(ARG_F32(0));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kInt32: {
-            int32_t ret = ((int32_t(*)(float))fn)(ARG_F32(0));
-            result = Int32::New(isolate, ret);
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(float))fn)(ARG_F32(0));
-            result = Undefined(isolate);
-            break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for float-param function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat64: {
+          double ret = ((double (*)(float))fn)(ARG_F32(0));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kFloat32: {
+          float ret = ((float (*)(float))fn)(ARG_F32(0));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kInt32: {
+          int32_t ret = ((int32_t (*)(float))fn)(ARG_F32(0));
+          result = Int32::New(isolate, ret);
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(float))fn)(ARG_F32(0));
+          result = Undefined(isolate);
+          break;
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate, "Unsupported return type for float-param function")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
       }
     }
@@ -1218,144 +1244,143 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
 
       if (p0 == FFIType::kFloat64 && p1 == FFIType::kFloat64) {
         switch (sig.return_type) {
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(double, double))fn)(
-                ARG_F64(0), ARG_F64(1));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kInt32: {
-            int32_t ret = ((int32_t(*)(double, double))fn)(
-                ARG_F64(0), ARG_F64(1));
-            result = Int32::New(isolate, ret);
-            break;
-          }
-          case FFIType::kBool: {
-            int32_t ret = ((int32_t(*)(double, double))fn)(
-                ARG_F64(0), ARG_F64(1));
-            result = Boolean::New(isolate, ret != 0);
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(double, double))fn)(ARG_F64(0), ARG_F64(1));
-            result = Undefined(isolate);
-            break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for (f64, f64) function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat64: {
+          double ret = ((double (*)(double, double))fn)(ARG_F64(0), ARG_F64(1));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kInt32: {
+          int32_t ret =
+              ((int32_t (*)(double, double))fn)(ARG_F64(0), ARG_F64(1));
+          result = Int32::New(isolate, ret);
+          break;
+        }
+        case FFIType::kBool: {
+          int32_t ret =
+              ((int32_t (*)(double, double))fn)(ARG_F64(0), ARG_F64(1));
+          result = Boolean::New(isolate, ret != 0);
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(double, double))fn)(ARG_F64(0), ARG_F64(1));
+          result = Undefined(isolate);
+          break;
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate, "Unsupported return type for (f64, f64) function")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
       }
       // Mixed: (i32, f64) or (f64, i32)
       else if (FFITypeIsIntOrPtr(p0) && p1 == FFIType::kFloat64) {
         switch (sig.return_type) {
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(uintptr_t, double))fn)(
-                ARG_I(0), ARG_F64(1));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kInt32: {
-            int32_t ret = ((int32_t(*)(uintptr_t, double))fn)(
-                ARG_I(0), ARG_F64(1));
-            result = Int32::New(isolate, ret);
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(uintptr_t, double))fn)(ARG_I(0), ARG_F64(1));
-            result = Undefined(isolate);
-            break;
-          case FFIType::kPointer: {
-            void* ret = ((void*(*)(uintptr_t, double))fn)(
-                ARG_I(0), ARG_F64(1));
-            result = ret ? BigInt::NewFromUnsigned(isolate,
-              reinterpret_cast<uint64_t>(ret)).As<Value>()
-              : Null(isolate).As<Value>();
-            break;
-          }
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for mixed int/float function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat64: {
+          double ret =
+              ((double (*)(uintptr_t, double))fn)(ARG_I(0), ARG_F64(1));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kInt32: {
+          int32_t ret =
+              ((int32_t (*)(uintptr_t, double))fn)(ARG_I(0), ARG_F64(1));
+          result = Int32::New(isolate, ret);
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(uintptr_t, double))fn)(ARG_I(0), ARG_F64(1));
+          result = Undefined(isolate);
+          break;
+        case FFIType::kPointer: {
+          void* ret = ((void* (*)(uintptr_t, double))fn)(ARG_I(0), ARG_F64(1));
+          result = ret ? BigInt::NewFromUnsigned(
+                             isolate, reinterpret_cast<uint64_t>(ret))
+                             .As<Value>()
+                       : Null(isolate).As<Value>();
+          break;
+        }
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate,
+                  "Unsupported return type for mixed int/float function")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
       } else if (p0 == FFIType::kFloat64 && FFITypeIsIntOrPtr(p1)) {
         switch (sig.return_type) {
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(double, uintptr_t))fn)(
-                ARG_F64(0), ARG_I(1));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kInt32: {
-            int32_t ret = ((int32_t(*)(double, uintptr_t))fn)(
-                ARG_F64(0), ARG_I(1));
-            result = Int32::New(isolate, ret);
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(double, uintptr_t))fn)(ARG_F64(0), ARG_I(1));
-            result = Undefined(isolate);
-            break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for mixed float/int function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat64: {
+          double ret =
+              ((double (*)(double, uintptr_t))fn)(ARG_F64(0), ARG_I(1));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kInt32: {
+          int32_t ret =
+              ((int32_t (*)(double, uintptr_t))fn)(ARG_F64(0), ARG_I(1));
+          result = Int32::New(isolate, ret);
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(double, uintptr_t))fn)(ARG_F64(0), ARG_I(1));
+          result = Undefined(isolate);
+          break;
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate,
+                  "Unsupported return type for mixed float/int function")
+                  .ToLocalChecked()));
+          goto cleanup;
         }
       }
       // 2x float32
       else if (p0 == FFIType::kFloat32 && p1 == FFIType::kFloat32) {
         switch (sig.return_type) {
-          case FFIType::kFloat32: {
-            float ret = ((float(*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kFloat64: {
-            double ret = ((double(*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
-            result = Number::New(isolate, ret);
-            break;
-          }
-          case FFIType::kVoid:
-            ((void(*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
-            result = Undefined(isolate);
-            break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "Unsupported return type for (f32, f32) function")
-                .ToLocalChecked()));
-            goto cleanup;
+        case FFIType::kFloat32: {
+          float ret = ((float (*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
+          result = Number::New(isolate, ret);
+          break;
         }
-      }
-      else {
+        case FFIType::kFloat64: {
+          double ret = ((double (*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
+          result = Number::New(isolate, ret);
+          break;
+        }
+        case FFIType::kVoid:
+          ((void (*)(float, float))fn)(ARG_F32(0), ARG_F32(1));
+          result = Undefined(isolate);
+          break;
+        default:
+          isolate->ThrowException(Exception::Error(
+              String::NewFromUtf8(
+                  isolate, "Unsupported return type for (f32, f32) function")
+                  .ToLocalChecked()));
+          goto cleanup;
+        }
+      } else {
         isolate->ThrowException(Exception::Error(
-          String::NewFromUtf8(isolate,
-            "Unsupported mixed float/int parameter combination")
-            .ToLocalChecked()));
+            String::NewFromUtf8(
+                isolate, "Unsupported mixed float/int parameter combination")
+                .ToLocalChecked()));
         goto cleanup;
       }
     }
     // 3-param: (f64,f64,f64)->f64 is common (e.g. fma, clamp)
-    else if (sig.param_count == 3 &&
-             sig.param_types[0] == FFIType::kFloat64 &&
+    else if (sig.param_count == 3 && sig.param_types[0] == FFIType::kFloat64 &&
              sig.param_types[1] == FFIType::kFloat64 &&
              sig.param_types[2] == FFIType::kFloat64 &&
              sig.return_type == FFIType::kFloat64) {
-      double ret = ((double(*)(double, double, double))fn)(
+      double ret = ((double (*)(double, double, double))fn)(
           ARG_F64(0), ARG_F64(1), ARG_F64(2));
       result = Number::New(isolate, ret);
-    }
-    else {
+    } else {
       isolate->ThrowException(Exception::Error(
-        String::NewFromUtf8(isolate,
-          "Complex float signatures with >2 mixed params not yet supported")
-          .ToLocalChecked()));
+          String::NewFromUtf8(
+              isolate,
+              "Complex float signatures with >2 mixed params not yet supported")
+              .ToLocalChecked()));
       goto cleanup;
     }
   }
@@ -1374,269 +1399,365 @@ void FFIBinding::Call(const FunctionCallbackInfo<Value>& args) {
   // int32_t."
   else {
     switch (sig.return_type) {
-      case FFIType::kVoid: {
-        switch (sig.param_count) {
-          case 0: ((void(*)())fn)(); break;
-          case 1: ((void(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ((void(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ((void(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ((void(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          case 5: ((void(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4)); break;
-          case 6: ((void(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5)); break;
-          case 7: ((void(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5), ARG_I(6)); break;
-          case 8: ((void(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5), ARG_I(6), ARG_I(7)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "void functions with >8 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = Undefined(isolate);
+    case FFIType::kVoid: {
+      switch (sig.param_count) {
+      case 0:
+        ((void (*)())fn)();
         break;
-      }
-      case FFIType::kBool:
-      case FFIType::kInt8:
-      case FFIType::kUint8:
-      case FFIType::kInt16:
-      case FFIType::kUint16:
-      case FFIType::kInt32: {
-        int32_t ret;
-        switch (sig.param_count) {
-          case 0: ret = ((int32_t(*)())fn)(); break;
-          case 1: ret = ((int32_t(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((int32_t(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          case 5: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4)); break;
-          case 6: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5)); break;
-          case 7: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5), ARG_I(6)); break;
-          case 8: ret = ((int32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5), ARG_I(6), ARG_I(7)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "int functions with >8 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        if (sig.return_type == FFIType::kBool) {
-          result = Boolean::New(isolate, ret != 0);
-        } else {
-          result = Int32::New(isolate, ret);
-        }
+      case 1:
+        ((void (*)(uintptr_t))fn)(ARG_I(0));
         break;
-      }
-      case FFIType::kUint32: {
-        uint32_t ret;
-        switch (sig.param_count) {
-          case 0: ret = ((uint32_t(*)())fn)(); break;
-          case 1: ret = ((uint32_t(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((uint32_t(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((uint32_t(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((uint32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          case 5: ret = ((uint32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4)); break;
-          case 6: ret = ((uint32_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "uint functions with >6 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = Uint32::New(isolate, ret);
+      case 2:
+        ((void (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
         break;
-      }
-      case FFIType::kInt64: {
-        int64_t ret;
-        switch (sig.param_count) {
-          case 0: ret = ((int64_t(*)())fn)(); break;
-          case 1: ret = ((int64_t(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((int64_t(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((int64_t(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((int64_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "i64 functions with >4 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = BigInt::New(isolate, ret);
+      case 3:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1),
+                                                        ARG_I(2));
         break;
-      }
-      case FFIType::kUint64: {
-        uint64_t ret;
-        switch (sig.param_count) {
-          case 0: ret = ((uint64_t(*)())fn)(); break;
-          case 1: ret = ((uint64_t(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((uint64_t(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((uint64_t(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((uint64_t(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "u64 functions with >4 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = BigInt::NewFromUnsigned(isolate, ret);
+      case 4:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
         break;
-      }
-      case FFIType::kFloat32: {
-        float ret;
-        switch (sig.param_count) {
-          case 0: ret = ((float(*)())fn)(); break;
-          case 1: ret = ((float(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((float(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "f32 return with integer params: max 2 supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = Number::New(isolate, ret);
+      case 5:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4));
         break;
-      }
-      case FFIType::kFloat64: {
-        double ret;
-        switch (sig.param_count) {
-          case 0: ret = ((double(*)())fn)(); break;
-          case 1: ret = ((double(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((double(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((double(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((double(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "double functions with >4 integer params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        result = Number::New(isolate, ret);
+      case 6:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                   uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3),
+                                  ARG_I(4), ARG_I(5));
         break;
-      }
-      case FFIType::kPointer: {
-        void* ret;
-        switch (sig.param_count) {
-          case 0: ret = ((void*(*)())fn)(); break;
-          case 1: ret = ((void*(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((void*(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((void*(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          case 4: ret = ((void*(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3)); break;
-          case 5: ret = ((void*(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4)); break;
-          case 6: ret = ((void*(*)(uintptr_t, uintptr_t, uintptr_t,
-            uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4),
-            ARG_I(5)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "ptr functions with >6 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        if (ret == nullptr) {
-          result = Null(isolate);
-        } else {
-          result = BigInt::NewFromUnsigned(isolate,
-            reinterpret_cast<uint64_t>(ret));
-        }
+      case 7:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                   uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2),
+                                             ARG_I(3), ARG_I(4), ARG_I(5),
+                                             ARG_I(6));
         break;
-      }
-      case FFIType::kString: {
-        // String return: treat as const char* and convert to JS string.
-        const char* ret;
-        switch (sig.param_count) {
-          case 0: ret = ((const char*(*)())fn)(); break;
-          case 1: ret = ((const char*(*)(uintptr_t))fn)(ARG_I(0)); break;
-          case 2: ret = ((const char*(*)(uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1)); break;
-          case 3: ret = ((const char*(*)(uintptr_t, uintptr_t, uintptr_t))fn)(
-            ARG_I(0), ARG_I(1), ARG_I(2)); break;
-          default:
-            isolate->ThrowException(Exception::Error(
-              String::NewFromUtf8(isolate,
-                "string-return functions with >3 params not yet supported")
-                .ToLocalChecked()));
-            goto cleanup;
-        }
-        if (ret == nullptr) {
-          result = Null(isolate);
-        } else {
-          // FFI kString returns raw bytes from arbitrary user-loaded
-          // native libraries — Latin-1 libs, EUC-JP libs, buffers
-          // mistakenly typed as "string", etc. can all yield bytes
-          // that fail UTF-8 validation. Falling back to Null on a
-          // failed decode avoids aborting the isolate on a caller's
-          // own mistake. (The caller can switch to kPointer to
-          // receive the raw bytes and decode themselves if they
-          // know the encoding.)
-          Local<String> s;
-          if (!String::NewFromUtf8(isolate, ret).ToLocal(&s)) {
-            result = Null(isolate);
-          } else {
-            result = s;
-          }
-        }
+      case 8:
+        ((void (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                   uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4), ARG_I(5),
+            ARG_I(6), ARG_I(7));
         break;
-      }
       default:
         isolate->ThrowException(Exception::Error(
-          String::NewFromUtf8(isolate, "Unsupported return type")
-            .ToLocalChecked()));
+            String::NewFromUtf8(
+                isolate, "void functions with >8 params not yet supported")
+                .ToLocalChecked()));
         goto cleanup;
+      }
+      result = Undefined(isolate);
+      break;
+    }
+    case FFIType::kBool:
+    case FFIType::kInt8:
+    case FFIType::kUint8:
+    case FFIType::kInt16:
+    case FFIType::kUint16:
+    case FFIType::kInt32: {
+      int32_t ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((int32_t (*)())fn)();
+        break;
+      case 1:
+        ret = ((int32_t (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      case 5:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                            uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2),
+                                           ARG_I(3), ARG_I(4));
+        break;
+      case 6:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                            uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4), ARG_I(5));
+        break;
+      case 7:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                            uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4), ARG_I(5),
+            ARG_I(6));
+        break;
+      case 8:
+        ret = ((int32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                            uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4), ARG_I(5),
+            ARG_I(6), ARG_I(7));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "int functions with >8 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      if (sig.return_type == FFIType::kBool) {
+        result = Boolean::New(isolate, ret != 0);
+      } else {
+        result = Int32::New(isolate, ret);
+      }
+      break;
+    }
+    case FFIType::kUint32: {
+      uint32_t ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((uint32_t (*)())fn)();
+        break;
+      case 1:
+        ret = ((uint32_t (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((uint32_t (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((uint32_t (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((uint32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      case 5:
+        ret = ((uint32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                             uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2),
+                                            ARG_I(3), ARG_I(4));
+        break;
+      case 6:
+        ret = ((uint32_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                             uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3), ARG_I(4), ARG_I(5));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "uint functions with >6 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      result = Uint32::New(isolate, ret);
+      break;
+    }
+    case FFIType::kInt64: {
+      int64_t ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((int64_t (*)())fn)();
+        break;
+      case 1:
+        ret = ((int64_t (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((int64_t (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((int64_t (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((int64_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "i64 functions with >4 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      result = BigInt::New(isolate, ret);
+      break;
+    }
+    case FFIType::kUint64: {
+      uint64_t ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((uint64_t (*)())fn)();
+        break;
+      case 1:
+        ret = ((uint64_t (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((uint64_t (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((uint64_t (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((uint64_t (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "u64 functions with >4 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      result = BigInt::NewFromUnsigned(isolate, ret);
+      break;
+    }
+    case FFIType::kFloat32: {
+      float ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((float (*)())fn)();
+        break;
+      case 1:
+        ret = ((float (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((float (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "f32 return with integer params: max 2 supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      result = Number::New(isolate, ret);
+      break;
+    }
+    case FFIType::kFloat64: {
+      double ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((double (*)())fn)();
+        break;
+      case 1:
+        ret = ((double (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((double (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((double (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((double (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate,
+                "double functions with >4 integer params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      result = Number::New(isolate, ret);
+      break;
+    }
+    case FFIType::kPointer: {
+      void* ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((void* (*)())fn)();
+        break;
+      case 1:
+        ret = ((void* (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((void* (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((void* (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      case 4:
+        ret = ((void* (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3));
+        break;
+      case 5:
+        ret = ((void* (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                          uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3),
+                                         ARG_I(4));
+        break;
+      case 6:
+        ret = ((void* (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                          uintptr_t))fn)(ARG_I(0), ARG_I(1), ARG_I(2), ARG_I(3),
+                                         ARG_I(4), ARG_I(5));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate, "ptr functions with >6 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      if (ret == nullptr) {
+        result = Null(isolate);
+      } else {
+        result =
+            BigInt::NewFromUnsigned(isolate, reinterpret_cast<uint64_t>(ret));
+      }
+      break;
+    }
+    case FFIType::kString: {
+      // String return: treat as const char* and convert to JS string.
+      const char* ret;
+      switch (sig.param_count) {
+      case 0:
+        ret = ((const char* (*)())fn)();
+        break;
+      case 1:
+        ret = ((const char* (*)(uintptr_t))fn)(ARG_I(0));
+        break;
+      case 2:
+        ret = ((const char* (*)(uintptr_t, uintptr_t))fn)(ARG_I(0), ARG_I(1));
+        break;
+      case 3:
+        ret = ((const char* (*)(uintptr_t, uintptr_t, uintptr_t))fn)(
+            ARG_I(0), ARG_I(1), ARG_I(2));
+        break;
+      default:
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(
+                isolate,
+                "string-return functions with >3 params not yet supported")
+                .ToLocalChecked()));
+        goto cleanup;
+      }
+      if (ret == nullptr) {
+        result = Null(isolate);
+      } else {
+        // FFI kString returns raw bytes from arbitrary user-loaded
+        // native libraries — Latin-1 libs, EUC-JP libs, buffers
+        // mistakenly typed as "string", etc. can all yield bytes
+        // that fail UTF-8 validation. Falling back to Null on a
+        // failed decode avoids aborting the isolate on a caller's
+        // own mistake. (The caller can switch to kPointer to
+        // receive the raw bytes and decode themselves if they
+        // know the encoding.)
+        Local<String> s;
+        if (!String::NewFromUtf8(isolate, ret).ToLocal(&s)) {
+          result = Null(isolate);
+        } else {
+          result = s;
+        }
+      }
+      break;
+    }
+    default:
+      isolate->ThrowException(Exception::Error(
+          String::NewFromUtf8(isolate, "Unsupported return type")
+              .ToLocalChecked()));
+      goto cleanup;
     }
   }
 
@@ -1676,9 +1797,8 @@ void FFIBinding::PtrToString(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 1 || !args[0]->IsBigInt()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "ptrToString() requires a BigInt pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "ptrToString() requires a BigInt pointer")
+            .ToLocalChecked()));
     return;
   }
 
@@ -1691,7 +1811,7 @@ void FFIBinding::PtrToString(const FunctionCallbackInfo<Value>& args) {
   }
 
   const char* str = reinterpret_cast<const char*>(ptr_val);
-  static constexpr size_t kMaxStringRead = 1024 * 1024;  // 1 MB
+  static constexpr size_t kMaxStringRead = 1024 * 1024; // 1 MB
   size_t len = strnlen(str, kMaxStringRead);
 
   // HISTORY: WHY kNormal vs kInternalized STRINGS
@@ -1703,7 +1823,8 @@ void FFIBinding::PtrToString(const FunctionCallbackInfo<Value>& args) {
   // (which interns) for constant property names.
   Local<String> out;
   if (!String::NewFromUtf8(isolate, str, NewStringType::kNormal,
-                           static_cast<int>(len)).ToLocal(&out)) {
+                           static_cast<int>(len))
+           .ToLocal(&out)) {
     return;
   }
   args.GetReturnValue().Set(out);
@@ -1720,21 +1841,21 @@ void FFIBinding::PtrToBuffer(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 2 || !args[0]->IsBigInt()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "ptrToBuffer() requires (ptrBigInt, length[, copy])")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate, "ptrToBuffer() requires (ptrBigInt, length[, copy])")
+            .ToLocalChecked()));
     return;
   }
 
   bool lossless;
   uint64_t ptr_val = args[0].As<BigInt>()->Uint64Value(&lossless);
-  size_t length = static_cast<size_t>(
-    args[1]->IntegerValue(context).FromMaybe(0));
+  size_t length =
+      static_cast<size_t>(args[1]->IntegerValue(context).FromMaybe(0));
 
   if (ptr_val == 0 && length > 0) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Cannot read from null pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Cannot read from null pointer")
+            .ToLocalChecked()));
     return;
   }
 
@@ -1744,9 +1865,9 @@ void FFIBinding::PtrToBuffer(const FunctionCallbackInfo<Value>& args) {
   constexpr size_t kMaxCopyBytes = 1ULL * 1024 * 1024 * 1024;
   if (length > kMaxCopyBytes) {
     isolate->ThrowException(Exception::RangeError(
-      String::NewFromUtf8(isolate,
-          "ptrToBuffer copy length exceeds 1 GB limit")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "ptrToBuffer copy length exceeds 1 GB limit")
+            .ToLocalChecked()));
     return;
   }
 
@@ -1763,20 +1884,20 @@ void FFIBinding::PtrToBuffer(const FunctionCallbackInfo<Value>& args) {
     auto maybe_buf = node::Buffer::Copy(env, data, length);
     if (maybe_buf.IsEmpty()) {
       isolate->ThrowException(Exception::Error(
-        String::NewFromUtf8(isolate, "Failed to allocate buffer")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Failed to allocate buffer")
+              .ToLocalChecked()));
       return;
     }
     args.GetReturnValue().Set(maybe_buf.ToLocalChecked());
   } else {
     // Zero-copy: create a Buffer that references the native memory directly.
     // The caller must guarantee the memory outlives the Buffer.
-    auto maybe_buf = node::Buffer::New(env, data, length,
-      [](char*, void*) {}, nullptr);
+    auto maybe_buf =
+        node::Buffer::New(env, data, length, [](char*, void*) {}, nullptr);
     if (maybe_buf.IsEmpty()) {
       isolate->ThrowException(Exception::Error(
-        String::NewFromUtf8(isolate, "Failed to create buffer view")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Failed to create buffer view")
+              .ToLocalChecked()));
       return;
     }
     args.GetReturnValue().Set(maybe_buf.ToLocalChecked());
@@ -1785,20 +1906,21 @@ void FFIBinding::PtrToBuffer(const FunctionCallbackInfo<Value>& args) {
 
 // JS: binding.bufferToPtr(myBuffer) -> BigInt (memory address)
 // Returns the raw memory address where the Buffer's data lives.
-// Useful for passing a Buffer's contents to a C function that expects a pointer.
+// Useful for passing a Buffer's contents to a C function that expects a
+// pointer.
 void FFIBinding::BufferToPtr(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   if (args.Length() < 1 || !args[0]->IsArrayBufferView()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "bufferToPtr() requires a Buffer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "bufferToPtr() requires a Buffer")
+            .ToLocalChecked()));
     return;
   }
 
   void* data = Buffer::Data(args[0]);
   args.GetReturnValue().Set(
-    BigInt::NewFromUnsigned(isolate, reinterpret_cast<uint64_t>(data)));
+      BigInt::NewFromUnsigned(isolate, reinterpret_cast<uint64_t>(data)));
 }
 
 // JS: binding.ptrToArrayBuffer(0x12345678n, 1024) -> ArrayBuffer
@@ -1809,22 +1931,22 @@ void FFIBinding::PtrToArrayBuffer(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 2 || !args[0]->IsBigInt()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "ptrToArrayBuffer() requires (ptrBigInt, length[, copy])")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate, "ptrToArrayBuffer() requires (ptrBigInt, length[, copy])")
+            .ToLocalChecked()));
     return;
   }
 
   bool lossless;
   uint64_t ptr_val = args[0].As<BigInt>()->Uint64Value(&lossless);
-  size_t length = static_cast<size_t>(
-    args[1]->IntegerValue(context).FromMaybe(0));
+  size_t length =
+      static_cast<size_t>(args[1]->IntegerValue(context).FromMaybe(0));
 
   if (ptr_val == 0 && length > 0) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-        "Cannot create ArrayBuffer from null pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "Cannot create ArrayBuffer from null pointer")
+            .ToLocalChecked()));
     return;
   }
 
@@ -1847,9 +1969,9 @@ void FFIBinding::PtrToArrayBuffer(const FunctionCallbackInfo<Value>& args) {
     constexpr size_t kMaxCopyBytes = 1ULL * 1024 * 1024 * 1024;
     if (length > kMaxCopyBytes) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate,
-          "ptrToArrayBuffer copy length exceeds 1 GB limit")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate,
+                              "ptrToArrayBuffer copy length exceeds 1 GB limit")
+              .ToLocalChecked()));
       return;
     }
     std::unique_ptr<BackingStore> store =
@@ -1859,9 +1981,9 @@ void FFIBinding::PtrToArrayBuffer(const FunctionCallbackInfo<Value>& args) {
       // (e.g. when a fatal error handler is installed). Dereferencing
       // store->Data() would then segfault. Surface as a JS error.
       isolate->ThrowException(Exception::Error(
-        String::NewFromUtf8(isolate,
-          "Out of memory allocating ArrayBuffer backing store")
-          .ToLocalChecked()));
+          String::NewFromUtf8(
+              isolate, "Out of memory allocating ArrayBuffer backing store")
+              .ToLocalChecked()));
       return;
     }
     memcpy(store->Data(), reinterpret_cast<void*>(ptr_val), length);
@@ -1869,8 +1991,8 @@ void FFIBinding::PtrToArrayBuffer(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(ab);
   } else {
     std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
-        reinterpret_cast<void*>(ptr_val), length,
-        [](void*, size_t, void*) {}, nullptr);
+        reinterpret_cast<void*>(ptr_val), length, [](void*, size_t, void*) {},
+        nullptr);
     Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, std::move(store));
     args.GetReturnValue().Set(ab);
   }
@@ -1897,9 +2019,9 @@ static bool ValidatePtrOffset(Isolate* isolate,
 
   if (args.Length() < 1) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "First argument must be a BigInt or Number pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "First argument must be a BigInt or Number pointer")
+            .ToLocalChecked()));
     return false;
   }
 
@@ -1909,20 +2031,20 @@ static bool ValidatePtrOffset(Isolate* isolate,
     ptr_val = args[0].As<BigInt>()->Uint64Value(&lossless);
   } else if (args[0]->IsNumber()) {
     // Number path — enables V8 fast API. Safe for 48-bit addresses.
-    ptr_val = static_cast<uint64_t>(
-      args[0]->NumberValue(context).FromMaybe(0.0));
+    ptr_val =
+        static_cast<uint64_t>(args[0]->NumberValue(context).FromMaybe(0.0));
   } else {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "First argument must be a BigInt or Number pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "First argument must be a BigInt or Number pointer")
+            .ToLocalChecked()));
     return false;
   }
 
   if (ptr_val == 0) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Cannot dereference a null pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Cannot dereference a null pointer")
+            .ToLocalChecked()));
     return false;
   }
 
@@ -1945,7 +2067,8 @@ template <typename T>
 void FFIBinding::GetValue(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uint8_t* ptr;
-  if (!ValidatePtrOffset(isolate, args, &ptr)) return;
+  if (!ValidatePtrOffset(isolate, args, &ptr))
+    return;
 
   T value;
   memcpy(&value, ptr, sizeof(value));
@@ -1961,8 +2084,7 @@ void FFIBinding::GetValue(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(BigInt::New(isolate, value));
   } else if constexpr (std::is_same_v<T, uint64_t>) {
     args.GetReturnValue().Set(BigInt::NewFromUnsigned(isolate, value));
-  } else if constexpr (std::is_same_v<T, float> ||
-                       std::is_same_v<T, double>) {
+  } else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
     args.GetReturnValue().Set(Number::New(isolate, value));
   }
 }
@@ -1970,15 +2092,13 @@ void FFIBinding::GetValue(const FunctionCallbackInfo<Value>& args) {
 // Helper to validate pointer+offset+value for set operations.
 static bool ValidatePtrOffsetValue(Isolate* isolate,
                                    const FunctionCallbackInfo<Value>& args,
-                                   uint8_t** out_ptr,
-                                   Local<Value>* out_value) {
+                                   uint8_t** out_ptr, Local<Value>* out_value) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 3) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "set requires (pointer, offset, value)")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "set requires (pointer, offset, value)")
+            .ToLocalChecked()));
     return false;
   }
 
@@ -1987,25 +2107,25 @@ static bool ValidatePtrOffsetValue(Isolate* isolate,
     bool lossless;
     ptr_val = args[0].As<BigInt>()->Uint64Value(&lossless);
   } else if (args[0]->IsNumber()) {
-    ptr_val = static_cast<uint64_t>(
-      args[0]->NumberValue(context).FromMaybe(0.0));
+    ptr_val =
+        static_cast<uint64_t>(args[0]->NumberValue(context).FromMaybe(0.0));
   } else {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "First argument must be a BigInt or Number pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "First argument must be a BigInt or Number pointer")
+            .ToLocalChecked()));
     return false;
   }
 
   if (ptr_val == 0) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Cannot write to a null pointer")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Cannot write to a null pointer")
+            .ToLocalChecked()));
     return false;
   }
 
-  size_t offset = static_cast<size_t>(
-    args[1]->IntegerValue(context).FromMaybe(0));
+  size_t offset =
+      static_cast<size_t>(args[1]->IntegerValue(context).FromMaybe(0));
   *out_ptr = reinterpret_cast<uint8_t*>(ptr_val) + offset;
   *out_value = args[2];
   return true;
@@ -2017,15 +2137,16 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
   uint8_t* ptr;
   Local<Value> value;
-  if (!ValidatePtrOffsetValue(isolate, args, &ptr, &value)) return;
+  if (!ValidatePtrOffsetValue(isolate, args, &ptr, &value))
+    return;
 
   T converted;
   if constexpr (std::is_same_v<T, int8_t>) {
     int32_t v = value->Int32Value(context).FromMaybe(0);
     if (v < INT8_MIN || v > INT8_MAX) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Value out of range for int8")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Value out of range for int8")
+              .ToLocalChecked()));
       return;
     }
     converted = static_cast<T>(v);
@@ -2033,8 +2154,8 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
     uint32_t v = value->Uint32Value(context).FromMaybe(0);
     if (v > UINT8_MAX) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Value out of range for uint8")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Value out of range for uint8")
+              .ToLocalChecked()));
       return;
     }
     converted = static_cast<T>(v);
@@ -2042,8 +2163,8 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
     int32_t v = value->Int32Value(context).FromMaybe(0);
     if (v < INT16_MIN || v > INT16_MAX) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Value out of range for int16")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Value out of range for int16")
+              .ToLocalChecked()));
       return;
     }
     converted = static_cast<T>(v);
@@ -2051,8 +2172,8 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
     uint32_t v = value->Uint32Value(context).FromMaybe(0);
     if (v > UINT16_MAX) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate, "Value out of range for uint16")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Value out of range for uint16")
+              .ToLocalChecked()));
       return;
     }
     converted = static_cast<T>(v);
@@ -2066,8 +2187,8 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
       converted = value.As<BigInt>()->Int64Value(&lossless);
       if (!lossless) {
         isolate->ThrowException(Exception::RangeError(
-          String::NewFromUtf8(isolate, "BigInt out of range for int64")
-            .ToLocalChecked()));
+            String::NewFromUtf8(isolate, "BigInt out of range for int64")
+                .ToLocalChecked()));
         return;
       }
     } else {
@@ -2079,15 +2200,14 @@ void FFIBinding::SetValue(const FunctionCallbackInfo<Value>& args) {
       converted = value.As<BigInt>()->Uint64Value(&lossless);
       if (!lossless) {
         isolate->ThrowException(Exception::RangeError(
-          String::NewFromUtf8(isolate, "BigInt out of range for uint64")
-            .ToLocalChecked()));
+            String::NewFromUtf8(isolate, "BigInt out of range for uint64")
+                .ToLocalChecked()));
         return;
       }
     } else {
       converted = static_cast<T>(value->IntegerValue(context).FromMaybe(0));
     }
-  } else if constexpr (std::is_same_v<T, float> ||
-                       std::is_same_v<T, double>) {
+  } else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
     converted = static_cast<T>(value->NumberValue(context).FromMaybe(0.0));
   }
 
@@ -2193,24 +2313,21 @@ static double FastGetFloat64(Local<Value> recv, double ptr, double offset,
 }
 
 static void FastSetInt32(Local<Value> recv, double ptr, double offset,
-                         int32_t value,
-                         FastApiCallbackOptions& options) {
+                         int32_t value, FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_ffi.setInt32");
   auto* p = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(ptr));
   memcpy(p + static_cast<size_t>(offset), &value, sizeof(value));
 }
 
 static void FastSetUint32(Local<Value> recv, double ptr, double offset,
-                          uint32_t value,
-                          FastApiCallbackOptions& options) {
+                          uint32_t value, FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_ffi.setUint32");
   auto* p = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(ptr));
   memcpy(p + static_cast<size_t>(offset), &value, sizeof(value));
 }
 
 static void FastSetFloat64(Local<Value> recv, double ptr, double offset,
-                           double value,
-                           FastApiCallbackOptions& options) {
+                           double value, FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_ffi.setFloat64");
   auto* p = reinterpret_cast<uint8_t*>(static_cast<uintptr_t>(ptr));
   memcpy(p + static_cast<size_t>(offset), &value, sizeof(value));
@@ -2228,10 +2345,10 @@ static v8::CFunction cf_set_f64(v8::CFunction::Make(FastSetFloat64));
 // ============================================================================
 
 // This is the entry point called by the callback trampoline pool when native
-// code invokes a callback slot. It marshals arguments and calls the JS function.
-// Defined extern "C" linkage-compatible for the trampoline.cc forward decl.
-uintptr_t InvokeCallbackSlot(uint32_t slot,
-                             uintptr_t a0, uintptr_t a1,
+// code invokes a callback slot. It marshals arguments and calls the JS
+// function. Defined extern "C" linkage-compatible for the trampoline.cc forward
+// decl.
+uintptr_t InvokeCallbackSlot(uint32_t slot, uintptr_t a0, uintptr_t a1,
                              uintptr_t a2, uintptr_t a3) {
   // Look up the slot data.
   CallbackSlotData* data = &g_callback_slots[slot];
@@ -2241,9 +2358,8 @@ uintptr_t InvokeCallbackSlot(uint32_t slot,
 
   // Callbacks must be invoked on the thread that created them.
   if (std::this_thread::get_id() != data->thread_id) {
-    FPrintF(stderr,
-            "FFI callback invoked from wrong thread — "
-            "callbacks must fire on their creating thread\n");
+    FPrintF(stderr, "FFI callback invoked from wrong thread — "
+                    "callbacks must fire on their creating thread\n");
     return 0;
   }
 
@@ -2263,7 +2379,8 @@ uintptr_t InvokeCallbackSlot(uint32_t slot,
   Local<Context> context = env->context();
   Local<Function> fn = persistent->Get(isolate);
 
-  if (fn.IsEmpty()) return 0;
+  if (fn.IsEmpty())
+    return 0;
 
   const FFISignature& sig = data->signature;
   uintptr_t raw_args[4] = {a0, a1, a2, a3};
@@ -2274,40 +2391,39 @@ uintptr_t InvokeCallbackSlot(uint32_t slot,
 
   for (size_t i = 0; i < argc; ++i) {
     switch (sig.param_types[i]) {
-      case FFIType::kBool:
-        js_args[i] = Boolean::New(isolate, raw_args[i] != 0);
-        break;
-      case FFIType::kInt8:
-      case FFIType::kInt16:
-      case FFIType::kInt32:
-        js_args[i] = Int32::New(isolate, static_cast<int32_t>(raw_args[i]));
-        break;
-      case FFIType::kUint8:
-      case FFIType::kUint16:
-      case FFIType::kUint32:
-        js_args[i] = Uint32::New(isolate, static_cast<uint32_t>(raw_args[i]));
-        break;
-      case FFIType::kInt64:
-        js_args[i] = BigInt::New(isolate,
-            static_cast<int64_t>(raw_args[i]));
-        break;
-      case FFIType::kUint64:
-        js_args[i] = BigInt::NewFromUnsigned(isolate, raw_args[i]);
-        break;
-      case FFIType::kPointer:
-      case FFIType::kString:
-      case FFIType::kBuffer:
-        js_args[i] = BigInt::NewFromUnsigned(isolate, raw_args[i]);
-        break;
-      default:
-        js_args[i] = Undefined(isolate);
-        break;
+    case FFIType::kBool:
+      js_args[i] = Boolean::New(isolate, raw_args[i] != 0);
+      break;
+    case FFIType::kInt8:
+    case FFIType::kInt16:
+    case FFIType::kInt32:
+      js_args[i] = Int32::New(isolate, static_cast<int32_t>(raw_args[i]));
+      break;
+    case FFIType::kUint8:
+    case FFIType::kUint16:
+    case FFIType::kUint32:
+      js_args[i] = Uint32::New(isolate, static_cast<uint32_t>(raw_args[i]));
+      break;
+    case FFIType::kInt64:
+      js_args[i] = BigInt::New(isolate, static_cast<int64_t>(raw_args[i]));
+      break;
+    case FFIType::kUint64:
+      js_args[i] = BigInt::NewFromUnsigned(isolate, raw_args[i]);
+      break;
+    case FFIType::kPointer:
+    case FFIType::kString:
+    case FFIType::kBuffer:
+      js_args[i] = BigInt::NewFromUnsigned(isolate, raw_args[i]);
+      break;
+    default:
+      js_args[i] = Undefined(isolate);
+      break;
     }
   }
 
   v8::TryCatch try_catch(isolate);
-  v8::MaybeLocal<Value> maybe_result = fn->Call(
-      context, Undefined(isolate), argc, js_args);
+  v8::MaybeLocal<Value> maybe_result =
+      fn->Call(context, Undefined(isolate), argc, js_args);
 
   if (try_catch.HasCaught()) {
     // Cannot propagate exceptions across the FFI boundary.
@@ -2316,49 +2432,47 @@ uintptr_t InvokeCallbackSlot(uint32_t slot,
   }
 
   Local<Value> result_val;
-  if (!maybe_result.ToLocal(&result_val)) return 0;
+  if (!maybe_result.ToLocal(&result_val))
+    return 0;
 
   // Marshal JS return value back to native.
   switch (sig.return_type) {
-    case FFIType::kVoid:
-      return 0;
-    case FFIType::kBool:
-      return result_val->BooleanValue(isolate) ? 1 : 0;
-    case FFIType::kInt8:
-    case FFIType::kInt16:
-    case FFIType::kInt32:
-      return static_cast<uintptr_t>(
-        result_val->Int32Value(context).FromMaybe(0));
-    case FFIType::kUint8:
-    case FFIType::kUint16:
-    case FFIType::kUint32:
-      return static_cast<uintptr_t>(
+  case FFIType::kVoid:
+    return 0;
+  case FFIType::kBool:
+    return result_val->BooleanValue(isolate) ? 1 : 0;
+  case FFIType::kInt8:
+  case FFIType::kInt16:
+  case FFIType::kInt32:
+    return static_cast<uintptr_t>(result_val->Int32Value(context).FromMaybe(0));
+  case FFIType::kUint8:
+  case FFIType::kUint16:
+  case FFIType::kUint32:
+    return static_cast<uintptr_t>(
         result_val->Uint32Value(context).FromMaybe(0));
-    case FFIType::kPointer:
-      if (result_val->IsBigInt()) {
-        bool lossless;
-        return static_cast<uintptr_t>(
+  case FFIType::kPointer:
+    if (result_val->IsBigInt()) {
+      bool lossless;
+      return static_cast<uintptr_t>(
           result_val.As<BigInt>()->Uint64Value(&lossless));
-      }
-      return 0;
-    default:
-      return 0;
+    }
+    return 0;
+  default:
+    return 0;
   }
 }
 
 // Float callback entry point — receives doubles from FPU registers.
-double InvokeCallbackSlotF64(uint32_t slot,
-                             double a0, double a1,
-                             double a2, double a3) {
+double InvokeCallbackSlotF64(uint32_t slot, double a0, double a1, double a2,
+                             double a3) {
   CallbackSlotData* data = &g_callback_slots[slot];
   if (!data->allocated || data->env == nullptr || data->js_fn == nullptr) {
     return 0.0;
   }
 
   if (std::this_thread::get_id() != data->thread_id) {
-    FPrintF(stderr,
-            "FFI callback invoked from wrong thread — "
-            "callbacks must fire on their creating thread\n");
+    FPrintF(stderr, "FFI callback invoked from wrong thread — "
+                    "callbacks must fire on their creating thread\n");
     return 0.0;
   }
 
@@ -2370,7 +2484,8 @@ double InvokeCallbackSlotF64(uint32_t slot,
   Local<Context> context = env->context();
   Local<Function> fn = persistent->Get(isolate);
 
-  if (fn.IsEmpty()) return 0.0;
+  if (fn.IsEmpty())
+    return 0.0;
 
   const FFISignature& sig = data->signature;
   double raw_f64[4] = {a0, a1, a2, a3};
@@ -2380,22 +2495,22 @@ double InvokeCallbackSlotF64(uint32_t slot,
 
   for (size_t i = 0; i < argc; ++i) {
     switch (sig.param_types[i]) {
-      case FFIType::kFloat64:
-        js_args[i] = Number::New(isolate, raw_f64[i]);
-        break;
-      case FFIType::kFloat32:
-        js_args[i] = Number::New(isolate, static_cast<float>(raw_f64[i]));
-        break;
-      default:
-        // Non-float args in a float callback — shouldn't happen but handle.
-        js_args[i] = Number::New(isolate, raw_f64[i]);
-        break;
+    case FFIType::kFloat64:
+      js_args[i] = Number::New(isolate, raw_f64[i]);
+      break;
+    case FFIType::kFloat32:
+      js_args[i] = Number::New(isolate, static_cast<float>(raw_f64[i]));
+      break;
+    default:
+      // Non-float args in a float callback — shouldn't happen but handle.
+      js_args[i] = Number::New(isolate, raw_f64[i]);
+      break;
     }
   }
 
   v8::TryCatch try_catch(isolate);
-  v8::MaybeLocal<Value> maybe_result = fn->Call(
-      context, Undefined(isolate), argc, js_args);
+  v8::MaybeLocal<Value> maybe_result =
+      fn->Call(context, Undefined(isolate), argc, js_args);
 
   if (try_catch.HasCaught()) {
     FPrintF(stderr, "FFI callback threw an exception (slot %u)\n", slot);
@@ -2403,21 +2518,21 @@ double InvokeCallbackSlotF64(uint32_t slot,
   }
 
   Local<Value> result_val;
-  if (!maybe_result.ToLocal(&result_val)) return 0.0;
+  if (!maybe_result.ToLocal(&result_val))
+    return 0.0;
 
   switch (sig.return_type) {
-    case FFIType::kVoid:
-      return 0.0;
-    case FFIType::kFloat64:
-    case FFIType::kFloat32:
-      return result_val->NumberValue(context).FromMaybe(0.0);
-    case FFIType::kInt32:
-      return static_cast<double>(
-        result_val->Int32Value(context).FromMaybe(0));
-    case FFIType::kBool:
-      return result_val->BooleanValue(isolate) ? 1.0 : 0.0;
-    default:
-      return 0.0;
+  case FFIType::kVoid:
+    return 0.0;
+  case FFIType::kFloat64:
+  case FFIType::kFloat32:
+    return result_val->NumberValue(context).FromMaybe(0.0);
+  case FFIType::kInt32:
+    return static_cast<double>(result_val->Int32Value(context).FromMaybe(0));
+  case FFIType::kBool:
+    return result_val->BooleanValue(isolate) ? 1.0 : 0.0;
+  default:
+    return 0.0;
   }
 }
 
@@ -2428,9 +2543,10 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 4) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "registerCallback(libraryId, returnType, paramTypes, function)")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate,
+            "registerCallback(libraryId, returnType, paramTypes, function)")
+            .ToLocalChecked()));
     return;
   }
 
@@ -2450,8 +2566,8 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
     auto lib_it = state->libraries.find(lib_id);
     if (lib_it == state->libraries.end() || lib_it->second->closed) {
       isolate->ThrowException(Exception::Error(
-        String::NewFromUtf8(isolate, "Library not found or closed")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Library not found or closed")
+              .ToLocalChecked()));
       return;
     }
   }
@@ -2467,9 +2583,8 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
     sig.param_count = param_arr->Length();
     if (sig.param_count > 4) {
       isolate->ThrowException(Exception::RangeError(
-        String::NewFromUtf8(isolate,
-          "Callbacks support at most 4 parameters")
-          .ToLocalChecked()));
+          String::NewFromUtf8(isolate, "Callbacks support at most 4 parameters")
+              .ToLocalChecked()));
       return;
     }
     for (size_t i = 0; i < sig.param_count; ++i) {
@@ -2486,8 +2601,8 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
 
   if (!args[3]->IsFunction()) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "Fourth argument must be a function")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Fourth argument must be a function")
+            .ToLocalChecked()));
     return;
   }
 
@@ -2506,10 +2621,10 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
     for (size_t i = 0; i < sig.param_count; ++i) {
       if (!FFITypeIsFloat(sig.param_types[i])) {
         isolate->ThrowException(Exception::TypeError(
-          String::NewFromUtf8(isolate,
-            "Float callbacks must have all-float parameters "
-            "(cannot mix float and integer params in callbacks)")
-            .ToLocalChecked()));
+            String::NewFromUtf8(
+                isolate, "Float callbacks must have all-float parameters "
+                         "(cannot mix float and integer params in callbacks)")
+                .ToLocalChecked()));
         return;
       }
     }
@@ -2519,23 +2634,23 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
   int32_t slot = CallbackPoolAlloc(needs_float);
   if (slot < 0) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-        "Callback pool exhausted (max 64 concurrent callbacks)")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate, "Callback pool exhausted (max 64 concurrent callbacks)")
+            .ToLocalChecked()));
     return;
   }
 
   // Store the JS function reference. -fno-exceptions: nothrow + null-check.
   // If OOM, release the pool slot we just claimed so another caller can reuse
   // it, then surface as a JS Error instead of aborting the process.
-  auto* persistent = new (std::nothrow) Global<Function>(
-      isolate, args[3].As<Function>());
+  auto* persistent =
+      new (std::nothrow) Global<Function>(isolate, args[3].As<Function>());
   if (!persistent) {
     CallbackPoolFree(static_cast<uint32_t>(slot));
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to persist callback function")
-        .ToLocalChecked()));
+        String::NewFromUtf8(
+            isolate, "Out of memory: failed to persist callback function")
+            .ToLocalChecked()));
     return;
   }
 
@@ -2562,9 +2677,9 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
     CallbackPoolFree(static_cast<uint32_t>(slot));
     delete persistent;
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate,
-          "Out of memory: failed to allocate FFI callback")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "Out of memory: failed to allocate FFI callback")
+            .ToLocalChecked()));
     return;
   }
   cb->id = state->next_callback_id++;
@@ -2579,8 +2694,11 @@ void FFIBinding::RegisterCallback(const FunctionCallbackInfo<Value>& args) {
   // Return [callbackId, nativePtrBigInt].
   Local<Array> result_arr = Array::New(isolate, 2);
   result_arr->Set(context, 0, Uint32::New(isolate, cb_id)).Check();
-  result_arr->Set(context, 1, BigInt::NewFromUnsigned(isolate,
-      reinterpret_cast<uint64_t>(native_ptr))).Check();
+  result_arr
+      ->Set(context, 1,
+            BigInt::NewFromUnsigned(isolate,
+                                    reinterpret_cast<uint64_t>(native_ptr)))
+      .Check();
   args.GetReturnValue().Set(result_arr);
 }
 
@@ -2591,9 +2709,9 @@ void FFIBinding::UnregisterCallback(const FunctionCallbackInfo<Value>& args) {
 
   if (args.Length() < 1) {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate,
-        "unregisterCallback() requires a callback ID")
-        .ToLocalChecked()));
+        String::NewFromUtf8(isolate,
+                            "unregisterCallback() requires a callback ID")
+            .ToLocalChecked()));
     return;
   }
 
@@ -2607,7 +2725,7 @@ void FFIBinding::UnregisterCallback(const FunctionCallbackInfo<Value>& args) {
   auto cb_it = state->callbacks.find(cb_id);
   if (cb_it == state->callbacks.end()) {
     isolate->ThrowException(Exception::Error(
-      String::NewFromUtf8(isolate, "Callback not found").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Callback not found").ToLocalChecked()));
     return;
   }
 
@@ -2633,11 +2751,8 @@ void FFIBinding::UnregisterCallback(const FunctionCallbackInfo<Value>& args) {
 // Module initialization
 // ============================================================================
 
-void FFIBinding::Initialize(
-    Local<Object> target,
-    Local<Value> unused,
-    Local<Context> context,
-    void* priv) {
+void FFIBinding::Initialize(Local<Object> target, Local<Value> unused,
+                            Local<Context> context, void* priv) {
   CallbackPoolInit();
 
   // Library lifecycle
@@ -2666,10 +2781,10 @@ void FFIBinding::Initialize(
   // get/set with V8 fast paths for the most common types.
   // Fast paths accept Number pointers (double), slow paths accept BigInt.
   SetFastMethodNoSideEffect(context, target, "getInt32", GetInt32, &cf_get_i32);
-  SetFastMethodNoSideEffect(
-      context, target, "getUint32", GetUint32, &cf_get_u32);
-  SetFastMethodNoSideEffect(
-      context, target, "getFloat64", GetFloat64, &cf_get_f64);
+  SetFastMethodNoSideEffect(context, target, "getUint32", GetUint32,
+                            &cf_get_u32);
+  SetFastMethodNoSideEffect(context, target, "getFloat64", GetFloat64,
+                            &cf_get_f64);
   SetFastMethod(context, target, "setInt32", SetInt32, &cf_set_i32);
   SetFastMethod(context, target, "setUint32", SetUint32, &cf_set_u32);
   SetFastMethod(context, target, "setFloat64", SetFloat64, &cf_set_f64);
@@ -2748,9 +2863,9 @@ void FFIBinding::RegisterExternalReferences(
   registry->Register(UnregisterFunction);
 }
 
-}  // namespace ffi
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ffi
+} // namespace socketsecurity
+} // namespace node
 
 // HISTORY: WHY NODE_BINDING_CONTEXT_AWARE_INTERNAL
 // "Context-aware" means this binding initializes per-Environment (per V8
@@ -2760,10 +2875,8 @@ void FFIBinding::RegisterExternalReferences(
 // with Workers. Node.js added ERR_NON_CONTEXT_AWARE_DISABLED for environments
 // that reject the old model. Every new binding MUST be context-aware.
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_ffi,
-    node::socketsecurity::ffi::FFIBinding::Initialize)
+    smol_ffi, node::socketsecurity::ffi::FFIBinding::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
-    smol_ffi,
-    node::socketsecurity::ffi::FFIBinding::RegisterExternalReferences)
+    smol_ffi, node::socketsecurity::ffi::FFIBinding::RegisterExternalReferences)
 
 #pragma GCC diagnostic pop

@@ -28,14 +28,12 @@ namespace manifest {
 // than failing — pnpm's format is forgiving enough that strict
 // failure would block scans of real-world lockfiles that have
 // drift between pnpm versions.
-bool ParsePnpmLock(std::string_view content,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
-                   ParseError* err);
+bool ParsePnpmLock(std::string_view content, ParseContext* ctx,
+                   ParsedLockfile* out, ParseError* err);
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_PARSER_PNPM_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_PARSER_PNPM_H_

@@ -32,19 +32,17 @@ extern "C" {
  * LIEF chained fixups bug that causes segfaults.
  *
  * @param stub_path Path to existing compressed stub binary
- * @param section_data New section data (includes marker, metadata, compressed data)
+ * @param section_data New section data (includes marker, metadata, compressed
+ * data)
  * @param section_size Size of new section data in bytes
  * @param output_path Path where modified binary should be written
- * @param extracted_source_path Path to extracted binary with NODE_SEA sections (NULL if none)
+ * @param extracted_source_path Path to extracted binary with NODE_SEA sections
+ * (NULL if none)
  * @return 0 on success, -1 on error
  */
-int smol_repack_lief(
-    const char* stub_path,
-    const uint8_t* section_data,
-    size_t section_size,
-    const char* output_path,
-    const char* extracted_source_path
-);
+int smol_repack_lief(const char* stub_path, const uint8_t* section_data,
+                     size_t section_size, const char* output_path,
+                     const char* extracted_source_path);
 
 /**
  * Repack a SMOL section in an ELF binary with new content using LIEF.
@@ -53,17 +51,14 @@ int smol_repack_lief(
  * Handles sections instead of segments (no signing required).
  *
  * @param stub_path Path to existing compressed stub binary
- * @param section_data New section data (includes marker, metadata, compressed data)
+ * @param section_data New section data (includes marker, metadata, compressed
+ * data)
  * @param section_size Size of new section data in bytes
  * @param output_path Path where modified binary should be written
  * @return 0 on success, -1 on error
  */
-int smol_repack_lief_elf(
-    const char* stub_path,
-    const uint8_t* section_data,
-    size_t section_size,
-    const char* output_path
-);
+int smol_repack_lief_elf(const char* stub_path, const uint8_t* section_data,
+                         size_t section_size, const char* output_path);
 
 /**
  * Repack a SMOL section in a PE binary with new content using LIEF.
@@ -72,17 +67,14 @@ int smol_repack_lief_elf(
  * Removes signature if present (similar to Mach-O).
  *
  * @param stub_path Path to existing compressed stub binary
- * @param section_data New section data (includes marker, metadata, compressed data)
+ * @param section_data New section data (includes marker, metadata, compressed
+ * data)
  * @param section_size Size of new section data in bytes
  * @param output_path Path where modified binary should be written
  * @return 0 on success, -1 on error
  */
-int smol_repack_lief_pe(
-    const char* stub_path,
-    const uint8_t* section_data,
-    size_t section_size,
-    const char* output_path
-);
+int smol_repack_lief_pe(const char* stub_path, const uint8_t* section_data,
+                        size_t section_size, const char* output_path);
 
 #ifdef __cplusplus
 }

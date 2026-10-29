@@ -14,7 +14,8 @@
 //
 // WHAT THIS FILE DECLARES
 //   - HasVFSBlob(): Check if embedded VFS data exists in the binary
-//   - tar::CalculateChecksum(): Compute a TAR header checksum (SIMD-accelerated)
+//   - tar::CalculateChecksum(): Compute a TAR header checksum
+//   (SIMD-accelerated)
 //   - tar::IsZeroBlock(): Detect end-of-archive markers (SIMD-accelerated)
 //   - tar::ParseOctal(): Read octal numbers from TAR header fields
 //
@@ -38,8 +39,8 @@
 
 #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace node {
 namespace smol_vfs {
@@ -62,10 +63,10 @@ bool IsZeroBlock(const uint8_t* block);
 // Returns parsed value, or 0 if empty/invalid
 int64_t ParseOctal(const uint8_t* data, size_t len);
 
-}  // namespace tar
+} // namespace tar
 
-}  // namespace smol_vfs
-}  // namespace node
+} // namespace smol_vfs
+} // namespace node
 
-#endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
-#endif  // SRC_NODE_VFS_H_
+#endif // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+#endif // SRC_NODE_VFS_H_

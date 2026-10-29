@@ -45,10 +45,8 @@ static void IsOnBatteryPower(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Boolean::New(isolate, !IsOnAcPowerImpl()));
 }
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   SetMethod(context, target, "isOnAcPower", IsOnAcPower);
   SetMethod(context, target, "isOnBatteryPower", IsOnBatteryPower);
 }
@@ -58,11 +56,11 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(IsOnBatteryPower);
 }
 
-}  // namespace power
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace power
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_power, node::socketsecurity::power::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_power,
+                                    node::socketsecurity::power::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_power, node::socketsecurity::power::RegisterExternalReferences)

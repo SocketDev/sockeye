@@ -53,10 +53,10 @@
 #include "lsquic.h"
 #include "lsxpack_header.h"
 
+#include "env-inl.h"
 #include "node.h"
 #include "node_binding.h"
 #include "node_external_reference.h"
-#include "env-inl.h"
 #include "util.h"
 #include "v8.h"
 
@@ -149,7 +149,7 @@ void HsiDiscardHeaderSet(void* hdr_set) {
   delete static_cast<HeaderSet*>(hdr_set);
 }
 
-}  // namespace
+} // namespace
 
 const lsquic_hset_if kHsetIf = {
     /* .hsi_create_header_set  = */ HsiCreateHeaderSet,
@@ -162,10 +162,9 @@ const lsquic_hset_if kHsetIf = {
 namespace {
 
 Local<String> NewOneByte(Isolate* isolate, const char* literal) {
-  return String::NewFromOneByte(isolate,
-                                reinterpret_cast<const uint8_t*>(literal),
-                                NewStringType::kNormal,
-                                static_cast<int>(std::strlen(literal)))
+  return String::NewFromOneByte(
+             isolate, reinterpret_cast<const uint8_t*>(literal),
+             NewStringType::kNormal, static_cast<int>(std::strlen(literal)))
       .ToLocalChecked();
 }
 
@@ -197,8 +196,7 @@ void StreamGetHeaders(const FunctionCallbackInfo<Value>& args) {
                             static_cast<int>(kv.first.size()))
             .ToLocalChecked();
     Local<String> val =
-        String::NewFromUtf8(isolate, kv.second.data(),
-                            NewStringType::kNormal,
+        String::NewFromUtf8(isolate, kv.second.data(), NewStringType::kNormal,
                             static_cast<int>(kv.second.size()))
             .ToLocalChecked();
     obj->Set(context, key, val).Check();
@@ -255,8 +253,7 @@ void StreamSendHeaders(const FunctionCallbackInfo<Value>& args) {
     }
     size_t klen = static_cast<size_t>(key_utf8.length());
     size_t vlen = static_cast<size_t>(val_utf8.length());
-    if (klen == 0 || klen > LSXPACK_MAX_STRLEN ||
-        vlen > LSXPACK_MAX_STRLEN) {
+    if (klen == 0 || klen > LSXPACK_MAX_STRLEN || vlen > LSXPACK_MAX_STRLEN) {
       args.GetReturnValue().Set(Integer::New(isolate, -1));
       return;
     }
@@ -290,7 +287,7 @@ void StreamSendHeaders(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Integer::New(isolate, r));
 }
 
-}  // namespace
+} // namespace
 
 void RegisterHttp3Methods(Local<Context> context, Local<Object> target) {
   SetMethod(context, target, "streamGetHeaders", StreamGetHeaders);
@@ -302,6 +299,6 @@ void RegisterHttp3ExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(StreamSendHeaders);
 }
 
-}  // namespace quic
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace quic
+} // namespace socketsecurity
+} // namespace node

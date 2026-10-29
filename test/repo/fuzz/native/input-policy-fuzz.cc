@@ -6,9 +6,9 @@
 #include <string>
 #include <string_view>
 
-extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
+extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data,
                                       std::size_t size) {
-  const auto *characters = reinterpret_cast<const char *>(data);
+  const auto* characters = reinterpret_cast<const char*>(data);
   const std::string_view input(characters, size);
 
   (void)sockeye::IsEnvironmentName(input);

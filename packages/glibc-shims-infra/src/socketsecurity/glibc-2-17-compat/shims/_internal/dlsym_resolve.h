@@ -23,9 +23,9 @@ static inline void* socketsecurity_compat_resolve_next(const char* name) {
 }
 
 #ifdef __cplusplus
-}  // extern "C"
+} // extern "C"
 #endif
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__
 
-#endif  // SOCKETSECURITY_GLIBC_2_17_COMPAT_SHIMS_INTERNAL_DLSYM_RESOLVE_H_
+#endif // SOCKETSECURITY_GLIBC_2_17_COMPAT_SHIMS_INTERNAL_DLSYM_RESOLVE_H_

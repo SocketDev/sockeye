@@ -49,7 +49,7 @@ struct Fnv1aHash {
 };
 
 class StringInterner {
- public:
+public:
   // `arena` must outlive this interner. The interner does not own
   // the arena because the parser holds the arena and uses it for
   // both interned strings and other intermediate allocations.
@@ -81,7 +81,7 @@ class StringInterner {
   // Number of distinct strings interned so far. Test diagnostic.
   size_t UniqueCount() const { return map_.size(); }
 
- private:
+private:
   Arena* arena_;
   // map's keys ARE the arena-owned views; map's values are the same
   // views (kept separately so future map types can return a different
@@ -90,9 +90,9 @@ class StringInterner {
   std::unordered_map<std::string_view, std::string_view, Fnv1aHash> map_;
 };
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_INTERN_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_INTERN_H_

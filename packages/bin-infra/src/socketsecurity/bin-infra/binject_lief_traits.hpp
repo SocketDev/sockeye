@@ -68,10 +68,10 @@
 
 #include <LIEF/LIEF.hpp>
 
-#include <memory>
-#include <string>
 #include "socketsecurity/bin-infra/segment_names.h"
 #include "socketsecurity/bin-infra/string_convert.hpp"
+#include <memory>
+#include <string>
 
 namespace binject {
 
@@ -79,8 +79,7 @@ namespace binject {
  * Primary template - intentionally undefined.
  * Forces compile error if used with unsupported type.
  */
-template<typename BinaryType>
-struct BinaryTraits;
+template <typename BinaryType> struct BinaryTraits;
 
 /**
  * Mach-O specialization
@@ -95,52 +94,51 @@ struct BinaryTraits;
  * - Requires code signing on macOS
  * - Parser returns FatBinary not Binary directly
  */
-template<>
-struct BinaryTraits<LIEF::MachO::Binary> {
-    using BinaryType = LIEF::MachO::Binary;
-    using SectionType = LIEF::MachO::Section;
-    using SegmentType = LIEF::MachO::SegmentCommand;
-    using FatBinaryType = LIEF::MachO::FatBinary;
+template <> struct BinaryTraits<LIEF::MachO::Binary> {
+  using BinaryType = LIEF::MachO::Binary;
+  using SectionType = LIEF::MachO::Section;
+  using SegmentType = LIEF::MachO::SegmentCommand;
+  using FatBinaryType = LIEF::MachO::FatBinary;
 
-    static constexpr const char* PLATFORM_NAME = "Mach-O";
-    static constexpr bool HAS_SEGMENTS = true;
-    static constexpr bool NEEDS_CODE_SIGNING = true;
+  static constexpr const char* PLATFORM_NAME = "Mach-O";
+  static constexpr bool HAS_SEGMENTS = true;
+  static constexpr bool NEEDS_CODE_SIGNING = true;
 
-    /**
-     * Parse Mach-O binary.
-     * Returns FatBinary which may contain multiple architectures.
-     */
-    static std::unique_ptr<FatBinaryType> parse(const char* path) {
-        return LIEF::MachO::Parser::parse(path);
+  /**
+   * Parse Mach-O binary.
+   * Returns FatBinary which may contain multiple architectures.
+   */
+  static std::unique_ptr<FatBinaryType> parse(const char* path) {
+    return LIEF::MachO::Parser::parse(path);
+  }
+
+  /**
+   * Get first binary from fat binary.
+   * For non-fat binaries, this returns the only binary.
+   */
+  static BinaryType* get_binary(FatBinaryType* fat) {
+    if (!fat || fat->empty()) {
+      return nullptr;
     }
+    return fat->at(0);
+  }
 
-    /**
-     * Get first binary from fat binary.
-     * For non-fat binaries, this returns the only binary.
-     */
-    static BinaryType* get_binary(FatBinaryType* fat) {
-        if (!fat || fat->empty()) {
-            return nullptr;
+  /**
+   * Check if section exists.
+   * Mach-O: Must check if segment exists first, then check sections.
+   * Note: This is simplified - real code might need segment name too.
+   */
+  static bool has_section(BinaryType* binary, const char* section_name) {
+    // Simplified: Search all segments for section
+    for (const auto& segment : binary->segments()) {
+      for (const auto& section : segment.sections()) {
+        if (section.name() == section_name) {
+          return true;
         }
-        return fat->at(0);
+      }
     }
-
-    /**
-     * Check if section exists.
-     * Mach-O: Must check if segment exists first, then check sections.
-     * Note: This is simplified - real code might need segment name too.
-     */
-    static bool has_section(BinaryType* binary, const char* section_name) {
-        // Simplified: Search all segments for section
-        for (const auto& segment : binary->segments()) {
-            for (const auto& section : segment.sections()) {
-                if (section.name() == section_name) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+    return false;
+  }
 };
 
 /**
@@ -155,38 +153,35 @@ struct BinaryTraits<LIEF::MachO::Binary> {
  * - No code signing
  * - Parser returns Binary directly
  */
-template<>
-struct BinaryTraits<LIEF::ELF::Binary> {
-    using BinaryType = LIEF::ELF::Binary;
-    using SectionType = LIEF::ELF::Section;
+template <> struct BinaryTraits<LIEF::ELF::Binary> {
+  using BinaryType = LIEF::ELF::Binary;
+  using SectionType = LIEF::ELF::Section;
 
-    static constexpr const char* PLATFORM_NAME = "ELF";
-    static constexpr bool HAS_SEGMENTS = false;
-    static constexpr bool NEEDS_CODE_SIGNING = false;
+  static constexpr const char* PLATFORM_NAME = "ELF";
+  static constexpr bool HAS_SEGMENTS = false;
+  static constexpr bool NEEDS_CODE_SIGNING = false;
 
-    /**
-     * Parse ELF binary.
-     * Returns Binary directly (no fat binary concept).
-     */
-    static std::unique_ptr<BinaryType> parse(const char* path) {
-        return LIEF::ELF::Parser::parse(path);
-    }
+  /**
+   * Parse ELF binary.
+   * Returns Binary directly (no fat binary concept).
+   */
+  static std::unique_ptr<BinaryType> parse(const char* path) {
+    return LIEF::ELF::Parser::parse(path);
+  }
 
-    /**
-     * Get binary (identity function for ELF).
-     * ELF has no fat binary concept, so this just returns the input.
-     */
-    static BinaryType* get_binary(BinaryType* bin) {
-        return bin;
-    }
+  /**
+   * Get binary (identity function for ELF).
+   * ELF has no fat binary concept, so this just returns the input.
+   */
+  static BinaryType* get_binary(BinaryType* bin) { return bin; }
 
-    /**
-     * Check if section exists.
-     * ELF: Direct section lookup, no segments involved.
-     */
-    static bool has_section(BinaryType* binary, const char* section_name) {
-        return binary->has_section(section_name);
-    }
+  /**
+   * Check if section exists.
+   * ELF: Direct section lookup, no segments involved.
+   */
+  static bool has_section(BinaryType* binary, const char* section_name) {
+    return binary->has_section(section_name);
+  }
 };
 
 /**
@@ -201,39 +196,36 @@ struct BinaryTraits<LIEF::ELF::Binary> {
  * - No code signing in binject
  * - Parser returns Binary directly
  */
-template<>
-struct BinaryTraits<LIEF::PE::Binary> {
-    using BinaryType = LIEF::PE::Binary;
-    using SectionType = LIEF::PE::Section;
+template <> struct BinaryTraits<LIEF::PE::Binary> {
+  using BinaryType = LIEF::PE::Binary;
+  using SectionType = LIEF::PE::Section;
 
-    static constexpr const char* PLATFORM_NAME = "PE";
-    static constexpr bool HAS_SEGMENTS = false;
-    static constexpr bool NEEDS_CODE_SIGNING = false;
+  static constexpr const char* PLATFORM_NAME = "PE";
+  static constexpr bool HAS_SEGMENTS = false;
+  static constexpr bool NEEDS_CODE_SIGNING = false;
 
-    /**
-     * Parse PE binary.
-     * Returns Binary directly (no fat binary concept).
-     */
-    static std::unique_ptr<BinaryType> parse(const char* path) {
-        return LIEF::PE::Parser::parse(path);
-    }
+  /**
+   * Parse PE binary.
+   * Returns Binary directly (no fat binary concept).
+   */
+  static std::unique_ptr<BinaryType> parse(const char* path) {
+    return LIEF::PE::Parser::parse(path);
+  }
 
-    /**
-     * Get binary (identity function for PE).
-     * PE has no fat binary concept, so this just returns the input.
-     */
-    static BinaryType* get_binary(BinaryType* bin) {
-        return bin;
-    }
+  /**
+   * Get binary (identity function for PE).
+   * PE has no fat binary concept, so this just returns the input.
+   */
+  static BinaryType* get_binary(BinaryType* bin) { return bin; }
 
-    /**
-     * Check if section exists.
-     * PE: Direct section lookup via get_section.
-     * Note: PE's has_section may not exist, use get_section != nullptr.
-     */
-    static bool has_section(BinaryType* binary, const char* section_name) {
-        return binary->get_section(section_name) != nullptr;
-    }
+  /**
+   * Check if section exists.
+   * PE: Direct section lookup via get_section.
+   * Note: PE's has_section may not exist, use get_section != nullptr.
+   */
+  static bool has_section(BinaryType* binary, const char* section_name) {
+    return binary->get_section(section_name) != nullptr;
+  }
 };
 
 /**
@@ -252,19 +244,18 @@ struct BinaryTraits<LIEF::PE::Binary> {
  * Returns: pair of (parsed container, raw binary pointer)
  * The container owns memory, pointer is for convenience.
  */
-template<typename BinaryType>
+template <typename BinaryType>
 inline auto parse_binary(const char* path)
-    -> std::pair<decltype(BinaryTraits<BinaryType>::parse(path)), BinaryType*>
-{
-    using Traits = BinaryTraits<BinaryType>;
-    auto parsed = Traits::parse(path);
-    BinaryType* binary = nullptr;
+    -> std::pair<decltype(BinaryTraits<BinaryType>::parse(path)), BinaryType*> {
+  using Traits = BinaryTraits<BinaryType>;
+  auto parsed = Traits::parse(path);
+  BinaryType* binary = nullptr;
 
-    if (parsed) {
-        binary = Traits::get_binary(parsed.get());
-    }
+  if (parsed) {
+    binary = Traits::get_binary(parsed.get());
+  }
 
-    return {std::move(parsed), binary};
+  return {std::move(parsed), binary};
 }
 
 /**
@@ -274,64 +265,68 @@ inline auto parse_binary(const char* path)
  * CRITICAL: This function handles platform-specific resource storage!
  *
  * Platform implementations:
- * - Mach-O: Checks segment existence (NODE_SEA segment with __NODE_SEA_BLOB section)
+ * - Mach-O: Checks segment existence (NODE_SEA segment with __NODE_SEA_BLOB
+ * section)
  * - ELF: Checks PT_NOTE segments for note owner "NODE_SEA_BLOB"
  * - PE: Checks PE resources (.rsrc) for RT_RCDATA resource "NODE_SEA_BLOB"
  *
  * This divergence is intentional and aligns with postject/Node.js expectations:
  * - Mach-O: Uses custom segments (traditional Mach-O approach)
- * - ELF: Uses PT_NOTE segments (survives stripping, searchable via dl_iterate_phdr)
- * - PE: Uses PE resources (standard Windows resource mechanism via FindResource)
+ * - ELF: Uses PT_NOTE segments (survives stripping, searchable via
+ * dl_iterate_phdr)
+ * - PE: Uses PE resources (standard Windows resource mechanism via
+ * FindResource)
  */
-template<typename BinaryType>
+template <typename BinaryType>
 inline bool has_node_sea_section(BinaryType* binary) {
-    using Traits = BinaryTraits<BinaryType>;
+  using Traits = BinaryTraits<BinaryType>;
 
-    if constexpr (Traits::HAS_SEGMENTS) {
-        // Mach-O: Check segment existence
-        // Casting because we know BinaryType is LIEF::MachO::Binary here
-        auto* macho = static_cast<LIEF::MachO::Binary*>(binary);
-        return macho->has_segment(MACHO_SEGMENT_NODE_SEA);
-    } else if constexpr (std::is_same_v<BinaryType, LIEF::ELF::Binary>) {
-        // ELF: Check for PT_NOTE segment with NODE_SEA_BLOB owner name
-        // Note: This checks sections, but actual injection uses PT_NOTE segments
-        // The section name check is a fallback for binaries that may have sections
-        auto* elf = static_cast<LIEF::ELF::Binary*>(binary);
-        // Check if any note has the NODE_SEA_BLOB name
-        for (const auto& note : elf->notes()) {
-            if (note.name() == ELF_NOTE_NODE_SEA_BLOB) {
-                return true;
-            }
-        }
-        return false;
-    } else {
-        // PE: Check if resources exist with NODE_SEA_BLOB name
-        auto* pe = static_cast<LIEF::PE::Binary*>(binary);
-        if (!pe->has_resources()) {
-            return false;
-        }
-        // Check for RT_RCDATA resources with NODE_SEA_BLOB name
-        auto* resources = pe->resources();
-        if (!resources) {
-            return false;
-        }
-        // Look for RT_RCDATA type node
-        for (const auto& node : resources->childs()) {
-            if (node.id() == static_cast<uint32_t>(LIEF::PE::ResourcesManager::TYPE::RCDATA)) {
-                // Check if PE_RESOURCE_NODE_SEA_BLOB exists in this type
-                // Convert resource name to UTF-16 for comparison (LIEF uses u16string)
-                std::u16string u16_name = to_u16string(PE_RESOURCE_NODE_SEA_BLOB);
-
-                for (const auto& child : node.childs()) {
-                    // Resource names are stored uppercase
-                    if (child.has_name() && child.name() == u16_name) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+  if constexpr (Traits::HAS_SEGMENTS) {
+    // Mach-O: Check segment existence
+    // Casting because we know BinaryType is LIEF::MachO::Binary here
+    auto* macho = static_cast<LIEF::MachO::Binary*>(binary);
+    return macho->has_segment(MACHO_SEGMENT_NODE_SEA);
+  } else if constexpr (std::is_same_v<BinaryType, LIEF::ELF::Binary>) {
+    // ELF: Check for PT_NOTE segment with NODE_SEA_BLOB owner name
+    // Note: This checks sections, but actual injection uses PT_NOTE segments
+    // The section name check is a fallback for binaries that may have sections
+    auto* elf = static_cast<LIEF::ELF::Binary*>(binary);
+    // Check if any note has the NODE_SEA_BLOB name
+    for (const auto& note : elf->notes()) {
+      if (note.name() == ELF_NOTE_NODE_SEA_BLOB) {
+        return true;
+      }
     }
+    return false;
+  } else {
+    // PE: Check if resources exist with NODE_SEA_BLOB name
+    auto* pe = static_cast<LIEF::PE::Binary*>(binary);
+    if (!pe->has_resources()) {
+      return false;
+    }
+    // Check for RT_RCDATA resources with NODE_SEA_BLOB name
+    auto* resources = pe->resources();
+    if (!resources) {
+      return false;
+    }
+    // Look for RT_RCDATA type node
+    for (const auto& node : resources->childs()) {
+      if (node.id() ==
+          static_cast<uint32_t>(LIEF::PE::ResourcesManager::TYPE::RCDATA)) {
+        // Check if PE_RESOURCE_NODE_SEA_BLOB exists in this type
+        // Convert resource name to UTF-16 for comparison (LIEF uses u16string)
+        std::u16string u16_name = to_u16string(PE_RESOURCE_NODE_SEA_BLOB);
+
+        for (const auto& child : node.childs()) {
+          // Resource names are stored uppercase
+          if (child.has_name() && child.name() == u16_name) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 }
 
 } // namespace binject

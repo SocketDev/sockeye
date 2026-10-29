@@ -36,8 +36,8 @@
 #define SRC_SOCKETSECURITY_FFI_BINDING_H_
 
 #include "env.h"
-#include "v8.h"
 #include "socketsecurity/ffi/types.h"
+#include "v8.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -94,7 +94,8 @@ struct FFIState {
 // ============================================================================
 //
 // This is the "bridge" between JS and native code. Each static method here
-// becomes a function that JavaScript can call via `internalBinding('smol_ffi')`.
+// becomes a function that JavaScript can call via
+// `internalBinding('smol_ffi')`.
 //
 // FunctionCallbackInfo<Value> is what a C++ function receives when called
 // from JS. args[0], args[1]... are the JS arguments. Use
@@ -104,21 +105,19 @@ struct FFIState {
 // Isolate is one JavaScript runtime -- like one Node.js process. Each Worker
 // thread gets its own Isolate.
 class FFIBinding {
- public:
+public:
   // Called once when Node.js starts up. Registers all the methods below
   // so that `internalBinding('smol_ffi')` returns an object with .open(),
   // .close(), .call(), etc.
-  static void Initialize(
-    v8::Local<v8::Object> target,
-    v8::Local<v8::Value> unused,
-    v8::Local<v8::Context> context,
-    void* priv);
+  static void Initialize(v8::Local<v8::Object> target,
+                         v8::Local<v8::Value> unused,
+                         v8::Local<v8::Context> context, void* priv);
 
   // Registers all our C++ function pointers for V8's snapshot system.
   // This enables faster Node.js startup by pre-serializing the binding.
   static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
 
- private:
+private:
   // -- Library lifecycle --
   // JS: binding.open('/path/to/lib.so') -> libraryId (number)
   static void Open(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -137,14 +136,13 @@ class FFIBinding {
   // not tied to a library handle, so library Close() will not auto-drop
   // it. Callers must explicitly UnregisterFunction() to reclaim the slot,
   // or rely on thread teardown.
-  static void RegisterFunction(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void RegisterFunction(const v8::FunctionCallbackInfo<v8::Value>& args);
   // JS: binding.unregisterFunction(functionId)
   // Removes a function entry registered via RegisterFunction(). Safe to
   // call on entries created via Sym() too — but those normally live for
   // the library's lifetime and Close() takes care of them.
-  static void UnregisterFunction(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void
+  UnregisterFunction(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   // -- Function calling --
   // JS: binding.call(functionId, arg0, arg1, ...) -> returnValue
@@ -186,11 +184,10 @@ class FFIBinding {
 
   // -- Callbacks (JS -> native function pointer) --
   // JS: binding.registerCallback(libId, 'void', ['i32'], myFn) -> [id, ptr]
-  static void RegisterCallback(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void RegisterCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
   // JS: binding.unregisterCallback(callbackId)
-  static void UnregisterCallback(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void
+  UnregisterCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   // -- Internal helpers --
 
@@ -219,8 +216,8 @@ class FFIBinding {
   static void SetValue(const v8::FunctionCallbackInfo<v8::Value>& args);
 };
 
-}  // namespace ffi
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ffi
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_FFI_BINDING_H_
+#endif // SRC_SOCKETSECURITY_FFI_BINDING_H_

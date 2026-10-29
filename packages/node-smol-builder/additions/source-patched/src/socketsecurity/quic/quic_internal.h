@@ -59,8 +59,8 @@ struct JsCallbackTable {
   v8::Global<v8::Function> on_hsk_done;
   v8::Global<v8::Function> on_goaway_received;
   // step 7 — server + datagrams
-  v8::Global<v8::Function> on_datagram_write;  // outbound readiness
-  v8::Global<v8::Function> on_datagram;        // inbound payload
+  v8::Global<v8::Function> on_datagram_write; // outbound readiness
+  v8::Global<v8::Function> on_datagram;       // inbound payload
 };
 
 // SSL_CTX is forward-declared at global scope (above) so it unifies
@@ -180,12 +180,12 @@ bool ApplyJsSettings(v8::Isolate* isolate, v8::Local<v8::Context> context,
 // Cert-lookup trampoline registered via lsquic_engine_api::ea_lookup_cert.
 // Returns the EngineSlot::ssl_ctx (single-SNI). NULL if no cert was set
 // via setServerCertContext.
-extern "C" struct ssl_ctx_st* LookupCertTrampoline(
-    void* lsquic_cert_lookup_ctx, const struct sockaddr* local,
-    const char* sni);
+extern "C" struct ssl_ctx_st* LookupCertTrampoline(void* lsquic_cert_lookup_ctx,
+                                                   const struct sockaddr* local,
+                                                   const char* sni);
 
-}  // namespace quic
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace quic
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_QUIC_QUIC_INTERNAL_H_
+#endif // SRC_SOCKETSECURITY_QUIC_QUIC_INTERNAL_H_

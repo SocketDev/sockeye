@@ -22,16 +22,16 @@
 
 #ifdef _WIN32
 
-#include <stdint.h>
 #include <io.h>
-#include <sys/types.h>  /* For off_t - do NOT redefine it */
+#include <stdint.h>
+#include <sys/types.h> /* For off_t - do NOT redefine it */
 
 /*
  * POSIX types - only needed on pure MSVC, MinGW provides these.
  * Guard each typedef individually since some may be defined by other headers.
  *
- * NOTE: off_t is NOT defined here - use the system's definition from sys/types.h
- * to avoid redefinition conflicts. Windows off_t is 32-bit (long).
+ * NOTE: off_t is NOT defined here - use the system's definition from
+ * sys/types.h to avoid redefinition conflicts. Windows off_t is 32-bit (long).
  */
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
 #ifndef _MODE_T_DEFINED
@@ -83,16 +83,16 @@ typedef intptr_t ssize_t;
  * access() mode constants - standard values.
  */
 #ifndef F_OK
-#define F_OK 0  /* File exists */
+#define F_OK 0 /* File exists */
 #endif
 #ifndef R_OK
-#define R_OK 4  /* Read permission */
+#define R_OK 4 /* Read permission */
 #endif
 #ifndef W_OK
-#define W_OK 2  /* Write permission */
+#define W_OK 2 /* Write permission */
 #endif
 #ifndef X_OK
-#define X_OK 1  /* Execute permission (not reliable on Windows) */
+#define X_OK 1 /* Execute permission (not reliable on Windows) */
 #endif
 
 /*
@@ -114,7 +114,8 @@ typedef intptr_t ssize_t;
  * Cross-platform symlink-safe stat.
  * On Windows: symlinks require elevated privileges, so stat() is sufficient.
  * On Unix: lstat() detects symlinks to prevent symlink attacks.
- * S_ISLNK doesn't exist on Windows, so provide a no-op that always returns false.
+ * S_ISLNK doesn't exist on Windows, so provide a no-op that always returns
+ * false.
  */
 #define POSIX_LSTAT(path, buf) stat((path), (buf))
 #define POSIX_S_ISLNK(mode) (0)

@@ -3,10 +3,10 @@
  *
  * sockeye.c (the daemon lifecycle) calls these; each platform provides the
  * implementation behind the same C ABI: macOS uses the Keychain with a
- * biometric ACL (keystore_macos.mm), Linux uses the Secret Service via libsecret
- * (keystore_linux.c), and Windows uses the Credential Manager (keystore_win.c).
- * Declared extern "C" so the Objective-C++ macOS backend links against the C
- * daemon without name mangling.
+ * biometric ACL (keystore_macos.mm), Linux uses the Secret Service via
+ * libsecret (keystore_linux.c), and Windows uses the Credential Manager
+ * (keystore_win.c). Declared extern "C" so the Objective-C++ macOS backend
+ * links against the C daemon without name mangling.
  */
 
 #ifndef SOCKEYE_KEYSTORE_H

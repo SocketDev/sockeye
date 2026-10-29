@@ -15,7 +15,7 @@ namespace http_perf {
 // Note: Requires mimalloc library to be linked.
 // Without mimalloc, falls back to default allocator.
 class MimallocArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
- public:
+public:
   MimallocArrayBufferAllocator();
   ~MimallocArrayBufferAllocator() override;
 
@@ -32,18 +32,18 @@ class MimallocArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     size_t bytes_allocated;
     size_t bytes_freed;
     size_t frees;
-    bool mimalloc_detected;  // True if mimalloc was detected at initialization
+    bool mimalloc_detected; // True if mimalloc was detected at initialization
   };
 
   const Stats& GetStats() const { return stats_; }
 
- private:
+private:
   Stats stats_;
   bool use_mimalloc_;
 };
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_HTTP_PERF_MIMALLOC_ALLOCATOR_H_
+#endif // SRC_SOCKETSECURITY_HTTP_PERF_MIMALLOC_ALLOCATOR_H_

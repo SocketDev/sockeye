@@ -58,9 +58,9 @@
 
 #include "env.h"
 #include "v8.h"
-#include <libpq-fe.h>
 #include <chrono>
 #include <deque>
+#include <libpq-fe.h>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -72,15 +72,11 @@ namespace socketsecurity {
 namespace postgres {
 
 // Connection state tracking.
-enum class ConnectionState {
-  kIdle,
-  kBusy,
-  kDead
-};
+enum class ConnectionState { kIdle, kBusy, kDead };
 
 // A single pooled PostgreSQL connection.
 class PooledConnection {
- public:
+public:
   explicit PooledConnection(PGconn* conn);
   ~PooledConnection();
 
@@ -114,13 +110,15 @@ class PooledConnection {
   void CachePreparedStatement(const std::string& name, const std::string& sql);
 
   // Timestamp tracking.
-  std::chrono::steady_clock::time_point GetCreatedAt() const { return created_at_; }
-  std::chrono::steady_clock::time_point GetLastUsedAt() const { return last_used_at_; }
-  void TouchLastUsed() {
-    last_used_at_ = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point GetCreatedAt() const {
+    return created_at_;
   }
+  std::chrono::steady_clock::time_point GetLastUsedAt() const {
+    return last_used_at_;
+  }
+  void TouchLastUsed() { last_used_at_ = std::chrono::steady_clock::now(); }
 
- private:
+private:
   PGconn* conn_;
   ConnectionState state_;
   std::unordered_map<std::string, std::string> prepared_statements_;
@@ -131,7 +129,7 @@ class PooledConnection {
 
 // High-performance connection pool with prepared statement caching.
 class PostgresPool {
- public:
+public:
   struct Config {
     std::string connection_string;
     size_t min_connections = 2;
@@ -172,33 +170,23 @@ class PostgresPool {
   PGresult* Execute(const char* query);
 
   // Execute with parameters (binary protocol for efficiency).
-  PGresult* ExecuteParams(
-    const char* query,
-    int nParams,
-    const Oid* paramTypes,
-    const char* const* paramValues,
-    const int* paramLengths,
-    const int* paramFormats,
-    int resultFormat);
+  PGresult* ExecuteParams(const char* query, int nParams, const Oid* paramTypes,
+                          const char* const* paramValues,
+                          const int* paramLengths, const int* paramFormats,
+                          int resultFormat);
 
   // Prepare a statement for repeated execution.
   // Stores SQL text at pool level so any connection can re-prepare.
-  bool Prepare(
-    const char* name,
-    const char* query,
-    int nParams,
-    const Oid* paramTypes);
+  bool Prepare(const char* name, const char* query, int nParams,
+               const Oid* paramTypes);
 
   // Execute a prepared statement.
   // If the acquired connection does not have the statement prepared,
   // it will be re-prepared transparently using the pool-level SQL map.
-  PGresult* ExecutePrepared(
-    const char* name,
-    int nParams,
-    const char* const* paramValues,
-    const int* paramLengths,
-    const int* paramFormats,
-    int resultFormat);
+  PGresult* ExecutePrepared(const char* name, int nParams,
+                            const char* const* paramValues,
+                            const int* paramLengths, const int* paramFormats,
+                            int resultFormat);
 
   // Pool statistics.
   size_t GetIdleCount() const;
@@ -208,7 +196,7 @@ class PostgresPool {
   // Health check.
   bool IsHealthy() const;
 
- private:
+private:
   PooledConnection* CreateConnection();
   void DestroyConnection(PooledConnection* conn);
   void EvictStaleConnections();
@@ -230,8 +218,8 @@ class PostgresPool {
   std::deque<std::string> statement_sql_order_;
 };
 
-}  // namespace postgres
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace postgres
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_POSTGRES_POSTGRES_POOL_H_
+#endif // SRC_SOCKETSECURITY_POSTGRES_POSTGRES_POOL_H_

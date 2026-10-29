@@ -49,9 +49,9 @@
 // ============================================================================
 
 #include "socketsecurity/webstreams/stream_chunk_pool.h"
-#include "socketsecurity/simd/simd.h"  // SMOL_LIKELY / SMOL_UNLIKELY
 #include "env-inl.h"
 #include "node_internals.h"
+#include "socketsecurity/simd/simd.h" // SMOL_LIKELY / SMOL_UNLIKELY
 #include "util-inl.h"
 
 namespace node {
@@ -71,9 +71,7 @@ using v8::Value;
 
 StreamChunkPool::StreamChunkPool(Environment* env) : env_(env) {}
 
-StreamChunkPool::~StreamChunkPool() {
-  Clear();
-}
+StreamChunkPool::~StreamChunkPool() { Clear(); }
 
 Local<Object> StreamChunkPool::AcquireChunk() {
   Isolate* isolate = env_->isolate();
@@ -101,14 +99,14 @@ Local<Object> StreamChunkPool::AcquireChunk() {
 
   // Initialize with { value: undefined, done: false }.
   Local<Context> context = env_->context();
-  chunk->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "value"),
-    v8::Undefined(isolate)).Check();
-  chunk->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "done"),
-    Boolean::New(isolate, false)).Check();
+  chunk
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "value"),
+            v8::Undefined(isolate))
+      .Check();
+  chunk
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "done"),
+            Boolean::New(isolate, false))
+      .Check();
 
   return scope.Escape(chunk);
 }
@@ -126,33 +124,30 @@ void StreamChunkPool::ReleaseChunk(Local<Object> chunk) {
 
   // Reset to undefined and return to pool.
   Local<Context> context = env_->context();
-  chunk->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "value"),
-    v8::Undefined(isolate)).Check();
-  chunk->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "done"),
-    Boolean::New(isolate, false)).Check();
+  chunk
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "value"),
+            v8::Undefined(isolate))
+      .Check();
+  chunk
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "done"),
+            Boolean::New(isolate, false))
+      .Check();
 
   pool_.emplace_back(isolate, chunk);
 }
 
-void StreamChunkPool::SetChunkValue(
-    Environment* env,
-    Local<Object> chunk,
-    Local<Value> value,
-    bool done) {
+void StreamChunkPool::SetChunkValue(Environment* env, Local<Object> chunk,
+                                    Local<Value> value, bool done) {
   Isolate* isolate = env->isolate();
   Local<Context> context = env->context();
 
   // Set { value, done } properties.
   // WPT Compatibility: Standard property names and types.
   chunk->Set(context, FIXED_ONE_BYTE_STRING(isolate, "value"), value).Check();
-  chunk->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "done"),
-    Boolean::New(isolate, done)).Check();
+  chunk
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "done"),
+            Boolean::New(isolate, done))
+      .Check();
 }
 
 void StreamChunkPool::Clear() {
@@ -161,8 +156,8 @@ void StreamChunkPool::Clear() {
   released_ = 0;
 }
 
-}  // namespace webstreams
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webstreams
+} // namespace socketsecurity
+} // namespace node
 
 #pragma GCC diagnostic pop

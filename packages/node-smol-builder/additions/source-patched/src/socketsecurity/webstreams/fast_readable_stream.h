@@ -55,8 +55,8 @@
 
 #include "async_wrap.h"
 #include "env.h"
-#include "stream_base.h"
 #include "socketsecurity/webstreams/stream_chunk_pool.h"
+#include "stream_base.h"
 #include "v8.h"
 #include <queue>
 
@@ -73,10 +73,8 @@ namespace webstreams {
 // - Maintains WHATWG Streams API semantics
 // - Delegates complex cases (backpressure, errors) to JS
 class FastReadableStreamAccelerator : public AsyncWrap {
- public:
-  FastReadableStreamAccelerator(
-    Environment* env,
-    v8::Local<v8::Object> object);
+public:
+  FastReadableStreamAccelerator(Environment* env, v8::Local<v8::Object> object);
   ~FastReadableStreamAccelerator() override;
 
   // Create new accelerator.
@@ -99,7 +97,7 @@ class FastReadableStreamAccelerator : public AsyncWrap {
   SET_MEMORY_INFO_NAME(FastReadableStreamAccelerator)
   SET_SELF_SIZE(FastReadableStreamAccelerator)
 
- private:
+private:
   // Buffered chunks.
   std::queue<v8::Global<v8::Value>> buffer_;
 
@@ -111,8 +109,8 @@ class FastReadableStreamAccelerator : public AsyncWrap {
   StreamChunkPool* chunk_pool_;
 };
 
-}  // namespace webstreams
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webstreams
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_WEBSTREAMS_FAST_READABLE_STREAM_H_
+#endif // SRC_SOCKETSECURITY_WEBSTREAMS_FAST_READABLE_STREAM_H_

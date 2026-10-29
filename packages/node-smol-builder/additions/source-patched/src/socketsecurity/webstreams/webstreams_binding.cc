@@ -2,13 +2,13 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-#include "socketsecurity/webstreams/fast_readable_stream.h"
-#include "socketsecurity/webstreams/stream_chunk_pool.h"
 #include "async_wrap-inl.h"
 #include "env-inl.h"
 #include "node.h"
 #include "node_binding.h"
 #include "node_external_reference.h"
+#include "socketsecurity/webstreams/fast_readable_stream.h"
+#include "socketsecurity/webstreams/stream_chunk_pool.h"
 #include "util-inl.h"
 #include "v8.h"
 
@@ -62,9 +62,8 @@ StreamChunkPool* GetChunkPool(Environment* env) {
 static bool CheckChunkPoolOrThrow(Isolate* isolate,
                                   const StreamChunkPool* pool) {
   if (pool == nullptr) {
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8Literal(isolate,
-            "Out of memory: failed to allocate StreamChunkPool")));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8Literal(
+        isolate, "Out of memory: failed to allocate StreamChunkPool")));
     return true;
   }
   return false;
@@ -76,7 +75,8 @@ static bool CheckChunkPoolOrThrow(Isolate* isolate,
 static void AcquireChunk(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   StreamChunkPool* pool = GetChunkPool(env);
-  if (CheckChunkPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckChunkPoolOrThrow(env->isolate(), pool))
+    return;
 
   Local<Object> chunk = pool->AcquireChunk();
   args.GetReturnValue().Set(chunk);
@@ -91,7 +91,8 @@ static void ReleaseChunk(const FunctionCallbackInfo<Value>& args) {
   }
 
   StreamChunkPool* pool = GetChunkPool(env);
-  if (CheckChunkPoolOrThrow(env->isolate(), pool)) return;
+  if (CheckChunkPoolOrThrow(env->isolate(), pool))
+    return;
   pool->ReleaseChunk(args[0].As<Object>());
 }
 
@@ -115,23 +116,23 @@ static void GetChunkPoolStats(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   Isolate* isolate = env->isolate();
   StreamChunkPool* pool = GetChunkPool(env);
-  if (CheckChunkPoolOrThrow(isolate, pool)) return;
+  if (CheckChunkPoolOrThrow(isolate, pool))
+    return;
 
-  Local<Object> stats = Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
+  Local<Object> stats =
+      Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
   Local<Context> context = env->context();
 
-  stats->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "poolSize"),
-    v8::Integer::NewFromUnsigned(isolate, pool->GetPoolSize())).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "poolSize"),
+            v8::Integer::NewFromUnsigned(isolate, pool->GetPoolSize()))
+      .Check();
 
   args.GetReturnValue().Set(stats);
 }
 
-static void Initialize(Local<Object> target,
-                      Local<Value> unused,
-                      Local<Context> context,
-                      void* priv) {
+static void Initialize(Local<Object> target, Local<Value> unused,
+                       Local<Context> context, void* priv) {
   Environment* env = Environment::GetCurrent(context);
   Isolate* isolate = env->isolate();
 
@@ -143,9 +144,9 @@ static void Initialize(Local<Object> target,
 
   // FastReadableStreamAccelerator constructor.
   Local<v8::FunctionTemplate> accelerator_tmpl =
-    NewFunctionTemplate(isolate, FastReadableStreamAccelerator::New);
+      NewFunctionTemplate(isolate, FastReadableStreamAccelerator::New);
   accelerator_tmpl->InstanceTemplate()->SetInternalFieldCount(
-    FastReadableStreamAccelerator::kInternalFieldCount);
+      FastReadableStreamAccelerator::kInternalFieldCount);
   accelerator_tmpl->Inherit(AsyncWrap::GetConstructorTemplate(env));
 
   SetProtoMethod(isolate, accelerator_tmpl, "readSync",
@@ -157,11 +158,8 @@ static void Initialize(Local<Object> target,
   SetProtoMethod(isolate, accelerator_tmpl, "hasData",
                  FastReadableStreamAccelerator::HasData);
 
-  SetConstructorFunction(
-    context,
-    target,
-    "FastReadableStreamAccelerator",
-    accelerator_tmpl);
+  SetConstructorFunction(context, target, "FastReadableStreamAccelerator",
+                         accelerator_tmpl);
 }
 
 static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
@@ -176,15 +174,14 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(FastReadableStreamAccelerator::HasData);
 }
 
-}  // namespace webstreams
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webstreams
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-  smol_webstreams,
-  node::socketsecurity::webstreams::Initialize)
+    smol_webstreams, node::socketsecurity::webstreams::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
-  smol_webstreams,
-  node::socketsecurity::webstreams::RegisterExternalReferences)
+    smol_webstreams,
+    node::socketsecurity::webstreams::RegisterExternalReferences)
 
 #pragma GCC diagnostic pop

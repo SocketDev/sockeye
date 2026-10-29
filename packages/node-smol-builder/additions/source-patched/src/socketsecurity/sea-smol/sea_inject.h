@@ -40,23 +40,22 @@ namespace sea {
 // Handles directories (create archive), .tar files (compress), and
 // .tar.gz files (use as-is). Returns the archive path, empty string
 // for compat mode, or nullopt on error.
-std::optional<std::string> PrepareVfsArchive(
-    const SmolVfsConfig& vfs_config,
-    const std::string& sea_config_path);
+std::optional<std::string>
+PrepareVfsArchive(const SmolVfsConfig& vfs_config,
+                  const std::string& sea_config_path);
 
 // Serialize a VFS config struct to binary blob (SVFG format, 108 bytes).
-std::optional<std::vector<uint8_t>> SerializeVfsConfig(
-    const SmolVfsConfig& config);
+std::optional<std::vector<uint8_t>>
+SerializeVfsConfig(const SmolVfsConfig& config);
 
 // Low-level: inject SEA blob + VFS archive + config into executable.
 // Wraps the binject_batch() C API. Handles temp file creation, cleanup,
 // and VFS mode detection (on-disk vs in-memory).
-bool InjectSeaAndVfs(const std::string& executable_path,
-                     const std::string& output_path,
-                     const std::vector<uint8_t>& sea_blob,
-                     const std::optional<std::string>& vfs_archive,
-                     const std::string& vfs_mode,
-                     const std::optional<std::vector<uint8_t>>& vfs_config_blob);
+bool InjectSeaAndVfs(
+    const std::string& executable_path, const std::string& output_path,
+    const std::vector<uint8_t>& sea_blob,
+    const std::optional<std::string>& vfs_archive, const std::string& vfs_mode,
+    const std::optional<std::vector<uint8_t>>& vfs_config_blob);
 
 // High-level: orchestrate the full SEA+VFS injection flow.
 // 1. If config has smol_vfs: prepare archive + serialize config
@@ -66,7 +65,7 @@ bool PrepareAndInjectSea(const SeaConfig& config,
                          const std::string& sea_config_path,
                          const std::vector<uint8_t>& sea_blob);
 
-}  // namespace sea
-}  // namespace node
+} // namespace sea
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_SEA_SMOL_SEA_INJECT_H_
+#endif // SRC_SOCKETSECURITY_SEA_SMOL_SEA_INJECT_H_

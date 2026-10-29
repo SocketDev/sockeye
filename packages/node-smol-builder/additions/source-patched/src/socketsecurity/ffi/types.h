@@ -63,8 +63,8 @@ enum class FFIType : uint8_t {
   kFloat32,
   kFloat64,
   kPointer,
-  kString,    // const char* — null-terminated
-  kBuffer,    // uint8_t* from Buffer/ArrayBuffer/TypedArray
+  kString, // const char* — null-terminated
+  kBuffer, // uint8_t* from Buffer/ArrayBuffer/TypedArray
 };
 
 // ============================================================================
@@ -72,16 +72,17 @@ enum class FFIType : uint8_t {
 // ============================================================================
 
 // Maximum number of parameters for a single FFI function.
-// In JS terms: if you try to call a C function with more than 16 args, it fails.
+// In JS terms: if you try to call a C function with more than 16 args, it
+// fails.
 static constexpr size_t kMaxFFIParams = 16;
 
 // Maximum number of JS callbacks that can be active as native function pointers
-// at the same time. Think of this as a fixed-size pool -- like having 64 parking
-// spaces for callbacks.
+// at the same time. Think of this as a fixed-size pool -- like having 64
+// parking spaces for callbacks.
 static constexpr size_t kMaxCallbackSlots = 64;
 
-// Describes a C function's calling convention: what it returns and what it takes.
-// In JS terms, this is like: { returnType: 'f64', paramTypes: ['f64'] }
+// Describes a C function's calling convention: what it returns and what it
+// takes. In JS terms, this is like: { returnType: 'f64', paramTypes: ['f64'] }
 // but stored as numeric enum values for fast comparison.
 struct FFISignature {
   FFIType return_type;
@@ -94,20 +95,20 @@ struct FFISignature {
 // `void*` is a raw memory address -- like a BigInt pointer in JS. It can
 // point to anything; C++ doesn't track what type it points to.
 struct FFILibrary {
-  void* handle;       // Platform-specific library handle (from uv_dlopen)
-  uint32_t id;        // Unique ID for JS reference
-  bool closed;        // Whether the library has been closed
+  void* handle; // Platform-specific library handle (from uv_dlopen)
+  uint32_t id;  // Unique ID for JS reference
+  bool closed;  // Whether the library has been closed
 };
 
 // Represents a resolved native function (like `sqrt` from libm).
 // In JS terms: the info behind the wrapper returned by `lib.func('sqrt', ...)`.
 // The `fn_ptr` is the actual memory address of the C function's machine code.
 struct FFIFunction {
-  void* fn_ptr;              // Raw function pointer from dlsym
-  uint32_t id;               // Unique ID for JS reference
-  uint32_t library_id;       // Owning library ID
-  FFISignature signature;    // Parameter and return type info
-  bool has_fast_path;        // Whether V8 fast call is available
+  void* fn_ptr;           // Raw function pointer from dlsym
+  uint32_t id;            // Unique ID for JS reference
+  uint32_t library_id;    // Owning library ID
+  FFISignature signature; // Parameter and return type info
+  bool has_fast_path;     // Whether V8 fast call is available
 };
 
 // Represents a JS callback exported as a native function pointer.
@@ -116,11 +117,11 @@ struct FFIFunction {
 // function. Uses a pre-allocated trampoline slot from a fixed pool -- no
 // runtime code generation, no platform-specific assembly.
 struct FFICallback {
-  uint32_t id;               // Unique ID for JS reference
-  uint32_t library_id;       // Owning library ID
-  uint32_t slot_index;       // Index into the trampoline slot pool
-  FFISignature signature;    // Parameter and return type info
-  bool alive;                // Whether the callback is still valid
+  uint32_t id;            // Unique ID for JS reference
+  uint32_t library_id;    // Owning library ID
+  uint32_t slot_index;    // Index into the trampoline slot pool
+  FFISignature signature; // Parameter and return type info
+  bool alive;             // Whether the callback is still valid
 };
 
 // ============================================================================
@@ -132,21 +133,36 @@ struct FFICallback {
 // This is needed to know how many bytes to copy when passing arguments to C.
 inline size_t FFITypeSize(FFIType type) {
   switch (type) {
-    case FFIType::kVoid:    return 0;
-    case FFIType::kBool:    return sizeof(bool);
-    case FFIType::kInt8:    return 1;
-    case FFIType::kUint8:   return 1;
-    case FFIType::kInt16:   return 2;
-    case FFIType::kUint16:  return 2;
-    case FFIType::kInt32:   return 4;
-    case FFIType::kUint32:  return 4;
-    case FFIType::kInt64:   return 8;
-    case FFIType::kUint64:  return 8;
-    case FFIType::kFloat32: return 4;
-    case FFIType::kFloat64: return 8;
-    case FFIType::kPointer: return sizeof(void*);
-    case FFIType::kString:  return sizeof(void*);
-    case FFIType::kBuffer:  return sizeof(void*);
+  case FFIType::kVoid:
+    return 0;
+  case FFIType::kBool:
+    return sizeof(bool);
+  case FFIType::kInt8:
+    return 1;
+  case FFIType::kUint8:
+    return 1;
+  case FFIType::kInt16:
+    return 2;
+  case FFIType::kUint16:
+    return 2;
+  case FFIType::kInt32:
+    return 4;
+  case FFIType::kUint32:
+    return 4;
+  case FFIType::kInt64:
+    return 8;
+  case FFIType::kUint64:
+    return 8;
+  case FFIType::kFloat32:
+    return 4;
+  case FFIType::kFloat64:
+    return 8;
+  case FFIType::kPointer:
+    return sizeof(void*);
+  case FFIType::kString:
+    return sizeof(void*);
+  case FFIType::kBuffer:
+    return sizeof(void*);
   }
   return 0;
 }
@@ -156,18 +172,18 @@ inline size_t FFITypeSize(FFIType type) {
 // pointers), skipping the overhead of boxing/unboxing JS values.
 inline bool FFITypeIsPrimitive(FFIType type) {
   switch (type) {
-    case FFIType::kVoid:
-    case FFIType::kBool:
-    case FFIType::kInt32:
-    case FFIType::kUint32:
-    case FFIType::kInt64:
-    case FFIType::kUint64:
-    case FFIType::kFloat32:
-    case FFIType::kFloat64:
-    case FFIType::kPointer:
-      return true;
-    default:
-      return false;
+  case FFIType::kVoid:
+  case FFIType::kBool:
+  case FFIType::kInt32:
+  case FFIType::kUint32:
+  case FFIType::kInt64:
+  case FFIType::kUint64:
+  case FFIType::kFloat32:
+  case FFIType::kFloat64:
+  case FFIType::kPointer:
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -180,29 +196,30 @@ inline bool FFITypeIsFloat(FFIType type) {
 
 // Whether a type is an integer or pointer. All of these can be passed in the
 // same CPU register (a general-purpose register), unlike floats. `uintptr_t`
-// is an unsigned integer big enough to hold any memory address on this platform.
+// is an unsigned integer big enough to hold any memory address on this
+// platform.
 inline bool FFITypeIsIntOrPtr(FFIType type) {
   switch (type) {
-    case FFIType::kBool:
-    case FFIType::kInt8:
-    case FFIType::kUint8:
-    case FFIType::kInt16:
-    case FFIType::kUint16:
-    case FFIType::kInt32:
-    case FFIType::kUint32:
-    case FFIType::kInt64:
-    case FFIType::kUint64:
-    case FFIType::kPointer:
-    case FFIType::kString:
-    case FFIType::kBuffer:
-      return true;
-    default:
-      return false;
+  case FFIType::kBool:
+  case FFIType::kInt8:
+  case FFIType::kUint8:
+  case FFIType::kInt16:
+  case FFIType::kUint16:
+  case FFIType::kInt32:
+  case FFIType::kUint32:
+  case FFIType::kInt64:
+  case FFIType::kUint64:
+  case FFIType::kPointer:
+  case FFIType::kString:
+  case FFIType::kBuffer:
+    return true;
+  default:
+    return false;
   }
 }
 
-}  // namespace ffi
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ffi
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_FFI_TYPES_H_
+#endif // SRC_SOCKETSECURITY_FFI_TYPES_H_

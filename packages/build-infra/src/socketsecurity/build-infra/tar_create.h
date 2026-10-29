@@ -26,7 +26,8 @@ extern "C" {
  * Create a TAR archive from a directory.
  *
  * @param dir_path      Path to the directory to archive
- * @param output        Pointer to receive allocated output buffer (caller must free)
+ * @param output        Pointer to receive allocated output buffer (caller must
+ * free)
  * @param output_size   Pointer to receive size of TAR archive
  * @return              TAR_OK on success, error code on failure
  *
@@ -34,21 +35,21 @@ extern "C" {
  * For example, if dir_path is "/foo/bar" and contains "baz/file.txt",
  * the archive will contain "baz/file.txt" (not "/foo/bar/baz/file.txt").
  */
-int tar_create_from_directory(const char *dir_path,
-                              uint8_t **output, size_t *output_size);
+int tar_create_from_directory(const char* dir_path, uint8_t** output,
+                              size_t* output_size);
 
 /**
  * Create a gzipped TAR archive (.tar.gz) from a directory.
  *
  * @param dir_path      Path to the directory to archive
- * @param output        Pointer to receive allocated output buffer (caller must free)
+ * @param output        Pointer to receive allocated output buffer (caller must
+ * free)
  * @param output_size   Pointer to receive size of compressed archive
  * @param level         Compression level (1=fastest, 6=default, 9=best)
  * @return              TAR_OK on success, error code on failure
  */
-int tar_gz_create_from_directory(const char *dir_path,
-                                 uint8_t **output, size_t *output_size,
-                                 int level);
+int tar_gz_create_from_directory(const char* dir_path, uint8_t** output,
+                                 size_t* output_size, int level);
 
 #ifdef __cplusplus
 }

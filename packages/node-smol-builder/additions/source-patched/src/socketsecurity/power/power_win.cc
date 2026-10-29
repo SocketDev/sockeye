@@ -30,6 +30,6 @@ bool IsOnAcPowerImpl() {
   return true;
 }
 
-}  // namespace power
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace power
+} // namespace socketsecurity
+} // namespace node

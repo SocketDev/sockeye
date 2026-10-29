@@ -11,7 +11,8 @@
 //   2. socket-btm smol JS impl (manifest.js parseCargoLock — actually
 //      not present in smol JS, so socket-lib is the direct reference)
 //   3. socket-sdxgen/src/parsers/cargo/index.mts — algorithm oracle
-//   4. cdxgen v11.11.0 — https://github.com/CycloneDX/cdxgen/blob/v11.11.0/lib/parsers/rust.js
+//   4. cdxgen v11.11.0 —
+//   https://github.com/CycloneDX/cdxgen/blob/v11.11.0/lib/parsers/rust.js
 //   5. Cargo's own lockfile writer:
 //        https://github.com/rust-lang/cargo/tree/master/src/cargo/core/resolver/encode.rs
 //        https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
@@ -29,14 +30,12 @@ namespace node {
 namespace socketsecurity {
 namespace manifest {
 
-bool ParseCargoLock(std::string_view content,
-                    ParseContext* ctx,
-                    ParsedLockfile* out,
-                    ParseError* err);
+bool ParseCargoLock(std::string_view content, ParseContext* ctx,
+                    ParsedLockfile* out, ParseError* err);
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_PARSER_CARGO_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_PARSER_CARGO_H_

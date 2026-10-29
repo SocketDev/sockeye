@@ -34,19 +34,18 @@ using v8::String;
 using v8::Uint32;
 using v8::Value;
 
-static const char* kParamKeys[] = {
-  "0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15"
-};
-static const size_t kParamKeyLens[] = {
-  1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2
-};
+static const char* kParamKeys[] = {"0",  "1",  "2",  "3", "4",  "5",
+                                   "6",  "7",  "8",  "9", "10", "11",
+                                   "12", "13", "14", "15"};
+static const size_t kParamKeyLens[] = {1, 1, 1, 1, 1, 1, 1, 1,
+                                       1, 1, 2, 2, 2, 2, 2, 2};
 
 // Mirrors internal/socketsecurity/http/constants.js HTTP_413_BODY — this
 // path is native so it can respond before the (never-invoked) JS handler
 // would otherwise run; keep the two literals in sync by hand.
 static const char kPayloadTooLargeBody[] =
-  "{\"error\":\"Payload Too Large\",\"message\":\"Request body exceeds "
-  "maxBodySize limit\"}";
+    "{\"error\":\"Payload Too Large\",\"message\":\"Request body exceeds "
+    "maxBodySize limit\"}";
 
 // Native request-object methods -- read the already-buffered "body" string
 // property (set by FinishDynamicRequest before the JS handler is invoked)
@@ -59,12 +58,14 @@ static void ReqText(const FunctionCallbackInfo<Value>& args) {
 
   Local<Value> body_val;
   if (!self->Get(context, FIXED_ONE_BYTE_STRING(isolate, "body"))
-          .ToLocal(&body_val) || !body_val->IsString()) {
+           .ToLocal(&body_val) ||
+      !body_val->IsString()) {
     body_val = String::Empty(isolate);
   }
 
   Local<Promise::Resolver> resolver;
-  if (!Promise::Resolver::New(context).ToLocal(&resolver)) return;
+  if (!Promise::Resolver::New(context).ToLocal(&resolver))
+    return;
   resolver->Resolve(context, body_val).Check();
   args.GetReturnValue().Set(resolver->GetPromise());
 }
@@ -76,12 +77,14 @@ static void ReqJson(const FunctionCallbackInfo<Value>& args) {
 
   Local<Value> body_val;
   if (!self->Get(context, FIXED_ONE_BYTE_STRING(isolate, "body"))
-          .ToLocal(&body_val) || !body_val->IsString()) {
+           .ToLocal(&body_val) ||
+      !body_val->IsString()) {
     body_val = String::Empty(isolate);
   }
 
   Local<Promise::Resolver> resolver;
-  if (!Promise::Resolver::New(context).ToLocal(&resolver)) return;
+  if (!Promise::Resolver::New(context).ToLocal(&resolver))
+    return;
 
   // v8::JSON::Parse throws a pending SyntaxError on the isolate when the
   // body isn't valid JSON. Catch it locally (don't ReThrow) and use the
@@ -92,10 +95,12 @@ static void ReqJson(const FunctionCallbackInfo<Value>& args) {
   if (v8::JSON::Parse(context, body_val.As<String>()).ToLocal(&parsed)) {
     resolver->Resolve(context, parsed).Check();
   } else {
-    Local<Value> exception = try_catch.HasCaught()
-      ? try_catch.Exception()
-      : v8::Exception::SyntaxError(
-          FIXED_ONE_BYTE_STRING(isolate, "Unexpected token in JSON")).As<Value>();
+    Local<Value> exception =
+        try_catch.HasCaught()
+            ? try_catch.Exception()
+            : v8::Exception::SyntaxError(
+                  FIXED_ONE_BYTE_STRING(isolate, "Unexpected token in JSON"))
+                  .As<Value>();
     resolver->Reject(context, exception).Check();
   }
   args.GetReturnValue().Set(resolver->GetPromise());
@@ -108,7 +113,8 @@ static void ReqArrayBuffer(const FunctionCallbackInfo<Value>& args) {
 
   Local<Value> body_val;
   if (!self->Get(context, FIXED_ONE_BYTE_STRING(isolate, "body"))
-          .ToLocal(&body_val) || !body_val->IsString()) {
+           .ToLocal(&body_val) ||
+      !body_val->IsString()) {
     body_val = String::Empty(isolate);
   }
 
@@ -125,8 +131,8 @@ static void ReqArrayBuffer(const FunctionCallbackInfo<Value>& args) {
   // the isolate (the same "never let request input abort the process"
   // rule the ToLocal guards elsewhere in this file follow).
   std::unique_ptr<v8::BackingStore> store = ArrayBuffer::NewBackingStore(
-    isolate, len, v8::BackingStoreInitializationMode::kZeroInitialized,
-    v8::BackingStoreOnFailureMode::kReturnNull);
+      isolate, len, v8::BackingStoreInitializationMode::kZeroInitialized,
+      v8::BackingStoreOnFailureMode::kReturnNull);
   if (!store) {
     args.GetReturnValue().Set(ArrayBuffer::New(isolate, 0));
     return;
@@ -137,7 +143,6 @@ static void ReqArrayBuffer(const FunctionCallbackInfo<Value>& args) {
   Local<ArrayBuffer> buf = ArrayBuffer::New(isolate, std::move(store));
   args.GetReturnValue().Set(buf);
 }
-
 
 // ============================================================================
 // Lifecycle
@@ -212,13 +217,13 @@ void UwsServer::Stop() {
   }
 }
 
-
 // ============================================================================
 // Static response caching — call handler once, cache result forever
 // ============================================================================
 
 void UwsServer::TryMakeStatic(uint32_t handler_id) {
-  if (handler_needs_req_[handler_id]) return;
+  if (handler_needs_req_[handler_id])
+    return;
 
   Isolate* isolate = env_->isolate();
   HandleScope scope(isolate);
@@ -228,7 +233,7 @@ void UwsServer::TryMakeStatic(uint32_t handler_id) {
 
   Local<Value> result;
   if (!handler->Call(context, v8::Undefined(isolate), 0, nullptr)
-        .ToLocal(&result)) {
+           .ToLocal(&result)) {
     return;
   }
 
@@ -247,7 +252,7 @@ void UwsServer::TryMakeStatic(uint32_t handler_id) {
     // "\u{1F600}hello" served an empty 200 — latched forever because
     // the handler is never re-invoked on is_static routes.
     if (body_len <= 0 || !str->IsOneByte() || body_len > 16384) {
-      return;  // Leave is_static = false; dynamic path handles it.
+      return; // Leave is_static = false; dynamic path handles it.
     }
 
     // Pre-assemble the COMPLETE HTTP response: status + headers + body.
@@ -271,13 +276,12 @@ void UwsServer::TryMakeStatic(uint32_t handler_id) {
   }
 }
 
-
 // ============================================================================
 // Route registration
 // ============================================================================
 
 void UwsServer::AddRoute(const char* method, const char* pattern,
-                          uint32_t handler_id) {
+                         uint32_t handler_id) {
   UwsServer* server = this;
   auto handler = [server, handler_id](auto* res, auto* req) {
     HandleRequest(res, req, server, handler_id);
@@ -316,12 +320,11 @@ int UwsServer::Listen(const char* host, int port) {
   app_->listen(host, port, [&actual_port, this](auto* socket) {
     if (socket) {
       listen_socket_ = socket;
-      actual_port = us_socket_local_port(0, (struct us_socket_t*) socket);
+      actual_port = us_socket_local_port(0, (struct us_socket_t*)socket);
     }
   });
   return actual_port;
 }
-
 
 // ============================================================================
 // HandleRequest — THE HOT PATH
@@ -333,9 +336,8 @@ int UwsServer::Listen(const char* host, int port) {
 // ============================================================================
 
 void UwsServer::HandleRequest(uWS::HttpResponse<false>* res,
-                               uWS::HttpRequest* req,
-                               UwsServer* server,
-                               uint32_t handler_id) {
+                              uWS::HttpRequest* req, UwsServer* server,
+                              uint32_t handler_id) {
   if (handler_id >= server->handler_count_) {
     res->cork([res]() { res->writeStatus("404 Not Found")->end(""); });
     return;
@@ -349,7 +351,7 @@ void UwsServer::HandleRequest(uWS::HttpResponse<false>* res,
     res->cork([res, &sr]() {
       // Smuggle Content-Type into writeStatus to save 4 write calls.
       // Use the detected content type (text/plain or application/json).
-      if (sr.content_type[0] == 'a') {  // "application/json"
+      if (sr.content_type[0] == 'a') { // "application/json"
         res->writeStatus("200 OK\r\nContent-Type: application/json");
       } else {
         res->writeStatus("200 OK\r\nContent-Type: text/plain");
@@ -363,11 +365,9 @@ void UwsServer::HandleRequest(uWS::HttpResponse<false>* res,
   HandleDynamicRequest(res, req, server, handler_id);
 }
 
-
 void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
-                                      uWS::HttpRequest* req,
-                                      UwsServer* server,
-                                      uint32_t handler_id) {
+                                     uWS::HttpRequest* req, UwsServer* server,
+                                     uint32_t handler_id) {
   Environment* env = server->env();
   Isolate* isolate = env->isolate();
   HandleScope scope(isolate);
@@ -378,10 +378,9 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     Local<Function> handler = server->handler_map_[handler_id].Get(isolate);
     Local<Value> result;
     if (!handler->Call(context, v8::Undefined(isolate), 0, nullptr)
-          .ToLocal(&result)) {
-      res->cork([res]() {
-        res->writeStatus("500 Internal Server Error")->end("");
-      });
+             .ToLocal(&result)) {
+      res->cork(
+          [res]() { res->writeStatus("500 Internal Server Error")->end(""); });
       return;
     }
     WriteResponse(res, result, isolate);
@@ -398,12 +397,10 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     // NewFromUtf8 guards below and the R19/R20/R23 fixes across this
     // file, but on a different V8 API the R26 gate didn't yet cover.
     Local<Object> js_req;
-    if (!server->req_template_.Get(isolate)
-              ->NewInstance(context)
-              .ToLocal(&js_req)) {
-      res->cork([res]() {
-        res->writeStatus("500 Internal Server Error")->end("");
-      });
+    if (!server->req_template_.Get(isolate)->NewInstance(context).ToLocal(
+            &js_req)) {
+      res->cork(
+          [res]() { res->writeStatus("500 Internal Server Error")->end(""); });
       return;
     }
 
@@ -451,13 +448,13 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
       // is the only conformant reconstruction available here.
       std::string upper(mdata, mlen);
       for (size_t i = 0; i < mlen; i++) {
-        if (upper[i] >= 'a' && upper[i] <= 'z') upper[i] -= 32;
+        if (upper[i] >= 'a' && upper[i] <= 'z')
+          upper[i] -= 32;
       }
       if (!String::NewFromUtf8(isolate, upper.data(), NewStringType::kNormal,
-            static_cast<int>(mlen)).ToLocal(&method_str)) {
-        res->cork([res]() {
-          res->writeStatus("400 Bad Request")->end("");
-        });
+                               static_cast<int>(mlen))
+               .ToLocal(&method_str)) {
+        res->cork([res]() { res->writeStatus("400 Bad Request")->end(""); });
         return;
       }
     }
@@ -467,11 +464,11 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     std::string_view url = req->getUrl();
     Local<String> url_str;
     if (!String::NewFromUtf8(isolate, url.data(),
-          url.length() <= 16 ? NewStringType::kInternalized : NewStringType::kNormal,
-          url.length()).ToLocal(&url_str)) {
-      res->cork([res]() {
-        res->writeStatus("400 Bad Request")->end("");
-      });
+                             url.length() <= 16 ? NewStringType::kInternalized
+                                                : NewStringType::kNormal,
+                             url.length())
+             .ToLocal(&url_str)) {
+      res->cork([res]() { res->writeStatus("400 Bad Request")->end(""); });
       return;
     }
     js_req->Set(context, server->str_pathname_.Get(isolate), url_str).Check();
@@ -481,10 +478,9 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     if (query.length() > 0) {
       Local<String> query_str;
       if (!String::NewFromUtf8(isolate, query.data(), NewStringType::kNormal,
-              query.length()).ToLocal(&query_str)) {
-        res->cork([res]() {
-          res->writeStatus("400 Bad Request")->end("");
-        });
+                               query.length())
+               .ToLocal(&query_str)) {
+        res->cork([res]() { res->writeStatus("400 Bad Request")->end(""); });
         return;
       }
       js_req->Set(context, server->str_query_.Get(isolate), query_str).Check();
@@ -495,26 +491,37 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     if (!first_param.empty()) {
       Local<Object> params = Object::New(isolate);
       Local<String> first_param_str;
-      if (String::NewFromUtf8(isolate, first_param.data(), NewStringType::kNormal,
-              first_param.length()).ToLocal(&first_param_str)) {
-        params->Set(context,
-          String::NewFromUtf8(isolate, kParamKeys[0], NewStringType::kInternalized,
-                              kParamKeyLens[0]).ToLocalChecked(),
-          first_param_str).Check();
+      if (String::NewFromUtf8(isolate, first_param.data(),
+                              NewStringType::kNormal, first_param.length())
+              .ToLocal(&first_param_str)) {
+        params
+            ->Set(context,
+                  String::NewFromUtf8(isolate, kParamKeys[0],
+                                      NewStringType::kInternalized,
+                                      kParamKeyLens[0])
+                      .ToLocalChecked(),
+                  first_param_str)
+            .Check();
       }
       for (unsigned int i = 1; i < 16; i++) {
         std::string_view param = req->getParameter(i);
-        if (param.empty()) break;
+        if (param.empty())
+          break;
         Local<String> param_str;
         if (!String::NewFromUtf8(isolate, param.data(), NewStringType::kNormal,
-                param.length()).ToLocal(&param_str)) {
+                                 param.length())
+                 .ToLocal(&param_str)) {
           // Skip this single malformed param — don't kill the request.
           continue;
         }
-        params->Set(context,
-          String::NewFromUtf8(isolate, kParamKeys[i], NewStringType::kInternalized,
-                              kParamKeyLens[i]).ToLocalChecked(),
-          param_str).Check();
+        params
+            ->Set(context,
+                  String::NewFromUtf8(isolate, kParamKeys[i],
+                                      NewStringType::kInternalized,
+                                      kParamKeyLens[i])
+                      .ToLocalChecked(),
+                  param_str)
+            .Check();
       }
       js_req->Set(context, server->str_params_.Get(isolate), params).Check();
     }
@@ -530,13 +537,11 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
     auto body_buf = std::make_shared<std::string>();
     size_t max_body_size = server->max_body_size_;
 
-    res->onAborted([aborted]() {
-      *aborted = true;
-    });
+    res->onAborted([aborted]() { *aborted = true; });
 
     res->onData([res, server, handler_id, aborted, body_buf, max_body_size,
-                 js_req_global = Global<Object>(isolate, js_req)]
-                (std::string_view chunk, bool last) mutable {
+                 js_req_global = Global<Object>(isolate, js_req)](
+                    std::string_view chunk, bool last) mutable {
       if (*aborted) {
         return;
       }
@@ -545,8 +550,8 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
           *aborted = true;
           res->cork([res]() {
             res->writeStatus(
-                  "413 Payload Too Large\r\nContent-Type: application/json")
-               ->end(std::string_view(kPayloadTooLargeBody));
+                   "413 Payload Too Large\r\nContent-Type: application/json")
+                ->end(std::string_view(kPayloadTooLargeBody));
           });
           return;
         }
@@ -555,22 +560,20 @@ void UwsServer::HandleDynamicRequest(uWS::HttpResponse<false>* res,
       if (!last) {
         return;
       }
-      FinishDynamicRequest(res, server, handler_id,
-                            std::move(js_req_global), std::move(*body_buf));
+      FinishDynamicRequest(res, server, handler_id, std::move(js_req_global),
+                           std::move(*body_buf));
     });
   }
 }
-
 
 // ============================================================================
 // FinishDynamicRequest — body fully buffered, invoke the handler
 // ============================================================================
 
 void UwsServer::FinishDynamicRequest(uWS::HttpResponse<false>* res,
-                                      UwsServer* server,
-                                      uint32_t handler_id,
-                                      Global<Object>&& js_req_global,
-                                      std::string&& body) {
+                                     UwsServer* server, uint32_t handler_id,
+                                     Global<Object>&& js_req_global,
+                                     std::string&& body) {
   Environment* env = server->env();
   Isolate* isolate = env->isolate();
   HandleScope scope(isolate);
@@ -581,40 +584,35 @@ void UwsServer::FinishDynamicRequest(uWS::HttpResponse<false>* res,
   Local<String> body_str;
   if (body.empty()) {
     body_str = server->str_empty_.Get(isolate);
-  } else if (!String::NewFromUtf8(isolate, body.data(),
-        NewStringType::kNormal, static_cast<int>(body.size()))
-        .ToLocal(&body_str)) {
+  } else if (!String::NewFromUtf8(isolate, body.data(), NewStringType::kNormal,
+                                  static_cast<int>(body.size()))
+                  .ToLocal(&body_str)) {
     // Invalid UTF-8 body — same 400 contract as the malformed-input guards
     // above (never ToLocalChecked user-controlled bytes into a V8 string).
-    res->cork([res]() {
-      res->writeStatus("400 Bad Request")->end("");
-    });
+    res->cork([res]() { res->writeStatus("400 Bad Request")->end(""); });
     return;
   }
   js_req->Set(context, server->str_body_.Get(isolate), body_str).Check();
 
   Local<Function> handler = server->handler_map_[handler_id].Get(isolate);
-  Local<Value> handler_args[] = { js_req };
+  Local<Value> handler_args[] = {js_req};
   Local<Value> result;
   if (!handler->Call(context, v8::Undefined(isolate), 1, handler_args)
-        .ToLocal(&result)) {
-    res->cork([res]() {
-      res->writeStatus("500 Internal Server Error")->end("");
-    });
+           .ToLocal(&result)) {
+    res->cork(
+        [res]() { res->writeStatus("500 Internal Server Error")->end(""); });
     return;
   }
 
   WriteResponse(res, result, isolate);
 }
 
-
 // ============================================================================
 // WriteResponse
 // ============================================================================
 
 void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
-                               Local<Value> response,
-                               Isolate* isolate) {
+                              Local<Value> response, Isolate* isolate) {
   res->cork([&]() {
     if (response->IsUndefined() || response->IsNull()) {
       res->writeStatus("404 Not Found")->end("");
@@ -635,7 +633,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
           uint8_t buf[256];
           str->WriteOneByteV2(isolate, 0, len, buf);
           res->writeStatus("200 OK\r\nContent-Type: text/plain")
-             ->end(std::string_view(reinterpret_cast<char*>(buf), len));
+              ->end(std::string_view(reinterpret_cast<char*>(buf), len));
         } else {
           // Under memory pressure the internal Utf8Value allocation
           // can fail; *text becomes nullptr. Passing nullptr into
@@ -648,7 +646,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
             return;
           }
           res->writeStatus("200 OK\r\nContent-Type: text/plain")
-             ->end(std::string_view(*text, text.length()));
+              ->end(std::string_view(*text, text.length()));
         }
       } else {
         String::Utf8Value text(isolate, response);
@@ -657,7 +655,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
           return;
         }
         res->writeStatus("200 OK\r\nContent-Type: text/plain")
-           ->end(std::string_view(*text, text.length()));
+            ->end(std::string_view(*text, text.length()));
       }
       return;
     }
@@ -667,7 +665,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
         const char* data = Buffer::Data(response);
         size_t blen = Buffer::Length(response);
         res->writeStatus("200 OK\r\nContent-Type: application/octet-stream")
-           ->end(std::string_view(data, blen));
+            ->end(std::string_view(data, blen));
         return;
       }
 
@@ -732,7 +730,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
           uint8_t buf[256];
           jstr->WriteOneByteV2(isolate, 0, jlen, buf);
           res->writeStatus("200 OK\r\nContent-Type: application/json")
-             ->end(std::string_view(reinterpret_cast<char*>(buf), jlen));
+              ->end(std::string_view(reinterpret_cast<char*>(buf), jlen));
         } else {
           // Strings > 256 chars can exceed any fixed stack buffer. Use
           // Utf8Value so large responses aren't silently truncated at the
@@ -744,7 +742,7 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
             return;
           }
           res->writeStatus("200 OK\r\nContent-Type: application/json")
-             ->end(std::string_view(*body, body.length()));
+              ->end(std::string_view(*body, body.length()));
         }
         return;
       }
@@ -753,7 +751,6 @@ void UwsServer::WriteResponse(uWS::HttpResponse<false>* res,
     res->writeStatus("500 Internal Server Error")->end("");
   });
 }
-
 
 // ============================================================================
 // V8 Bindings
@@ -769,9 +766,8 @@ void CreateUwsServer(const FunctionCallbackInfo<Value>& args) {
   UwsServer* server = UwsServer::Create(env);
   if (server == nullptr) {
     Isolate* isolate = env->isolate();
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to create UwsServer")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to create UwsServer")));
     return;
   }
   // maxBodySize — JS is the single source of truth for the default
@@ -790,10 +786,10 @@ void CreateUwsServer(const FunctionCallbackInfo<Value>& args) {
 void UwsServerAddRoute(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
   Isolate* isolate = env->isolate();
-  if (args.Length() < 5 || !args[0]->IsExternal()) return;
+  if (args.Length() < 5 || !args[0]->IsExternal())
+    return;
 
-  UwsServer* server = static_cast<UwsServer*>(
-    args[0].As<External>()->Value());
+  UwsServer* server = static_cast<UwsServer*>(args[0].As<External>()->Value());
 
   String::Utf8Value method(isolate, args[1]);
   String::Utf8Value pattern(isolate, args[2]);
@@ -801,10 +797,13 @@ void UwsServerAddRoute(const FunctionCallbackInfo<Value>& args) {
   // to the C-string AddRoute would crash in strcmp. Silently fail the
   // registration (matches the other "malformed input" early returns
   // in this entrypoint).
-  if (*method == nullptr || *pattern == nullptr) return;
-  if (!args[3]->IsUint32()) return;
+  if (*method == nullptr || *pattern == nullptr)
+    return;
+  if (!args[3]->IsUint32())
+    return;
   uint32_t handler_id = args[3].As<Uint32>()->Value();
-  if (!args[4]->IsFunction()) return;
+  if (!args[4]->IsFunction())
+    return;
 
   // Reject handler_id >= 256 loudly. Previously this silently skipped
   // handler registration but still called AddRoute, attaching a route
@@ -814,9 +813,8 @@ void UwsServerAddRoute(const FunctionCallbackInfo<Value>& args) {
   // overflow routes silently 404; local tests with fewer routes never
   // caught it.
   if (handler_id >= 256) {
-    isolate->ThrowException(v8::Exception::RangeError(
-        FIXED_ONE_BYTE_STRING(
-            isolate, "Too many routes (max 256 per uWS server)")));
+    isolate->ThrowException(v8::Exception::RangeError(FIXED_ONE_BYTE_STRING(
+        isolate, "Too many routes (max 256 per uWS server)")));
     return;
   }
 
@@ -828,8 +826,7 @@ void UwsServerAddRoute(const FunctionCallbackInfo<Value>& args) {
   Local<Value> length_val;
   if (fn->Get(env->context(), FIXED_ONE_BYTE_STRING(isolate, "length"))
           .ToLocal(&length_val) &&
-      length_val->IsInt32() &&
-      length_val.As<Int32>()->Value() == 0) {
+      length_val->IsInt32() && length_val.As<Int32>()->Value() == 0) {
     server->handler_needs_req_[handler_id] = false;
   }
 
@@ -844,10 +841,10 @@ void UwsServerAddRoute(const FunctionCallbackInfo<Value>& args) {
 
 void UwsServerListen(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  if (args.Length() < 3 || !args[0]->IsExternal()) return;
+  if (args.Length() < 3 || !args[0]->IsExternal())
+    return;
 
-  UwsServer* server = static_cast<UwsServer*>(
-    args[0].As<External>()->Value());
+  UwsServer* server = static_cast<UwsServer*>(args[0].As<External>()->Value());
 
   String::Utf8Value host(isolate, args[1]);
   if (*host == nullptr) {
@@ -866,13 +863,13 @@ void UwsServerListen(const FunctionCallbackInfo<Value>& args) {
 }
 
 void UwsServerStop(const FunctionCallbackInfo<Value>& args) {
-  if (args.Length() < 1 || !args[0]->IsExternal()) return;
-  UwsServer* server = static_cast<UwsServer*>(
-    args[0].As<External>()->Value());
+  if (args.Length() < 1 || !args[0]->IsExternal())
+    return;
+  UwsServer* server = static_cast<UwsServer*>(args[0].As<External>()->Value());
   server->Stop();
 }
 
-}  // namespace smol_http
-}  // namespace node
+} // namespace smol_http
+} // namespace node
 
 #pragma GCC diagnostic pop

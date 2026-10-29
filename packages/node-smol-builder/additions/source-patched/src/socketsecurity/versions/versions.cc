@@ -37,9 +37,7 @@ inline bool IsAsciiDigit(char c) { return c >= '0' && c <= '9'; }
 // Predicate: is `c` allowed inside a semver identifier? (digits,
 // letters, hyphen — everything else terminates the span)
 inline bool IsIdentifierChar(char c) {
-  return IsAsciiDigit(c) ||
-         (c >= 'A' && c <= 'Z') ||
-         (c >= 'a' && c <= 'z') ||
+  return IsAsciiDigit(c) || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
          c == '-';
 }
 
@@ -89,8 +87,8 @@ bool ParseNumericIdent(const char* s, size_t len, uint64_t* out) {
 //   - Numeric vs numeric: numerically.
 //   - Alphanumeric vs alphanumeric: lexically.
 //   - Numeric vs alphanumeric: numeric is less.
-int CompareIdentifier(const char* a, size_t a_len,
-                      const char* b, size_t b_len) {
+int CompareIdentifier(const char* a, size_t a_len, const char* b,
+                      size_t b_len) {
   bool a_numeric = IsNumericIdentifier(a, a_len);
   bool b_numeric = IsNumericIdentifier(b, b_len);
   if (a_numeric && b_numeric) {
@@ -107,8 +105,10 @@ int CompareIdentifier(const char* a, size_t a_len,
       int cmp = std::memcmp(a, b, a_len);
       return cmp < 0 ? -1 : cmp > 0 ? 1 : 0;
     }
-    if (av < bv) return -1;
-    if (av > bv) return 1;
+    if (av < bv)
+      return -1;
+    if (av > bv)
+      return 1;
     return 0;
   }
   if (a_numeric) {
@@ -134,24 +134,29 @@ int CompareIdentifier(const char* a, size_t a_len,
 // Compare two prerelease spans identifier-by-identifier.
 // Empty prerelease beats non-empty per spec § 11 (a normal version
 // has higher precedence than a prerelease).
-int ComparePrerelease(const char* a, size_t a_len,
-                      const char* b, size_t b_len) {
+int ComparePrerelease(const char* a, size_t a_len, const char* b,
+                      size_t b_len) {
   // Empty (no prerelease) vs non-empty: empty is greater.
-  if (a_len == 0 && b_len == 0) return 0;
-  if (a_len == 0) return 1;
-  if (b_len == 0) return -1;
+  if (a_len == 0 && b_len == 0)
+    return 0;
+  if (a_len == 0)
+    return 1;
+  if (b_len == 0)
+    return -1;
 
   size_t a_pos = 0;
   size_t b_pos = 0;
   while (a_pos < a_len && b_pos < b_len) {
     // Find the next dot (or end) in each side.
     size_t a_end = a_pos;
-    while (a_end < a_len && a[a_end] != '.') a_end++;
+    while (a_end < a_len && a[a_end] != '.')
+      a_end++;
     size_t b_end = b_pos;
-    while (b_end < b_len && b[b_end] != '.') b_end++;
+    while (b_end < b_len && b[b_end] != '.')
+      b_end++;
 
-    int cmp = CompareIdentifier(a + a_pos, a_end - a_pos,
-                                b + b_pos, b_end - b_pos);
+    int cmp =
+        CompareIdentifier(a + a_pos, a_end - a_pos, b + b_pos, b_end - b_pos);
     if (cmp != 0) {
       return cmp;
     }
@@ -159,21 +164,22 @@ int ComparePrerelease(const char* a, size_t a_len,
     b_pos = b_end < b_len ? b_end + 1 : b_end;
   }
   // One ran out: the one with more identifiers wins.
-  if (a_pos < a_len) return 1;
-  if (b_pos < b_len) return -1;
+  if (a_pos < a_len)
+    return 1;
+  if (b_pos < b_len)
+    return -1;
   return 0;
 }
 
 // Skip ASCII whitespace.
 inline void SkipWs(const char* s, size_t len, size_t* p) {
-  while (*p < len &&
-         (s[*p] == ' ' || s[*p] == '\t' || s[*p] == '\r' ||
-          s[*p] == '\n' || s[*p] == '\f' || s[*p] == '\v')) {
+  while (*p < len && (s[*p] == ' ' || s[*p] == '\t' || s[*p] == '\r' ||
+                      s[*p] == '\n' || s[*p] == '\f' || s[*p] == '\v')) {
     (*p)++;
   }
 }
 
-}  // namespace
+} // namespace
 
 // Parse a version: [v|=]MAJOR.MINOR.PATCH[-PRE][+BUILD], optionally
 // surrounded by whitespace in loose mode.
@@ -185,38 +191,46 @@ bool ParseSemVer(const char* source, size_t len, bool loose, SemVer* out) {
   if (loose) {
     SkipWs(source, len, &p);
     // Accept leading 'v' or '='.
-    if (p < len && (source[p] == 'v' || source[p] == 'V' ||
-                    source[p] == '=')) {
+    if (p < len && (source[p] == 'v' || source[p] == 'V' || source[p] == '=')) {
       p++;
       // After '=v' allow another whitespace skip in loose mode.
-      if (loose) SkipWs(source, len, &p);
+      if (loose)
+        SkipWs(source, len, &p);
     }
   }
 
   // MAJOR.
   size_t start = p;
-  while (p < len && IsAsciiDigit(source[p])) p++;
-  if (p == start) return false;
+  while (p < len && IsAsciiDigit(source[p]))
+    p++;
+  if (p == start)
+    return false;
   if (!ParseNumericIdent(source + start, p - start, &out->major)) {
     return false;
   }
-  if (p >= len || source[p] != '.') return false;
+  if (p >= len || source[p] != '.')
+    return false;
   p++;
 
   // MINOR.
   start = p;
-  while (p < len && IsAsciiDigit(source[p])) p++;
-  if (p == start) return false;
+  while (p < len && IsAsciiDigit(source[p]))
+    p++;
+  if (p == start)
+    return false;
   if (!ParseNumericIdent(source + start, p - start, &out->minor)) {
     return false;
   }
-  if (p >= len || source[p] != '.') return false;
+  if (p >= len || source[p] != '.')
+    return false;
   p++;
 
   // PATCH.
   start = p;
-  while (p < len && IsAsciiDigit(source[p])) p++;
-  if (p == start) return false;
+  while (p < len && IsAsciiDigit(source[p]))
+    p++;
+  if (p == start)
+    return false;
   if (!ParseNumericIdent(source + start, p - start, &out->patch)) {
     return false;
   }
@@ -236,7 +250,8 @@ bool ParseSemVer(const char* source, size_t len, bool loose, SemVer* out) {
       }
     }
     out->prerelease_len = p - pre_start;
-    if (out->prerelease_len == 0) return false;
+    if (out->prerelease_len == 0)
+      return false;
     // Validate per identifier: numerics no leading zeros (we handle
     // that during compare via ParseNumericIdent's strict mode).
     // No empty identifiers: ".foo" or "foo." or "a..b" are invalid.
@@ -264,9 +279,9 @@ bool ParseSemVer(const char* source, size_t len, bool loose, SemVer* out) {
       }
     }
     out->build_len = p - build_start;
-    if (out->build_len == 0) return false;
-    if (out->build[0] == '.' ||
-        out->build[out->build_len - 1] == '.') {
+    if (out->build_len == 0)
+      return false;
+    if (out->build[0] == '.' || out->build[out->build_len - 1] == '.') {
       return false;
     }
     for (size_t i = 1; i < out->build_len; ++i) {
@@ -279,18 +294,22 @@ bool ParseSemVer(const char* source, size_t len, bool loose, SemVer* out) {
   if (loose) {
     SkipWs(source, len, &p);
   }
-  if (p != len) return false;
+  if (p != len)
+    return false;
 
   out->valid = true;
   return true;
 }
 
 int CompareSemVer(const SemVer& a, const SemVer& b) {
-  if (a.major != b.major) return a.major < b.major ? -1 : 1;
-  if (a.minor != b.minor) return a.minor < b.minor ? -1 : 1;
-  if (a.patch != b.patch) return a.patch < b.patch ? -1 : 1;
-  return ComparePrerelease(a.prerelease, a.prerelease_len,
-                           b.prerelease, b.prerelease_len);
+  if (a.major != b.major)
+    return a.major < b.major ? -1 : 1;
+  if (a.minor != b.minor)
+    return a.minor < b.minor ? -1 : 1;
+  if (a.patch != b.patch)
+    return a.patch < b.patch ? -1 : 1;
+  return ComparePrerelease(a.prerelease, a.prerelease_len, b.prerelease,
+                           b.prerelease_len);
 }
 
 namespace {
@@ -319,15 +338,13 @@ namespace {
 // Trim leading/trailing whitespace from a span; returns adjusted
 // pointer + length.
 inline void TrimWs(const char** s, size_t* len) {
-  while (*len > 0 &&
-         ((*s)[0] == ' ' || (*s)[0] == '\t' || (*s)[0] == '\r' ||
-          (*s)[0] == '\n')) {
+  while (*len > 0 && ((*s)[0] == ' ' || (*s)[0] == '\t' || (*s)[0] == '\r' ||
+                      (*s)[0] == '\n')) {
     (*s)++;
     (*len)--;
   }
-  while (*len > 0 &&
-         ((*s)[*len - 1] == ' ' || (*s)[*len - 1] == '\t' ||
-          (*s)[*len - 1] == '\r' || (*s)[*len - 1] == '\n')) {
+  while (*len > 0 && ((*s)[*len - 1] == ' ' || (*s)[*len - 1] == '\t' ||
+                      (*s)[*len - 1] == '\r' || (*s)[*len - 1] == '\n')) {
     (*len)--;
   }
 }
@@ -357,23 +374,30 @@ bool ParsePartial(const char* s, size_t len, Partial* out) {
   }
   size_t p = 0;
   // Strip leading 'v' / '='.
-  if (p < len && (s[p] == 'v' || s[p] == 'V' || s[p] == '=')) p++;
+  if (p < len && (s[p] == 'v' || s[p] == 'V' || s[p] == '='))
+    p++;
 
   // Parse component by component.
   for (int comp = 0; comp < 3; ++comp) {
-    if (p >= len) break;
+    if (p >= len)
+      break;
     if (s[p] == 'x' || s[p] == 'X' || s[p] == '*') {
       p++;
       // Component already kXAny by default; mark as "explicit" so
       // prerelease parsing works for "1.x.0" (uncommon but legal).
-      if (comp == 0) out->has_major = true;
-      else if (comp == 1) out->has_minor = true;
-      else out->has_patch = true;
+      if (comp == 0)
+        out->has_major = true;
+      else if (comp == 1)
+        out->has_minor = true;
+      else
+        out->has_patch = true;
     } else if (IsAsciiDigit(s[p])) {
       size_t start = p;
-      while (p < len && IsAsciiDigit(s[p])) p++;
+      while (p < len && IsAsciiDigit(s[p]))
+        p++;
       uint64_t v;
-      if (!ParseNumericIdent(s + start, p - start, &v)) return false;
+      if (!ParseNumericIdent(s + start, p - start, &v))
+        return false;
       if (comp == 0) {
         out->major = v;
         out->has_major = true;
@@ -400,13 +424,15 @@ bool ParsePartial(const char* s, size_t len, Partial* out) {
     p++;
     out->prerelease = s + p;
     size_t pre_start = p;
-    while (p < len && s[p] != '+') p++;
+    while (p < len && s[p] != '+')
+      p++;
     out->prerelease_len = p - pre_start;
   }
   // Optional build (consumed but ignored).
   if (p < len && s[p] == '+') {
     p++;
-    while (p < len) p++;
+    while (p < len)
+      p++;
   }
   // If anything else trails, bail.
   return p == len;
@@ -446,9 +472,7 @@ std::string FormatSemVer(const SemVer& v) {
 // the version string into the range's owned_strings, then re-parse
 // from the materialized buffer so the comparator's prerelease
 // pointer stays stable.
-void EmitComparator(Range* range,
-                    uint8_t op,
-                    const SemVer& v,
+void EmitComparator(Range* range, uint8_t op, const SemVer& v,
                     std::vector<Comparator>* set) {
   Comparator c;
   c.op = op;
@@ -470,8 +494,7 @@ void EmitComparator(Range* range,
 //   ^1.2.x := >=1.2.0 <2.0.0
 //   ^0.0.x := >=0.0.0 <0.1.0
 //   ^0.0   := >=0.0.0 <0.1.0
-void ExpandCaret(Range* range, const Partial& p,
-                 std::vector<Comparator>* set) {
+void ExpandCaret(Range* range, const Partial& p, std::vector<Comparator>* set) {
   SemVer lo = PartialToVersion(p);
   SemVer hi;
   hi.valid = true;
@@ -505,8 +528,7 @@ void ExpandCaret(Range* range, const Partial& p,
   EmitComparator(range, 3 /* lt  */, hi, set);
 }
 
-void ExpandTilde(Range* range, const Partial& p,
-                 std::vector<Comparator>* set) {
+void ExpandTilde(Range* range, const Partial& p, std::vector<Comparator>* set) {
   // ~1.2.3 := >=1.2.3 <1.3.0
   // ~1.2   := >=1.2.0 <1.3.0
   // ~1     := >=1.0.0 <2.0.0
@@ -573,9 +595,7 @@ void ExpandPartial(Range* range, const Partial& p,
   EmitComparator(range, 0, eq, set);
 }
 
-void ExpandHyphen(Range* range,
-                  const Partial& low,
-                  const Partial& high,
+void ExpandHyphen(Range* range, const Partial& low, const Partial& high,
                   std::vector<Comparator>* set) {
   // 1.2.3 - 2.3.4 := >=1.2.3 <=2.3.4
   // 1.2 - 2.3.4   := >=1.2.0 <=2.3.4
@@ -606,21 +626,31 @@ size_t ParseSimple(Range* range, const char* s, size_t len,
                    std::vector<Comparator>* set) {
   size_t p = 0;
   // Whitespace.
-  while (p < len && (s[p] == ' ' || s[p] == '\t')) p++;
-  if (p >= len) return 0;
+  while (p < len && (s[p] == ' ' || s[p] == '\t'))
+    p++;
+  if (p >= len)
+    return 0;
 
   // Detect primitive operator prefix.
   uint8_t op = 6;
   bool has_op = false;
   if (s[p] == '>') {
     p++;
-    if (p < len && s[p] == '=') { op = 4; p++; }
-    else { op = 2; }
+    if (p < len && s[p] == '=') {
+      op = 4;
+      p++;
+    } else {
+      op = 2;
+    }
     has_op = true;
   } else if (s[p] == '<') {
     p++;
-    if (p < len && s[p] == '=') { op = 5; p++; }
-    else { op = 3; }
+    if (p < len && s[p] == '=') {
+      op = 5;
+      p++;
+    } else {
+      op = 3;
+    }
     has_op = true;
   } else if (s[p] == '=') {
     p++;
@@ -634,30 +664,38 @@ size_t ParseSimple(Range* range, const char* s, size_t len,
     p++;
     // Capture the partial that follows.
     size_t partial_start = p;
-    while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|') p++;
+    while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|')
+      p++;
     Partial pp;
-    if (!ParsePartial(s + partial_start, p - partial_start, &pp)) return 0;
+    if (!ParsePartial(s + partial_start, p - partial_start, &pp))
+      return 0;
     ExpandTilde(range, pp, set);
     return p;
   } else if (s[p] == '^') {
     p++;
     size_t partial_start = p;
-    while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|') p++;
+    while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|')
+      p++;
     Partial pp;
-    if (!ParsePartial(s + partial_start, p - partial_start, &pp)) return 0;
+    if (!ParsePartial(s + partial_start, p - partial_start, &pp))
+      return 0;
     ExpandCaret(range, pp, set);
     return p;
   }
 
   if (has_op) {
-    while (p < len && (s[p] == ' ' || s[p] == '\t')) p++;
+    while (p < len && (s[p] == ' ' || s[p] == '\t'))
+      p++;
   }
   size_t partial_start = p;
-  while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|') p++;
-  if (p == partial_start) return 0;
+  while (p < len && s[p] != ' ' && s[p] != '\t' && s[p] != '|')
+    p++;
+  if (p == partial_start)
+    return 0;
 
   Partial pp;
-  if (!ParsePartial(s + partial_start, p - partial_start, &pp)) return 0;
+  if (!ParsePartial(s + partial_start, p - partial_start, &pp))
+    return 0;
   if (!has_op) {
     ExpandPartial(range, pp, set);
   } else {
@@ -682,14 +720,17 @@ size_t TryHyphenRange(Range* range, const char* s, size_t len,
       // Right partial: s[i+3..end-of-segment].
       size_t right_start = i + 3;
       size_t p = right_start;
-      while (p < len && s[p] != '|') p++;
+      while (p < len && s[p] != '|')
+        p++;
       const char* right = s + right_start;
       size_t right_len = p - right_start;
       TrimWs(&right, &right_len);
 
       Partial lo_p, hi_p;
-      if (!ParsePartial(left, left_len, &lo_p)) return 0;
-      if (!ParsePartial(right, right_len, &hi_p)) return 0;
+      if (!ParsePartial(left, left_len, &lo_p))
+        return 0;
+      if (!ParsePartial(right, right_len, &hi_p))
+        return 0;
       ExpandHyphen(range, lo_p, hi_p, set);
       return p;
     }
@@ -697,10 +738,11 @@ size_t TryHyphenRange(Range* range, const char* s, size_t len,
   return 0;
 }
 
-}  // namespace
+} // namespace
 
 bool ParseRange(const char* source, size_t len, bool loose, Range* out) {
-  if (out == nullptr) return false;
+  if (out == nullptr)
+    return false;
   if (source == nullptr || len == 0) {
     // Empty range == "any" — emit a single set with one any-comparator.
     Comparator c;
@@ -712,8 +754,10 @@ bool ParseRange(const char* source, size_t len, bool loose, Range* out) {
   size_t p = 0;
   while (p < len) {
     // Skip leading whitespace.
-    while (p < len && (source[p] == ' ' || source[p] == '\t')) p++;
-    if (p >= len) break;
+    while (p < len && (source[p] == ' ' || source[p] == '\t'))
+      p++;
+    if (p >= len)
+      break;
 
     // Parse one set (sequence of simples joined by whitespace) up
     // to '||' or end.
@@ -722,29 +766,31 @@ bool ParseRange(const char* source, size_t len, bool loose, Range* out) {
     // Find where this set ends ('||' or end of input).
     size_t set_end = p;
     while (set_end + 1 < len) {
-      if (source[set_end] == '|' && source[set_end + 1] == '|') break;
+      if (source[set_end] == '|' && source[set_end + 1] == '|')
+        break;
       set_end++;
     }
-    if (set_end + 1 >= len) set_end = len;
+    if (set_end + 1 >= len)
+      set_end = len;
 
     // Try hyphen first; if it matches, consume the whole segment.
-    size_t hyphen_consumed =
-        TryHyphenRange(out, source + p, set_end - p, &set);
+    size_t hyphen_consumed = TryHyphenRange(out, source + p, set_end - p, &set);
     if (hyphen_consumed > 0) {
       p += hyphen_consumed;
     } else {
       // Otherwise parse simples until set_end.
       while (p < set_end) {
-        while (p < set_end &&
-               (source[p] == ' ' || source[p] == '\t')) p++;
-        if (p >= set_end) break;
+        while (p < set_end && (source[p] == ' ' || source[p] == '\t'))
+          p++;
+        if (p >= set_end)
+          break;
         size_t consumed = ParseSimple(out, source + p, set_end - p, &set);
         if (consumed == 0) {
           if (loose) {
             // In loose mode, skip to next whitespace or set boundary
             // and try again.
-            while (p < set_end &&
-                   source[p] != ' ' && source[p] != '\t') p++;
+            while (p < set_end && source[p] != ' ' && source[p] != '\t')
+              p++;
             continue;
           }
           return false;
@@ -760,7 +806,8 @@ bool ParseRange(const char* source, size_t len, bool loose, Range* out) {
     } else if (p < len && source[p] == '|') {
       // Stray single '|' — treat as separator in loose mode, error
       // in strict.
-      if (!loose) return false;
+      if (!loose)
+        return false;
       p++;
     }
   }
@@ -777,24 +824,32 @@ namespace {
 
 // Does a single comparator match?
 bool ComparatorMatches(const Comparator& c, const SemVer& v) {
-  if (c.op == 6) return true;  // any
+  if (c.op == 6)
+    return true; // any
   int cmp = CompareSemVer(v, c.version);
   switch (c.op) {
-    case 0: return cmp == 0;
-    case 1: return cmp != 0;
-    case 2: return cmp > 0;
-    case 3: return cmp < 0;
-    case 4: return cmp >= 0;
-    case 5: return cmp <= 0;
-    default: return false;
+  case 0:
+    return cmp == 0;
+  case 1:
+    return cmp != 0;
+  case 2:
+    return cmp > 0;
+  case 3:
+    return cmp < 0;
+  case 4:
+    return cmp >= 0;
+  case 5:
+    return cmp <= 0;
+  default:
+    return false;
   }
 }
 
-}  // namespace
+} // namespace
 
-bool RangeSatisfies(const SemVer& v, const Range& r,
-                    bool include_prerelease) {
-  if (!r.valid || r.sets.empty()) return false;
+bool RangeSatisfies(const SemVer& v, const Range& r, bool include_prerelease) {
+  if (!r.valid || r.sets.empty())
+    return false;
   for (const auto& set : r.sets) {
     bool all_match = true;
     bool any_prerelease_in_set = false;
@@ -812,20 +867,22 @@ bool RangeSatisfies(const SemVer& v, const Range& r,
         }
       }
     }
-    if (!all_match) continue;
+    if (!all_match)
+      continue;
 
     // Spec § "Including Prerelease": a prerelease version matches a
     // range only if at least one comparator in the set has the same
     // [major, minor, patch] tuple AND has a prerelease tag — unless
     // include_prerelease is on.
     if (v.prerelease_len > 0 && !include_prerelease) {
-      if (!main_version_in_set || !any_prerelease_in_set) continue;
+      if (!main_version_in_set || !any_prerelease_in_set)
+        continue;
     }
     return true;
   }
   return false;
 }
 
-}  // namespace versions
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace versions
+} // namespace socketsecurity
+} // namespace node

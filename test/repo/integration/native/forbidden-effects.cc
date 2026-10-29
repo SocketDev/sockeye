@@ -11,40 +11,44 @@ struct AuthorizationContext::Impl {};
 
 [[noreturn]] void RejectForbiddenEffect() { std::exit(90); }
 
-KeychainStatus InspectBiometricReadiness(KeychainError &) {
+KeychainStatus InspectBiometricReadiness(KeychainError&) {
   RejectForbiddenEffect();
 }
-KeychainStatus InspectCredentialPolicy(std::string_view, KeychainError &) {
+KeychainStatus InspectCredentialPolicy(std::string_view, KeychainError&) {
   RejectForbiddenEffect();
 }
-
 
 AuthorizationContext::AuthorizationContext() { RejectForbiddenEffect(); }
 AuthorizationContext::~AuthorizationContext() = default;
-bool AuthorizationContext::Authenticate(std::string_view, KeychainError &) {
+bool AuthorizationContext::Authenticate(std::string_view, KeychainError&) {
   RejectForbiddenEffect();
 }
 void AuthorizationContext::Invalidate() { RejectForbiddenEffect(); }
-KeychainStatus DeleteCredential(AuthorizationContext &, std::string_view,
-                                KeychainError &) { RejectForbiddenEffect(); }
-KeychainStatus ReadCredential(AuthorizationContext &, std::string_view,
-                              SecretBuffer &, KeychainError &) {
+KeychainStatus DeleteCredential(AuthorizationContext&, std::string_view,
+                                KeychainError&) {
   RejectForbiddenEffect();
 }
-KeychainStatus StoreCredential(AuthorizationContext &, std::string_view,
-                               const SecretBuffer &, KeychainError &) {
+KeychainStatus ReadCredential(AuthorizationContext&, std::string_view,
+                              SecretBuffer&, KeychainError&) {
   RejectForbiddenEffect();
 }
-bool ReadOnePasswordReference(std::string_view, SecretBuffer &, std::string &) {
+KeychainStatus StoreCredential(AuthorizationContext&, std::string_view,
+                               const SecretBuffer&, KeychainError&) {
   RejectForbiddenEffect();
 }
-bool HasForegroundTerminal(std::string &) { RejectForbiddenEffect(); }
-bool ReadSecretFromTerminal(std::string_view, SecretBuffer &, std::string &) {
+bool ReadOnePasswordReference(std::string_view, SecretBuffer&, std::string&) {
   RejectForbiddenEffect();
 }
-int LaunchChild(const FileIdentity &, const std::vector<FileIdentity> &,
-                const std::vector<std::string> &, const std::vector<std::string> &,
-                const std::vector<CredentialValue> &, const DirectoryIdentity &,
-                std::string &) { RejectForbiddenEffect(); }
+bool HasForegroundTerminal(std::string&) { RejectForbiddenEffect(); }
+bool ReadSecretFromTerminal(std::string_view, SecretBuffer&, std::string&) {
+  RejectForbiddenEffect();
+}
+int LaunchChild(const FileIdentity&, const std::vector<FileIdentity>&,
+                const std::vector<std::string>&,
+                const std::vector<std::string>&,
+                const std::vector<CredentialValue>&, const DirectoryIdentity&,
+                std::string&) {
+  RejectForbiddenEffect();
+}
 
 } // namespace sockeye

@@ -46,9 +46,9 @@
 #define SRC_SOCKETSECURITY_ILP_ILP_BINDING_H_
 
 #include "env.h"
-#include "v8.h"
 #include "socketsecurity/ilp/ilp_encoder.h"
 #include "socketsecurity/ilp/ilp_transport.h"
+#include "v8.h"
 #include <memory>
 #include <unordered_map>
 
@@ -62,11 +62,9 @@ namespace ilp {
 // Node.js binding for ILP (InfluxDB Line Protocol) client.
 // Provides high-performance time-series data ingestion.
 class IlpBinding {
- public:
-  static void Initialize(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::Object> target,
-    Environment* env);
+public:
+  static void Initialize(v8::Local<v8::Context> context,
+                         v8::Local<v8::Object> target, Environment* env);
   static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
 
   // Sender state — public for fast call free functions.
@@ -80,7 +78,7 @@ class IlpBinding {
 
   static SenderState* GetSender(uint32_t id);
 
- private:
+private:
   // Sender lifecycle.
   static void CreateSender(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void DestroySender(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -105,14 +103,16 @@ class IlpBinding {
   static void GetStats(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Clear(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  static thread_local std::unordered_map<uint32_t, std::unique_ptr<SenderState>> senders_;
+  static thread_local std::unordered_map<uint32_t, std::unique_ptr<SenderState>>
+      senders_;
   static thread_local uint32_t next_sender_id_;
 
-  static TimestampUnit ParseTimestampUnit(v8::Isolate* isolate, v8::Local<v8::Value> val);
+  static TimestampUnit ParseTimestampUnit(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> val);
 };
 
-}  // namespace ilp
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ilp
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_ILP_ILP_BINDING_H_
+#endif // SRC_SOCKETSECURITY_ILP_ILP_BINDING_H_

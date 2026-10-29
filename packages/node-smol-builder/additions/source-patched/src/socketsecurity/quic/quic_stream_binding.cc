@@ -49,11 +49,11 @@
 
 #include "quic_internal.h"
 
+#include "env-inl.h"
 #include "node.h"
 #include "node_binding.h"
 #include "node_errors.h"
 #include "node_external_reference.h"
-#include "env-inl.h"
 #include "util.h"
 #include "uv.h"
 #include "v8.h"
@@ -115,10 +115,9 @@ bool UnregisterStream(uint32_t id) {
 namespace {
 
 Local<String> NewOneByte(Isolate* isolate, const char* literal) {
-  return String::NewFromOneByte(isolate,
-                                reinterpret_cast<const uint8_t*>(literal),
-                                NewStringType::kNormal,
-                                static_cast<int>(std::strlen(literal)))
+  return String::NewFromOneByte(
+             isolate, reinterpret_cast<const uint8_t*>(literal),
+             NewStringType::kNormal, static_cast<int>(std::strlen(literal)))
       .ToLocalChecked();
 }
 
@@ -146,13 +145,13 @@ uint32_t EngineIdForConn(uint32_t conn_id) {
 
 // In-callback guard: set + clear slot->in_callback around the JS dispatch.
 class InCallbackGuard {
- public:
+public:
   explicit InCallbackGuard(std::atomic<bool>* flag) : flag_(flag) {
     flag_->store(true, std::memory_order_release);
   }
   ~InCallbackGuard() { flag_->store(false, std::memory_order_release); }
 
- private:
+private:
   std::atomic<bool>* flag_;
 };
 
@@ -235,7 +234,7 @@ void DispatchStreamReadiness(lsquic_stream_t* s, CallbackFieldPtr field) {
   CallJsVoid(isolate, context, slot->cb.*field, 1, argv);
 }
 
-}  // namespace
+} // namespace
 
 // ─── packets_out trampoline ──────────────────────────────────────────
 
@@ -259,22 +258,24 @@ extern "C" int PacketsOutTrampoline(void* packets_out_ctx,
   for (unsigned i = 0; i < count; ++i) {
     const lsquic_out_spec& s = specs[i];
     Local<Object> entry = Object::New(isolate);
-    entry->Set(context, NewOneByte(isolate, "local"),
-               SockaddrToJs(isolate, context, s.local_sa))
+    entry
+        ->Set(context, NewOneByte(isolate, "local"),
+              SockaddrToJs(isolate, context, s.local_sa))
         .Check();
-    entry->Set(context, NewOneByte(isolate, "peer"),
-               SockaddrToJs(isolate, context, s.dest_sa))
+    entry
+        ->Set(context, NewOneByte(isolate, "peer"),
+              SockaddrToJs(isolate, context, s.dest_sa))
         .Check();
-    entry->Set(context, NewOneByte(isolate, "ecn"),
-               Integer::New(isolate, s.ecn))
+    entry
+        ->Set(context, NewOneByte(isolate, "ecn"), Integer::New(isolate, s.ecn))
         .Check();
     if (s.iovlen == 1) {
       // Zero-copy: wrap lsquic's iov_base in an ArrayBuffer with an
       // empty deleter (lsquic owns the memory; JS must consume
       // synchronously inside this call).
-      std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
-          s.iov[0].iov_base, s.iov[0].iov_len, BackingStore::EmptyDeleter,
-          nullptr);
+      std::unique_ptr<BackingStore> bs =
+          ArrayBuffer::NewBackingStore(s.iov[0].iov_base, s.iov[0].iov_len,
+                                       BackingStore::EmptyDeleter, nullptr);
       Local<ArrayBuffer> buf = ArrayBuffer::New(isolate, std::move(bs));
       Local<Uint8Array> view = Uint8Array::New(buf, 0, s.iov[0].iov_len);
       entry->Set(context, NewOneByte(isolate, "iov"), view).Check();
@@ -362,7 +363,7 @@ extern "C" lsquic_stream_ctx_t* OnNewStreamTrampoline(void* stream_if_ctx,
   // Stamp the stream's per-stream ctx with the JS handle so on_read /
   // on_write / on_close can recover it without a registry walk.
   lsquic_stream_set_ctx(s, reinterpret_cast<lsquic_stream_ctx_t*>(
-                              static_cast<uintptr_t>(stream_id)));
+                               static_cast<uintptr_t>(stream_id)));
   if (!slot->cb.on_new_stream.IsEmpty()) {
     Isolate* isolate = slot->cb.isolate;
     Isolate::Scope iso_scope(isolate);
@@ -442,7 +443,7 @@ extern "C" void OnGoawayReceivedTrampoline(lsquic_conn_t* c) {
 // consume synchronously) and dispatch `onDatagram(connId, data)`.
 
 extern "C" ssize_t OnDatagramWriteTrampoline(lsquic_conn_t* c, void* buf,
-                                              size_t sz) {
+                                             size_t sz) {
   lsquic_conn_ctx_t* ctx = lsquic_conn_get_ctx(c);
   uint32_t conn_id = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(ctx));
   EngineSlot* slot = LookupEngineSlot(EngineIdForConn(conn_id));
@@ -460,8 +461,7 @@ extern "C" ssize_t OnDatagramWriteTrampoline(lsquic_conn_t* c, void* buf,
       Integer::New(isolate, static_cast<int32_t>(sz)),
   };
   Local<Value> result;
-  if (!CallJs(isolate, context, slot->cb.on_datagram_write, 2, argv,
-              &result)) {
+  if (!CallJs(isolate, context, slot->cb.on_datagram_write, 2, argv, &result)) {
     return -1;
   }
   if (!result->IsUint8Array()) {
@@ -474,9 +474,8 @@ extern "C" ssize_t OnDatagramWriteTrampoline(lsquic_conn_t* c, void* buf,
     len = sz;
   }
   auto store = arr->Buffer()->GetBackingStore();
-  std::memcpy(buf,
-              static_cast<const uint8_t*>(store->Data()) + arr->ByteOffset(),
-              len);
+  std::memcpy(
+      buf, static_cast<const uint8_t*>(store->Data()) + arr->ByteOffset(), len);
   return static_cast<ssize_t>(len);
 }
 
@@ -530,7 +529,8 @@ const lsquic_stream_if kStreamIf = {
 //
 // All six methods accept a stream handle as args[0] and look up the
 // underlying lsquic_stream_t* via the registry. Returns:
-//   - streamRead  / streamWrite      : int (bytes; -1 on error; 0 on EOF/blocked)
+//   - streamRead  / streamWrite      : int (bytes; -1 on error; 0 on
+//   EOF/blocked)
 //   - streamShutdown / streamClose   : int (lsquic return; 0 ok, < 0 err)
 //   - streamWantRead / streamWantWrite: int (previous want flag from lsquic)
 
@@ -625,8 +625,7 @@ void StreamWantWrite(const FunctionCallbackInfo<Value>& args) {
 
 void ConnWantDatagramWrite(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  uint32_t id =
-      args[0]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
+  uint32_t id = args[0]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
   lsquic_conn_t* conn = LookupConn(id);
   if (conn == nullptr) {
     args.GetReturnValue().Set(Integer::New(isolate, -1));
@@ -639,8 +638,7 @@ void ConnWantDatagramWrite(const FunctionCallbackInfo<Value>& args) {
 
 void ConnGetMinDatagramSize(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  uint32_t id =
-      args[0]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
+  uint32_t id = args[0]->Uint32Value(isolate->GetCurrentContext()).FromMaybe(0);
   lsquic_conn_t* conn = LookupConn(id);
   if (conn == nullptr) {
     args.GetReturnValue().Set(Integer::New(isolate, 0));
@@ -659,13 +657,12 @@ void ConnSetMinDatagramSize(const FunctionCallbackInfo<Value>& args) {
     args.GetReturnValue().Set(Integer::New(isolate, -1));
     return;
   }
-  size_t sz =
-      static_cast<size_t>(args[1]->Uint32Value(context).FromMaybe(0));
+  size_t sz = static_cast<size_t>(args[1]->Uint32Value(context).FromMaybe(0));
   args.GetReturnValue().Set(
       Integer::New(isolate, lsquic_conn_set_min_datagram_size(conn, sz)));
 }
 
-}  // namespace
+} // namespace
 
 void RegisterStreamMethods(Local<Context> context, Local<Object> target) {
   SetMethod(context, target, "streamRead", StreamRead);
@@ -691,6 +688,6 @@ void RegisterStreamExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(ConnSetMinDatagramSize);
 }
 
-}  // namespace quic
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace quic
+} // namespace socketsecurity
+} // namespace node

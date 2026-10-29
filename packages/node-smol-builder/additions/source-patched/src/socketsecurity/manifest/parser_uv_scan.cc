@@ -48,13 +48,15 @@ std::string_view StripQuotes(std::string_view s) {
 
 std::string_view KeyOf(std::string_view line) {
   size_t eq = line.find('=');
-  if (eq == std::string_view::npos) return std::string_view{};
+  if (eq == std::string_view::npos)
+    return std::string_view{};
   return TrimAscii(line.substr(0, eq));
 }
 
 std::string_view ValueAfterEquals(std::string_view line) {
   size_t eq = line.find('=');
-  if (eq == std::string_view::npos) return std::string_view{};
+  if (eq == std::string_view::npos)
+    return std::string_view{};
   return TrimAscii(line.substr(eq + 1));
 }
 
@@ -103,9 +105,12 @@ std::string_view NormalizePep503(std::string_view s, ParseContext* ctx) {
   std::string buf;
   buf.reserve(s.size());
   for (char c : s) {
-    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-    if (c == '_' || c == '.') c = '-';
-    if (c == '-' && !buf.empty() && buf.back() == '-') continue;
+    if (c >= 'A' && c <= 'Z')
+      c = static_cast<char>(c - 'A' + 'a');
+    if (c == '_' || c == '.')
+      c = '-';
+    if (c == '-' && !buf.empty() && buf.back() == '-')
+      continue;
     buf.push_back(c);
   }
   return ctx->intern.Intern(std::string_view(buf));
@@ -135,7 +140,8 @@ bool InlineTableString(std::string_view table, std::string_view key,
     }
     if (after < table.size() && table[after] == '"') {
       size_t close = table.find('"', after + 1);
-      if (close == std::string_view::npos) return false;
+      if (close == std::string_view::npos)
+        return false;
       *out_value = table.substr(after + 1, close - after - 1);
       return true;
     }
@@ -157,7 +163,8 @@ std::string_view ExtractUvDepName(std::string_view entry, ParseContext* ctx) {
     s.remove_suffix(1);
     s = TrimAscii(s);
   }
-  if (s.empty()) return std::string_view{};
+  if (s.empty())
+    return std::string_view{};
   if (s.front() == '{') {
     std::string_view name;
     if (!InlineTableString(s, "name", &name) || name.empty()) {
@@ -166,7 +173,8 @@ std::string_view ExtractUvDepName(std::string_view entry, ParseContext* ctx) {
     return NormalizePep503(name, ctx);
   }
   std::string_view bare = StripQuotes(s);
-  if (bare.empty()) return std::string_view{};
+  if (bare.empty())
+    return std::string_view{};
   return NormalizePep503(bare, ctx);
 }
 
@@ -217,7 +225,7 @@ void ParseInlineEntries(std::string_view value, ParseContext* ctx,
   }
 }
 
-}  // namespace uvscan
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace uvscan
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node

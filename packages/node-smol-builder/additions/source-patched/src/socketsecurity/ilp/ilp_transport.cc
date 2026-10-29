@@ -65,20 +65,16 @@ namespace socketsecurity {
 namespace ilp {
 
 IlpTransport::IlpTransport(const TransportConfig& config)
-    : config_(config),
-      socket_fd_(SOCKET_HANDLE_INVALID),
-      connected_(false)
+    : config_(config), socket_fd_(SOCKET_HANDLE_INVALID), connected_(false)
 #ifdef HAVE_IOURING
-      , ring_(nullptr)
-      , io_uring_available_(false)
+      ,
+      ring_(nullptr), io_uring_available_(false)
 #endif
 {
   BSD_ENSURE_WINSOCK_INIT();
 }
 
-IlpTransport::~IlpTransport() {
-  Close();
-}
+IlpTransport::~IlpTransport() { Close(); }
 
 bool IlpTransport::Connect() {
   std::lock_guard<std::mutex> lock(send_mutex_);
@@ -134,7 +130,8 @@ bool IlpTransport::ConnectSocket() {
   int status = getaddrinfo(config_.host.c_str(), port_str, &hints, &result);
   if (status != 0) {
 #ifdef _WIN32
-    last_error_ = std::string("DNS resolution failed: error ") + std::to_string(status);
+    last_error_ =
+        std::string("DNS resolution failed: error ") + std::to_string(status);
 #else
     last_error_ = std::string("DNS resolution failed: ") + gai_strerror(status);
 #endif
@@ -163,9 +160,11 @@ bool IlpTransport::ConnectSocket() {
     }
 
 #ifdef _WIN32
-    int conn_result = connect(BSD_SOCKET_CAST(socket_fd_), p->ai_addr, static_cast<int>(p->ai_addrlen));
+    int conn_result = connect(BSD_SOCKET_CAST(socket_fd_), p->ai_addr,
+                              static_cast<int>(p->ai_addrlen));
     int last_err = BSD_GET_SOCK_ERROR();
-    bool in_progress = (conn_result == SOCKET_ERROR && last_err == BSD_IN_PROGRESS);
+    bool in_progress =
+        (conn_result == SOCKET_ERROR && last_err == BSD_IN_PROGRESS);
 #else
     int conn_result = connect(socket_fd_, p->ai_addr, p->ai_addrlen);
     int last_err = BSD_GET_SOCK_ERROR();
@@ -180,7 +179,8 @@ bool IlpTransport::ConnectSocket() {
 
     if (in_progress) {
       // Wait for connection with timeout.
-      int poll_result = BsdPollSocket(socket_fd_, POLLOUT, config_.connect_timeout_ms);
+      int poll_result =
+          BsdPollSocket(socket_fd_, POLLOUT, config_.connect_timeout_ms);
       if (poll_result <= 0) {
         BSD_CLOSE_SOCK(socket_fd_);
         socket_fd_ = SOCKET_HANDLE_INVALID;
@@ -191,7 +191,8 @@ bool IlpTransport::ConnectSocket() {
       int error = 0;
       socklen_t len = sizeof(error);
       if (getsockopt(BSD_SOCKET_CAST(socket_fd_), SOL_SOCKET, SO_ERROR,
-                     reinterpret_cast<char*>(&error), &len) < 0 || error != 0) {
+                     reinterpret_cast<char*>(&error), &len) < 0 ||
+          error != 0) {
         BSD_CLOSE_SOCK(socket_fd_);
         socket_fd_ = SOCKET_HANDLE_INVALID;
         continue;
@@ -249,7 +250,8 @@ ssize_t IlpTransport::SendWithSocket(const char* data, size_t len) {
 
   while (sent < len) {
 #ifdef _WIN32
-    int n = ::send(BSD_SOCKET_CAST(socket_fd_), data + sent, static_cast<int>(len - sent), 0);
+    int n = ::send(BSD_SOCKET_CAST(socket_fd_), data + sent,
+                   static_cast<int>(len - sent), 0);
 #else
     ssize_t n = ::send(socket_fd_, data + sent, len - sent, MSG_NOSIGNAL);
 #endif
@@ -264,7 +266,8 @@ ssize_t IlpTransport::SendWithSocket(const char* data, size_t len) {
 #endif
       ) {
         // Wait for socket to become writable.
-        int poll_result = BsdPollSocket(socket_fd_, POLLOUT, config_.send_timeout_ms);
+        int poll_result =
+            BsdPollSocket(socket_fd_, POLLOUT, config_.send_timeout_ms);
         if (poll_result <= 0) {
           last_error_ = "Send timeout";
           connected_.store(false, std::memory_order_release);
@@ -273,7 +276,8 @@ ssize_t IlpTransport::SendWithSocket(const char* data, size_t len) {
         continue;
       }
 #ifdef _WIN32
-      last_error_ = std::string("Send failed: error ") + std::to_string(last_err);
+      last_error_ =
+          std::string("Send failed: error ") + std::to_string(last_err);
 #else
       last_error_ = std::string("Send failed: ") + strerror(last_err);
 #endif
@@ -347,11 +351,13 @@ ssize_t IlpTransport::SendWithIoUring(const char* data, size_t len) {
     if (sqe == nullptr) {
       // SQ full, fall back to regular send.
       ssize_t n = SendWithSocket(data + sent, len - sent);
-      if (n < 0) return -1;
+      if (n < 0)
+        return -1;
       return static_cast<ssize_t>(sent) + n;
     }
 
-    io_uring_prep_send(sqe, static_cast<int>(socket_fd_), send_buffer_.data(), chunk, MSG_NOSIGNAL);
+    io_uring_prep_send(sqe, static_cast<int>(socket_fd_), send_buffer_.data(),
+                       chunk, MSG_NOSIGNAL);
     sqe->user_data = chunk;
 
     int ret = io_uring_submit(ring_);
@@ -383,8 +389,8 @@ ssize_t IlpTransport::SendWithIoUring(const char* data, size_t len) {
   return static_cast<ssize_t>(sent);
 }
 
-#endif  // HAVE_IOURING
+#endif // HAVE_IOURING
 
-}  // namespace ilp
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ilp
+} // namespace socketsecurity
+} // namespace node

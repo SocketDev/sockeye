@@ -57,8 +57,8 @@
 #include "socketsecurity/postgres/postgres_pool.h"
 #include <algorithm>
 #include <atomic>
-#include <new>
 #include <chrono>
+#include <new>
 
 namespace node {
 namespace socketsecurity {
@@ -72,8 +72,7 @@ static std::atomic<uint64_t> g_next_conn_token{1};
 // PooledConnection implementation.
 
 PooledConnection::PooledConnection(PGconn* conn)
-    : conn_(conn),
-      state_(ConnectionState::kIdle),
+    : conn_(conn), state_(ConnectionState::kIdle),
       created_at_(std::chrono::steady_clock::now()),
       last_used_at_(std::chrono::steady_clock::now()),
       token_(g_next_conn_token.fetch_add(1, std::memory_order_relaxed)) {}
@@ -86,17 +85,16 @@ PooledConnection::~PooledConnection() {
 }
 
 PooledConnection::PooledConnection(PooledConnection&& other) noexcept
-    : conn_(other.conn_),
-      state_(other.state_),
+    : conn_(other.conn_), state_(other.state_),
       prepared_statements_(std::move(other.prepared_statements_)),
-      created_at_(other.created_at_),
-      last_used_at_(other.last_used_at_),
+      created_at_(other.created_at_), last_used_at_(other.last_used_at_),
       token_(other.token_) {
   other.conn_ = nullptr;
   other.state_ = ConnectionState::kDead;
 }
 
-PooledConnection& PooledConnection::operator=(PooledConnection&& other) noexcept {
+PooledConnection&
+PooledConnection::operator=(PooledConnection&& other) noexcept {
   if (this != &other) {
     if (conn_ != nullptr) {
       PQfinish(conn_);
@@ -146,8 +144,8 @@ bool PooledConnection::Reset() {
   return true;
 }
 
-const char* PooledConnection::GetPreparedStatement(
-    const std::string& name) const {
+const char*
+PooledConnection::GetPreparedStatement(const std::string& name) const {
   auto it = prepared_statements_.find(name);
   if (it != prepared_statements_.end()) {
     return it->second.c_str();
@@ -155,9 +153,8 @@ const char* PooledConnection::GetPreparedStatement(
   return nullptr;
 }
 
-void PooledConnection::CachePreparedStatement(
-    const std::string& name,
-    const std::string& sql) {
+void PooledConnection::CachePreparedStatement(const std::string& name,
+                                              const std::string& sql) {
   prepared_statements_[name] = sql;
 }
 
@@ -197,8 +194,8 @@ PooledConnection* PostgresPool::CreateConnection() {
   // Build connection string with timeout.
   std::string conn_str = config_.connection_string;
   if (conn_str.find("connect_timeout") == std::string::npos) {
-    conn_str += " connect_timeout=" +
-                std::to_string(config_.connect_timeout_ms / 1000);
+    conn_str +=
+        " connect_timeout=" + std::to_string(config_.connect_timeout_ms / 1000);
   }
 
   PGconn* pg_conn = PQconnectdb(conn_str.c_str());
@@ -222,9 +219,7 @@ PooledConnection* PostgresPool::CreateConnection() {
   return wrapper;
 }
 
-void PostgresPool::DestroyConnection(PooledConnection* conn) {
-  delete conn;
-}
+void PostgresPool::DestroyConnection(PooledConnection* conn) { delete conn; }
 
 PooledConnection* PostgresPool::Acquire() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -269,11 +264,10 @@ void PostgresPool::Release(PooledConnection* conn) {
   // Remove from active list. If the connection doesn't belong to this pool
   // (not found in active_connections_), reject it to prevent cross-pool
   // pointer corruption from forged poolId values.
-  auto it = std::find(active_connections_.begin(),
-                      active_connections_.end(),
-                      conn);
+  auto it =
+      std::find(active_connections_.begin(), active_connections_.end(), conn);
   if (it == active_connections_.end()) {
-    return;  // Not our connection — ignore.
+    return; // Not our connection — ignore.
   }
   active_connections_.erase(it);
 
@@ -300,9 +294,8 @@ bool PostgresPool::ReleaseByToken(PooledConnection* conn,
   // ran between acquire and release, the raw pointer is freed and
   // std::find would be UB if we dereferenced. But list lookup compares
   // pointer identity without touching the underlying object.
-  auto it = std::find(active_connections_.begin(),
-                      active_connections_.end(),
-                      conn);
+  auto it =
+      std::find(active_connections_.begin(), active_connections_.end(), conn);
   if (it == active_connections_.end()) {
     return false;
   }
@@ -335,38 +328,27 @@ PGresult* PostgresPool::Execute(const char* query) {
   return result;
 }
 
-PGresult* PostgresPool::ExecuteParams(
-    const char* query,
-    int nParams,
-    const Oid* paramTypes,
-    const char* const* paramValues,
-    const int* paramLengths,
-    const int* paramFormats,
-    int resultFormat) {
+PGresult* PostgresPool::ExecuteParams(const char* query, int nParams,
+                                      const Oid* paramTypes,
+                                      const char* const* paramValues,
+                                      const int* paramLengths,
+                                      const int* paramFormats,
+                                      int resultFormat) {
   auto* conn = Acquire();
   if (conn == nullptr) {
     return nullptr;
   }
 
-  PGresult* result = PQexecParams(
-    conn->Get(),
-    query,
-    nParams,
-    paramTypes,
-    paramValues,
-    paramLengths,
-    paramFormats,
-    resultFormat);
+  PGresult* result =
+      PQexecParams(conn->Get(), query, nParams, paramTypes, paramValues,
+                   paramLengths, paramFormats, resultFormat);
 
   Release(conn);
   return result;
 }
 
-bool PostgresPool::Prepare(
-    const char* name,
-    const char* query,
-    int nParams,
-    const Oid* paramTypes) {
+bool PostgresPool::Prepare(const char* name, const char* query, int nParams,
+                           const Oid* paramTypes) {
   // Store the SQL text at pool level so any connection can re-prepare later.
   // FIFO-evict once we hit the cap so a long-running process running
   // dynamic SQL can't grow the map indefinitely.
@@ -408,13 +390,11 @@ bool PostgresPool::Prepare(
   return success;
 }
 
-PGresult* PostgresPool::ExecutePrepared(
-    const char* name,
-    int nParams,
-    const char* const* paramValues,
-    const int* paramLengths,
-    const int* paramFormats,
-    int resultFormat) {
+PGresult* PostgresPool::ExecutePrepared(const char* name, int nParams,
+                                        const char* const* paramValues,
+                                        const int* paramLengths,
+                                        const int* paramFormats,
+                                        int resultFormat) {
   auto* conn = Acquire();
   if (conn == nullptr) {
     return nullptr;
@@ -432,8 +412,8 @@ PGresult* PostgresPool::ExecutePrepared(
     }
 
     if (!sql_text.empty()) {
-      PGresult* prep_result = PQprepare(
-          conn->Get(), name, sql_text.c_str(), 0, nullptr);
+      PGresult* prep_result =
+          PQprepare(conn->Get(), name, sql_text.c_str(), 0, nullptr);
       bool prep_ok = PQresultStatus(prep_result) == PGRES_COMMAND_OK;
       PQclear(prep_result);
 
@@ -451,14 +431,8 @@ PGresult* PostgresPool::ExecutePrepared(
     }
   }
 
-  PGresult* result = PQexecPrepared(
-    conn->Get(),
-    name,
-    nParams,
-    paramValues,
-    paramLengths,
-    paramFormats,
-    resultFormat);
+  PGresult* result = PQexecPrepared(conn->Get(), name, nParams, paramValues,
+                                    paramLengths, paramFormats, resultFormat);
 
   Release(conn);
   return result;
@@ -506,6 +480,6 @@ void PostgresPool::EvictStaleConnections() {
   }
 }
 
-}  // namespace postgres
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace postgres
+} // namespace socketsecurity
+} // namespace node

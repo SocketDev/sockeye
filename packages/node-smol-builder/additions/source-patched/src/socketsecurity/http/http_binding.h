@@ -49,22 +49,23 @@
 #ifndef SRC_SOCKETSECURITY_HTTP_BINDING_H_
 #define SRC_SOCKETSECURITY_HTTP_BINDING_H_
 
-// Include shared SIMD utilities (provides platform/arch detection, SIMD intrinsics)
+// Include shared SIMD utilities (provides platform/arch detection, SIMD
+// intrinsics)
 #include "socketsecurity/simd/simd.h"
 
 #include <string>
 #include <string_view>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 // Alias common macros for backwards compatibility
 #ifndef SMOL_ALWAYS_INLINE
-  #define SMOL_ALWAYS_INLINE SMOL_FORCE_INLINE
+#define SMOL_ALWAYS_INLINE SMOL_FORCE_INLINE
 #endif
 
 // SMOL_HAS_AVX2 compatibility (smol_simd.h uses SMOL_COMPILE_AVX2)
 #if SMOL_COMPILE_AVX2 && !defined(SMOL_HAS_AVX2)
-  #define SMOL_HAS_AVX2 1
+#define SMOL_HAS_AVX2 1
 #endif
 
 namespace smol {
@@ -110,12 +111,8 @@ ParsedUrl ParseUrl(const char* url, size_t len);
 
 // Parse query string into key-value pairs
 // Returns number of pairs parsed, fills output arrays
-size_t ParseQueryString(
-    const char* qs,
-    size_t len,
-    std::string_view* keys,
-    std::string_view* values,
-    size_t max_pairs);
+size_t ParseQueryString(const char* qs, size_t len, std::string_view* keys,
+                        std::string_view* values, size_t max_pairs);
 
 // Decode URI component in-place, returns decoded length
 // Input buffer must have space for worst case (same size)
@@ -152,8 +149,9 @@ struct WebSocketFrame {
   bool masked;
   const uint8_t* payload;
   size_t payload_len;
-  size_t total_len;  // Total bytes consumed from buffer
-  uint32_t mask_key;  // Network-byte-order masking key; valid only when masked=true
+  size_t total_len; // Total bytes consumed from buffer
+  uint32_t
+      mask_key; // Network-byte-order masking key; valid only when masked=true
   bool valid;
 };
 
@@ -162,13 +160,9 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len);
 
 // Encode WebSocket frame (server -> client, no masking)
 // Returns size written, or 0 if buffer too small
-size_t EncodeWebSocketFrame(
-    uint8_t* output,
-    size_t output_len,
-    const uint8_t* payload,
-    size_t payload_len,
-    uint8_t opcode,
-    bool fin = true);
+size_t EncodeWebSocketFrame(uint8_t* output, size_t output_len,
+                            const uint8_t* payload, size_t payload_len,
+                            uint8_t opcode, bool fin = true);
 
 // Unmask WebSocket payload in-place (SIMD accelerated)
 void UnmaskPayload(uint8_t* payload, size_t len, uint32_t mask_key);
@@ -187,8 +181,8 @@ struct ResponseBuilder {
       : buffer(buf), capacity(cap), length(0) {}
 
   bool WriteStatusLine(int status);
-  bool WriteHeader(const char* name, size_t name_len,
-                   const char* value, size_t value_len);
+  bool WriteHeader(const char* name, size_t name_len, const char* value,
+                   size_t value_len);
   bool WriteContentLength(size_t len);
   bool WriteHeadersEnd();
   bool WriteBody(const uint8_t* body, size_t body_len);
@@ -210,17 +204,15 @@ const char* GetStatusLine(int status, size_t* out_len);
 // Check if value can use fast stringify path
 // (no custom toJSON, no circular refs, no symbols, simple types)
 enum class JsonComplexity {
-  kSimple,      // Can use fast path
-  kNeedsCheck,  // May have circular refs, need tracking
-  kComplex      // Has toJSON, symbols, etc - use V8
+  kSimple,     // Can use fast path
+  kNeedsCheck, // May have circular refs, need tracking
+  kComplex     // Has toJSON, symbols, etc - use V8
 };
 
 // Fast JSON stringify for simple objects
 // Returns length written, or 0 if buffer too small or object too complex
-size_t FastJsonStringify(
-    const void* v8_object,  // v8::Local<v8::Object>*
-    char* output,
-    size_t output_len);
+size_t FastJsonStringify(const void* v8_object, // v8::Local<v8::Object>*
+                         char* output, size_t output_len);
 
 // ============================================================================
 // Router (Trie-based)
@@ -232,7 +224,7 @@ size_t FastJsonStringify(
 // ============================================================================
 
 class TrieRouter {
- public:
+public:
   TrieRouter();
   ~TrieRouter();
 
@@ -251,13 +243,13 @@ class TrieRouter {
       size_t value_start;
       size_t value_len;
     };
-    Param params[16];  // Max 16 params
+    Param params[16]; // Max 16 params
     size_t param_count;
   };
 
   MatchResult Match(const char* pathname, size_t len) const;
 
- private:
+private:
   struct Node;
   Node* root_;
 };
@@ -273,7 +265,7 @@ class TrieRouter {
 // ============================================================================
 
 class BufferPool {
- public:
+public:
   explicit BufferPool(size_t buffer_size, size_t pool_size = 64);
   ~BufferPool();
 
@@ -283,7 +275,7 @@ class BufferPool {
 
   size_t buffer_size() const { return buffer_size_; }
 
- private:
+private:
   size_t buffer_size_;
   size_t pool_size_;
   std::vector<uint8_t*> free_list_;
@@ -303,11 +295,13 @@ class BufferPool {
 
 namespace simd {
 
-// Find character in string (like memchr but potentially faster for short strings)
+// Find character in string (like memchr but potentially faster for short
+// strings)
 const char* FindChar(const char* str, size_t len, char c);
 
 // Find any of characters in string
-const char* FindAnyOf(const char* str, size_t len, const char* chars, size_t chars_len);
+const char* FindAnyOf(const char* str, size_t len, const char* chars,
+                      size_t chars_len);
 
 // Compare strings case-insensitively
 bool EqualsIgnoreCase(const char* a, size_t a_len, const char* b, size_t b_len);
@@ -318,16 +312,16 @@ void ToLowerCopy(const char* src, char* dst, size_t len);
 // XOR buffer with repeating 4-byte key (for WebSocket masking)
 void XorRepeat4(uint8_t* data, size_t len, uint32_t key);
 
-}  // namespace simd
+} // namespace simd
 
 // ============================================================================
 // V8 Binding Helpers
 // ============================================================================
 
 // Initialize the smol_http binding
-void Initialize(void* env);  // node::Environment*
+void Initialize(void* env); // node::Environment*
 
-}  // namespace http
-}  // namespace smol
+} // namespace http
+} // namespace smol
 
-#endif  // SRC_SOCKETSECURITY_HTTP_BINDING_H_
+#endif // SRC_SOCKETSECURITY_HTTP_BINDING_H_

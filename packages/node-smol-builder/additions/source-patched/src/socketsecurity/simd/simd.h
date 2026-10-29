@@ -5,8 +5,8 @@
 #ifndef SRC_SOCKETSECURITY_SIMD_H_
 #define SRC_SOCKETSECURITY_SIMD_H_
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 
 // ============================================================================
@@ -14,13 +14,13 @@
 // ============================================================================
 
 #if defined(_WIN32) || defined(_WIN64)
-  #define SMOL_PLATFORM_WINDOWS 1
+#define SMOL_PLATFORM_WINDOWS 1
 #elif defined(__APPLE__)
-  #define SMOL_PLATFORM_MACOS 1
+#define SMOL_PLATFORM_MACOS 1
 #elif defined(__linux__)
-  #define SMOL_PLATFORM_LINUX 1
+#define SMOL_PLATFORM_LINUX 1
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
-  #define SMOL_PLATFORM_BSD 1
+#define SMOL_PLATFORM_BSD 1
 #endif
 
 // ============================================================================
@@ -28,15 +28,15 @@
 // ============================================================================
 
 #if defined(__x86_64__) || defined(_M_X64)
-  #define SMOL_ARCH_X64 1
+#define SMOL_ARCH_X64 1
 #elif defined(__i386__) || defined(_M_IX86)
-  #define SMOL_ARCH_X86 1
+#define SMOL_ARCH_X86 1
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-  #define SMOL_ARCH_ARM64 1
+#define SMOL_ARCH_ARM64 1
 #elif defined(__arm__) || defined(_M_ARM)
-  #define SMOL_ARCH_ARM32 1
+#define SMOL_ARCH_ARM32 1
 #endif
 
 // ============================================================================
@@ -44,45 +44,46 @@
 // ============================================================================
 
 #if SMOL_ARCH_X64 || SMOL_ARCH_X86
-  // SSE2 is always available on x64, and we check for it on x86
-  #if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
-    #define SMOL_HAS_SSE2 1
-    #include <emmintrin.h>  // SSE2
-  #endif
+// SSE2 is always available on x64, and we check for it on x86
+#if defined(__SSE2__) || defined(_M_X64) ||                                    \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define SMOL_HAS_SSE2 1
+#include <emmintrin.h> // SSE2
+#endif
 
-  #if defined(__SSSE3__)
-    #define SMOL_HAS_SSSE3 1
-    #include <tmmintrin.h>  // SSSE3
-  #endif
+#if defined(__SSSE3__)
+#define SMOL_HAS_SSSE3 1
+#include <tmmintrin.h> // SSSE3
+#endif
 
-  #if defined(__SSE4_1__)
-    #define SMOL_HAS_SSE41 1
-    #include <smmintrin.h>  // SSE4.1
-  #endif
+#if defined(__SSE4_1__)
+#define SMOL_HAS_SSE41 1
+#include <smmintrin.h> // SSE4.1
+#endif
 
-  #if defined(__SSE4_2__) || defined(__AVX2__)
-    #define SMOL_HAS_SSE42 1
-    #include <nmmintrin.h>  // SSE4.2
-  #endif
+#if defined(__SSE4_2__) || defined(__AVX2__)
+#define SMOL_HAS_SSE42 1
+#include <nmmintrin.h> // SSE4.2
+#endif
 
-  #if defined(__AVX2__)
-    #define SMOL_COMPILE_AVX2 1
-    #include <immintrin.h>  // AVX2
-  #endif
+#if defined(__AVX2__)
+#define SMOL_COMPILE_AVX2 1
+#include <immintrin.h> // AVX2
+#endif
 
-  // CPUID for runtime AVX2 detection
-  #if SMOL_PLATFORM_WINDOWS
-    #include <intrin.h>
-  #else
-    #include <cpuid.h>
-  #endif
+// CPUID for runtime AVX2 detection
+#if SMOL_PLATFORM_WINDOWS
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
 #endif
 
 #if SMOL_ARCH_ARM64 || SMOL_ARCH_ARM32
-  #if defined(__ARM_NEON) || defined(__ARM_NEON__)
-    #define SMOL_HAS_NEON 1
-    #include <arm_neon.h>
-  #endif
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define SMOL_HAS_NEON 1
+#include <arm_neon.h>
+#endif
 #endif
 
 // ============================================================================
@@ -90,26 +91,26 @@
 // ============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-  #define SMOL_LIKELY(x)       __builtin_expect(!!(x), 1)
-  #define SMOL_UNLIKELY(x)     __builtin_expect(!!(x), 0)
-  #define SMOL_FORCE_INLINE    __attribute__((always_inline)) inline
-  #define SMOL_NOINLINE        __attribute__((noinline))
-  #define SMOL_ALIGNED(n)      __attribute__((aligned(n)))
-  #define SMOL_RESTRICT        __restrict__
+#define SMOL_LIKELY(x) __builtin_expect(!!(x), 1)
+#define SMOL_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define SMOL_FORCE_INLINE __attribute__((always_inline)) inline
+#define SMOL_NOINLINE __attribute__((noinline))
+#define SMOL_ALIGNED(n) __attribute__((aligned(n)))
+#define SMOL_RESTRICT __restrict__
 #elif defined(_MSC_VER)
-  #define SMOL_LIKELY(x)       (x)
-  #define SMOL_UNLIKELY(x)     (x)
-  #define SMOL_FORCE_INLINE    __forceinline
-  #define SMOL_NOINLINE        __declspec(noinline)
-  #define SMOL_ALIGNED(n)      __declspec(align(n))
-  #define SMOL_RESTRICT        __restrict
+#define SMOL_LIKELY(x) (x)
+#define SMOL_UNLIKELY(x) (x)
+#define SMOL_FORCE_INLINE __forceinline
+#define SMOL_NOINLINE __declspec(noinline)
+#define SMOL_ALIGNED(n) __declspec(align(n))
+#define SMOL_RESTRICT __restrict
 #else
-  #define SMOL_LIKELY(x)       (x)
-  #define SMOL_UNLIKELY(x)     (x)
-  #define SMOL_FORCE_INLINE    inline
-  #define SMOL_NOINLINE
-  #define SMOL_ALIGNED(n)
-  #define SMOL_RESTRICT
+#define SMOL_LIKELY(x) (x)
+#define SMOL_UNLIKELY(x) (x)
+#define SMOL_FORCE_INLINE inline
+#define SMOL_NOINLINE
+#define SMOL_ALIGNED(n)
+#define SMOL_RESTRICT
 #endif
 
 namespace smol {
@@ -125,18 +126,18 @@ extern bool g_has_avx2;
 // Initialize SIMD detection - call once at startup
 inline void Init() {
 #if SMOL_ARCH_X64 || SMOL_ARCH_X86
-  #if SMOL_PLATFORM_WINDOWS
-    int cpuInfo[4];
-    __cpuidex(cpuInfo, 7, 0);
-    g_has_avx2 = (cpuInfo[1] & (1 << 5)) != 0;
-  #else
-    unsigned int eax, ebx, ecx, edx;
-    if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx)) {
-      g_has_avx2 = (ebx & (1 << 5)) != 0;
-    } else {
-      g_has_avx2 = false;
-    }
-  #endif
+#if SMOL_PLATFORM_WINDOWS
+  int cpuInfo[4];
+  __cpuidex(cpuInfo, 7, 0);
+  g_has_avx2 = (cpuInfo[1] & (1 << 5)) != 0;
+#else
+  unsigned int eax, ebx, ecx, edx;
+  if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx)) {
+    g_has_avx2 = (ebx & (1 << 5)) != 0;
+  } else {
+    g_has_avx2 = false;
+  }
+#endif
 #else
   g_has_avx2 = false;
 #endif
@@ -147,7 +148,8 @@ inline void Init() {
 // ============================================================================
 
 SMOL_FORCE_INLINE int CountTrailingZeros(uint32_t x) {
-  if (x == 0) return 32;
+  if (x == 0)
+    return 32;
 #if defined(_MSC_VER)
   unsigned long idx;
   _BitScanForward(&idx, x);
@@ -158,28 +160,30 @@ SMOL_FORCE_INLINE int CountTrailingZeros(uint32_t x) {
 }
 
 SMOL_FORCE_INLINE int CountTrailingZeros64(uint64_t x) {
-  if (x == 0) return 64;
+  if (x == 0)
+    return 64;
 #if defined(_MSC_VER)
-  #if defined(_M_X64) || defined(_M_ARM64)
-    unsigned long idx;
-    _BitScanForward64(&idx, x);
+#if defined(_M_X64) || defined(_M_ARM64)
+  unsigned long idx;
+  _BitScanForward64(&idx, x);
+  return static_cast<int>(idx);
+#else
+  // 32-bit MSVC fallback
+  unsigned long idx;
+  if (_BitScanForward(&idx, static_cast<uint32_t>(x))) {
     return static_cast<int>(idx);
-  #else
-    // 32-bit MSVC fallback
-    unsigned long idx;
-    if (_BitScanForward(&idx, static_cast<uint32_t>(x))) {
-      return static_cast<int>(idx);
-    }
-    _BitScanForward(&idx, static_cast<uint32_t>(x >> 32));
-    return static_cast<int>(idx) + 32;
-  #endif
+  }
+  _BitScanForward(&idx, static_cast<uint32_t>(x >> 32));
+  return static_cast<int>(idx) + 32;
+#endif
 #else
   return __builtin_ctzll(x);
 #endif
 }
 
 SMOL_FORCE_INLINE int CountLeadingZeros(uint32_t x) {
-  if (x == 0) return 32;
+  if (x == 0)
+    return 32;
 #if defined(_MSC_VER)
   unsigned long idx;
   _BitScanReverse(&idx, x);
@@ -201,9 +205,11 @@ SMOL_FORCE_INLINE int PopCount(uint32_t x) {
 // FIND CHARACTER (memchr-like, SIMD accelerated)
 // ============================================================================
 
-SMOL_FORCE_INLINE const char* FindCharScalar(const char* s, size_t len, char c) {
+SMOL_FORCE_INLINE const char* FindCharScalar(const char* s, size_t len,
+                                             char c) {
   for (size_t i = 0; i < len; i++) {
-    if (s[i] == c) return s + i;
+    if (s[i] == c)
+      return s + i;
   }
   return nullptr;
 }
@@ -224,7 +230,8 @@ SMOL_FORCE_INLINE const char* FindCharSSE2(const char* s, size_t len, char c) {
 
   // Scalar remainder
   for (; i < len; i++) {
-    if (s[i] == c) return s + i;
+    if (s[i] == c)
+      return s + i;
   }
   return nullptr;
 }
@@ -270,7 +277,8 @@ SMOL_FORCE_INLINE const char* FindCharNEON(const char* s, size_t len, char c) {
 
   // Scalar remainder
   for (; i < len; i++) {
-    if (s[i] == c) return s + i;
+    if (s[i] == c)
+      return s + i;
   }
   return nullptr;
 }
@@ -278,12 +286,15 @@ SMOL_FORCE_INLINE const char* FindCharNEON(const char* s, size_t len, char c) {
 
 inline const char* FindChar(const char* s, size_t len, char c) {
 #if SMOL_COMPILE_AVX2
-  if (g_has_avx2 && len >= 32) return FindCharAVX2(s, len, c);
+  if (g_has_avx2 && len >= 32)
+    return FindCharAVX2(s, len, c);
 #endif
 #if SMOL_HAS_SSE2
-  if (len >= 16) return FindCharSSE2(s, len, c);
+  if (len >= 16)
+    return FindCharSSE2(s, len, c);
 #elif SMOL_HAS_NEON
-  if (len >= 16) return FindCharNEON(s, len, c);
+  if (len >= 16)
+    return FindCharNEON(s, len, c);
 #endif
   return FindCharScalar(s, len, c);
 }
@@ -293,8 +304,8 @@ inline const char* FindChar(const char* s, size_t len, char c) {
 // ============================================================================
 
 #if SMOL_HAS_SSE2
-SMOL_FORCE_INLINE size_t FindAnyOfSSE2(
-    const char* s, size_t len, char c1, char c2, char c3 = 0, char c4 = 0) {
+SMOL_FORCE_INLINE size_t FindAnyOfSSE2(const char* s, size_t len, char c1,
+                                       char c2, char c3 = 0, char c4 = 0) {
   __m128i n1 = _mm_set1_epi8(c1);
   __m128i n2 = _mm_set1_epi8(c2);
   __m128i n3 = _mm_set1_epi8(c3);
@@ -315,19 +326,23 @@ SMOL_FORCE_INLINE size_t FindAnyOfSSE2(
   // Scalar remainder
   for (; i < len; i++) {
     char ch = s[i];
-    if (ch == c1 || ch == c2 || ch == c3 || ch == c4) return i;
+    if (ch == c1 || ch == c2 || ch == c3 || ch == c4)
+      return i;
   }
   return len;
 }
 #endif
 
-inline size_t FindAnyOf(const char* s, size_t len, char c1, char c2, char c3 = 0, char c4 = 0) {
+inline size_t FindAnyOf(const char* s, size_t len, char c1, char c2,
+                        char c3 = 0, char c4 = 0) {
 #if SMOL_HAS_SSE2
-  if (len >= 16) return FindAnyOfSSE2(s, len, c1, c2, c3, c4);
+  if (len >= 16)
+    return FindAnyOfSSE2(s, len, c1, c2, c3, c4);
 #endif
   for (size_t i = 0; i < len; i++) {
     char ch = s[i];
-    if (ch == c1 || ch == c2 || ch == c3 || ch == c4) return i;
+    if (ch == c1 || ch == c2 || ch == c3 || ch == c4)
+      return i;
   }
   return len;
 }
@@ -355,7 +370,8 @@ SMOL_FORCE_INLINE void ToLowerSSE2(char* s, size_t len) {
 
   // Scalar remainder
   for (; i < len; i++) {
-    if (s[i] >= 'A' && s[i] <= 'Z') s[i] += 0x20;
+    if (s[i] >= 'A' && s[i] <= 'Z')
+      s[i] += 0x20;
   }
 }
 #endif
@@ -379,7 +395,8 @@ SMOL_FORCE_INLINE void ToLowerNEON(char* s, size_t len) {
 
   // Scalar remainder
   for (; i < len; i++) {
-    if (s[i] >= 'A' && s[i] <= 'Z') s[i] += 0x20;
+    if (s[i] >= 'A' && s[i] <= 'Z')
+      s[i] += 0x20;
   }
 }
 #endif
@@ -391,7 +408,8 @@ inline void ToLower(char* s, size_t len) {
   ToLowerNEON(s, len);
 #else
   for (size_t i = 0; i < len; i++) {
-    if (s[i] >= 'A' && s[i] <= 'Z') s[i] += 0x20;
+    if (s[i] >= 'A' && s[i] <= 'Z')
+      s[i] += 0x20;
   }
 #endif
 }
@@ -436,7 +454,8 @@ SMOL_FORCE_INLINE void XorRepeat4AVX2(uint8_t* data, size_t len, uint32_t key) {
   size_t i = 0;
 
   for (; i + 32 <= len; i += 32) {
-    __m256i chunk = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
+    __m256i chunk =
+        _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
     chunk = _mm256_xor_si256(chunk, mask);
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(data + i), chunk);
   }
@@ -496,12 +515,21 @@ SMOL_FORCE_INLINE void XorRepeat4NEON(uint8_t* data, size_t len, uint32_t key) {
 
 inline void XorRepeat4(uint8_t* data, size_t len, uint32_t key) {
 #if SMOL_COMPILE_AVX2
-  if (g_has_avx2 && len >= 32) { XorRepeat4AVX2(data, len, key); return; }
+  if (g_has_avx2 && len >= 32) {
+    XorRepeat4AVX2(data, len, key);
+    return;
+  }
 #endif
 #if SMOL_HAS_SSE2
-  if (len >= 16) { XorRepeat4SSE2(data, len, key); return; }
+  if (len >= 16) {
+    XorRepeat4SSE2(data, len, key);
+    return;
+  }
 #elif SMOL_HAS_NEON
-  if (len >= 16) { XorRepeat4NEON(data, len, key); return; }
+  if (len >= 16) {
+    XorRepeat4NEON(data, len, key);
+    return;
+  }
 #endif
   // Scalar fallback
   const uint8_t* kb = reinterpret_cast<const uint8_t*>(&key);
@@ -596,7 +624,8 @@ SMOL_FORCE_INLINE uint64_t ParseDigitsScalar(const char* s, size_t len) {
   uint64_t result = 0;
   for (size_t i = 0; i < len; i++) {
     char c = s[i];
-    if (c < '0' || c > '9') break;
+    if (c < '0' || c > '9')
+      break;
     result = result * 10 + static_cast<uint64_t>(c - '0');
   }
   return result;
@@ -613,15 +642,17 @@ SMOL_FORCE_INLINE uint64_t ParseDigits8SSSE3(const char* s) {
   chunk = _mm_sub_epi8(chunk, zero_char);
 
   // Multiply by powers of 10 using multiply-add (SSSE3)
-  const __m128i mult1 = _mm_setr_epi8(10, 1, 10, 1, 10, 1, 10, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-  chunk = _mm_maddubs_epi16(chunk, mult1);  // Now have 4x 16-bit values
+  const __m128i mult1 =
+      _mm_setr_epi8(10, 1, 10, 1, 10, 1, 10, 1, 0, 0, 0, 0, 0, 0, 0, 0);
+  chunk = _mm_maddubs_epi16(chunk, mult1); // Now have 4x 16-bit values
 
   const __m128i mult2 = _mm_setr_epi16(100, 1, 100, 1, 0, 0, 0, 0);
-  chunk = _mm_madd_epi16(chunk, mult2);  // Now have 2x 32-bit values
+  chunk = _mm_madd_epi16(chunk, mult2); // Now have 2x 32-bit values
 
   // Extract and combine
   uint32_t lo = static_cast<uint32_t>(_mm_cvtsi128_si32(chunk));
-  uint32_t hi = static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_shuffle_epi32(chunk, 1)));
+  uint32_t hi =
+      static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_shuffle_epi32(chunk, 1)));
 
   return static_cast<uint64_t>(hi) * 10000 + lo;
 }
@@ -630,7 +661,8 @@ SMOL_FORCE_INLINE uint64_t ParseDigits8SSSE3(const char* s) {
 inline uint64_t ParseDigits(const char* s, size_t len) {
   // For short strings, scalar is fast enough
 #if SMOL_HAS_SSSE3
-  if (len == 8) return ParseDigits8SSSE3(s);
+  if (len == 8)
+    return ParseDigits8SSSE3(s);
 #endif
   return ParseDigitsScalar(s, len);
 }
@@ -653,17 +685,21 @@ SMOL_FORCE_INLINE bool NeedsEscapeSSE2(const char* s, size_t len) {
   for (; i + 16 <= len; i += 16) {
     __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s + i));
     __m128i cmp = _mm_or_si128(
-        _mm_or_si128(
-            _mm_or_si128(_mm_cmpeq_epi8(chunk, space), _mm_cmpeq_epi8(chunk, comma)),
-            _mm_or_si128(_mm_cmpeq_epi8(chunk, equals), _mm_cmpeq_epi8(chunk, backslash))),
-        _mm_or_si128(_mm_cmpeq_epi8(chunk, newline), _mm_cmpeq_epi8(chunk, cr)));
-    if (_mm_movemask_epi8(cmp)) return true;
+        _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(chunk, space),
+                                  _mm_cmpeq_epi8(chunk, comma)),
+                     _mm_or_si128(_mm_cmpeq_epi8(chunk, equals),
+                                  _mm_cmpeq_epi8(chunk, backslash))),
+        _mm_or_si128(_mm_cmpeq_epi8(chunk, newline),
+                     _mm_cmpeq_epi8(chunk, cr)));
+    if (_mm_movemask_epi8(cmp))
+      return true;
   }
 
   // Scalar remainder
   for (; i < len; i++) {
     char c = s[i];
-    if (c == ' ' || c == ',' || c == '=' || c == '\\' || c == '\n' || c == '\r') {
+    if (c == ' ' || c == ',' || c == '=' || c == '\\' || c == '\n' ||
+        c == '\r') {
       return true;
     }
   }
@@ -673,11 +709,13 @@ SMOL_FORCE_INLINE bool NeedsEscapeSSE2(const char* s, size_t len) {
 
 inline bool NeedsEscape(const char* s, size_t len) {
 #if SMOL_HAS_SSE2
-  if (len >= 16) return NeedsEscapeSSE2(s, len);
+  if (len >= 16)
+    return NeedsEscapeSSE2(s, len);
 #endif
   for (size_t i = 0; i < len; i++) {
     char c = s[i];
-    if (c == ' ' || c == ',' || c == '=' || c == '\\' || c == '\n' || c == '\r') {
+    if (c == ' ' || c == ',' || c == '=' || c == '\\' || c == '\n' ||
+        c == '\r') {
       return true;
     }
   }
@@ -694,13 +732,33 @@ inline size_t EscapeString(const char* src, size_t src_len, char* dst) {
   for (size_t i = 0; i < src_len; i++) {
     char c = src[i];
     switch (c) {
-      case ' ':  dst[j++] = '\\'; dst[j++] = ' '; break;
-      case ',':  dst[j++] = '\\'; dst[j++] = ','; break;
-      case '=':  dst[j++] = '\\'; dst[j++] = '='; break;
-      case '\\': dst[j++] = '\\'; dst[j++] = '\\'; break;
-      case '\n': dst[j++] = '\\'; dst[j++] = 'n'; break;
-      case '\r': dst[j++] = '\\'; dst[j++] = 'r'; break;
-      default:   dst[j++] = c; break;
+    case ' ':
+      dst[j++] = '\\';
+      dst[j++] = ' ';
+      break;
+    case ',':
+      dst[j++] = '\\';
+      dst[j++] = ',';
+      break;
+    case '=':
+      dst[j++] = '\\';
+      dst[j++] = '=';
+      break;
+    case '\\':
+      dst[j++] = '\\';
+      dst[j++] = '\\';
+      break;
+    case '\n':
+      dst[j++] = '\\';
+      dst[j++] = 'n';
+      break;
+    case '\r':
+      dst[j++] = '\\';
+      dst[j++] = 'r';
+      break;
+    default:
+      dst[j++] = c;
+      break;
     }
   }
   return j;
@@ -710,20 +768,24 @@ inline size_t EscapeString(const char* src, size_t src_len, char* dst) {
 // COMPARE STRINGS CASE-INSENSITIVELY
 // ============================================================================
 
-inline bool EqualsIgnoreCase(const char* a, size_t a_len, const char* b, size_t b_len) {
-  if (a_len != b_len) return false;
+inline bool EqualsIgnoreCase(const char* a, size_t a_len, const char* b,
+                             size_t b_len) {
+  if (a_len != b_len)
+    return false;
 
   for (size_t i = 0; i < a_len; i++) {
     char ca = a[i];
     char cb = b[i];
 
     // Fast path: equal
-    if (ca == cb) continue;
+    if (ca == cb)
+      continue;
 
     // Case-insensitive comparison for ASCII letters
     if ((ca ^ cb) == 0x20) {
       char lower = ca | 0x20;
-      if (lower >= 'a' && lower <= 'z') continue;
+      if (lower >= 'a' && lower <= 'z')
+        continue;
     }
 
     return false;
@@ -751,7 +813,7 @@ SMOL_FORCE_INLINE int FastCmp(const void* a, const void* b, size_t len) {
   return std::memcmp(a, b, len);
 }
 
-}  // namespace simd
-}  // namespace smol
+} // namespace simd
+} // namespace smol
 
-#endif  // SRC_SOCKETSECURITY_SIMD_H_
+#endif // SRC_SOCKETSECURITY_SIMD_H_

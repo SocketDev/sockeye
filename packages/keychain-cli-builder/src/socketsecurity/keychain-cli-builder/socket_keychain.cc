@@ -39,11 +39,10 @@ void secureZero(char* value, size_t length) {
 }
 
 void printUsage(FILE* stream) {
-  std::fprintf(stream,
-               "usage:\n"
-               "  socket-keychain get [--silent] <service> <account>\n"
-               "  socket-keychain set [--silent] <service> <account>\n"
-               "  socket-keychain delete <service> <account>\n");
+  std::fprintf(stream, "usage:\n"
+                       "  socket-keychain get [--silent] <service> <account>\n"
+                       "  socket-keychain set [--silent] <service> <account>\n"
+                       "  socket-keychain delete <service> <account>\n");
 }
 
 bool validField(const char* value) {
@@ -55,33 +54,33 @@ bool validField(const char* value) {
 
 int exitForKeystore(int status) {
   switch (status) {
-    case KEYSTORE_OK:
-      return kSuccess;
-    case KEYSTORE_ERR_NOT_FOUND:
-      return kNotFound;
-    case KEYSTORE_ERR_DENIED:
-      return kDenied;
-    case KEYSTORE_ERR_UNAVAILABLE:
-      return kUnavailable;
-    default:
-      return kIo;
+  case KEYSTORE_OK:
+    return kSuccess;
+  case KEYSTORE_ERR_NOT_FOUND:
+    return kNotFound;
+  case KEYSTORE_ERR_DENIED:
+    return kDenied;
+  case KEYSTORE_ERR_UNAVAILABLE:
+    return kUnavailable;
+  default:
+    return kIo;
   }
 }
 
 void printKeystoreError(int status) {
   switch (status) {
-    case KEYSTORE_ERR_NOT_FOUND:
-      std::fputs("credential not found\n", stderr);
-      break;
-    case KEYSTORE_ERR_DENIED:
-      std::fputs("credential access denied\n", stderr);
-      break;
-    case KEYSTORE_ERR_UNAVAILABLE:
-      std::fputs("credential store unavailable\n", stderr);
-      break;
-    default:
-      std::fputs("credential store I/O error\n", stderr);
-      break;
+  case KEYSTORE_ERR_NOT_FOUND:
+    std::fputs("credential not found\n", stderr);
+    break;
+  case KEYSTORE_ERR_DENIED:
+    std::fputs("credential access denied\n", stderr);
+    break;
+  case KEYSTORE_ERR_UNAVAILABLE:
+    std::fputs("credential store unavailable\n", stderr);
+    break;
+  default:
+    std::fputs("credential store I/O error\n", stderr);
+    break;
   }
 }
 
@@ -161,16 +160,15 @@ int runDelete(const char* service, const char* account) {
   return kSuccess;
 }
 
-}  // namespace
+} // namespace
 
 int main(int argc, char** argv) {
   if (argc == 2 && std::strcmp(argv[1], "--version") == 0) {
     std::printf("socket-keychain %s\n", VERSION);
     return kSuccess;
   }
-  if (argc == 2 &&
-      (std::strcmp(argv[1], "--help") == 0 ||
-       std::strcmp(argv[1], "-h") == 0)) {
+  if (argc == 2 && (std::strcmp(argv[1], "--help") == 0 ||
+                    std::strcmp(argv[1], "-h") == 0)) {
     printUsage(stdout);
     return kSuccess;
   }

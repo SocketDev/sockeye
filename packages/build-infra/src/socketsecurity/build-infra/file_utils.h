@@ -18,7 +18,7 @@ extern "C" {
  * @param filepath Path to the file whose parent directories should be created
  * @return 0 on success, -1 on failure
  */
-int create_parent_directories(const char *filepath);
+int create_parent_directories(const char* filepath);
 
 /**
  * Create a directory recursively (like mkdir -p).
@@ -29,7 +29,7 @@ int create_parent_directories(const char *filepath);
  * @param dirpath Path to the directory to create
  * @return 0 on success, -1 on failure
  */
-int mkdir_recursive(const char *dirpath);
+int mkdir_recursive(const char* dirpath);
 
 /**
  * Ensure output path has .exe extension for PE binaries.
@@ -40,7 +40,7 @@ int mkdir_recursive(const char *dirpath);
  * @param path Original path
  * @return Path with .exe extension (caller must free), or NULL on error
  */
-char *ensure_exe_extension(const char *path);
+char* ensure_exe_extension(const char* path);
 
 /**
  * Set executable permissions on a file (cross-platform).
@@ -51,7 +51,7 @@ char *ensure_exe_extension(const char *path);
  * @param path Path to the file
  * @return 0 on success, -1 on failure
  */
-int set_executable_permissions(const char *path);
+int set_executable_permissions(const char* path);
 
 /**
  * Check if a file exists and is readable (cross-platform).
@@ -61,7 +61,7 @@ int set_executable_permissions(const char *path);
  * @param path Path to check
  * @return 1 if file exists, 0 if not
  */
-int file_exists(const char *path);
+int file_exists(const char* path);
 
 /**
  * Check if a path is a directory (cross-platform).
@@ -71,7 +71,7 @@ int file_exists(const char *path);
  * @param path Path to check
  * @return 1 if directory exists, 0 if not
  */
-int is_directory(const char *path);
+int is_directory(const char* path);
 
 /**
  * Safe dirname() wrapper that handles musl/glibc differences.
@@ -85,7 +85,7 @@ int is_directory(const char *path);
  * @param path Path to extract directory from
  * @return Allocated directory path string, or NULL on error
  */
-char *safe_dirname(const char *path);
+char* safe_dirname(const char* path);
 
 /**
  * Safe basename() wrapper that handles musl/glibc differences.
@@ -99,7 +99,7 @@ char *safe_dirname(const char *path);
  * @param path Path to extract filename from
  * @return Allocated filename string, or NULL on error
  */
-char *safe_basename(const char *path);
+char* safe_basename(const char* path);
 
 /**
  * Check if a file has .tar.gz or .tgz extension.
@@ -107,7 +107,7 @@ char *safe_basename(const char *path);
  * @param path Path to check
  * @return 1 if file has tar.gz extension, 0 otherwise
  */
-int is_tar_gz_file(const char *path);
+int is_tar_gz_file(const char* path);
 
 /**
  * Check if a file has .tar extension (uncompressed tar).
@@ -115,7 +115,7 @@ int is_tar_gz_file(const char *path);
  * @param path Path to check
  * @return 1 if file has .tar extension (but not .tar.gz), 0 otherwise
  */
-int is_tar_file(const char *path);
+int is_tar_file(const char* path);
 
 /**
  * Check if data has gzip magic bytes (0x1F 0x8B).
@@ -124,7 +124,7 @@ int is_tar_file(const char *path);
  * @param size Size of data buffer
  * @return 1 if data starts with gzip magic bytes, 0 otherwise
  */
-int is_gzip_data(const uint8_t *data, size_t size);
+int is_gzip_data(const uint8_t* data, size_t size);
 
 /**
  * Write data to a file atomically (cross-platform).
@@ -141,7 +141,8 @@ int is_gzip_data(const uint8_t *data, size_t size);
  * @param mode Unix permissions (e.g., 0755) - ignored on Windows
  * @return 0 on success, -1 on failure (with error logged to stderr)
  */
-int write_file_atomically(const char *path, const unsigned char *data, size_t size, int mode);
+int write_file_atomically(const char* path, const unsigned char* data,
+                          size_t size, int mode);
 
 #ifdef __cplusplus
 }

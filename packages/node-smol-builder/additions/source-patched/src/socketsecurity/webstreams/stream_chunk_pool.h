@@ -56,7 +56,7 @@ namespace webstreams {
 //
 // WPT Compatibility: Chunks must be plain objects, not C++ wrappers.
 class StreamChunkPool {
- public:
+public:
   explicit StreamChunkPool(Environment* env);
   ~StreamChunkPool();
 
@@ -67,11 +67,8 @@ class StreamChunkPool {
   void ReleaseChunk(v8::Local<v8::Object> chunk);
 
   // Set chunk data (reuses object, WPT-compatible).
-  static void SetChunkValue(
-    Environment* env,
-    v8::Local<v8::Object> chunk,
-    v8::Local<v8::Value> value,
-    bool done);
+  static void SetChunkValue(Environment* env, v8::Local<v8::Object> chunk,
+                            v8::Local<v8::Value> value, bool done);
 
   // Get pool statistics.
   size_t GetPoolSize() const noexcept { return pool_.size(); }
@@ -79,7 +76,7 @@ class StreamChunkPool {
   // Clear pool (for testing).
   void Clear();
 
- private:
+private:
   Environment* env_;
   static const size_t kMaxPoolSize = 256;
   std::vector<v8::Global<v8::Object>> pool_;
@@ -89,8 +86,8 @@ class StreamChunkPool {
   size_t released_ = 0;
 };
 
-}  // namespace webstreams
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webstreams
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_WEBSTREAMS_STREAM_CHUNK_POOL_H_
+#endif // SRC_SOCKETSECURITY_WEBSTREAMS_STREAM_CHUNK_POOL_H_

@@ -41,10 +41,8 @@ extern "C" {
  * @param size_out   Set to sh_size on success.
  * @return 0 on success, -1 on not found or error.
  */
-int bf_find_elf_section(FILE *fp,
-                        const char *name,
-                        int64_t *offset_out,
-                        uint64_t *size_out);
+int bf_find_elf_section(FILE* fp, const char* name, int64_t* offset_out,
+                        uint64_t* size_out);
 
 /**
  * Find a PE section by name prefix.
@@ -59,10 +57,8 @@ int bf_find_elf_section(FILE *fp,
  * @param size_out   Set to SizeOfRawData on success.
  * @return 0 on success, -1 on not found or error.
  */
-int bf_find_pe_section(FILE *fp,
-                       const char name8[8],
-                       int64_t *offset_out,
-                       uint32_t *size_out);
+int bf_find_pe_section(FILE* fp, const char name8[8], int64_t* offset_out,
+                       uint32_t* size_out);
 
 /**
  * Find a Mach-O section inside a named segment.
@@ -78,11 +74,8 @@ int bf_find_pe_section(FILE *fp,
  * @param size_out    Set to section size on success.
  * @return 0 on success, -1 on not found or error.
  */
-int bf_find_macho_section(FILE *fp,
-                          const char *segname,
-                          const char *sectname,
-                          int64_t *offset_out,
-                          uint64_t *size_out);
+int bf_find_macho_section(FILE* fp, const char* segname, const char* sectname,
+                          int64_t* offset_out, uint64_t* size_out);
 
 #ifdef __cplusplus
 }

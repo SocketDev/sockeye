@@ -9,9 +9,9 @@
 #ifndef SMOL_SEGMENT_READER_H
 #define SMOL_SEGMENT_READER_H
 
+#include "socketsecurity/bin-infra/compression_constants.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "socketsecurity/bin-infra/compression_constants.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,12 +28,13 @@ extern "C" {
  * - Offset to compressed data start
  */
 typedef struct {
-    uint64_t compressed_size;        /* Compressed data size in bytes. */
-    uint64_t uncompressed_size;      /* Uncompressed data size in bytes. */
-    char cache_key[17];              /* Cache key (16 hex chars + null). */
-    uint8_t platform_metadata[PLATFORM_METADATA_LEN];  /* Platform metadata bytes. */
-    uint8_t integrity_hash[INTEGRITY_HASH_LEN];  /* SHA-512 of compressed data. */
-    int64_t data_offset;             /* Offset to compressed data start. */
+  uint64_t compressed_size;   /* Compressed data size in bytes. */
+  uint64_t uncompressed_size; /* Uncompressed data size in bytes. */
+  char cache_key[17];         /* Cache key (16 hex chars + null). */
+  uint8_t
+      platform_metadata[PLATFORM_METADATA_LEN]; /* Platform metadata bytes. */
+  uint8_t integrity_hash[INTEGRITY_HASH_LEN]; /* SHA-512 of compressed data. */
+  int64_t data_offset; /* Offset to compressed data start. */
 } smol_metadata_t;
 
 /**
@@ -48,13 +49,14 @@ typedef struct {
  * - has_update_config flag (1 byte)
  * - [optional: update_config_binary (1192 bytes)]
  *
- * After successful return, file descriptor is positioned at start of compressed data.
+ * After successful return, file descriptor is positioned at start of compressed
+ * data.
  *
  * @param fd File descriptor (must be open for reading, seekable)
  * @param metadata Output structure (caller-allocated)
  * @return 0 on success, -1 on error (with stderr message)
  */
-int smol_read_metadata(int fd, smol_metadata_t *metadata);
+int smol_read_metadata(int fd, smol_metadata_t* metadata);
 
 #if defined(__APPLE__)
 /**
@@ -66,7 +68,7 @@ int smol_read_metadata(int fd, smol_metadata_t *metadata);
  * @param metadata Output structure (caller-allocated)
  * @return 0 on success, -1 on error (with stderr message)
  */
-int smol_read_metadata_macho(int fd, smol_metadata_t *metadata);
+int smol_read_metadata_macho(int fd, smol_metadata_t* metadata);
 #endif
 
 #if defined(__linux__)
@@ -79,7 +81,7 @@ int smol_read_metadata_macho(int fd, smol_metadata_t *metadata);
  * @param metadata Output structure (caller-allocated)
  * @return 0 on success, -1 on error (with stderr message)
  */
-int smol_read_metadata_elf(int fd, smol_metadata_t *metadata);
+int smol_read_metadata_elf(int fd, smol_metadata_t* metadata);
 #endif
 
 #if defined(_WIN32)
@@ -92,7 +94,7 @@ int smol_read_metadata_elf(int fd, smol_metadata_t *metadata);
  * @param metadata Output structure (caller-allocated)
  * @return 0 on success, -1 on error (with stderr message)
  */
-int smol_read_metadata_pe(int fd, smol_metadata_t *metadata);
+int smol_read_metadata_pe(int fd, smol_metadata_t* metadata);
 #endif
 
 /**
@@ -106,7 +108,7 @@ int smol_read_metadata_pe(int fd, smol_metadata_t *metadata);
  * @param metadata Output structure (caller-allocated)
  * @return 0 on success, -1 on error (with stderr message)
  */
-int smol_read_metadata_after_marker(int fd, smol_metadata_t *metadata);
+int smol_read_metadata_after_marker(int fd, smol_metadata_t* metadata);
 
 /**
  * Validate SMOL metadata.
@@ -119,7 +121,7 @@ int smol_read_metadata_after_marker(int fd, smol_metadata_t *metadata);
  * @param max_size Maximum allowed size in bytes (0 = no limit)
  * @return 0 if valid, -1 if invalid (with stderr message)
  */
-int smol_validate_metadata(const smol_metadata_t *metadata, size_t max_size);
+int smol_validate_metadata(const smol_metadata_t* metadata, size_t max_size);
 
 /**
  * Search for SMOL marker in memory buffer.
@@ -132,7 +134,8 @@ int smol_validate_metadata(const smol_metadata_t *metadata, size_t max_size);
  * @param offset_out Output: offset to marker start (if found)
  * @return 0 if found, -1 if not found
  */
-int smol_find_marker_in_buffer(const uint8_t *buffer, size_t size, size_t *offset_out);
+int smol_find_marker_in_buffer(const uint8_t* buffer, size_t size,
+                               size_t* offset_out);
 
 /**
  * Extract Node.js version from SMOL binary using fast native parsing.
@@ -152,7 +155,7 @@ int smol_find_marker_in_buffer(const uint8_t *buffer, size_t size, size_t *offse
  * @return Version string (e.g., "25.5.0"), or NULL if not found.
  *         Caller must free() the returned string.
  */
-char* smol_extract_node_version_fast(const char *binary_path);
+char* smol_extract_node_version_fast(const char* binary_path);
 
 #ifdef __cplusplus
 }

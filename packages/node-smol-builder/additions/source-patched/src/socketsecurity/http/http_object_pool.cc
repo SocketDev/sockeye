@@ -24,9 +24,7 @@ using v8::Value;
 
 HttpObjectPool::HttpObjectPool(Environment* env) : env_(env) {}
 
-HttpObjectPool::~HttpObjectPool() {
-  Clear();
-}
+HttpObjectPool::~HttpObjectPool() { Clear(); }
 
 Local<Object> HttpObjectPool::AcquireRequest() {
   Isolate* isolate = env_->isolate();
@@ -61,18 +59,13 @@ Local<Object> HttpObjectPool::AcquireRequest() {
 
   // Initialize with null properties (will be set by HTTP layer).
   Local<Context> context = env_->context();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "method"),
-    v8::Null(isolate)).Check();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "url"),
-    v8::Null(isolate)).Check();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "headers"),
-    v8::Null(isolate)).Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "method"), v8::Null(isolate))
+      .Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "url"), v8::Null(isolate))
+      .Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "headers"),
+           v8::Null(isolate))
+      .Check();
 
   return scope.Escape(req);
 }
@@ -101,18 +94,15 @@ Local<Object> HttpObjectPool::AcquireResponse() {
 
   // Initialize with null properties.
   Local<Context> context = env_->context();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "statusCode"),
-    v8::Integer::New(isolate, 200)).Check();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "statusMessage"),
-    v8::Null(isolate)).Check();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "headers"),
-    v8::Null(isolate)).Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "statusCode"),
+           v8::Integer::New(isolate, 200))
+      .Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "statusMessage"),
+           v8::Null(isolate))
+      .Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "headers"),
+           v8::Null(isolate))
+      .Check();
 
   return scope.Escape(res);
 }
@@ -159,22 +149,15 @@ void HttpObjectPool::ResetRequest(Environment* env, Local<Object> req) {
   Local<Context> context = env->context();
 
   // Reset all properties to null/default.
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "method"),
-    v8::Null(isolate)).Check();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "url"),
-    v8::Null(isolate)).Check();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "headers"),
-    v8::Null(isolate)).Check();
-  req->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "body"),
-    v8::Null(isolate)).Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "method"), v8::Null(isolate))
+      .Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "url"), v8::Null(isolate))
+      .Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "headers"),
+           v8::Null(isolate))
+      .Check();
+  req->Set(context, FIXED_ONE_BYTE_STRING(isolate, "body"), v8::Null(isolate))
+      .Check();
 }
 
 void HttpObjectPool::ResetResponse(Environment* env, Local<Object> res) {
@@ -182,26 +165,22 @@ void HttpObjectPool::ResetResponse(Environment* env, Local<Object> res) {
   Local<Context> context = env->context();
 
   // Reset all properties to null/default.
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "statusCode"),
-    v8::Integer::New(isolate, 200)).Check();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "statusMessage"),
-    v8::Null(isolate)).Check();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "headers"),
-    v8::Null(isolate)).Check();
-  res->Set(
-    context,
-    FIXED_ONE_BYTE_STRING(isolate, "finished"),
-    v8::Boolean::New(isolate, false)).Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "statusCode"),
+           v8::Integer::New(isolate, 200))
+      .Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "statusMessage"),
+           v8::Null(isolate))
+      .Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "headers"),
+           v8::Null(isolate))
+      .Check();
+  res->Set(context, FIXED_ONE_BYTE_STRING(isolate, "finished"),
+           v8::Boolean::New(isolate, false))
+      .Check();
 }
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node
 
 #pragma GCC diagnostic pop

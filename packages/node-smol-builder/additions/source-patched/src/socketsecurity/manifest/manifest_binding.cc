@@ -57,8 +57,7 @@ std::string ToStdString(Isolate* isolate, Local<String> s) {
 // Make a v8::String from a std::string_view.
 Local<String> MakeStr(Isolate* isolate, std::string_view sv) {
   Local<String> result;
-  if (!String::NewFromUtf8(isolate, sv.data(),
-                           v8::NewStringType::kNormal,
+  if (!String::NewFromUtf8(isolate, sv.data(), v8::NewStringType::kNormal,
                            static_cast<int>(sv.size()))
            .ToLocal(&result)) {
     return String::Empty(isolate);
@@ -86,24 +85,30 @@ Local<Object> BuildPackageRef(Isolate* isolate, Local<Context> context,
     SetProp(isolate, context, obj, "integrity",
             MakeStr(isolate, ref.integrity));
   }
-  const char* eco_str = ecosystem == Ecosystem::kCargo   ? "cargo"
+  const char* eco_str = ecosystem == Ecosystem::kCargo  ? "cargo"
                         : ecosystem == Ecosystem::kPypi ? "pypi"
                                                         : "npm";
   SetProp(isolate, context, obj, "ecosystem", MakeStr(isolate, eco_str));
   const char* dep_str = "prod";
   switch (ref.depType) {
-    case DepType::kDev: dep_str = "dev"; break;
-    case DepType::kOptional: dep_str = "optional"; break;
-    case DepType::kPeer: dep_str = "peer"; break;
-    case DepType::kProd: dep_str = "prod"; break;
+  case DepType::kDev:
+    dep_str = "dev";
+    break;
+  case DepType::kOptional:
+    dep_str = "optional";
+    break;
+  case DepType::kPeer:
+    dep_str = "peer";
+    break;
+  case DepType::kProd:
+    dep_str = "prod";
+    break;
   }
   SetProp(isolate, context, obj, "depType", MakeStr(isolate, dep_str));
-  SetProp(isolate, context, obj, "isDev",
-          Boolean::New(isolate, ref.isDev));
+  SetProp(isolate, context, obj, "isDev", Boolean::New(isolate, ref.isDev));
   SetProp(isolate, context, obj, "isOptional",
           Boolean::New(isolate, ref.isOptional));
-  SetProp(isolate, context, obj, "isPeer",
-          Boolean::New(isolate, ref.isPeer));
+  SetProp(isolate, context, obj, "isPeer", Boolean::New(isolate, ref.isPeer));
   SetProp(isolate, context, obj, "isBundled",
           Boolean::New(isolate, ref.isBundled));
   if (!ref.license.empty()) {
@@ -117,8 +122,8 @@ Local<Object> BuildPackageRef(Isolate* isolate, Local<Context> context,
             MakeStr(isolate, ref.vcsCommit));
   }
   // dependencies array.
-  Local<Array> deps = Array::New(isolate, static_cast<int>(
-                                              ref.dependencies.size()));
+  Local<Array> deps =
+      Array::New(isolate, static_cast<int>(ref.dependencies.size()));
   for (uint32_t i = 0; i < ref.dependencies.size(); ++i) {
     deps->Set(context, i, MakeStr(isolate, ref.dependencies[i])).Check();
   }
@@ -134,18 +139,18 @@ Local<Object> BuildParsedLockfile(Isolate* isolate, Local<Context> context,
   SetProp(isolate, context, obj, "type", MakeStr(isolate, "lockfile"));
   SetProp(isolate, context, obj, "lockVersion",
           MakeStr(isolate, r.lockVersion));
-  const char* eco_str = r.ecosystem == Ecosystem::kCargo   ? "cargo"
+  const char* eco_str = r.ecosystem == Ecosystem::kCargo  ? "cargo"
                         : r.ecosystem == Ecosystem::kPypi ? "pypi"
                                                           : "npm";
   SetProp(isolate, context, obj, "ecosystem", MakeStr(isolate, eco_str));
 
   // packages array.
-  Local<Array> packages = Array::New(isolate,
-                                     static_cast<int>(r.packages.size()));
+  Local<Array> packages =
+      Array::New(isolate, static_cast<int>(r.packages.size()));
   for (uint32_t i = 0; i < r.packages.size(); ++i) {
-    packages->Set(context, i,
-                  BuildPackageRef(isolate, context, r.packages[i],
-                                  r.ecosystem))
+    packages
+        ->Set(context, i,
+              BuildPackageRef(isolate, context, r.packages[i], r.ecosystem))
         .Check();
   }
   packages->SetIntegrityLevel(context, v8::IntegrityLevel::kFrozen).Check();
@@ -161,9 +166,7 @@ Local<Object> BuildParsedLockfile(Isolate* isolate, Local<Context> context,
       const auto& vec = std::get<std::vector<uint32_t>>(v);
       Local<Array> arr = Array::New(isolate, static_cast<int>(vec.size()));
       for (uint32_t i = 0; i < vec.size(); ++i) {
-        arr->Set(context, i,
-                 Integer::NewFromUnsigned(isolate, vec[i]))
-            .Check();
+        arr->Set(context, i, Integer::NewFromUnsigned(isolate, vec[i])).Check();
       }
       jv = arr;
     }
@@ -180,8 +183,7 @@ void ThrowError(Isolate* isolate, const ParseError& err) {
   Local<Object> e = Exception::Error(MakeStr(isolate, err.message))
                         ->ToObject(context)
                         .ToLocalChecked();
-  e->Set(context, MakeStr(isolate, "code"), MakeStr(isolate, err.code))
-      .Check();
+  e->Set(context, MakeStr(isolate, "code"), MakeStr(isolate, err.code)).Check();
   isolate->ThrowException(e);
 }
 
@@ -190,8 +192,8 @@ void ParseLockfileJs(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
 
-  if (args.Length() < 3 || !args[0]->IsString() ||
-      !args[1]->IsInt32() || !args[2]->IsInt32()) {
+  if (args.Length() < 3 || !args[0]->IsString() || !args[1]->IsInt32() ||
+      !args[2]->IsInt32()) {
     ParseError err;
     err.message = "parseLockfile(string, int, int) — bad args";
     err.code = "ERR_INVALID_ARG_TYPE";
@@ -199,8 +201,7 @@ void ParseLockfileJs(const FunctionCallbackInfo<Value>& args) {
     return;
   }
 
-  std::string content =
-      ToStdString(isolate, args[0].As<String>());
+  std::string content = ToStdString(isolate, args[0].As<String>());
   int32_t eco_int = args[1].As<Integer>()->Value();
   int32_t fmt_int = args[2].As<Integer>()->Value();
 
@@ -228,7 +229,7 @@ void ParseLockfileJs(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(BuildParsedLockfile(isolate, context, r));
 }
 
-}  // namespace
+} // namespace
 
 void Initialize(Local<Object> target, Local<Value> /* unused */,
                 Local<Context> context, void* /* priv */) {
@@ -239,12 +240,12 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(ParseLockfileJs);
 }
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_manifest_native, node::socketsecurity::manifest::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_manifest_native,
+                                    node::socketsecurity::manifest::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_manifest_native,
     node::socketsecurity::manifest::RegisterExternalReferences)

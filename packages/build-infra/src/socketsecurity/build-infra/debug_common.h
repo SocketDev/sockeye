@@ -43,17 +43,17 @@ static char _debug_namespace[256] = {0};
  * Check if a pattern matches a namespace
  * Supports wildcards: "smol:*" matches "smol:vfs", "smol:binject", etc.
  */
-static inline int _debug_matches_pattern(const char *pattern, const char *ns) {
-    const char *star = strchr(pattern, '*');
+static inline int _debug_matches_pattern(const char* pattern, const char* ns) {
+  const char* star = strchr(pattern, '*');
 
-    if (!star) {
-        // Exact match
-        return strcmp(pattern, ns) == 0;
-    }
+  if (!star) {
+    // Exact match
+    return strcmp(pattern, ns) == 0;
+  }
 
-    // Wildcard match: compare prefix before '*'
-    size_t prefix_len = star - pattern;
-    return strncmp(pattern, ns, prefix_len) == 0;
+  // Wildcard match: compare prefix before '*'
+  size_t prefix_len = star - pattern;
+  return strncmp(pattern, ns, prefix_len) == 0;
 }
 
 /**
@@ -64,94 +64,94 @@ static inline int _debug_matches_pattern(const char *pattern, const char *ns) {
  * - Multiple: DEBUG=smol:vfs,binject
  * - Negation: DEBUG=*,-smol:vfs (enable all except smol:vfs)
  */
-static inline int _debug_is_enabled(const char *ns) {
-    const char *debug_env = getenv("DEBUG");
+static inline int _debug_is_enabled(const char* ns) {
+  const char* debug_env = getenv("DEBUG");
 
-    if (!debug_env || !debug_env[0]) {
-        return 0;  // Not set or empty
-    }
+  if (!debug_env || !debug_env[0]) {
+    return 0; // Not set or empty
+  }
 
-    // Treat "1", "true", "yes" as enable-all
-    if (strcmp(debug_env, "1") == 0 ||
-        strcmp(debug_env, "true") == 0 ||
-        strcmp(debug_env, "TRUE") == 0 ||
-        strcmp(debug_env, "yes") == 0 ||
-        strcmp(debug_env, "YES") == 0) {
-        return 1;
-    }
+  // Treat "1", "true", "yes" as enable-all
+  if (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0 ||
+      strcmp(debug_env, "TRUE") == 0 || strcmp(debug_env, "yes") == 0 ||
+      strcmp(debug_env, "YES") == 0) {
+    return 1;
+  }
 
-    // Check for EXACT falsy values only
-    if (strcmp(debug_env, "0") == 0 ||
-        strcmp(debug_env, "false") == 0 ||
-        strcmp(debug_env, "FALSE") == 0) {
-        return 0;
-    }
+  // Check for EXACT falsy values only
+  if (strcmp(debug_env, "0") == 0 || strcmp(debug_env, "false") == 0 ||
+      strcmp(debug_env, "FALSE") == 0) {
+    return 0;
+  }
 
-    /**
-     * Parse comma-separated patterns
-     * Uses thread-safe strtok_r (POSIX) / strtok_s (Windows)
-     * WARNING: Not async-signal-safe - do not call from signal handlers
-     */
-    // Copy to temp buffer since strtok_r/strtok_s modifies the string
-    char patterns[1024];
-    snprintf(patterns, sizeof(patterns), "%s", debug_env);
+  /**
+   * Parse comma-separated patterns
+   * Uses thread-safe strtok_r (POSIX) / strtok_s (Windows)
+   * WARNING: Not async-signal-safe - do not call from signal handlers
+   */
+  // Copy to temp buffer since strtok_r/strtok_s modifies the string
+  char patterns[1024];
+  snprintf(patterns, sizeof(patterns), "%s", debug_env);
 
-    int enabled = 0;
-    char *strtok_context = NULL;  // Context for thread-safe tokenization
+  int enabled = 0;
+  char* strtok_context = NULL; // Context for thread-safe tokenization
 
 #ifdef _WIN32
-    char *pattern = strtok_s(patterns, ",", &strtok_context);
+  char* pattern = strtok_s(patterns, ",", &strtok_context);
 #else
-    char *pattern = strtok_r(patterns, ",", &strtok_context);
+  char* pattern = strtok_r(patterns, ",", &strtok_context);
 #endif
-    while (pattern) {
-        // Trim leading spaces
-        while (*pattern == ' ') pattern++;
+  while (pattern) {
+    // Trim leading spaces
+    while (*pattern == ' ')
+      pattern++;
 
-        // Check for negation (-)
-        if (pattern[0] == '-') {
-            // Negation pattern: disable if it matches (last pattern wins)
-            if (_debug_matches_pattern(pattern + 1, ns)) {
-                enabled = 0;
-            }
-        } else {
-            // Positive pattern: enable if it matches
-            if (_debug_matches_pattern(pattern, ns)) {
-                enabled = 1;
-            }
-        }
-
-#ifdef _WIN32
-        pattern = strtok_s(NULL, ",", &strtok_context);
-#else
-        pattern = strtok_r(NULL, ",", &strtok_context);
-#endif
+    // Check for negation (-)
+    if (pattern[0] == '-') {
+      // Negation pattern: disable if it matches (last pattern wins)
+      if (_debug_matches_pattern(pattern + 1, ns)) {
+        enabled = 0;
+      }
+    } else {
+      // Positive pattern: enable if it matches
+      if (_debug_matches_pattern(pattern, ns)) {
+        enabled = 1;
+      }
     }
 
-    return enabled;
+#ifdef _WIN32
+    pattern = strtok_s(NULL, ",", &strtok_context);
+#else
+    pattern = strtok_r(NULL, ",", &strtok_context);
+#endif
+  }
+
+  return enabled;
 }
 
 /**
  * Initialize debug mode for a specific namespace
  * Call once at program start
  */
-#define DEBUG_INIT(ns) do { \
-    snprintf(_debug_namespace, sizeof(_debug_namespace), "%s", ns); \
-    _debug_enabled = _debug_is_enabled(ns); \
-} while(0)
+#define DEBUG_INIT(ns)                                                         \
+  do {                                                                         \
+    snprintf(_debug_namespace, sizeof(_debug_namespace), "%s", ns);            \
+    _debug_enabled = _debug_is_enabled(ns);                                    \
+  } while (0)
 
 /**
  * Debug logging macro - writes to stderr with namespace prefix
  * Format: "[namespace] message"
  * Example: "[smol:vfs] Initialized with 42 entries"
  */
-#define DEBUG_LOG(...) do { \
-    if (_debug_enabled) { \
-        fprintf(stderr, "[%s] ", _debug_namespace); \
-        fprintf(stderr, __VA_ARGS__); \
-        fflush(stderr); \
-    } \
-} while(0)
+#define DEBUG_LOG(...)                                                         \
+  do {                                                                         \
+    if (_debug_enabled) {                                                      \
+      fprintf(stderr, "[%s] ", _debug_namespace);                              \
+      fprintf(stderr, __VA_ARGS__);                                            \
+      fflush(stderr);                                                          \
+    }                                                                          \
+  } while (0)
 
 /**
  * Check if debug mode is currently enabled

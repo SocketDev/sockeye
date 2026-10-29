@@ -71,22 +71,20 @@ const char kUnavailableMessage[] =
     "build) and rebuild node-smol with the artifact present.";
 
 inline void ThrowPending(Isolate* isolate) {
-  Local<String> msg =
-      String::NewFromUtf8(isolate, kPendingMessage,
-                          v8::NewStringType::kInternalized)
-          .ToLocalChecked();
+  Local<String> msg = String::NewFromUtf8(isolate, kPendingMessage,
+                                          v8::NewStringType::kInternalized)
+                          .ToLocalChecked();
   isolate->ThrowException(Exception::Error(msg));
 }
 
 inline void ThrowUnavailable(Isolate* isolate) {
-  Local<String> msg =
-      String::NewFromUtf8(isolate, kUnavailableMessage,
-                          v8::NewStringType::kInternalized)
-          .ToLocalChecked();
+  Local<String> msg = String::NewFromUtf8(isolate, kUnavailableMessage,
+                                          v8::NewStringType::kInternalized)
+                          .ToLocalChecked();
   isolate->ThrowException(Exception::Error(msg));
 }
 
-}  // namespace
+} // namespace
 
 // IsAvailable is the ONE entry that returns rather than throws. It is
 // the detection mechanism userland reads to decide whether to attempt
@@ -132,8 +130,7 @@ static void RequestDevice(const FunctionCallbackInfo<Value>& args) {
 #endif
 }
 
-static void GetPreferredCanvasFormat(
-    const FunctionCallbackInfo<Value>& args) {
+static void GetPreferredCanvasFormat(const FunctionCallbackInfo<Value>& args) {
 #ifdef HAVE_DAWN
   ThrowPending(args.GetIsolate());
 #else
@@ -141,10 +138,8 @@ static void GetPreferredCanvasFormat(
 #endif
 }
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   SetMethod(context, target, "createInstance", CreateInstance);
   SetMethod(context, target, "getPreferredCanvasFormat",
             GetPreferredCanvasFormat);
@@ -161,11 +156,11 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(RequestDevice);
 }
 
-}  // namespace webgpu
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webgpu
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_webgpu, node::socketsecurity::webgpu::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_webgpu,
+                                    node::socketsecurity::webgpu::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_webgpu, node::socketsecurity::webgpu::RegisterExternalReferences)

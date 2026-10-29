@@ -84,11 +84,11 @@ static void AsyncWriteCb(uv_write_t* req, int status) {
 // ============================================================================
 
 // Auto-compute status line length at compile time — no manual counting.
-#define STATUS_LINE_ENTRY(code, text) \
-  case code: { \
-    static constexpr char kLine[] = "HTTP/1.1 " #code " " text "\r\n"; \
-    *out_len = sizeof(kLine) - 1; \
-    return kLine; \
+#define STATUS_LINE_ENTRY(code, text)                                          \
+  case code: {                                                                 \
+    static constexpr char kLine[] = "HTTP/1.1 " #code " " text "\r\n";         \
+    *out_len = sizeof(kLine) - 1;                                              \
+    return kLine;                                                              \
   }
 
 static const char* GetStatusLine(int code, size_t* out_len) {
@@ -103,7 +103,9 @@ static const char* GetStatusLine(int code, size_t* out_len) {
     STATUS_LINE_ENTRY(403, "Forbidden")
     STATUS_LINE_ENTRY(404, "Not Found")
     STATUS_LINE_ENTRY(500, "Internal Server Error")
-    default: *out_len = 0; return nullptr;
+  default:
+    *out_len = 0;
+    return nullptr;
   }
 }
 
@@ -116,46 +118,41 @@ static constexpr const char kJsonHeaders[] =
     "Content-Length: ";
 static constexpr size_t kJsonHeadersLen = sizeof(kJsonHeaders) - 1;
 
-static constexpr const char kTextHeaders[] =
-    "Content-Type: text/plain\r\n"
-    "Connection: keep-alive\r\n"
-    "Content-Length: ";
+static constexpr const char kTextHeaders[] = "Content-Type: text/plain\r\n"
+                                             "Connection: keep-alive\r\n"
+                                             "Content-Length: ";
 static constexpr size_t kTextHeadersLen = sizeof(kTextHeaders) - 1;
 
-static constexpr const char kBinaryHeaderPrefix[] =
-    "Content-Type: ";
-static constexpr size_t kBinaryHeaderPrefixLen = sizeof(kBinaryHeaderPrefix) - 1;
+static constexpr const char kBinaryHeaderPrefix[] = "Content-Type: ";
+static constexpr size_t kBinaryHeaderPrefixLen =
+    sizeof(kBinaryHeaderPrefix) - 1;
 
 static constexpr const char kBinaryHeaderSuffix[] =
     "\r\nConnection: keep-alive\r\n"
     "Content-Length: ";
-static constexpr size_t kBinaryHeaderSuffixLen = sizeof(kBinaryHeaderSuffix) - 1;
+static constexpr size_t kBinaryHeaderSuffixLen =
+    sizeof(kBinaryHeaderSuffix) - 1;
 
 static constexpr const char kHeaderEnd[] = "\r\n\r\n";
 static constexpr size_t kHeaderEndLen = 4;
 
 // Pre-computed 304 response (complete, no body)
-static constexpr const char k304Response[] =
-    "HTTP/1.1 304 Not Modified\r\n"
-    "Connection: keep-alive\r\n"
-    "\r\n";
+static constexpr const char k304Response[] = "HTTP/1.1 304 Not Modified\r\n"
+                                             "Connection: keep-alive\r\n"
+                                             "\r\n";
 static constexpr size_t k304ResponseLen = sizeof(k304Response) - 1;
-
 
 // ============================================================================
 // UV Stream Access — get uv_stream_t from JS socket object
 // ============================================================================
 
-uv_stream_t* FastResponse::GetUvStream(
-    Environment* env,
-    Local<Object> socket) {
+uv_stream_t* FastResponse::GetUvStream(Environment* env, Local<Object> socket) {
   Isolate* isolate = env->isolate();
 
   // Get socket._handle (the TCP wrap object)
   Local<Value> handle_val;
-  if (!socket->Get(env->context(),
-        FIXED_ONE_BYTE_STRING(isolate, "_handle"))
-        .ToLocal(&handle_val) ||
+  if (!socket->Get(env->context(), FIXED_ONE_BYTE_STRING(isolate, "_handle"))
+           .ToLocal(&handle_val) ||
       !handle_val->IsObject()) {
     return nullptr;
   }
@@ -193,20 +190,21 @@ uv_stream_t* FastResponse::GetUvStream(
   return wrap->stream();
 }
 
-
 // ============================================================================
 // Direct Write — uv_try_write (single buffer)
 // ============================================================================
 
-bool FastResponse::TryWrite(
-    uv_stream_t* stream, const char* data, size_t length) {
-  if (stream == nullptr || length == 0) return false;
+bool FastResponse::TryWrite(uv_stream_t* stream, const char* data,
+                            size_t length) {
+  if (stream == nullptr || length == 0)
+    return false;
 
   uv_buf_t buf = uv_buf_init(const_cast<char*>(data), length);
   int written = uv_try_write(stream, &buf, 1);
 
   // Negative means EAGAIN or error — nothing was sent, JS can retry safely.
-  if (written < 0) return false;
+  if (written < 0)
+    return false;
 
   // Compare as size_t. Previously `written == static_cast<int>(length)`
   // truncated length to int, which silently claims success on buffers
@@ -214,7 +212,8 @@ bool FastResponse::TryWrite(
   // length (e.g. length=4_294_967_301 truncates to 5 and a 5-byte
   // write reports full success). Caller then skips the "close the
   // connection" path and the client reads a truncated response.
-  if (static_cast<size_t>(written) == length) return true;
+  if (static_cast<size_t>(written) == length)
+    return true;
 
   // Partial write: some bytes are already on the wire. We must NOT let JS
   // replay from byte 0 or data will be duplicated. Copy the remainder to
@@ -224,7 +223,8 @@ bool FastResponse::TryWrite(
   // wire make the response corrupt; caller MUST close the connection.
   size_t remaining = length - static_cast<size_t>(written);
   AsyncWriteData* d = new (std::nothrow) AsyncWriteData();
-  if (!d) return false;
+  if (!d)
+    return false;
   d->buf = new (std::nothrow) char[remaining];
   if (!d->buf) {
     delete d;
@@ -236,21 +236,19 @@ bool FastResponse::TryWrite(
   if (uv_write(&d->req, stream, &remainder, 1, AsyncWriteCb) != 0) {
     delete[] d->buf;
     delete d;
-    return false;  // Partial data on wire, remainder lost — JS must close.
+    return false; // Partial data on wire, remainder lost — JS must close.
   }
   return true;
 }
-
 
 // ============================================================================
 // Direct Write — uv_try_write (two buffers via writev)
 // ============================================================================
 
-bool FastResponse::TryWrite2(
-    uv_stream_t* stream,
-    const char* data1, size_t len1,
-    const char* data2, size_t len2) {
-  if (stream == nullptr) return false;
+bool FastResponse::TryWrite2(uv_stream_t* stream, const char* data1,
+                             size_t len1, const char* data2, size_t len2) {
+  if (stream == nullptr)
+    return false;
 
   // Defense-in-depth: reject caller-supplied sizes that would overflow
   // `len1 + len2` before it's compared against uv_try_write's return.
@@ -260,32 +258,36 @@ bool FastResponse::TryWrite2(
   // true remainder — heap buffer overflow. Unreachable in practice on
   // 64-bit (V8 string / Buffer can't hold SIZE_MAX bytes) but the
   // cheap check here avoids relying on that assumption.
-  if (len2 > SIZE_MAX - len1) return false;
+  if (len2 > SIZE_MAX - len1)
+    return false;
 
   // Always use writev — the kernel coalesces the 2 iovecs in the socket
   // buffer. This avoids the memcpy overhead of combining into a single
   // buffer, and writev with 2 bufs is essentially free.
   uv_buf_t bufs[2] = {
-    uv_buf_init(const_cast<char*>(data1), len1),
-    uv_buf_init(const_cast<char*>(data2), len2),
+      uv_buf_init(const_cast<char*>(data1), len1),
+      uv_buf_init(const_cast<char*>(data2), len2),
   };
   size_t total = len1 + len2;
   int written = uv_try_write(stream, bufs, 2);
 
   // Negative means EAGAIN or error — nothing was sent, JS can retry safely.
-  if (written < 0) return false;
+  if (written < 0)
+    return false;
 
   // Compare as size_t. Previously `written == static_cast<int>(total)`
   // truncated total to int, which silently claims success on
   // combined writes > INT_MAX (see TryWrite above for the same class).
-  if (static_cast<size_t>(written) == total) return true;
+  if (static_cast<size_t>(written) == total)
+    return true;
 
   // Partial write: some bytes are already on the wire. Figure out what
   // remains across the two buffers and send it asynchronously.
   // -fno-exceptions: std::nothrow + null-check so OOM doesn't abort process.
   size_t remaining = total - static_cast<size_t>(written);
   AsyncWriteData* d = new (std::nothrow) AsyncWriteData();
-  if (!d) return false;
+  if (!d)
+    return false;
   d->buf = new (std::nothrow) char[remaining];
   if (!d->buf) {
     delete d;
@@ -306,11 +308,10 @@ bool FastResponse::TryWrite2(
   if (uv_write(&d->req, stream, &remainder, 1, AsyncWriteCb) != 0) {
     delete[] d->buf;
     delete d;
-    return false;  // Partial data on wire, remainder lost — JS must close.
+    return false; // Partial data on wire, remainder lost — JS must close.
   }
   return true;
 }
-
 
 // ============================================================================
 // Build HTTP response headers into a buffer (zero heap allocation)
@@ -325,20 +326,19 @@ static inline bool has_room(size_t length, size_t capacity, size_t needed) {
   return needed <= capacity && length <= capacity - needed;
 }
 
-size_t FastResponse::BuildHeaders(
-    char* buffer,
-    size_t buffer_size,
-    int status_code,
-    const char* content_type,
-    size_t content_type_len,
-    size_t content_length) {
+size_t FastResponse::BuildHeaders(char* buffer, size_t buffer_size,
+                                  int status_code, const char* content_type,
+                                  size_t content_type_len,
+                                  size_t content_length) {
   size_t offset = 0;
 
   // Status line
   size_t status_len;
   const char* status_line = GetStatusLine(status_code, &status_len);
-  if (status_line == nullptr) return 0;
-  if (!has_room(offset, buffer_size, status_len)) return 0;
+  if (status_line == nullptr)
+    return 0;
+  if (!has_room(offset, buffer_size, status_len))
+    return 0;
   memcpy(buffer + offset, status_line, status_len);
   offset += status_len;
 
@@ -346,12 +346,14 @@ size_t FastResponse::BuildHeaders(
   // Use pre-computed headers for common types
   if (content_type_len == 16 &&
       memcmp(content_type, "application/json", 16) == 0) {
-    if (!has_room(offset, buffer_size, kJsonHeadersLen)) return 0;
+    if (!has_room(offset, buffer_size, kJsonHeadersLen))
+      return 0;
     memcpy(buffer + offset, kJsonHeaders, kJsonHeadersLen);
     offset += kJsonHeadersLen;
   } else if (content_type_len == 10 &&
              memcmp(content_type, "text/plain", 10) == 0) {
-    if (!has_room(offset, buffer_size, kTextHeadersLen)) return 0;
+    if (!has_room(offset, buffer_size, kTextHeadersLen))
+      return 0;
     memcpy(buffer + offset, kTextHeaders, kTextHeadersLen);
     offset += kTextHeadersLen;
   } else {
@@ -367,9 +369,10 @@ size_t FastResponse::BuildHeaders(
         return 0;
       }
     }
-    size_t needed = kBinaryHeaderPrefixLen + content_type_len +
-                    kBinaryHeaderSuffixLen;
-    if (!has_room(offset, buffer_size, needed)) return 0;
+    size_t needed =
+        kBinaryHeaderPrefixLen + content_type_len + kBinaryHeaderSuffixLen;
+    if (!has_room(offset, buffer_size, needed))
+      return 0;
     memcpy(buffer + offset, kBinaryHeaderPrefix, kBinaryHeaderPrefixLen);
     offset += kBinaryHeaderPrefixLen;
     memcpy(buffer + offset, content_type, content_type_len);
@@ -402,7 +405,8 @@ size_t FastResponse::BuildHeaders(
     }
   }
   size_t cl_total = static_cast<size_t>(cl_len) + kHeaderEndLen;
-  if (!has_room(offset, buffer_size, cl_total)) return 0;
+  if (!has_room(offset, buffer_size, cl_total))
+    return 0;
   memcpy(buffer + offset, cl_digits, cl_len);
   offset += cl_len;
   memcpy(buffer + offset, kHeaderEnd, kHeaderEndLen);
@@ -411,123 +415,106 @@ size_t FastResponse::BuildHeaders(
   return offset;
 }
 
-
 // ============================================================================
 // Public API — WriteJson
 // ============================================================================
 
-bool FastResponse::WriteJson(
-    Environment* env,
-    Local<Object> socket,
-    int status_code,
-    const char* json_data,
-    size_t json_length) {
+bool FastResponse::WriteJson(Environment* env, Local<Object> socket,
+                             int status_code, const char* json_data,
+                             size_t json_length) {
 
   // Build headers
   char header_buf[512];
-  size_t header_len = BuildHeaders(
-    header_buf, sizeof(header_buf),
-    status_code, "application/json", 16, json_length);
-  if (header_len == 0) return false;
+  size_t header_len = BuildHeaders(header_buf, sizeof(header_buf), status_code,
+                                   "application/json", 16, json_length);
+  if (header_len == 0)
+    return false;
 
   // Get UV stream
   uv_stream_t* stream = GetUvStream(env, socket);
-  if (stream == nullptr) return false;
+  if (stream == nullptr)
+    return false;
 
   // Write headers + body in single operation
   return TryWrite2(stream, header_buf, header_len, json_data, json_length);
 }
 
-
 // ============================================================================
 // Public API — WriteText
 // ============================================================================
 
-bool FastResponse::WriteText(
-    Environment* env,
-    Local<Object> socket,
-    int status_code,
-    const char* text_data,
-    size_t text_length) {
+bool FastResponse::WriteText(Environment* env, Local<Object> socket,
+                             int status_code, const char* text_data,
+                             size_t text_length) {
 
   // Build headers
   char header_buf[512];
-  size_t header_len = BuildHeaders(
-    header_buf, sizeof(header_buf),
-    status_code, "text/plain", 10, text_length);
-  if (header_len == 0) return false;
+  size_t header_len = BuildHeaders(header_buf, sizeof(header_buf), status_code,
+                                   "text/plain", 10, text_length);
+  if (header_len == 0)
+    return false;
 
   // Get UV stream
   uv_stream_t* stream = GetUvStream(env, socket);
-  if (stream == nullptr) return false;
+  if (stream == nullptr)
+    return false;
 
   // Write headers + body in single operation
   return TryWrite2(stream, header_buf, header_len, text_data, text_length);
 }
 
-
 // ============================================================================
 // Public API — WriteBinary
 // ============================================================================
 
-bool FastResponse::WriteBinary(
-    Environment* env,
-    Local<Object> socket,
-    int status_code,
-    const uint8_t* data,
-    size_t length,
-    const char* content_type) {
+bool FastResponse::WriteBinary(Environment* env, Local<Object> socket,
+                               int status_code, const uint8_t* data,
+                               size_t length, const char* content_type) {
 
   size_t ct_len = strlen(content_type);
 
   // Build headers
   char header_buf[512];
-  size_t header_len = BuildHeaders(
-    header_buf, sizeof(header_buf),
-    status_code, content_type, ct_len, length);
-  if (header_len == 0) return false;
+  size_t header_len = BuildHeaders(header_buf, sizeof(header_buf), status_code,
+                                   content_type, ct_len, length);
+  if (header_len == 0)
+    return false;
 
   // Get UV stream
   uv_stream_t* stream = GetUvStream(env, socket);
-  if (stream == nullptr) return false;
+  if (stream == nullptr)
+    return false;
 
   // Write headers + body in single operation
-  return TryWrite2(stream,
-    header_buf, header_len,
-    reinterpret_cast<const char*>(data), length);
+  return TryWrite2(stream, header_buf, header_len,
+                   reinterpret_cast<const char*>(data), length);
 }
-
 
 // ============================================================================
 // Public API — WriteNotModified (304)
 // ============================================================================
 
-bool FastResponse::WriteNotModified(
-    Environment* env,
-    Local<Object> socket) {
+bool FastResponse::WriteNotModified(Environment* env, Local<Object> socket) {
   uv_stream_t* stream = GetUvStream(env, socket);
-  if (stream == nullptr) return false;
+  if (stream == nullptr)
+    return false;
   return TryWrite(stream, k304Response, k304ResponseLen);
 }
-
 
 // ============================================================================
 // Public API — WritePrecomputed (for static response buffers)
 // ============================================================================
 
-bool FastResponse::WritePrecomputed(
-    Environment* env,
-    Local<Object> socket,
-    const char* data,
-    size_t length) {
+bool FastResponse::WritePrecomputed(Environment* env, Local<Object> socket,
+                                    const char* data, size_t length) {
   uv_stream_t* stream = GetUvStream(env, socket);
-  if (stream == nullptr) return false;
+  if (stream == nullptr)
+    return false;
   return TryWrite(stream, data, length);
 }
 
-
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node
 
 #pragma GCC diagnostic pop

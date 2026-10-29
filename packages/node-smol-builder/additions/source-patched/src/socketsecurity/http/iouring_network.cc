@@ -23,7 +23,8 @@
 // See:
 // - https://github.com/axboe/liburing
 // - https://kernel.dk/io_uring.pdf
-// - https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io
+// -
+// https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io
 
 namespace node {
 namespace socketsecurity {
@@ -35,15 +36,18 @@ bool IoUringNetwork::IsAvailable() {
 #ifdef __linux__
   // Check if io_uring is available at runtime.
   struct utsname buf;
-  if (uname(&buf) < 0) return false;
+  if (uname(&buf) < 0)
+    return false;
 
   int major, minor, patch;
   if (sscanf(buf.release, "%d.%d.%d", &major, &minor, &patch) != 3) {
     return false;
   }
 
-  // Validate kernel version is within reasonable bounds (prevent integer issues)
-  if (major < 0 || major > 100 || minor < 0 || minor > 999 || patch < 0 || patch > 9999) {
+  // Validate kernel version is within reasonable bounds (prevent integer
+  // issues)
+  if (major < 0 || major > 100 || minor < 0 || minor > 999 || patch < 0 ||
+      patch > 9999) {
     return false;
   }
 
@@ -52,10 +56,10 @@ bool IoUringNetwork::IsAvailable() {
     return false;
   }
 
-  // Check if liburing is available at runtime by explicitly loading the library.
-  // This is more secure than RTLD_DEFAULT which could be spoofed by LD_PRELOAD.
-  // Use RTLD_NOW | RTLD_NOLOAD to check if liburing is already loaded without
-  // loading it ourselves (avoids side effects).
+  // Check if liburing is available at runtime by explicitly loading the
+  // library. This is more secure than RTLD_DEFAULT which could be spoofed by
+  // LD_PRELOAD. Use RTLD_NOW | RTLD_NOLOAD to check if liburing is already
+  // loaded without loading it ourselves (avoids side effects).
   void* handle = dlopen("liburing.so.2", RTLD_NOW | RTLD_NOLOAD);
   if (handle == nullptr) {
     // Try versioned name without .2 suffix
@@ -71,7 +75,7 @@ bool IoUringNetwork::IsAvailable() {
 
   return false;
 #else
-  return false;  // io_uring is Linux-only.
+  return false; // io_uring is Linux-only.
 #endif
 }
 
@@ -123,7 +127,7 @@ bool IoUringNetwork::Initialize(uv_loop_t* loop, int queue_depth) {
   // }
   // io_uring_register_buffers(ring, iovecs, queue_depth);
 
-  return false;  // Requires libuv integration (documented above).
+  return false; // Requires libuv integration (documented above).
 }
 
 bool IoUringNetwork::EnableMultishotAccept(uv_tcp_t* handle) {
@@ -148,7 +152,7 @@ bool IoUringNetwork::EnableMultishotAccept(uv_tcp_t* handle) {
   // io_uring_submit(ring);
   // stats_.sqes_submitted++;
 
-  return false;  // Requires Initialize() implementation.
+  return false; // Requires Initialize() implementation.
 }
 
 bool IoUringNetwork::EnableMultishotReceive(uv_tcp_t* handle) {
@@ -173,7 +177,7 @@ bool IoUringNetwork::EnableMultishotReceive(uv_tcp_t* handle) {
   // io_uring_submit(ring);
   // stats_.sqes_submitted++;
 
-  return false;  // Requires Initialize() implementation.
+  return false; // Requires Initialize() implementation.
 }
 
 bool IoUringNetwork::EnableZeroCopyReceive(uv_tcp_t* handle) {
@@ -185,13 +189,11 @@ bool IoUringNetwork::EnableZeroCopyReceive(uv_tcp_t* handle) {
   // This requires provided buffers registered with io_uring.
   // See: io_uring_register_buffers() in Initialize() implementation above.
 
-  return false;  // Requires Initialize() implementation.
+  return false; // Requires Initialize() implementation.
 }
 
-const IoUringNetwork::Stats& IoUringNetwork::GetStats() {
-  return stats_;
-}
+const IoUringNetwork::Stats& IoUringNetwork::GetStats() { return stats_; }
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node

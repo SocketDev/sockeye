@@ -72,4 +72,4 @@ void __wrap_quick_exit(int code) {
   fallback_quick_exit(code);
 }
 
-#endif  // __GLIBC__ && __linux__
+#endif // __GLIBC__ && __linux__

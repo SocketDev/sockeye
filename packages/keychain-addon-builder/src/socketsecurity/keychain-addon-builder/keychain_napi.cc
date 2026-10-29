@@ -48,7 +48,7 @@ bool readStringArg(napi_env env, napi_value value, char* out, size_t cap) {
 
 // Map a non-OK keystore code to a thrown JS Error and return nullptr.
 napi_value throwKeystore(napi_env env, int rc) {
-  const char* code = rc == KEYSTORE_ERR_DENIED      ? "denied"
+  const char* code = rc == KEYSTORE_ERR_DENIED        ? "denied"
                      : rc == KEYSTORE_ERR_UNAVAILABLE ? "keystore-unavailable"
                                                       : "keystore-io";
   napi_throw_error(env, nullptr, code);
@@ -66,7 +66,8 @@ napi_value Get(napi_env env, napi_callback_info info) {
   char account[kMaxField];
   if (argc < 2 || !readStringArg(env, argv[0], service, sizeof(service)) ||
       !readStringArg(env, argv[1], account, sizeof(account))) {
-    napi_throw_type_error(env, nullptr, "get(service, account) needs two strings");
+    napi_throw_type_error(env, nullptr,
+                          "get(service, account) needs two strings");
     return nullptr;
   }
   char value[kMaxValue];
@@ -117,7 +118,8 @@ napi_value Delete(napi_env env, napi_callback_info info) {
   char account[kMaxField];
   if (argc < 2 || !readStringArg(env, argv[0], service, sizeof(service)) ||
       !readStringArg(env, argv[1], account, sizeof(account))) {
-    napi_throw_type_error(env, nullptr, "del(service, account) needs two strings");
+    napi_throw_type_error(env, nullptr,
+                          "del(service, account) needs two strings");
     return nullptr;
   }
   int rc = keystore_delete(service, account);
@@ -133,7 +135,7 @@ void define(napi_env env, napi_value exports, const char* name,
   napi_set_named_property(env, exports, name, jsFn);
 }
 
-}  // namespace
+} // namespace
 
 NAPI_MODULE_INIT() {
   define(env, exports, "get", Get);

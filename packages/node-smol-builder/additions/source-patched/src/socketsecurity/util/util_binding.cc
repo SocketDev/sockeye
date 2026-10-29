@@ -1,4 +1,5 @@
-// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside the full Node build; a blind split cannot be compile-verified in isolation.
+// doctrine: allow max-file-lines -- V8 binding glue that compiles only inside
+// the full Node build; a blind split cannot be compile-verified in isolation.
 // node:smol-util V8 binding — fast equivalents of common primordial
 // helpers. All entries share the same shape: capture some target
 // at module load, then invoke it via a C++ call handler that skips
@@ -153,7 +154,8 @@ using v8::Value;
 //   args[0]     == self (the explicit `this` for the uncurried call)
 //   args[1..n]  == arguments forwarded to fn
 //
-// Spec equivalence: `uncurryThis(fn)(self, ...rest) === fn.call(self, ...rest)`.
+// Spec equivalence: `uncurryThis(fn)(self, ...rest) === fn.call(self,
+// ...rest)`.
 //
 // Hot path: no allocations, no string lookups, no exception handling
 // beyond what the inner Call already does. The argv shift is a
@@ -223,7 +225,8 @@ static void UncurriedCall(const FunctionCallbackInfo<Value>& args) {
 //   args[0]     == self
 //   args[1]     == array-like of arguments to forward to fn
 //
-// Spec equivalence: `applyBind(fn)(self, argsArray) === fn.apply(self, argsArray)`.
+// Spec equivalence: `applyBind(fn)(self, argsArray) === fn.apply(self,
+// argsArray)`.
 static void ApplyBoundCall(const FunctionCallbackInfo<Value>& args) {
   Local<Function> fn = args.Data().As<Function>();
   Isolate* isolate = args.GetIsolate();
@@ -244,9 +247,8 @@ static void ApplyBoundCall(const FunctionCallbackInfo<Value>& args) {
 
   Local<Value> args_arr_value = args[1];
   if (!args_arr_value->IsArray()) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        String::NewFromUtf8Literal(
-            isolate, "applyBind: second argument must be an array")));
+    isolate->ThrowException(v8::Exception::TypeError(String::NewFromUtf8Literal(
+        isolate, "applyBind: second argument must be an array")));
     return;
   }
   Local<Array> args_arr = args_arr_value.As<Array>();
@@ -300,9 +302,8 @@ static void UncurryThis(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 1 || !args[0]->IsFunction()) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        String::NewFromUtf8Literal(
-            isolate, "uncurryThis: argument must be a function")));
+    isolate->ThrowException(v8::Exception::TypeError(String::NewFromUtf8Literal(
+        isolate, "uncurryThis: argument must be a function")));
     return;
   }
 
@@ -328,9 +329,8 @@ static void ApplyBind(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 1 || !args[0]->IsFunction()) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        String::NewFromUtf8Literal(
-            isolate, "applyBind: argument must be a function")));
+    isolate->ThrowException(v8::Exception::TypeError(String::NewFromUtf8Literal(
+        isolate, "applyBind: argument must be a function")));
     return;
   }
 
@@ -527,9 +527,8 @@ static void BindCall(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 1 || !args[0]->IsFunction()) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        String::NewFromUtf8Literal(
-            isolate, "bindCall: first argument must be a function")));
+    isolate->ThrowException(v8::Exception::TypeError(String::NewFromUtf8Literal(
+        isolate, "bindCall: first argument must be a function")));
     return;
   }
   Local<Function> target = args[0].As<Function>();
@@ -572,9 +571,8 @@ static void ApplySafe(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 1 || !args[0]->IsFunction()) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        String::NewFromUtf8Literal(
-            isolate, "applySafe: argument must be a function")));
+    isolate->ThrowException(v8::Exception::TypeError(String::NewFromUtf8Literal(
+        isolate, "applySafe: argument must be a function")));
     return;
   }
   Local<Function> target = args[0].As<Function>();
@@ -607,7 +605,7 @@ static void ApplySafe(const FunctionCallbackInfo<Value>& args) {
 // We capture `globalThis.WeakRef` on first call and cache it on the
 // binding object so subsequent calls don't re-resolve.
 static v8::Persistent<v8::Function>* GetWeakRefCtor(Isolate* isolate,
-                                                   Local<Context> context) {
+                                                    Local<Context> context) {
   // Anchored on the isolate so it survives across this function's
   // invocations. Initialised lazily on the first call. Lookup uses
   // String::NewFromUtf8Literal which V8 internalizes once.
@@ -617,14 +615,13 @@ static v8::Persistent<v8::Function>* GetWeakRefCtor(Isolate* isolate,
   }
   Local<Object> global = context->Global();
   Local<Value> ctor_val;
-  Local<v8::String> key =
-      String::NewFromUtf8Literal(isolate, "WeakRef");
+  Local<v8::String> key = String::NewFromUtf8Literal(isolate, "WeakRef");
   if (!global->Get(context, key).ToLocal(&ctor_val) ||
       !ctor_val->IsFunction()) {
     return nullptr;
   }
-  ctor_cache =
-      new (std::nothrow) v8::Persistent<v8::Function>(isolate, ctor_val.As<Function>());
+  ctor_cache = new (std::nothrow)
+      v8::Persistent<v8::Function>(isolate, ctor_val.As<Function>());
   // Callers already handle nullptr cache (fresh resolve on next call).
   return ctor_cache;
 }
@@ -749,7 +746,7 @@ inline void EncodeCodepointUtf8(uint32_t cp, std::string& out) {
   // Above U+10FFFF is invalid; silently drop (matches the npm impl).
 }
 
-}  // namespace entities
+} // namespace entities
 
 namespace {
 
@@ -772,8 +769,7 @@ namespace {
 // inputs the SIMD path is ~5x faster than five memchrs because we
 // scan once and OR-combine the comparison results instead of making
 // five separate passes.
-SMOL_FORCE_INLINE bool ContainsAnyEscapeChar(const uint8_t* data,
-                                             size_t len) {
+SMOL_FORCE_INLINE bool ContainsAnyEscapeChar(const uint8_t* data, size_t len) {
 #if SMOL_HAS_SSE2
   // Pre-broadcast each sentinel to all 16 lanes once.
   const __m128i lt = _mm_set1_epi8('<');
@@ -783,8 +779,8 @@ SMOL_FORCE_INLINE bool ContainsAnyEscapeChar(const uint8_t* data,
   const __m128i apos = _mm_set1_epi8('\'');
   size_t i = 0;
   for (; i + 16 <= len; i += 16) {
-    const __m128i v = _mm_loadu_si128(
-        reinterpret_cast<const __m128i*>(data + i));
+    const __m128i v =
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
     const __m128i any = _mm_or_si128(
         _mm_or_si128(
             _mm_or_si128(_mm_cmpeq_epi8(v, lt), _mm_cmpeq_epi8(v, gt)),
@@ -811,11 +807,10 @@ SMOL_FORCE_INLINE bool ContainsAnyEscapeChar(const uint8_t* data,
   size_t i = 0;
   for (; i + 16 <= len; i += 16) {
     const uint8x16_t v = vld1q_u8(data + i);
-    const uint8x16_t any = vorrq_u8(
-        vorrq_u8(
-            vorrq_u8(vceqq_u8(v, lt), vceqq_u8(v, gt)),
-            vorrq_u8(vceqq_u8(v, amp), vceqq_u8(v, quo))),
-        vceqq_u8(v, apos));
+    const uint8x16_t any =
+        vorrq_u8(vorrq_u8(vorrq_u8(vceqq_u8(v, lt), vceqq_u8(v, gt)),
+                          vorrq_u8(vceqq_u8(v, amp), vceqq_u8(v, quo))),
+                 vceqq_u8(v, apos));
     if (vmaxvq_u8(any) != 0) {
       return true;
     }
@@ -845,8 +840,8 @@ SMOL_FORCE_INLINE bool ContainsAnsiEscape(const uint8_t* data, size_t len) {
   const __m128i csi = _mm_set1_epi8(static_cast<char>(0x9B));
   size_t i = 0;
   for (; i + 16 <= len; i += 16) {
-    const __m128i v = _mm_loadu_si128(
-        reinterpret_cast<const __m128i*>(data + i));
+    const __m128i v =
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
     const __m128i any =
         _mm_or_si128(_mm_cmpeq_epi8(v, esc), _mm_cmpeq_epi8(v, csi));
     if (_mm_movemask_epi8(any) != 0) {
@@ -884,7 +879,7 @@ SMOL_FORCE_INLINE bool ContainsAnsiEscape(const uint8_t* data, size_t len) {
 #endif
 }
 
-}  // namespace
+} // namespace
 
 static void DecodeHtml(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -899,8 +894,8 @@ static void DecodeHtml(const FunctionCallbackInfo<Value>& args) {
     return;
   }
   std::string buf(static_cast<size_t>(input_len), '\0');
-  input->WriteUtf8V2(isolate, buf.data(), input_len,
-                     String::WriteFlags::kNone, nullptr);
+  input->WriteUtf8V2(isolate, buf.data(), input_len, String::WriteFlags::kNone,
+                     nullptr);
 
   std::string out;
   out.reserve(buf.size());
@@ -932,7 +927,7 @@ static void DecodeHtml(const FunctionCallbackInfo<Value>& args) {
     }
     // Inclusive of ';' in the lookup key (table stores names like
     // "amp;").
-    const size_t name_len = static_cast<size_t>(q - p);  // includes ';'
+    const size_t name_len = static_cast<size_t>(q - p); // includes ';'
     // Numeric refs: &#NNN; or &#xHHH;
     if (name_len >= 3 && *(p + 1) == '#') {
       uint32_t cp = 0;
@@ -989,7 +984,7 @@ static void DecodeHtml(const FunctionCallbackInfo<Value>& args) {
     }
     // Named ref.
     const entities::EntityMeta* m =
-        entities::FindEntity(p + 1, name_len);  // skip leading '&'
+        entities::FindEntity(p + 1, name_len); // skip leading '&'
     if (m != nullptr) {
       const uint8_t* val = &entities::kValuePool[m->value_off];
       out.append(reinterpret_cast<const char*>(val), m->value_len);
@@ -1046,23 +1041,23 @@ static void EncodeHtml(const FunctionCallbackInfo<Value>& args) {
     for (size_t i = 0; i < len; ++i) {
       const uint8_t c = bytes[i];
       switch (c) {
-        case '<':
-          out.append("&lt;", 4);
-          break;
-        case '>':
-          out.append("&gt;", 4);
-          break;
-        case '&':
-          out.append("&amp;", 5);
-          break;
-        case '"':
-          out.append("&quot;", 6);
-          break;
-        case '\'':
-          out.append("&#39;", 5);
-          break;
-        default:
-          out.push_back(static_cast<char>(c));
+      case '<':
+        out.append("&lt;", 4);
+        break;
+      case '>':
+        out.append("&gt;", 4);
+        break;
+      case '&':
+        out.append("&amp;", 5);
+        break;
+      case '"':
+        out.append("&quot;", 6);
+        break;
+      case '\'':
+        out.append("&#39;", 5);
+        break;
+      default:
+        out.push_back(static_cast<char>(c));
       }
     }
     MaybeLocal<String> result_maybe = String::NewFromOneByte(
@@ -1117,9 +1112,8 @@ static void EncodeHtml(const FunctionCallbackInfo<Value>& args) {
       heap_buf.resize(static_cast<size_t>(char_len));
       scan_ptr = heap_buf.data();
     }
-    input->WriteV2(isolate, /*offset*/ 0,
-                   static_cast<uint32_t>(char_len), scan_ptr,
-                   String::WriteFlags::kNone);
+    input->WriteV2(isolate, /*offset*/ 0, static_cast<uint32_t>(char_len),
+                   scan_ptr, String::WriteFlags::kNone);
     for (int i = 0; i < char_len; ++i) {
       const uint16_t c = scan_ptr[i];
       if (c == '<' || c == '>' || c == '&' || c == '"' || c == '\'') {
@@ -1136,31 +1130,31 @@ static void EncodeHtml(const FunctionCallbackInfo<Value>& args) {
   // Two-byte hit path: materialize UTF-8 for the actual escape pass.
   const size_t input_len = input->Utf8LengthV2(isolate);
   std::string buf(static_cast<size_t>(input_len), '\0');
-  input->WriteUtf8V2(isolate, buf.data(), input_len,
-                     String::WriteFlags::kNone, nullptr);
+  input->WriteUtf8V2(isolate, buf.data(), input_len, String::WriteFlags::kNone,
+                     nullptr);
 
   std::string out;
   out.reserve(buf.size() + 16);
   for (size_t i = 0; i < buf.size(); ++i) {
     const char c = buf[i];
     switch (c) {
-      case '<':
-        out.append("&lt;", 4);
-        break;
-      case '>':
-        out.append("&gt;", 4);
-        break;
-      case '&':
-        out.append("&amp;", 5);
-        break;
-      case '"':
-        out.append("&quot;", 6);
-        break;
-      case '\'':
-        out.append("&#39;", 5);
-        break;
-      default:
-        out.push_back(c);
+    case '<':
+      out.append("&lt;", 4);
+      break;
+    case '>':
+      out.append("&gt;", 4);
+      break;
+    case '&':
+      out.append("&amp;", 5);
+      break;
+    case '"':
+      out.append("&quot;", 6);
+      break;
+    case '\'':
+      out.append("&#39;", 5);
+      break;
+    default:
+      out.push_back(c);
     }
   }
 
@@ -1248,15 +1242,15 @@ inline bool IsCsiFinalByte(uint8_t c) {
 // `\d{1,4}(?:[;:]\d{0,4})*` body, plus space-padding 0x20 the regex
 // strictly doesn't allow — we keep it strict to match upstream).
 inline bool IsCsiPrefixByte(uint8_t c) {
-  return c == '[' || c == ']' || c == '(' || c == ')' || c == '#' ||
-         c == ';' || c == '?';
+  return c == '[' || c == ']' || c == '(' || c == ')' || c == '#' || c == ';' ||
+         c == '?';
 }
 
 inline bool IsCsiParamByte(uint8_t c) {
   return (c >= '0' && c <= '9') || c == ';' || c == ':';
 }
 
-}  // namespace
+} // namespace
 
 static void StripAnsi(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
@@ -1406,9 +1400,8 @@ static void StripAnsi(const FunctionCallbackInfo<Value>& args) {
       heap_buf.resize(static_cast<size_t>(char_len));
       scan_ptr = heap_buf.data();
     }
-    input->WriteV2(isolate, /*offset*/ 0,
-                   static_cast<uint32_t>(char_len), scan_ptr,
-                   String::WriteFlags::kNone);
+    input->WriteV2(isolate, /*offset*/ 0, static_cast<uint32_t>(char_len),
+                   scan_ptr, String::WriteFlags::kNone);
     bool has_escape = false;
     for (int i = 0; i < char_len; ++i) {
       const uint16_t c = scan_ptr[i];
@@ -1445,10 +1438,8 @@ static void StripAnsi(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
-static void Initialize(Local<Object> target,
-                       Local<Value> /* unused */,
-                       Local<Context> context,
-                       void* /* priv */) {
+static void Initialize(Local<Object> target, Local<Value> /* unused */,
+                       Local<Context> context, void* /* priv */) {
   SetMethod(context, target, "applyBind", ApplyBind);
   SetMethod(context, target, "applySafe", ApplySafe);
   SetMethod(context, target, "bindCall", BindCall);
@@ -1476,11 +1467,11 @@ static void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(UncurriedCall);
 }
 
-}  // namespace util
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace util
+} // namespace socketsecurity
+} // namespace node
 
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_util, node::socketsecurity::util::Initialize)
+NODE_BINDING_CONTEXT_AWARE_INTERNAL(smol_util,
+                                    node::socketsecurity::util::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
     smol_util, node::socketsecurity::util::RegisterExternalReferences)

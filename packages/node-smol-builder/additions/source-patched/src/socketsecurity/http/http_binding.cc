@@ -33,11 +33,11 @@
 
 // Initialize shared SIMD detection at startup
 namespace {
-  struct SIMDInitializer {
-    SIMDInitializer() { smol::simd::Init(); }
-  };
-  static SIMDInitializer g_simd_init;
-}
+struct SIMDInitializer {
+  SIMDInitializer() { smol::simd::Init(); }
+};
+static SIMDInitializer g_simd_init;
+} // namespace
 
 namespace smol {
 namespace http {
@@ -55,71 +55,69 @@ namespace http {
 // Hex digit values: kHexDigits['a'] = 10, kHexDigits['F'] = 15,
 // kHexDigits['z'] = 255 (invalid). Used for URL percent-decoding (%2F -> /).
 const uint8_t kHexDigits[256] = {
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,255,255,255,255,255,255,  // 0-9
-  255, 10, 11, 12, 13, 14, 15,255,255,255,255,255,255,255,255,255,  // A-F
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255, 10, 11, 12, 13, 14, 15,255,255,255,255,255,255,255,255,255,  // a-f
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-  255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   255, 255,
+    255, 255, 255, 255, // 0-9
+    255, 10,  11,  12,  13,  14,  15,  255, 255, 255, 255, 255, 255, 255, 255,
+    255, // A-F
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 10,  11,  12,  13,  14,  15,  255, 255, 255, 255, 255, 255, 255,
+    255, 255, // a-f
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255,
 };
 
 // Characters that don't need URL encoding
 const uint8_t kUrlSafeChars[256] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,  // - .
-  1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,  // 0-9
-  0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // A-O
-  1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,  // P-Z _
-  0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // a-o
-  1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,0,  // p-z ~
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, // - .
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,                      // 0-9
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,                      // A-O
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, // P-Z _
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // a-o
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, // p-z ~
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0,
 };
 
 // Valid HTTP header name characters (token chars per RFC 7230)
-const uint8_t kHeaderNameChars[256] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,1,0,1,1,1,1,1,0,0,1,1,0,1,1,0,  // ! # $ % & ' * + - .
-  1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,  // 0-9
-  0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // A-O
-  1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,  // P-Z ^ _
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // ` a-o
-  1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,  // p-z | ~
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+const uint8_t kHeaderNameChars[256] =
+    {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1,
+        0, 1, 1, 0,                                     // ! # $ % & ' * + - .
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, // 0-9
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A-O
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, // P-Z ^ _
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // ` a-o
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, // p-z | ~
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-const char kHexCharsLower[16] = {
-  '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'
-};
+const char kHexCharsLower[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-const char kHexCharsUpper[16] = {
-  '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
-};
+const char kHexCharsUpper[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                 '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 // Common headers for "interning" — storing a single shared copy of each
 // header name string. When we see "content-type" in a request, instead of
@@ -127,30 +125,31 @@ const char kHexCharsUpper[16] = {
 // This means all request objects share the same header name strings,
 // reducing memory usage and enabling fast pointer equality checks.
 const char* const kCommonHeaders[] = {
-  "accept",
-  "accept-encoding",
-  "accept-language",
-  "authorization",
-  "cache-control",
-  "connection",
-  "content-length",
-  "content-type",
-  "cookie",
-  "host",
-  "if-modified-since",
-  "if-none-match",
-  "origin",
-  "referer",
-  "sec-websocket-key",
-  "sec-websocket-version",
-  "upgrade",
-  "user-agent",
-  "x-forwarded-for",
-  "x-forwarded-proto",
-  "x-real-ip",
-  "x-request-id",
+    "accept",
+    "accept-encoding",
+    "accept-language",
+    "authorization",
+    "cache-control",
+    "connection",
+    "content-length",
+    "content-type",
+    "cookie",
+    "host",
+    "if-modified-since",
+    "if-none-match",
+    "origin",
+    "referer",
+    "sec-websocket-key",
+    "sec-websocket-version",
+    "upgrade",
+    "user-agent",
+    "x-forwarded-for",
+    "x-forwarded-proto",
+    "x-real-ip",
+    "x-request-id",
 };
-const size_t kCommonHeadersCount = sizeof(kCommonHeaders) / sizeof(kCommonHeaders[0]);
+const size_t kCommonHeadersCount =
+    sizeof(kCommonHeaders) / sizeof(kCommonHeaders[0]);
 
 // Pre-computed HTTP status lines
 static const struct StatusLine {
@@ -158,21 +157,21 @@ static const struct StatusLine {
   const char* line;
   size_t len;
 } kStatusLines[] = {
-  {200, "HTTP/1.1 200 OK\r\n", 17},
-  {201, "HTTP/1.1 201 Created\r\n", 22},
-  {204, "HTTP/1.1 204 No Content\r\n", 25},
-  {301, "HTTP/1.1 301 Moved Permanently\r\n", 32},
-  {302, "HTTP/1.1 302 Found\r\n", 20},
-  {304, "HTTP/1.1 304 Not Modified\r\n", 27},
-  {400, "HTTP/1.1 400 Bad Request\r\n", 26},
-  {401, "HTTP/1.1 401 Unauthorized\r\n", 27},
-  {403, "HTTP/1.1 403 Forbidden\r\n", 24},
-  {404, "HTTP/1.1 404 Not Found\r\n", 24},
-  {405, "HTTP/1.1 405 Method Not Allowed\r\n", 33},
-  {500, "HTTP/1.1 500 Internal Server Error\r\n", 36},
-  {502, "HTTP/1.1 502 Bad Gateway\r\n", 26},
-  {503, "HTTP/1.1 503 Service Unavailable\r\n", 34},
-  {0, nullptr, 0}  // sentinel
+    {200, "HTTP/1.1 200 OK\r\n", 17},
+    {201, "HTTP/1.1 201 Created\r\n", 22},
+    {204, "HTTP/1.1 204 No Content\r\n", 25},
+    {301, "HTTP/1.1 301 Moved Permanently\r\n", 32},
+    {302, "HTTP/1.1 302 Found\r\n", 20},
+    {304, "HTTP/1.1 304 Not Modified\r\n", 27},
+    {400, "HTTP/1.1 400 Bad Request\r\n", 26},
+    {401, "HTTP/1.1 401 Unauthorized\r\n", 27},
+    {403, "HTTP/1.1 403 Forbidden\r\n", 24},
+    {404, "HTTP/1.1 404 Not Found\r\n", 24},
+    {405, "HTTP/1.1 405 Method Not Allowed\r\n", 33},
+    {500, "HTTP/1.1 500 Internal Server Error\r\n", 36},
+    {502, "HTTP/1.1 502 Bad Gateway\r\n", 26},
+    {503, "HTTP/1.1 503 Service Unavailable\r\n", 34},
+    {0, nullptr, 0} // sentinel
 };
 
 // ============================================================================
@@ -219,13 +218,16 @@ ParsedUrl ParseUrl(const char* url, size_t len) {
 
   // Calculate segments
   size_t pathname_end = len;
-  if (query_start) pathname_end = query_start - url;
-  else if (hash_start) pathname_end = hash_start - url;
+  if (query_start)
+    pathname_end = query_start - url;
+  else if (hash_start)
+    pathname_end = hash_start - url;
 
   result.pathname = std::string_view(url, pathname_end);
 
   if (query_start) {
-    size_t query_end = hash_start ? (hash_start - query_start - 1) : (end - query_start - 1);
+    size_t query_end =
+        hash_start ? (hash_start - query_start - 1) : (end - query_start - 1);
     result.query = std::string_view(query_start + 1, query_end);
   }
 
@@ -236,13 +238,10 @@ ParsedUrl ParseUrl(const char* url, size_t len) {
   return result;
 }
 
-size_t ParseQueryString(
-    const char* qs,
-    size_t len,
-    std::string_view* keys,
-    std::string_view* values,
-    size_t max_pairs) {
-  if (len == 0 || max_pairs == 0) return 0;
+size_t ParseQueryString(const char* qs, size_t len, std::string_view* keys,
+                        std::string_view* values, size_t max_pairs) {
+  if (len == 0 || max_pairs == 0)
+    return 0;
 
   size_t count = 0;
   const char* end = qs + len;
@@ -297,7 +296,8 @@ bool NeedsDecoding(const char* str, size_t len) {
   // Quick scan for % or +
   for (size_t i = 0; i < len; ++i) {
     char c = str[i];
-    if (c == '%' || c == '+') return true;
+    if (c == '%' || c == '+')
+      return true;
   }
   return false;
 }
@@ -341,19 +341,22 @@ size_t DecodeURIComponent(const char* input, size_t len, char* output) {
 // ============================================================================
 
 bool HeaderEquals(const char* a, size_t a_len, const char* b, size_t b_len) {
-  if (a_len != b_len) return false;
+  if (a_len != b_len)
+    return false;
 
   for (size_t i = 0; i < a_len; ++i) {
     char ca = a[i];
     char cb = b[i];
 
     // Fast case: equal
-    if (ca == cb) continue;
+    if (ca == cb)
+      continue;
 
     // Case-insensitive comparison for ASCII letters
     if ((ca ^ cb) == 0x20) {
       char lower = ca | 0x20;
-      if (lower >= 'a' && lower <= 'z') continue;
+      if (lower >= 'a' && lower <= 'z')
+        continue;
     }
 
     return false;
@@ -387,16 +390,25 @@ const char* GetInternedHeaderName(const char* name, size_t len) {
       // Case-insensitive compare
       cmp = 0;
       for (size_t i = 0; i < len; ++i) {
-        char a = name[i] | 0x20;  // tolower
+        char a = name[i] | 0x20; // tolower
         char b = candidate[i];
-        if (a < b) { cmp = -1; break; }
-        if (a > b) { cmp = 1; break; }
+        if (a < b) {
+          cmp = -1;
+          break;
+        }
+        if (a > b) {
+          cmp = 1;
+          break;
+        }
       }
     }
 
-    if (cmp == 0) return candidate;
-    if (cmp < 0) hi = mid;
-    else lo = mid + 1;
+    if (cmp == 0)
+      return candidate;
+    if (cmp < 0)
+      hi = mid;
+    else
+      lo = mid + 1;
   }
 
   return nullptr;
@@ -421,7 +433,8 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len) {
   WebSocketFrame frame = {};
   frame.valid = false;
 
-  if (len < 2) return frame;
+  if (len < 2)
+    return frame;
 
   uint8_t b0 = buffer[0];
   uint8_t b1 = buffer[1];
@@ -434,11 +447,13 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len) {
   size_t header_len = 2;
 
   if (payload_len == 126) {
-    if (len < 4) return frame;
+    if (len < 4)
+      return frame;
     payload_len = (static_cast<size_t>(buffer[2]) << 8) | buffer[3];
     header_len = 4;
   } else if (payload_len == 127) {
-    if (len < 10) return frame;
+    if (len < 10)
+      return frame;
     payload_len = 0;
     for (int i = 0; i < 8; ++i) {
       payload_len = (payload_len << 8) | buffer[2 + i];
@@ -452,7 +467,8 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len) {
     // ArrayBuffer::New + memcpy → OOB read / crash. 64 MB matches the
     // kMaxHttpBindingBufferBytes cap applied at the JS-binding layer.
     constexpr size_t kMaxFramePayload = 64ULL * 1024 * 1024;
-    if (payload_len > kMaxFramePayload) return frame;
+    if (payload_len > kMaxFramePayload)
+      return frame;
   }
 
   // Capture the 4-byte masking key from the header BEFORE advancing past
@@ -462,19 +478,20 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len) {
   // the JS binding layer forgot to do this and delivered XOR-scrambled
   // bytes to user handlers.
   if (frame.masked) {
-    if (len < header_len + 4) return frame;
-    frame.mask_key =
-        (static_cast<uint32_t>(buffer[header_len]) << 24) |
-        (static_cast<uint32_t>(buffer[header_len + 1]) << 16) |
-        (static_cast<uint32_t>(buffer[header_len + 2]) << 8) |
-        static_cast<uint32_t>(buffer[header_len + 3]);
+    if (len < header_len + 4)
+      return frame;
+    frame.mask_key = (static_cast<uint32_t>(buffer[header_len]) << 24) |
+                     (static_cast<uint32_t>(buffer[header_len + 1]) << 16) |
+                     (static_cast<uint32_t>(buffer[header_len + 2]) << 8) |
+                     static_cast<uint32_t>(buffer[header_len + 3]);
     header_len += 4;
   }
 
   // Overflow-safe length check — `header_len + payload_len` could wrap
   // when payload_len is near SIZE_MAX (the 127-len branch above caps
   // this to 64 MB but defense-in-depth here too).
-  if (payload_len > len || header_len > len - payload_len) return frame;
+  if (payload_len > len || header_len > len - payload_len)
+    return frame;
 
   frame.payload = buffer + header_len;
   frame.payload_len = payload_len;
@@ -484,13 +501,9 @@ WebSocketFrame DecodeWebSocketFrame(const uint8_t* buffer, size_t len) {
   return frame;
 }
 
-size_t EncodeWebSocketFrame(
-    uint8_t* output,
-    size_t output_len,
-    const uint8_t* payload,
-    size_t payload_len,
-    uint8_t opcode,
-    bool fin) {
+size_t EncodeWebSocketFrame(uint8_t* output, size_t output_len,
+                            const uint8_t* payload, size_t payload_len,
+                            uint8_t opcode, bool fin) {
   size_t header_len;
 
   if (payload_len < 126) {
@@ -549,7 +562,8 @@ const char* GetStatusLine(int status, size_t* out_len) {
       *out_len = line.len;
       return line.line;
     }
-    if (line.code == 0) break;
+    if (line.code == 0)
+      break;
   }
   *out_len = 0;
   return nullptr;
@@ -571,7 +585,8 @@ bool ResponseBuilder::WriteStatusLine(int status) {
   const char* line = GetStatusLine(status, &line_len);
 
   if (line) {
-    if (!has_room(length, capacity, line_len)) return false;
+    if (!has_room(length, capacity, line_len))
+      return false;
     std::memcpy(buffer + length, line, line_len);
     length += line_len;
     return true;
@@ -580,24 +595,27 @@ bool ResponseBuilder::WriteStatusLine(int status) {
   // Custom status code
   char buf[64];
   int n = snprintf(buf, sizeof(buf), "HTTP/1.1 %d \r\n", status);
-  if (n < 0 || !has_room(length, capacity, static_cast<size_t>(n))) return false;
+  if (n < 0 || !has_room(length, capacity, static_cast<size_t>(n)))
+    return false;
   std::memcpy(buffer + length, buf, n);
   length += n;
   return true;
 }
 
-bool ResponseBuilder::WriteHeader(
-    const char* name, size_t name_len,
-    const char* value, size_t value_len) {
+bool ResponseBuilder::WriteHeader(const char* name, size_t name_len,
+                                  const char* value, size_t value_len) {
   // Format: "Name: Value\r\n"
   // Compute `needed` in an overflow-safe way: each addend is capped
   // under has_room, so even SIZE_MAX-sized name_len/value_len can't
   // wrap the sum into a small number that passes the room check.
-  if (name_len > capacity || value_len > capacity - name_len) return false;
+  if (name_len > capacity || value_len > capacity - name_len)
+    return false;
   size_t needed = name_len + value_len;
-  if (needed > capacity - 4) return false;
-  needed += 4;  // ": " + "\r\n"
-  if (!has_room(length, capacity, needed)) return false;
+  if (needed > capacity - 4)
+    return false;
+  needed += 4; // ": " + "\r\n"
+  if (!has_room(length, capacity, needed))
+    return false;
 
   std::memcpy(buffer + length, name, name_len);
   length += name_len;
@@ -613,49 +631,70 @@ bool ResponseBuilder::WriteHeader(
 bool ResponseBuilder::WriteContentLength(size_t len) {
   char buf[32];
   int n = snprintf(buf, sizeof(buf), "%zu", len);
-  if (n < 0) return false;
+  if (n < 0)
+    return false;
   return WriteHeader("Content-Length", 14, buf, n);
 }
 
 bool ResponseBuilder::WriteHeadersEnd() {
-  if (!has_room(length, capacity, 2)) return false;
+  if (!has_room(length, capacity, 2))
+    return false;
   buffer[length++] = '\r';
   buffer[length++] = '\n';
   return true;
 }
 
 bool ResponseBuilder::WriteBody(const uint8_t* body, size_t body_len) {
-  if (!has_room(length, capacity, body_len)) return false;
+  if (!has_room(length, capacity, body_len))
+    return false;
   std::memcpy(buffer + length, body, body_len);
   length += body_len;
   return true;
 }
 
-bool ResponseBuilder::WriteJsonResponse(int status, const char* json, size_t json_len) {
-  if (!WriteStatusLine(status)) return false;
-  if (!WriteHeader("Content-Type", 12, "application/json", 16)) return false;
-  if (!WriteHeader("Connection", 10, "keep-alive", 10)) return false;
-  if (!WriteContentLength(json_len)) return false;
-  if (!WriteHeadersEnd()) return false;
+bool ResponseBuilder::WriteJsonResponse(int status, const char* json,
+                                        size_t json_len) {
+  if (!WriteStatusLine(status))
+    return false;
+  if (!WriteHeader("Content-Type", 12, "application/json", 16))
+    return false;
+  if (!WriteHeader("Connection", 10, "keep-alive", 10))
+    return false;
+  if (!WriteContentLength(json_len))
+    return false;
+  if (!WriteHeadersEnd())
+    return false;
   return WriteBody(reinterpret_cast<const uint8_t*>(json), json_len);
 }
 
-bool ResponseBuilder::WriteTextResponse(int status, const char* text, size_t text_len) {
-  if (!WriteStatusLine(status)) return false;
-  if (!WriteHeader("Content-Type", 12, "text/plain", 10)) return false;
-  if (!WriteHeader("Connection", 10, "keep-alive", 10)) return false;
-  if (!WriteContentLength(text_len)) return false;
-  if (!WriteHeadersEnd()) return false;
+bool ResponseBuilder::WriteTextResponse(int status, const char* text,
+                                        size_t text_len) {
+  if (!WriteStatusLine(status))
+    return false;
+  if (!WriteHeader("Content-Type", 12, "text/plain", 10))
+    return false;
+  if (!WriteHeader("Connection", 10, "keep-alive", 10))
+    return false;
+  if (!WriteContentLength(text_len))
+    return false;
+  if (!WriteHeadersEnd())
+    return false;
   return WriteBody(reinterpret_cast<const uint8_t*>(text), text_len);
 }
 
-bool ResponseBuilder::WriteBinaryResponse(
-    int status, const uint8_t* data, size_t data_len, const char* content_type) {
-  if (!WriteStatusLine(status)) return false;
-  if (!WriteHeader("Content-Type", 12, content_type, std::strlen(content_type))) return false;
-  if (!WriteHeader("Connection", 10, "keep-alive", 10)) return false;
-  if (!WriteContentLength(data_len)) return false;
-  if (!WriteHeadersEnd()) return false;
+bool ResponseBuilder::WriteBinaryResponse(int status, const uint8_t* data,
+                                          size_t data_len,
+                                          const char* content_type) {
+  if (!WriteStatusLine(status))
+    return false;
+  if (!WriteHeader("Content-Type", 12, content_type, std::strlen(content_type)))
+    return false;
+  if (!WriteHeader("Connection", 10, "keep-alive", 10))
+    return false;
+  if (!WriteContentLength(data_len))
+    return false;
+  if (!WriteHeadersEnd())
+    return false;
   return WriteBody(data, data_len);
 }
 
@@ -669,66 +708,77 @@ bool ResponseBuilder::WriteBinaryResponse(
 //   kWildcard: captures everything remaining (e.g., "*" matches "a/b/c")
 //
 // Insert("/users/:id") creates: root -> "users" -> :param(id)
-// Match("/users/42") walks: root -> "users" (static hit) -> :param (capture "42")
+// Match("/users/42") walks: root -> "users" (static hit) -> :param (capture
+// "42")
 // ============================================================================
 
 struct TrieRouter::Node {
   enum Type { kStatic, kParam, kWildcard };
 
   Type type = kStatic;
-  std::string segment;           // Static segment text, or param name
+  std::string segment; // Static segment text, or param name
   std::unordered_map<std::string, Node*> children;
-  Node* param_child = nullptr;   // :param child
-  Node* wildcard_child = nullptr;// * child
+  Node* param_child = nullptr;    // :param child
+  Node* wildcard_child = nullptr; // * child
   uint32_t handler_id = 0;
   bool has_handler = false;
 
   ~Node() {
-    for (auto& kv : children) delete kv.second;
+    for (auto& kv : children)
+      delete kv.second;
     delete param_child;
     delete wildcard_child;
   }
 };
 
-// -fno-exceptions: throwing `new (std::nothrow) Node()` would abort on OOM. Using std::nothrow
-// here means a ctor failure leaves root_=nullptr; Insert/Match null-check below.
+// -fno-exceptions: throwing `new (std::nothrow) Node()` would abort on OOM.
+// Using std::nothrow here means a ctor failure leaves root_=nullptr;
+// Insert/Match null-check below.
 TrieRouter::TrieRouter() : root_(new (std::nothrow) Node()) {}
 TrieRouter::~TrieRouter() { delete root_; }
 
-void TrieRouter::Insert(const char* pattern, size_t pattern_len, uint32_t handler_id) {
+void TrieRouter::Insert(const char* pattern, size_t pattern_len,
+                        uint32_t handler_id) {
   // Bail if root allocation failed at ctor time; the router is unusable.
-  if (!root_) return;
+  if (!root_)
+    return;
   Node* node = root_;
   const char* p = pattern;
   const char* end = pattern + pattern_len;
 
   while (p < end) {
     // Skip leading slashes
-    while (p < end && *p == '/') ++p;
-    if (p >= end) break;
+    while (p < end && *p == '/')
+      ++p;
+    if (p >= end)
+      break;
 
     // Find end of segment
     const char* seg_start = p;
-    while (p < end && *p != '/') ++p;
+    while (p < end && *p != '/')
+      ++p;
     size_t seg_len = p - seg_start;
 
-    if (seg_len == 0) continue;
+    if (seg_len == 0)
+      continue;
 
     if (seg_start[0] == '*') {
       // Wildcard
       if (!node->wildcard_child) {
         node->wildcard_child = new (std::nothrow) Node();
-        if (!node->wildcard_child) return;
+        if (!node->wildcard_child)
+          return;
         node->wildcard_child->type = Node::kWildcard;
         node->wildcard_child->segment = std::string(seg_start + 1, seg_len - 1);
       }
       node = node->wildcard_child;
-      break;  // Wildcard consumes rest
+      break; // Wildcard consumes rest
     } else if (seg_start[0] == ':') {
       // Param
       if (!node->param_child) {
         node->param_child = new (std::nothrow) Node();
-        if (!node->param_child) return;
+        if (!node->param_child)
+          return;
         node->param_child->type = Node::kParam;
       }
       node->param_child->segment = std::string(seg_start + 1, seg_len - 1);
@@ -739,7 +789,8 @@ void TrieRouter::Insert(const char* pattern, size_t pattern_len, uint32_t handle
       auto it = node->children.find(seg);
       if (it == node->children.end()) {
         Node* child = new (std::nothrow) Node();
-        if (!child) return;
+        if (!child)
+          return;
         child->segment = seg;
         node->children[seg] = child;
         node = child;
@@ -753,7 +804,8 @@ void TrieRouter::Insert(const char* pattern, size_t pattern_len, uint32_t handle
   node->has_handler = true;
 }
 
-TrieRouter::MatchResult TrieRouter::Match(const char* pathname, size_t len) const {
+TrieRouter::MatchResult TrieRouter::Match(const char* pathname,
+                                          size_t len) const {
   MatchResult result = {};
   result.matched = false;
 
@@ -763,15 +815,19 @@ TrieRouter::MatchResult TrieRouter::Match(const char* pathname, size_t len) cons
 
   while (p < end) {
     // Skip leading slashes
-    while (p < end && *p == '/') ++p;
-    if (p >= end) break;
+    while (p < end && *p == '/')
+      ++p;
+    if (p >= end)
+      break;
 
     // Find end of segment
     const char* seg_start = p;
-    while (p < end && *p != '/') ++p;
+    while (p < end && *p != '/')
+      ++p;
     size_t seg_len = p - seg_start;
 
-    if (seg_len == 0) continue;
+    if (seg_len == 0)
+      continue;
 
     std::string seg(seg_start, seg_len);
 
@@ -800,14 +856,16 @@ TrieRouter::MatchResult TrieRouter::Match(const char* pathname, size_t len) cons
       if (result.param_count < 16) {
         auto& param = result.params[result.param_count++];
         param.name = node->wildcard_child->segment.empty()
-            ? "$wildcard" : node->wildcard_child->segment.c_str();
+                         ? "$wildcard"
+                         : node->wildcard_child->segment.c_str();
         param.name_len = node->wildcard_child->segment.empty()
-            ? 9 : node->wildcard_child->segment.length();
+                             ? 9
+                             : node->wildcard_child->segment.length();
         param.value_start = seg_start - pathname;
         param.value_len = end - seg_start;
       }
       node = node->wildcard_child;
-      break;  // Wildcard consumes rest
+      break; // Wildcard consumes rest
     }
 
     // No match
@@ -858,7 +916,8 @@ uint8_t* BufferPool::Acquire() {
 }
 
 void BufferPool::Release(uint8_t* buffer) {
-  if (!buffer) return;
+  if (!buffer)
+    return;
 
   // No mutex needed - Node.js is single-threaded.
   if (free_list_.size() < pool_size_) {
@@ -878,7 +937,8 @@ const char* FindChar(const char* str, size_t len, char c) {
   return smol::simd::FindChar(str, len, c);
 }
 
-bool EqualsIgnoreCase(const char* a, size_t a_len, const char* b, size_t b_len) {
+bool EqualsIgnoreCase(const char* a, size_t a_len, const char* b,
+                      size_t b_len) {
   return smol::simd::EqualsIgnoreCase(a, a_len, b, b_len);
 }
 
@@ -890,7 +950,7 @@ void XorRepeat4(uint8_t* data, size_t len, uint32_t key) {
   smol::simd::XorRepeat4(data, len, key);
 }
 
-}  // namespace simd
+} // namespace simd
 
-}  // namespace http
-}  // namespace smol
+} // namespace http
+} // namespace smol

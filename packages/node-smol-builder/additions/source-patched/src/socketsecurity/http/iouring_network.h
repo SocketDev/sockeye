@@ -21,7 +21,7 @@ namespace http_perf {
 // Note: This is a stub implementation. Full io_uring support requires
 // libuv upstream changes or a custom event loop implementation.
 class IoUringNetwork {
- public:
+public:
   // Check if io_uring is available and supported.
   static bool IsAvailable();
 
@@ -56,12 +56,12 @@ class IoUringNetwork {
 
   static const Stats& GetStats();
 
- private:
+private:
   static Stats stats_;
 };
 
-}  // namespace http_perf
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace http_perf
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_HTTP_PERF_IOURING_NETWORK_H_
+#endif // SRC_SOCKETSECURITY_HTTP_PERF_IOURING_NETWORK_H_

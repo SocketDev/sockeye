@@ -71,8 +71,11 @@ namespace socketsecurity {
 namespace ilp {
 
 using v8::Boolean;
+using v8::CFunction;
 using v8::Context;
 using v8::Exception;
+using v8::FastApiCallbackOptions;
+using v8::FastOneByteString;
 using v8::FunctionCallbackInfo;
 using v8::HandleScope;
 using v8::Isolate;
@@ -83,22 +86,19 @@ using v8::Object;
 using v8::String;
 using v8::Uint32;
 using v8::Value;
-using v8::CFunction;
-using v8::FastApiCallbackOptions;
-using v8::FastOneByteString;
 
 // Thread-local member definitions — each Worker thread gets its own sender map.
-thread_local std::unordered_map<uint32_t, std::unique_ptr<IlpBinding::SenderState>> IlpBinding::senders_;
+thread_local std::unordered_map<uint32_t,
+                                std::unique_ptr<IlpBinding::SenderState>>
+    IlpBinding::senders_;
 thread_local uint32_t IlpBinding::next_sender_id_ = 1;
 
 // ============================================================================
 // V8 Fast API paths for boolColumn and floatColumn
 // ============================================================================
 
-static void FastBoolColumn(Local<Value> receiver,
-                           uint32_t sender_id,
-                           const FastOneByteString& name,
-                           bool value,
+static void FastBoolColumn(Local<Value> receiver, uint32_t sender_id,
+                           const FastOneByteString& name, bool value,
                            // NOLINTNEXTLINE(runtime/references)
                            FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_ilp.boolColumn");
@@ -112,10 +112,8 @@ static void FastBoolColumn(Local<Value> receiver,
 
 static CFunction cf_fast_bool_column(CFunction::Make(FastBoolColumn));
 
-static void FastFloatColumn(Local<Value> receiver,
-                            uint32_t sender_id,
-                            const FastOneByteString& name,
-                            double value,
+static void FastFloatColumn(Local<Value> receiver, uint32_t sender_id,
+                            const FastOneByteString& name, double value,
                             // NOLINTNEXTLINE(runtime/references)
                             FastApiCallbackOptions& options) {
   TRACK_V8_FAST_API_CALL("smol_ilp.floatColumn");
@@ -129,10 +127,8 @@ static void FastFloatColumn(Local<Value> receiver,
 
 static CFunction cf_fast_float_column(CFunction::Make(FastFloatColumn));
 
-void IlpBinding::Initialize(
-    Local<Context> context,
-    Local<Object> target,
-    Environment* env) {
+void IlpBinding::Initialize(Local<Context> context, Local<Object> target,
+                            Environment* env) {
   Isolate* isolate = env->isolate();
   HandleScope scope(isolate);
 
@@ -146,9 +142,11 @@ void IlpBinding::Initialize(
   SetMethod(context, target, "table", Table);
   SetMethod(context, target, "symbol", Symbol);
   SetMethod(context, target, "stringColumn", StringColumn);
-  SetFastMethod(context, target, "boolColumn", SlowBoolColumn, &cf_fast_bool_column);
+  SetFastMethod(context, target, "boolColumn", SlowBoolColumn,
+                &cf_fast_bool_column);
   SetMethod(context, target, "intColumn", IntColumn);
-  SetFastMethod(context, target, "floatColumn", SlowFloatColumn, &cf_fast_float_column);
+  SetFastMethod(context, target, "floatColumn", SlowFloatColumn,
+                &cf_fast_float_column);
   SetMethod(context, target, "timestampColumn", TimestampColumn);
 
   // Row termination.
@@ -169,7 +167,8 @@ IlpBinding::SenderState* IlpBinding::GetSender(uint32_t id) {
   return it->second.get();
 }
 
-TimestampUnit IlpBinding::ParseTimestampUnit(Isolate* isolate, Local<Value> val) {
+TimestampUnit IlpBinding::ParseTimestampUnit(Isolate* isolate,
+                                             Local<Value> val) {
   if (!val->IsString()) {
     return TimestampUnit::kNanoseconds;
   }
@@ -199,19 +198,19 @@ void IlpBinding::CreateSender(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   TransportConfig config;
-  size_t encoder_max_size = 104857600;  // 100MB default
+  size_t encoder_max_size = 104857600; // 100MB default
 
   if (args.Length() >= 1 && args[0]->IsObject()) {
     Local<Object> opts = args[0].As<Object>();
 
     Local<Value> host_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "host"))
-        .ToLocal(&host_val) && host_val->IsString()) {
+            .ToLocal(&host_val) &&
+        host_val->IsString()) {
       String::Utf8Value utf8(isolate, host_val);
       if (*utf8 == nullptr) {
         isolate->ThrowException(Exception::Error(
-            FIXED_ONE_BYTE_STRING(isolate,
-                "Out of memory encoding ILP host")));
+            FIXED_ONE_BYTE_STRING(isolate, "Out of memory encoding ILP host")));
         return;
       }
       config.host = *utf8;
@@ -219,42 +218,49 @@ void IlpBinding::CreateSender(const FunctionCallbackInfo<Value>& args) {
 
     Local<Value> port_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "port"))
-        .ToLocal(&port_val) && port_val->IsNumber()) {
-      config.port = static_cast<uint16_t>(port_val->Uint32Value(context).FromMaybe(9009));
+            .ToLocal(&port_val) &&
+        port_val->IsNumber()) {
+      config.port =
+          static_cast<uint16_t>(port_val->Uint32Value(context).FromMaybe(9009));
     }
 
     Local<Value> timeout_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "connectTimeoutMs"))
-        .ToLocal(&timeout_val) && timeout_val->IsNumber()) {
-      config.connect_timeout_ms = static_cast<int>(
-        timeout_val->Int32Value(context).FromMaybe(10000));
+            .ToLocal(&timeout_val) &&
+        timeout_val->IsNumber()) {
+      config.connect_timeout_ms =
+          static_cast<int>(timeout_val->Int32Value(context).FromMaybe(10000));
     }
 
     Local<Value> send_timeout_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "sendTimeoutMs"))
-        .ToLocal(&send_timeout_val) && send_timeout_val->IsNumber()) {
+            .ToLocal(&send_timeout_val) &&
+        send_timeout_val->IsNumber()) {
       config.send_timeout_ms = static_cast<int>(
-        send_timeout_val->Int32Value(context).FromMaybe(30000));
+          send_timeout_val->Int32Value(context).FromMaybe(30000));
     }
 
     Local<Value> buf_size_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "bufferSize"))
-        .ToLocal(&buf_size_val) && buf_size_val->IsNumber()) {
+            .ToLocal(&buf_size_val) &&
+        buf_size_val->IsNumber()) {
       config.send_buffer_size = static_cast<size_t>(
-        buf_size_val->Uint32Value(context).FromMaybe(65536));
+          buf_size_val->Uint32Value(context).FromMaybe(65536));
     }
 
     Local<Value> use_uring_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "useIoUring"))
-        .ToLocal(&use_uring_val) && use_uring_val->IsBoolean()) {
+            .ToLocal(&use_uring_val) &&
+        use_uring_val->IsBoolean()) {
       config.use_io_uring = use_uring_val->BooleanValue(isolate);
     }
 
     Local<Value> max_buf_val;
     if (opts->Get(context, FIXED_ONE_BYTE_STRING(isolate, "maxBufferSize"))
-        .ToLocal(&max_buf_val) && max_buf_val->IsNumber()) {
+            .ToLocal(&max_buf_val) &&
+        max_buf_val->IsNumber()) {
       encoder_max_size = static_cast<size_t>(
-        max_buf_val->IntegerValue(context).FromMaybe(104857600));
+          max_buf_val->IntegerValue(context).FromMaybe(104857600));
     }
   }
 
@@ -264,12 +270,11 @@ void IlpBinding::CreateSender(const FunctionCallbackInfo<Value>& args) {
   // still bad_alloc and std::terminate the process under -fno-exceptions.
   // 256 MB for a single ILP write buffer is already absurdly large;
   // reject anything beyond that.
-  constexpr size_t kMaxIlpBufferSize = 256 * 1024 * 1024;  // 256 MB
+  constexpr size_t kMaxIlpBufferSize = 256 * 1024 * 1024; // 256 MB
   if (config.send_buffer_size > kMaxIlpBufferSize ||
       encoder_max_size > kMaxIlpBufferSize) {
-    isolate->ThrowException(v8::Exception::RangeError(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "ILP buffer size exceeds 256 MB limit")));
+    isolate->ThrowException(v8::Exception::RangeError(FIXED_ONE_BYTE_STRING(
+        isolate, "ILP buffer size exceeds 256 MB limit")));
     return;
   }
 
@@ -278,25 +283,22 @@ void IlpBinding::CreateSender(const FunctionCallbackInfo<Value>& args) {
   // and doesn't kill the isolate.
   auto state = std::unique_ptr<SenderState>(new (std::nothrow) SenderState());
   if (!state) {
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to allocate ILP sender state")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to allocate ILP sender state")));
     return;
   }
   state->encoder = std::unique_ptr<IlpEncoder>(
       new (std::nothrow) IlpEncoder(config.send_buffer_size, encoder_max_size));
   if (!state->encoder) {
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to allocate ILP encoder")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to allocate ILP encoder")));
     return;
   }
-  state->transport = std::unique_ptr<IlpTransport>(
-      new (std::nothrow) IlpTransport(config));
+  state->transport =
+      std::unique_ptr<IlpTransport>(new (std::nothrow) IlpTransport(config));
   if (!state->transport) {
-    isolate->ThrowException(v8::Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory: failed to allocate ILP transport")));
+    isolate->ThrowException(v8::Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory: failed to allocate ILP transport")));
     return;
   }
 
@@ -345,8 +347,8 @@ void IlpBinding::Connect(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
@@ -358,9 +360,9 @@ void IlpBinding::Connect(const FunctionCallbackInfo<Value>& args) {
     // aborting the isolate via ToLocalChecked.
     Local<String> err_str;
     if (!String::NewFromUtf8(isolate, state->transport->LastError())
-            .ToLocal(&err_str)) {
-      err_str = FIXED_ONE_BYTE_STRING(
-          isolate, "ILP connect error (non-UTF-8 message)");
+             .ToLocal(&err_str)) {
+      err_str = FIXED_ONE_BYTE_STRING(isolate,
+                                      "ILP connect error (non-UTF-8 message)");
     }
     isolate->ThrowException(Exception::Error(err_str));
     return;
@@ -397,16 +399,15 @@ void IlpBinding::Table(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP table name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP table name")));
     return;
   }
   state->encoder->Table(*name, name.length());
@@ -424,23 +425,21 @@ void IlpBinding::Symbol(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP symbol column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP symbol column name")));
     return;
   }
   String::Utf8Value value(isolate, args[2]);
   if (*value == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP symbol column value")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP symbol column value")));
     return;
   }
   state->encoder->Symbol(*name, name.length(), *value, value.length());
@@ -458,23 +457,21 @@ void IlpBinding::StringColumn(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP string column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP string column name")));
     return;
   }
   String::Utf8Value value(isolate, args[2]);
   if (*value == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP string column value")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP string column value")));
     return;
   }
   state->encoder->StringColumn(*name, name.length(), *value, value.length());
@@ -492,22 +489,20 @@ void IlpBinding::SlowBoolColumn(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP boolean column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP boolean column name")));
     return;
   }
   bool value = args[2]->BooleanValue(isolate);
   state->encoder->BoolColumn(*name, name.length(), value);
 }
-
 
 void IlpBinding::IntColumn(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
@@ -521,16 +516,15 @@ void IlpBinding::IntColumn(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP integer column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP integer column name")));
     return;
   }
   int64_t value;
@@ -538,8 +532,8 @@ void IlpBinding::IntColumn(const FunctionCallbackInfo<Value>& args) {
     bool lossless;
     value = args[2].As<v8::BigInt>()->Int64Value(&lossless);
     if (!lossless) {
-      isolate->ThrowException(Exception::RangeError(
-        FIXED_ONE_BYTE_STRING(isolate, "BigInt value does not fit in int64")));
+      isolate->ThrowException(Exception::RangeError(FIXED_ONE_BYTE_STRING(
+          isolate, "BigInt value does not fit in int64")));
       return;
     }
   } else {
@@ -560,22 +554,20 @@ void IlpBinding::SlowFloatColumn(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP float column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP float column name")));
     return;
   }
   double value = args[2]->NumberValue(context).FromMaybe(0.0);
   state->encoder->FloatColumn(*name, name.length(), value);
 }
-
 
 void IlpBinding::TimestampColumn(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
@@ -589,16 +581,15 @@ void IlpBinding::TimestampColumn(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
   String::Utf8Value name(isolate, args[1]);
   if (*name == nullptr) {
-    isolate->ThrowException(Exception::Error(
-        FIXED_ONE_BYTE_STRING(isolate,
-            "Out of memory encoding ILP timestamp column name")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Out of memory encoding ILP timestamp column name")));
     return;
   }
   int64_t value;
@@ -606,8 +597,8 @@ void IlpBinding::TimestampColumn(const FunctionCallbackInfo<Value>& args) {
     bool lossless;
     value = args[2].As<v8::BigInt>()->Int64Value(&lossless);
     if (!lossless) {
-      isolate->ThrowException(Exception::RangeError(
-        FIXED_ONE_BYTE_STRING(isolate, "BigInt value does not fit in int64")));
+      isolate->ThrowException(Exception::RangeError(FIXED_ONE_BYTE_STRING(
+          isolate, "BigInt value does not fit in int64")));
       return;
     }
   } else {
@@ -634,8 +625,8 @@ void IlpBinding::At(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
@@ -644,12 +635,13 @@ void IlpBinding::At(const FunctionCallbackInfo<Value>& args) {
     bool lossless;
     timestamp = args[1].As<v8::BigInt>()->Int64Value(&lossless);
     if (!lossless) {
-      isolate->ThrowException(Exception::RangeError(
-        FIXED_ONE_BYTE_STRING(isolate, "BigInt timestamp does not fit in int64")));
+      isolate->ThrowException(Exception::RangeError(FIXED_ONE_BYTE_STRING(
+          isolate, "BigInt timestamp does not fit in int64")));
       return;
     }
   } else {
-    timestamp = static_cast<int64_t>(args[1]->IntegerValue(context).FromMaybe(0));
+    timestamp =
+        static_cast<int64_t>(args[1]->IntegerValue(context).FromMaybe(0));
   }
 
   TimestampUnit unit = TimestampUnit::kNanoseconds;
@@ -673,8 +665,8 @@ void IlpBinding::AtNow(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
@@ -694,8 +686,8 @@ void IlpBinding::Flush(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
@@ -706,28 +698,28 @@ void IlpBinding::Flush(const FunctionCallbackInfo<Value>& args) {
 
   // Check for buffer overflow before sending.
   if (state->encoder->HasOverflowed()) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Buffer overflow - maximum size exceeded")));
+    isolate->ThrowException(Exception::Error(FIXED_ONE_BYTE_STRING(
+        isolate, "Buffer overflow - maximum size exceeded")));
     return;
   }
 
   if (!state->transport->IsConnected()) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Not connected")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Not connected")));
     return;
   }
 
-  ssize_t sent = state->transport->Send(
-    state->encoder->Data(), state->encoder->Size());
+  ssize_t sent =
+      state->transport->Send(state->encoder->Data(), state->encoder->Size());
 
   if (sent < 0) {
     // Same UTF-8 hardening as the Connect() error path — see comment
     // above for rationale.
     Local<String> err_str;
     if (!String::NewFromUtf8(isolate, state->transport->LastError())
-            .ToLocal(&err_str)) {
-      err_str = FIXED_ONE_BYTE_STRING(
-          isolate, "ILP send error (non-UTF-8 message)");
+             .ToLocal(&err_str)) {
+      err_str =
+          FIXED_ONE_BYTE_STRING(isolate, "ILP send error (non-UTF-8 message)");
     }
     isolate->ThrowException(Exception::Error(err_str));
     return;
@@ -753,40 +745,48 @@ void IlpBinding::GetStats(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
 
-  Local<Object> stats = Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
+  Local<Object> stats =
+      Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "rowsBuffered"),
-    Number::New(isolate, static_cast<double>(state->rows_buffered))).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "rowsBuffered"),
+            Number::New(isolate, static_cast<double>(state->rows_buffered)))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "rowsSent"),
-    Number::New(isolate, static_cast<double>(state->rows_sent))).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "rowsSent"),
+            Number::New(isolate, static_cast<double>(state->rows_sent)))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "bytesSent"),
-    Number::New(isolate, static_cast<double>(state->bytes_sent))).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "bytesSent"),
+            Number::New(isolate, static_cast<double>(state->bytes_sent)))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "bufferSize"),
-    Number::New(isolate, static_cast<double>(state->encoder->Size()))).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "bufferSize"),
+            Number::New(isolate, static_cast<double>(state->encoder->Size())))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "connected"),
-    Boolean::New(isolate, state->transport->IsConnected())).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "connected"),
+            Boolean::New(isolate, state->transport->IsConnected()))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "ioUringAvailable"),
-    Boolean::New(isolate, state->transport->IsIoUringAvailable())).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "ioUringAvailable"),
+            Boolean::New(isolate, state->transport->IsIoUringAvailable()))
+      .Check();
 
-  stats->Set(context,
-    FIXED_ONE_BYTE_STRING(isolate, "hasOverflowed"),
-    Boolean::New(isolate, state->encoder->HasOverflowed())).Check();
+  stats
+      ->Set(context, FIXED_ONE_BYTE_STRING(isolate, "hasOverflowed"),
+            Boolean::New(isolate, state->encoder->HasOverflowed()))
+      .Check();
 
   args.GetReturnValue().Set(stats);
 }
@@ -803,15 +803,16 @@ void IlpBinding::Clear(const FunctionCallbackInfo<Value>& args) {
   uint32_t id = args[0]->Uint32Value(context).FromMaybe(0);
   SenderState* state = GetSender(id);
   if (state == nullptr) {
-    isolate->ThrowException(Exception::Error(
-      FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
+    isolate->ThrowException(
+        Exception::Error(FIXED_ONE_BYTE_STRING(isolate, "Sender not found")));
     return;
   }
   state->encoder->Clear();
   state->rows_buffered = 0;
 }
 
-void IlpBinding::RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+void IlpBinding::RegisterExternalReferences(
+    ExternalReferenceRegistry* registry) {
   registry->Register(CreateSender);
   registry->Register(DestroySender);
   registry->Register(Connect);
@@ -832,15 +833,13 @@ void IlpBinding::RegisterExternalReferences(ExternalReferenceRegistry* registry)
   registry->Register(Clear);
 }
 
-}  // namespace ilp
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ilp
+} // namespace socketsecurity
+} // namespace node
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(
-    smol_ilp,
-    node::socketsecurity::ilp::IlpBinding::Initialize)
+    smol_ilp, node::socketsecurity::ilp::IlpBinding::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(
-    smol_ilp,
-    node::socketsecurity::ilp::IlpBinding::RegisterExternalReferences)
+    smol_ilp, node::socketsecurity::ilp::IlpBinding::RegisterExternalReferences)
 
 #pragma GCC diagnostic pop

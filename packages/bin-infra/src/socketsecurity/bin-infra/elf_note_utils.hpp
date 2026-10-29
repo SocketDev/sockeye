@@ -15,8 +15,9 @@
  *    - Preserves PHT at original offset (CRITICAL for static glibc)
  *    - SMOL compressed data storage:
  *        Mach-O: SMOL/__PRESSED_DATA        (segment/section)
- *        ELF:    PT_NOTE with owner "pressed_data" (LIEF creates .note.pressed_data section)
- *        PE:     .pressed_data              (section only - no segments in PE)
+ *        ELF:    PT_NOTE with owner "pressed_data" (LIEF creates
+ * .note.pressed_data section) PE:     .pressed_data              (section only
+ * - no segments in PE)
  *    - Appends notes to end of file, modifies existing PT_NOTE in-place
  *    - Extends last PT_LOAD to cover appended note data
  *    - glibc reads PHT from base+phoff; moving PHT causes SIGSEGV
@@ -75,30 +76,31 @@
 #define ELF_NOTE_UTILS_HPP
 
 #include <LIEF/LIEF.hpp>
-#include <set>
-#include <string>
-#include <vector>
 #include <cstdio>
 #include <cstring>
 #include <inttypes.h>
+#include <set>
+#include <string>
+#include <vector>
 #ifndef _WIN32
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
+#include "socketsecurity/bin-infra/segment_names.h"
 #include "socketsecurity/build-infra/file_io_common.h"
 #include "socketsecurity/build-infra/file_utils.h"
-#include "socketsecurity/bin-infra/segment_names.h"
 
 // Fuse string constants (must match segment_names.h)
 #ifndef NODE_SEA_FUSE_UNFLIPPED
-#define NODE_SEA_FUSE_UNFLIPPED "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2:0"
+#define NODE_SEA_FUSE_UNFLIPPED                                                \
+  "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2:0"
 #endif
 
-#include "socketsecurity/bin-infra/elf_note_utils_types.hpp"
-#include "socketsecurity/bin-infra/elf_note_utils_raw_probe.hpp"
-#include "socketsecurity/bin-infra/elf_note_utils_raw_write.hpp"
 #include "socketsecurity/bin-infra/elf_note_utils_lief_notes.hpp"
 #include "socketsecurity/bin-infra/elf_note_utils_lief_write.hpp"
+#include "socketsecurity/bin-infra/elf_note_utils_raw_probe.hpp"
+#include "socketsecurity/bin-infra/elf_note_utils_raw_write.hpp"
+#include "socketsecurity/bin-infra/elf_note_utils_types.hpp"
 
 #endif // ELF_NOTE_UTILS_HPP

@@ -45,7 +45,7 @@ inline constexpr size_t kArenaChunkSize = 64 * 1024;
 inline constexpr size_t kArenaAlignment = alignof(void*);
 
 class Arena {
- public:
+public:
   Arena() = default;
   Arena(const Arena&) = delete;
   Arena& operator=(const Arena&) = delete;
@@ -120,7 +120,7 @@ class Arena {
   // lockfiles).
   size_t BytesReserved() const { return bytes_reserved_; }
 
- private:
+private:
   void AddChunk(size_t size) {
     auto chunk = std::make_unique<char[]>(size);
     head_ = chunk.get();
@@ -136,9 +136,9 @@ class Arena {
   size_t bytes_reserved_ = 0;
 };
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_ARENA_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_ARENA_H_

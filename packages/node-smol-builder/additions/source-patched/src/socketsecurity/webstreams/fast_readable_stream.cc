@@ -8,8 +8,8 @@
 //
 // WHAT THIS FILE DOES
 //   Implements the FastReadableStreamAccelerator methods:
-//     New()      -- constructor, called when JS does `new (std::nothrow) Accelerator()`
-//     Enqueue()  -- pushes a JS value into the C++ buffer
+//     New()      -- constructor, called when JS does `new (std::nothrow)
+//     Accelerator()` Enqueue()  -- pushes a JS value into the C++ buffer
 //     ReadSync() -- pops a value from the buffer (fast path), or returns
 //                   undefined if the buffer is empty (signals JS to do an
 //                   async read)
@@ -48,9 +48,9 @@
 // ============================================================================
 
 #include "socketsecurity/webstreams/fast_readable_stream.h"
-#include "socketsecurity/simd/simd.h"  // SMOL_LIKELY / SMOL_UNLIKELY
 #include "env-inl.h"
 #include "node_internals.h"
+#include "socketsecurity/simd/simd.h" // SMOL_LIKELY / SMOL_UNLIKELY
 #include "util-inl.h"
 
 namespace node {
@@ -73,10 +73,9 @@ using v8::Value;
 extern StreamChunkPool* GetChunkPool(Environment* env);
 
 FastReadableStreamAccelerator::FastReadableStreamAccelerator(
-    Environment* env,
-    Local<Object> object)
-  : AsyncWrap(env, object, AsyncWrap::PROVIDER_STREAMPIPE),
-    chunk_pool_(GetChunkPool(env)) {}
+    Environment* env, Local<Object> object)
+    : AsyncWrap(env, object, AsyncWrap::PROVIDER_STREAMPIPE),
+      chunk_pool_(GetChunkPool(env)) {}
 
 FastReadableStreamAccelerator::~FastReadableStreamAccelerator() {
   // Clear buffered chunks.
@@ -102,9 +101,8 @@ void FastReadableStreamAccelerator::New(
   // otherwise store that nullptr unchecked and later ReadSync would
   // dereference it.
   if (GetChunkPool(env) == nullptr) {
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8Literal(isolate,
-            "Out of memory: failed to allocate StreamChunkPool")));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8Literal(
+        isolate, "Out of memory: failed to allocate StreamChunkPool")));
     return;
   }
 
@@ -112,12 +110,12 @@ void FastReadableStreamAccelerator::New(
   // the caller with a zombie JS object whose native wrapper was never
   // attached (every later method would silently return via
   // ASSIGN_OR_RETURN_UNWRAP).
-  auto* accel = new (std::nothrow)
-      FastReadableStreamAccelerator(env, args.This());
+  auto* accel =
+      new (std::nothrow) FastReadableStreamAccelerator(env, args.This());
   if (accel == nullptr) {
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8Literal(isolate,
-            "Out of memory: failed to allocate FastReadableStreamAccelerator")));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8Literal(
+        isolate,
+        "Out of memory: failed to allocate FastReadableStreamAccelerator")));
     return;
   }
 }
@@ -136,9 +134,8 @@ void FastReadableStreamAccelerator::ReadSync(
   // against a theoretical thread_local teardown between construction and
   // first use, which would otherwise SIGSEGV on AcquireChunk.
   if (SMOL_UNLIKELY(self->chunk_pool_ == nullptr)) {
-    isolate->ThrowException(v8::Exception::Error(
-        v8::String::NewFromUtf8Literal(isolate,
-            "StreamChunkPool unavailable (environment shutting down)")));
+    isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8Literal(
+        isolate, "StreamChunkPool unavailable (environment shutting down)")));
     return;
   }
 
@@ -193,8 +190,9 @@ void FastReadableStreamAccelerator::Enqueue(
   // allocation cliff even on constrained systems.
   constexpr size_t kMaxQueuedChunks = 8192;
   if (self->buffer_.size() >= kMaxQueuedChunks) {
-    isolate->ThrowException(v8::Exception::RangeError(
-        v8::String::NewFromUtf8Literal(isolate,
+    isolate->ThrowException(
+        v8::Exception::RangeError(v8::String::NewFromUtf8Literal(
+            isolate,
             "FastReadableStream queue overflow (limit: 8192 chunks)")));
     return;
   }
@@ -221,8 +219,8 @@ void FastReadableStreamAccelerator::HasData(
   args.GetReturnValue().Set(Boolean::New(isolate, !self->buffer_.empty()));
 }
 
-}  // namespace webstreams
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace webstreams
+} // namespace socketsecurity
+} // namespace node
 
 #pragma GCC diagnostic pop

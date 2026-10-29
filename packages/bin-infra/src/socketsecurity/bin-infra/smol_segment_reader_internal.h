@@ -15,19 +15,19 @@
 #ifndef SOCKETSECURITY_BIN_INFRA_SMOL_SEGMENT_READER_INTERNAL_H
 #define SOCKETSECURITY_BIN_INFRA_SMOL_SEGMENT_READER_INTERNAL_H
 
+#include "socketsecurity/bin-infra/compression_constants.h"
+#include "socketsecurity/bin-infra/marker_finder.h"
+#include "socketsecurity/bin-infra/segment_names.h"
+#include "socketsecurity/bin-infra/smol_segment_reader.h"
+#include "socketsecurity/build-infra/binary_format_finder.h"
+#include "socketsecurity/build-infra/file_io_common.h"
+#include "socketsecurity/build-infra/path_utils.h"
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <limits.h>
-#include <errno.h>
-#include "socketsecurity/bin-infra/smol_segment_reader.h"
-#include "socketsecurity/bin-infra/marker_finder.h"
-#include "socketsecurity/bin-infra/compression_constants.h"
-#include "socketsecurity/bin-infra/segment_names.h"
-#include "socketsecurity/build-infra/binary_format_finder.h"
-#include "socketsecurity/build-infra/path_utils.h"
-#include "socketsecurity/build-infra/file_io_common.h"
 
 /**
  * Windows compatibility.
@@ -35,10 +35,10 @@
  * and types (ssize_t, off_t) for Windows.
  */
 #ifdef _WIN32
-    #include "socketsecurity/build-infra/posix_compat.h"
+#include "socketsecurity/build-infra/posix_compat.h"
 #else
-    #include <unistd.h>
-    #include <fcntl.h>  /* For O_RDONLY */
+#include <fcntl.h> /* For O_RDONLY */
+#include <unistd.h>
 #endif
 
 #endif /* SOCKETSECURITY_BIN_INFRA_SMOL_SEGMENT_READER_INTERNAL_H */

@@ -11,8 +11,8 @@
  * back the same way.
  */
 
-#include <windows.h>
 #include <wincred.h>
+#include <windows.h>
 
 #include <stdlib.h>
 #include <string.h>

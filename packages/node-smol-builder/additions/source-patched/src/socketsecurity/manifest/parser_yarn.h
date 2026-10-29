@@ -24,14 +24,12 @@ namespace node {
 namespace socketsecurity {
 namespace manifest {
 
-bool ParseYarnLock(std::string_view content,
-                   ParseContext* ctx,
-                   ParsedLockfile* out,
-                   ParseError* err);
+bool ParseYarnLock(std::string_view content, ParseContext* ctx,
+                   ParsedLockfile* out, ParseError* err);
 
-}  // namespace manifest
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace manifest
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // NODE_WANT_INTERNALS
-#endif  // SRC_SOCKETSECURITY_MANIFEST_PARSER_YARN_H_
+#endif // NODE_WANT_INTERNALS
+#endif // SRC_SOCKETSECURITY_MANIFEST_PARSER_YARN_H_

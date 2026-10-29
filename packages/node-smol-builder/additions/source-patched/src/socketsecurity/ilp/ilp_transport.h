@@ -52,7 +52,8 @@
 #include <string>
 #include <vector>
 
-// Cross-platform BSD socket compatibility (socket_handle_t, SOCKET_HANDLE_INVALID).
+// Cross-platform BSD socket compatibility (socket_handle_t,
+// SOCKET_HANDLE_INVALID).
 #include "socketsecurity/build-infra/bsdsock_compat.h"
 
 // Forward declare io_uring when available.
@@ -72,14 +73,15 @@ struct TransportConfig {
   int connect_timeout_ms = 10000;
   int send_timeout_ms = 30000;
   size_t send_buffer_size = 65536;
-  bool use_io_uring = true;  // Falls back to standard sockets if unavailable.
+  bool use_io_uring = true; // Falls back to standard sockets if unavailable.
 };
 
 // High-performance TCP transport with optional io_uring acceleration.
-// Cross-platform: Works on Windows (Winsock2), macOS (BSD sockets), Linux (POSIX + io_uring).
-// io_uring is Linux-only; other platforms use standard sockets.
+// Cross-platform: Works on Windows (Winsock2), macOS (BSD sockets), Linux
+// (POSIX + io_uring). io_uring is Linux-only; other platforms use standard
+// sockets.
 class IlpTransport {
- public:
+public:
   explicit IlpTransport(const TransportConfig& config);
   ~IlpTransport();
 
@@ -97,11 +99,13 @@ class IlpTransport {
   ssize_t Send(const char* data, size_t len);
 
   // State queries.
-  bool IsConnected() const { return connected_.load(std::memory_order_acquire); }
+  bool IsConnected() const {
+    return connected_.load(std::memory_order_acquire);
+  }
   bool IsIoUringAvailable() const { return io_uring_available_; }
   const char* LastError() const { return last_error_.c_str(); }
 
- private:
+private:
   bool ConnectSocket();
   void CloseSocket();
 
@@ -129,8 +133,8 @@ class IlpTransport {
   mutable std::mutex send_mutex_;
 };
 
-}  // namespace ilp
-}  // namespace socketsecurity
-}  // namespace node
+} // namespace ilp
+} // namespace socketsecurity
+} // namespace node
 
-#endif  // SRC_SOCKETSECURITY_ILP_ILP_TRANSPORT_H_
+#endif // SRC_SOCKETSECURITY_ILP_ILP_TRANSPORT_H_

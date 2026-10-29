@@ -28,10 +28,8 @@ extern "C" {
 namespace node {
 namespace sea {
 
-bool ParseSmolConfig(
-    simdjson::ondemand::object& smol_object,
-    const std::string& config_path,
-    SeaConfig& result) {
+bool ParseSmolConfig(simdjson::ondemand::object& smol_object,
+                     const std::string& config_path, SeaConfig& result) {
   per_process::Debug(DebugCategory::SEA, "Parsing smol config\n");
 
   // Create a SmolUpdateConfig to populate
@@ -93,7 +91,8 @@ bool ParseSmolConfig(
     } else if (key == "fakeArgvEnv") {
       std::string_view value;
       if (field.value().get(value)) {
-        fprintf(stderr, "Error: Failed to parse 'fakeArgvEnv' in smol config\n");
+        fprintf(stderr,
+                "Error: Failed to parse 'fakeArgvEnv' in smol config\n");
         return false;
       }
       config.fake_argv_env = std::string(value);
@@ -107,7 +106,8 @@ bool ParseSmolConfig(
     } else if (key == "promptDefault") {
       bool value;
       if (field.value().get(value)) {
-        fprintf(stderr, "Error: Failed to parse 'promptDefault' in smol config\n");
+        fprintf(stderr,
+                "Error: Failed to parse 'promptDefault' in smol config\n");
         return false;
       }
       config.prompt_default = value;
@@ -121,7 +121,8 @@ bool ParseSmolConfig(
     } else if (key == "notifyInterval") {
       int64_t value;
       if (field.value().get(value)) {
-        fprintf(stderr, "Error: Failed to parse 'notifyInterval' in smol config\n");
+        fprintf(stderr,
+                "Error: Failed to parse 'notifyInterval' in smol config\n");
         return false;
       }
       config.notify_interval = static_cast<int>(value);
@@ -181,8 +182,7 @@ bool ParseSmolConfig(
   per_process::Debug(DebugCategory::SEA, "Successfully parsed smol config\n");
   per_process::Debug(DebugCategory::SEA, "  binname: %s\n",
                      config.binname.c_str());
-  per_process::Debug(DebugCategory::SEA, "  url: %s\n",
-                     config.url.c_str());
+  per_process::Debug(DebugCategory::SEA, "  url: %s\n", config.url.c_str());
   if (result.smol_vfs.has_value()) {
     per_process::Debug(DebugCategory::SEA, "  vfs mode: %s\n",
                        result.smol_vfs->mode.c_str());
@@ -191,8 +191,8 @@ bool ParseSmolConfig(
   return true;
 }
 
-std::optional<std::vector<uint8_t>> SerializeSmolUpdateConfig(
-    const SmolUpdateConfig& config) {
+std::optional<std::vector<uint8_t>>
+SerializeSmolUpdateConfig(const SmolUpdateConfig& config) {
   per_process::Debug(DebugCategory::SEA, "Serializing smol update config\\n");
 
   // Initialize C struct.
@@ -224,8 +224,7 @@ std::optional<std::vector<uint8_t>> SerializeSmolUpdateConfig(
   free(binary);
 
   per_process::Debug(DebugCategory::SEA,
-                     "Serialized smol config (%zu bytes)\\n",
-                     result.size());
+                     "Serialized smol config (%zu bytes)\\n", result.size());
   return result;
 }
 
@@ -233,5 +232,5 @@ std::optional<std::vector<uint8_t>> SerializeSmolUpdateConfig(
 // PrepareAndInjectSea have been moved to sea_inject.cc for better
 // separation of concerns (parsing vs injection).
 
-}  // namespace sea
-}  // namespace node
+} // namespace sea
+} // namespace node

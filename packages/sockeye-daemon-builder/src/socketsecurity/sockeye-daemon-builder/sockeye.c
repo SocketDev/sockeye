@@ -3,8 +3,9 @@
  *
  * Cross-platform daemon lifecycle: bind an owner-only local transport, hold it
  * under a single-instance pidfile lock, accept connections from the same user
- * only, and dispatch credential requests against an in-memory TTL cache fronting
- * the OS keystore (macOS Keychain + Touch ID, libsecret, Credential Manager).
+ * only, and dispatch credential requests against an in-memory TTL cache
+ * fronting the OS keystore (macOS Keychain + Touch ID, libsecret, Credential
+ * Manager).
  *
  * The transport differs by platform but the wire + protocol are identical:
  *   POSIX  — an AF_UNIX stream socket at <socket-path>; peer-uid via
@@ -209,18 +210,18 @@ static long conn_read(conn_t conn, char* line, size_t cap) {
 /* Map a KEYSTORE_ERR_* code to a JSON error response. */
 static void send_keystore_error(conn_t conn, int rc) {
   switch (rc) {
-    case KEYSTORE_ERR_UNAVAILABLE:
-      send_line(conn, "{\"ok\":false,\"error\":\"keystore-unavailable\"}\n");
-      break;
-    case KEYSTORE_ERR_NOT_FOUND:
-      send_line(conn, "{\"ok\":false,\"error\":\"not-found\"}\n");
-      break;
-    case KEYSTORE_ERR_DENIED:
-      send_line(conn, "{\"ok\":false,\"error\":\"denied\"}\n");
-      break;
-    default:
-      send_line(conn, "{\"ok\":false,\"error\":\"keystore-io\"}\n");
-      break;
+  case KEYSTORE_ERR_UNAVAILABLE:
+    send_line(conn, "{\"ok\":false,\"error\":\"keystore-unavailable\"}\n");
+    break;
+  case KEYSTORE_ERR_NOT_FOUND:
+    send_line(conn, "{\"ok\":false,\"error\":\"not-found\"}\n");
+    break;
+  case KEYSTORE_ERR_DENIED:
+    send_line(conn, "{\"ok\":false,\"error\":\"denied\"}\n");
+    break;
+  default:
+    send_line(conn, "{\"ok\":false,\"error\":\"keystore-io\"}\n");
+    break;
   }
 }
 
@@ -249,8 +250,8 @@ static int peer_is_owner(conn_t conn) {
   if (!GetNamedPipeClientProcessId(conn, &client_pid)) {
     return 0;
   }
-  HANDLE client = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
-                              (DWORD)client_pid);
+  HANDLE client =
+      OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)client_pid);
   if (!client) {
     return 0;
   }
@@ -330,7 +331,8 @@ static void handle_connection(conn_t conn) {
   char account[128];
   if (!json_field(line, "service", service, sizeof(service)) ||
       !json_field(line, "account", account, sizeof(account))) {
-    send_line(conn, "{\"ok\":false,\"error\":\"missing-service-or-account\"}\n");
+    send_line(conn,
+              "{\"ok\":false,\"error\":\"missing-service-or-account\"}\n");
     return;
   }
   char key[260];
@@ -449,7 +451,8 @@ static int write_pidfile_excl(void) {
     return -1;
   }
   char buf[32];
-  int len = snprintf(buf, sizeof(buf), "%lu\n", (unsigned long)GetCurrentProcessId());
+  int len =
+      snprintf(buf, sizeof(buf), "%lu\n", (unsigned long)GetCurrentProcessId());
   DWORD wrote = 0;
   WriteFile(h, buf, (DWORD)len, &wrote, NULL);
   CloseHandle(h);
@@ -518,7 +521,8 @@ static unsigned int idle_seconds(void) {
 
 #ifdef _WIN32
 /* Win32 serve loop: one pipe instance, overlapped ConnectNamedPipe with an idle
- * timeout. Each served request resets the countdown; a timeout cleans up + exits. */
+ * timeout. Each served request resets the countdown; a timeout cleans up +
+ * exits. */
 static int serve(void) {
   unsigned int idle = idle_seconds();
   DWORD timeout = idle == 0 ? INFINITE : idle * 1000u;
@@ -531,10 +535,10 @@ static int serve(void) {
           (unsigned long)GetCurrentProcessId(), g_sock_path);
   fflush(stdout);
   for (;;) {
-    HANDLE pipe = CreateNamedPipeA(
-        g_sock_path, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,
-        4096, 4096, 0, NULL);
+    HANDLE pipe =
+        CreateNamedPipeA(g_sock_path, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+                         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                         PIPE_UNLIMITED_INSTANCES, 4096, 4096, 0, NULL);
     if (pipe == INVALID_HANDLE_VALUE) {
       cleanup();
       CloseHandle(evt);
@@ -587,7 +591,8 @@ static int serve(void) {
     cleanup();
     return 1;
   }
-  /* Owner-only: defense in depth alongside the per-connection peer-uid check. */
+  /* Owner-only: defense in depth alongside the per-connection peer-uid check.
+   */
   chmod(g_sock_path, 0600);
   if (listen(srv, 8) != 0) {
     cleanup();

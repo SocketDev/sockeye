@@ -1,7 +1,8 @@
 /**
  * debug.h - Debug logging utilities for stubs
  *
- * This is a thin wrapper that includes the shared debug_common.h from build-infra.
+ * This is a thin wrapper that includes the shared debug_common.h from
+ * build-infra.
  *
  * Usage:
  *   #include "debug.h"
