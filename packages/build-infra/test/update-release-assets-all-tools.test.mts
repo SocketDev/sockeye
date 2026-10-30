@@ -12,7 +12,7 @@ vi.mock(import('node:fs'), async original => {
 vi.mock(import('@socketsecurity/lib-stable/releases/github-listing'), () => ({
   getLatestRelease: io.latest,
 }))
-vi.mock(import('../../../scripts/fleet/process/run-main.mts'), () => ({
+vi.mock(import('../../../scripts/fleet/process/main/run.mts'), () => ({
   runMain: io.run,
 }))
 const argv = process.argv

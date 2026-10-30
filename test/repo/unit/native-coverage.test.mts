@@ -14,7 +14,7 @@ import {
 } from '../../../scripts/repo/native-coverage.mts'
 vi.mock(import('node:fs'), async original => ({
   ...(await original()),
-  readdirSync: vi.fn(),
+  readdirSync: vi.fn(() => []),
   statSync: vi.fn(),
 }))
 beforeEach(() => vi.resetAllMocks())

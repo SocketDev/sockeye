@@ -45,7 +45,7 @@ test('collects all four milestone shards and aggregates their complete receipts 
     "${{ !cancelled() && needs.cover-shards.result != 'skipped' }}",
   )
   for (const job of [collection, aggregate]) {
-    expect(job['runs-on']).toBe('macos-latest')
+    expect(job['runs-on']).toBe('macos-26')
     expect(jobStep(job, 'Bootstrap checkout').env?.['TRIGGER_REF']).toBe(
       '${{ github.sha }}',
     )

@@ -10,8 +10,8 @@ import {
 } from '../lib/paths.mts'
 import { PACKAGE_ROOT } from '../lib/constants.mts'
 import { isMainModule } from '../../../scripts/fleet/process/is-main-module.mts'
-import { runMain } from '../../../scripts/fleet/process/run-main.mts'
-import type { ScriptMeta } from '../../../scripts/fleet/process/run-main.mts'
+import { runMain } from '../../../scripts/fleet/process/main/run.mts'
+import type { ScriptMeta } from '../../../scripts/fleet/process/main/run.mts'
 /**
  * Update checksums from GitHub releases to release-assets.json.
  *
