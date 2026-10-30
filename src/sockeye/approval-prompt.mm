@@ -333,7 +333,8 @@ bool ShowApprovalPrompt(const RunOptions& options,
     NSButton* cancel = PanelButton(panel, @"Cancel", NSMakeRect(62, 18, 112, 30),
                                    NSAlertFirstButtonReturn);
     cancel.keyEquivalent = @"\033";
-    PanelButton(panel, @"Details", NSMakeRect(186, 18, 112, 30), NSAlertSecondButtonReturn);
+    NSButton* details = PanelButton(panel, @"Details", NSMakeRect(186, 18, 112, 30),
+                                    NSAlertSecondButtonReturn);
     NSTextField* instruction = [NSTextField labelWithString:@"Touch ID to continue."];
     instruction.frame = NSMakeRect(20, 156, 320, 20);
     instruction.alignment = NSTextAlignmentCenter;
@@ -369,6 +370,20 @@ bool ShowApprovalPrompt(const RunOptions& options,
     if (authenticated && !cancelled) {
       fingerprint.accessibilityLabel = @"Touch ID verified";
       instruction.stringValue = @"Verified.";
+      cancel.enabled = NO;
+      cancel.keyEquivalent = @"";
+      details.enabled = NO;
+      if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) {
+        cancel.alphaValue = 0;
+        details.alphaValue = 0;
+      } else {
+        [NSAnimationContext runAnimationGroup:^(NSAnimationContext* animation) {
+          animation.duration = 0.25;
+          animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+          cancel.animator.alphaValue = 0;
+          details.animator.alphaValue = 0;
+        } completionHandler:nil];
+      }
       [fingerprint animateSuccess];
       const NSTimeInterval duration =
           NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration + 0.12;
