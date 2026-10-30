@@ -117,7 +117,9 @@ test('run preparation is fresh at the first forbidden effect', () => {
   expect(secondDigest).not.toBe(firstDigest)
   const run = runExplain(isolated, 'run', fixture.args)
   expect(run.status).toBe(90)
-  expect(run.stderr.trim()).toBe(`forbidden request record: sha256:${secondDigest}`)
+  expect(run.stderr.trim()).toBe(
+    `forbidden request record: sha256:${secondDigest}`,
+  )
   expect(run.stdout).toBe('')
   expect(existsSync(fixture.marker)).toBe(false)
 })

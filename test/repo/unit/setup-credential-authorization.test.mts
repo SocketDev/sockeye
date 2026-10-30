@@ -40,8 +40,9 @@ vi.mock('@socketsecurity/lib-stable/secrets/one-password', () => ({
   authorizeOnePasswordTerminal: mocks.authorize,
 }))
 vi.mock('../../../scripts/fleet/auth/one-password/request.mts', () => ({
-  withOnePasswordRead: async (...args: [string, readonly string[], () => unknown]) =>
-    await args[2](),
+  withOnePasswordRead: async (
+    ...args: [string, readonly string[], () => unknown]
+  ) => await args[2](),
 }))
 vi.mock('@socketsecurity/lib-stable/exe/path/which', () => ({
   whichSync: mocks.which,
