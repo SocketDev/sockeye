@@ -10,6 +10,8 @@ struct KeychainFakeState {
   bool context_initialization_failure = false;
   bool available = true;
   bool approved = true;
+  bool defer_reply = false;
+  void (^pending_reply)(BOOL, NSError*) = nil;
   bool policy_failure = false;
   bool policy_error_object = false;
   bool require_access_control_query = false;

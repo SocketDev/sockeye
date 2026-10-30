@@ -57,6 +57,37 @@ void CheckAuthentication() {
   assert(sockeye::StoreCredential(context, kIdentifier, value, error) == KeychainStatus::kDenied);
   assert(sockeye::DeleteCredential(context, kIdentifier, error) == KeychainStatus::kDenied);
 }
+void CheckAuthenticationEvents() {
+  for (bool approve : {true, false}) {
+    ResetKeychainFake();
+    keychain_state.defer_reply = true;
+    keychain_state.query_result = ValidItem();
+    sockeye::AuthorizationContext context;
+    sockeye::KeychainError error;
+    int events = 0;
+    const bool result = context.AuthenticateWithEvents("example test approval", error, [&] {
+      ++events;
+      if (approve) {
+        auto reply = keychain_state.pending_reply;
+        keychain_state.pending_reply = nil;
+        reply(YES, nil);
+      } else {
+        context.Invalidate();
+      }
+    });
+    assert(result == approve);
+    assert(events == 1);
+    assert(keychain_state.evaluations == 1);
+    sockeye::SecretBuffer value;
+    const auto status = sockeye::ReadCredential(context, kIdentifier, value, error);
+    assert(status == (approve ? sockeye::KeychainStatus::kSuccess : sockeye::KeychainStatus::kDenied));
+    if (approve) {
+      assert(keychain_state.last_query[(__bridge id)kSecUseAuthenticationContext] == context.NativeContext());
+    } else {
+      assert(keychain_state.query_index == 0);
+    }
+  }
+}
 void CheckReadiness() {
   using sockeye::KeychainStatus;
   sockeye::KeychainError error;
@@ -217,7 +248,7 @@ void CheckCredentialWrites() {
 } // namespace
 int main() {
   @autoreleasepool {
-    CheckAuthentication(); CheckReadiness(); CheckCredentialReads(); CheckUnexpectedFailureResultCleanup(); CheckCredentialWrites();
+    CheckAuthentication(); CheckAuthenticationEvents(); CheckReadiness(); CheckCredentialReads(); CheckUnexpectedFailureResultCleanup(); CheckCredentialWrites();
   }
   return 0;
 }

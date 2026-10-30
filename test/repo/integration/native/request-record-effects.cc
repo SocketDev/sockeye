@@ -15,6 +15,8 @@ bool ExplainRequestRecord(std::string_view, FILE*, std::string&) {
 
 bool IsRequestRecordId(std::string_view) { return false; }
 
-bool ShowApprovalPrompt(const RunOptions&, std::string_view) { std::exit(90); }
+bool ShowApprovalPrompt(const RunOptions&, std::string_view,
+                        AuthorizationContext&, std::string_view,
+                        KeychainError&) { std::exit(90); }
 
 } // namespace sockeye

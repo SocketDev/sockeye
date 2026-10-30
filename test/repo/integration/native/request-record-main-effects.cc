@@ -41,12 +41,18 @@ bool IsRequestRecordId(std::string_view request_id) {
          });
 }
 
-bool ShowApprovalPrompt(const RunOptions&, std::string_view request_id) {
+bool ShowApprovalPrompt(const RunOptions&, std::string_view request_id,
+                        AuthorizationContext& context, std::string_view reason,
+                        KeychainError& error) {
   assert(request_id.size() == 64);
   Event("prompt");
   const char* scenario = std::getenv("SOCKEYE_TEST_SCENARIO");
-  return scenario == nullptr ||
-         std::string_view(scenario) != "prompt-cancelled";
+  if (scenario != nullptr && std::string_view(scenario) == "prompt-cancelled") {
+    error.status = KeychainStatus::kDenied;
+    error.detail = "Approval cancelled.";
+    return false;
+  }
+  return context.Authenticate(reason, error);
 }
 
 } // namespace sockeye

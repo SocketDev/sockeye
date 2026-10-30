@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
+#import <LocalAuthenticationEmbeddedUI/LocalAuthenticationEmbeddedUI.h>
 
 #include "sockeye/approval-prompt.h"
 #include "sockeye/input-policy.h"
@@ -216,7 +217,9 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
 } // namespace
 
 bool ShowApprovalPrompt(const RunOptions& options,
-                        std::string_view request_id) {
+                        std::string_view request_id,
+                        AuthorizationContext& context, std::string_view reason,
+                        KeychainError& error) {
   @autoreleasepool {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
@@ -231,6 +234,10 @@ bool ShowApprovalPrompt(const RunOptions& options,
     [alert addButtonWithTitle:@"Approve with Touch ID"];
     [alert addButtonWithTitle:@"Cancel"];
     [alert addButtonWithTitle:@"Details"];
+    LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
+        initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
+    authenticationView.frame = NSMakeRect(0, 0, 64, 64);
+    alert.accessoryView = authenticationView;
 
     alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
     [alert.window center];
@@ -244,10 +251,40 @@ bool ShowApprovalPrompt(const RunOptions& options,
         continue;
       }
       if (response != NSAlertFirstButtonReturn) {
+        error.status = KeychainStatus::kDenied;
+        error.detail = "Approval cancelled.";
         return false;
       }
-      return true;
+      break;
     }
+    alert.informativeText = @"Touch ID to continue.";
+    alert.buttons[0].enabled = NO;
+    [alert layout];
+    [alert.window makeKeyAndOrderFront:nil];
+    NSModalSession session = [NSApp beginModalSessionForWindow:alert.window];
+    bool cancelled = false;
+    const bool authenticated = context.AuthenticateWithEvents(reason, error, [&] {
+      if (cancelled) return;
+      const NSModalResponse response = [NSApp runModalSession:session];
+      if (response == NSModalResponseContinue) return;
+      if (response == NSAlertThirdButtonReturn) {
+        [NSApp endModalSession:session];
+        ShowDetails(options, request_id);
+        session = [NSApp beginModalSessionForWindow:alert.window];
+        return;
+      }
+      cancelled = true;
+      context.Invalidate();
+    });
+    [NSApp endModalSession:session];
+    [alert.window orderOut:nil];
+    if (cancelled) {
+      context.Invalidate();
+      error.status = KeychainStatus::kDenied;
+      error.detail = "Approval cancelled.";
+      return false;
+    }
+    return authenticated;
   }
 }
 

@@ -26,10 +26,21 @@ void ResetKeychainFake() { keychain_state = {}; }
   assert(self.touchIDAuthenticationAllowableReuseDuration == 0.0);
   assert([self.localizedFallbackTitle isEqualToString:@""]);
   ++keychain_state.evaluations;
+  if (keychain_state.defer_reply) {
+    keychain_state.pending_reply = [reply copy];
+    return;
+  }
   NSError *error = keychain_state.approved ? nil : [NSError errorWithDomain:LAErrorDomain code:LAErrorUserCancel userInfo:nil];
   reply(keychain_state.approved, error);
 }
-- (void)invalidate { ++keychain_state.invalidations; }
+- (void)invalidate {
+  ++keychain_state.invalidations;
+  if (keychain_state.pending_reply != nil) {
+    auto reply = keychain_state.pending_reply;
+    keychain_state.pending_reply = nil;
+    reply(NO, [NSError errorWithDomain:LAErrorDomain code:LAErrorAppCancel userInfo:nil]);
+  }
+}
 @end
 
 OSStatus SockeyeTestCopyMatching(CFDictionaryRef query, CFTypeRef *result) {

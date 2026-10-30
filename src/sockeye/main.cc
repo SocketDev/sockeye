@@ -372,11 +372,6 @@ int RunApprovedChild(int argc, char** argv) {
                  record_error.c_str());
   }
   std::fprintf(stderr, "requestId: sha256:%.16s\n", manifest_digest.c_str());
-  if (!ShowApprovalPrompt(options, manifest_digest)) {
-    std::fputs("Approval cancelled.\n", stderr);
-    return kDeniedExit;
-  }
-
   AuthorizationContext context;
   KeychainError keychain_error;
   const std::string child_name = options.executable.canonical_path.substr(
@@ -390,7 +385,7 @@ int RunApprovedChild(int argc, char** argv) {
   }
   const std::string reason =
       "Allow " + child_name + " to use " + credential_names + "?";
-  if (!context.Authenticate(reason, keychain_error)) {
+  if (!ShowApprovalPrompt(options, manifest_digest, context, reason, keychain_error)) {
     PrintKeychainError(keychain_error);
     return ExitForKeychain(keychain_error);
   }

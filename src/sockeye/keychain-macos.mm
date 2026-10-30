@@ -226,6 +226,14 @@ AuthorizationContext::~AuthorizationContext() { Invalidate(); }
 
 bool AuthorizationContext::Authenticate(std::string_view reason,
                                         KeychainError &error) {
+  return AuthenticateWithEvents(reason, error, {});
+}
+
+LAContext* AuthorizationContext::NativeContext() { return impl_->context; }
+
+bool AuthorizationContext::AuthenticateWithEvents(
+    std::string_view reason, KeychainError &error,
+    const std::function<void()>& process_events) {
   if (impl_->authenticated) {
     SetError(error, KeychainStatus::kDenied, 0,
              "Authentication refused: this context has already been used.");
@@ -259,7 +267,13 @@ bool AuthorizationContext::Authenticate(std::string_view reason,
                              reply_error = returned_error;
                              dispatch_semaphore_signal(completed);
                            }];
-  dispatch_semaphore_wait(completed, DISPATCH_TIME_FOREVER);
+  if (process_events) {
+    while (dispatch_semaphore_wait(completed, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_MSEC)) != 0) {
+      process_events();
+    }
+  } else {
+    dispatch_semaphore_wait(completed, DISPATCH_TIME_FOREVER);
+  }
   if (!approved) {
     const int code = static_cast<int>(reply_error.code);
     SetError(error, KeychainStatus::kDenied, code,

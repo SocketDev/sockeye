@@ -2,10 +2,15 @@
 #define SOCKEYE_KEYCHAIN_H
 
 #include <memory>
+#include <functional>
 #include <string>
 #include <string_view>
 
 #include "sockeye/secret-buffer.h"
+
+#ifdef __OBJC__
+@class LAContext;
+#endif
 
 namespace sockeye {
 
@@ -40,6 +45,11 @@ public:
   AuthorizationContext& operator=(AuthorizationContext&&) = delete;
 
   bool Authenticate(std::string_view reason, KeychainError& error);
+  bool AuthenticateWithEvents(std::string_view reason, KeychainError& error,
+                              const std::function<void()>& process_events);
+#ifdef __OBJC__
+  LAContext* NativeContext();
+#endif
   void Invalidate();
 
 private:
