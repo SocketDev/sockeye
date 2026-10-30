@@ -41,7 +41,7 @@
 - (void)animateSuccess {
   self.wantsLayer = YES;
   const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
-  NSColor* color = NSColor.labelColor;
+  NSColor* color = NSColor.systemRedColor;
   NSColor* trackColor = [NSColor colorWithWhite:0.55 alpha:0.35];
   const CFTimeInterval start = CACurrentMediaTime();
   for (CGFloat index = 0; index < 10; ++index) {
