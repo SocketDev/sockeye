@@ -27,10 +27,8 @@ import {
 import {
   getBinaryPath,
   getBuildMode,
-  getBuildModeArgs,
   getCmakeBuildDir,
   getDefaultNativeProfilePattern,
-  getNodeHeaderDirectory,
   getOutputDir,
 } from './paths.mts'
 
@@ -126,7 +124,6 @@ export async function buildSockeye(): Promise<void> {
     `-DCMAKE_OSX_ARCHITECTURES=${architecture}`,
     `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outputDir}`,
     `-DSOCKEYE_VERSION=${version}`,
-    `-DSOCKEYE_NODE_INCLUDE=${getNodeHeaderDirectory()}`,
     `-DSOCKEYE_SANITIZER=${sanitizer}`,
     `-DSOCKEYE_COVERAGE=${mode === 'coverage' ? 'ON' : 'OFF'}`,
     `-DSOCKEYE_COVERAGE_PROFILE_FILE=${getEnvValue('SOCKEYE_COVERAGE_PROFILE_FILE') ?? getDefaultNativeProfilePattern(cmakeBuildDir)}`,
@@ -142,11 +139,6 @@ export async function buildSockeye(): Promise<void> {
   const metadata = await stat(binaryPath)
   logger.success(`Built ${binaryPath} (${metadata.size} bytes)`)
 
-  logger.info('Building the keychain addon…')
-  await run('node', [
-    'packages/keychain-addon-builder/scripts/build.mts',
-    ...getBuildModeArgs(mode),
-  ])
   const { installedPath, shellPath } = await wireSockeyeBuild(binaryPath)
   logger.success(`Linked ${installedPath} to the local build.`)
   logger.success(`Linked ${shellPath} to ${installedPath}.`)

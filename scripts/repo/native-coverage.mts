@@ -3,11 +3,7 @@ import path from 'node:path'
 import { REPO_ROOT } from './paths.mts'
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
-export const NATIVE_COVERAGE_ROOTS = [
-  'src/sockeye',
-  'packages/keychain-addon-builder/src',
-  'packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm',
-]
+export const NATIVE_COVERAGE_ROOTS = ['src/sockeye']
 export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/cli.test.mts',
   'test/repo/integration/portable-core.test.mts',
@@ -21,7 +17,6 @@ export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/explain.test.mts',
   'test/repo/integration/doctor.test.mts',
   'test/repo/integration/main-effects.test.mts',
-  'test/repo/integration/addon-native.test.mts',
   'test/repo/integration/native-test-build.test.mts',
 ]
 export const NATIVE_COVERAGE_BINARIES = [
@@ -34,14 +29,12 @@ export const NATIVE_COVERAGE_BINARIES = [
   'sockeye-terminal-test',
   'sockeye-stdin-secret-test',
   'sockeye-keychain-framework-test',
-  'sockeye-keystore-framework-test',
   'sockeye-one-password-test',
   'sockeye-run-request-test',
   'sockeye-readiness-test',
   'sockeye-preview-isolation-test',
   'sockeye-doctor-test',
   'sockeye-main-effects-test',
-  'sockeye-addon-test.node',
 ]
 export function validateNativeCoverageRoots(roots: string[]): void {
   if (
@@ -50,7 +43,7 @@ export function validateNativeCoverageRoots(roots: string[]): void {
     NATIVE_COVERAGE_ROOTS.some(root => !roots.includes(root))
   ) {
     throw new Error(
-      'Native coverage roots must include the CLI, addon shim, and macOS keystore backend exactly once',
+      'Native coverage roots must include the Sockeye executable exactly once',
     )
   }
 }

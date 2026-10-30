@@ -24,7 +24,6 @@ import {
   parseLlvmCoverageManifest,
 } from '../fleet/cover/llvm-manifest.mts'
 import { exportLlvmCoverage } from '../fleet/cover/llvm-report.mts'
-import { getKeychainAddonBinaryPath } from '../../packages/keychain-addon-builder/scripts/paths.mts'
 import {
   NATIVE_COVERAGE_BINARIES,
   nativeTranslationUnits,
@@ -127,7 +126,6 @@ function nativeCoverageObjects(): string[] {
     ...NATIVE_COVERAGE_BINARIES.map(name =>
       path.join(getOutputDir('coverage', platformArch), name),
     ),
-    getKeychainAddonBinaryPath('coverage', platformArch),
   ]
 }
 function nativeCoverageRoots(config: NativeConfig) {

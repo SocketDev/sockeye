@@ -402,7 +402,8 @@ bool ShowApprovalPrompt(const RunOptions& options,
       }
       const NSTimeInterval duration =
           NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration;
-      NSDate* verifiedAt = [NSDate dateWithTimeIntervalSinceNow:duration * 0.85];
+      const NSTimeInterval verifiedDelay = duration * 0.85;
+      NSDate* verifiedAt = [NSDate dateWithTimeIntervalSinceNow:verifiedDelay];
       NSDate* deadline = [verifiedAt dateByAddingTimeInterval:0.4];
       bool displayedVerified = false;
       while (deadline.timeIntervalSinceNow > 0) {

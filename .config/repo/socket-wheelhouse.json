@@ -5,19 +5,13 @@
   "$schema": "../socket-wheelhouse-schema.json",
   "schemaVersion": 1,
   "capabilities": {
-    "cpp": [
-      "src/sockeye",
-      "packages/keychain-addon-builder/src",
-      "packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm"
-    ]
+    "cpp": ["src/sockeye"]
   },
   "cover": {
     "cumulativeCoverageThreshold": 99.5
   },
   "repoName": "sockeye",
-  "repo": {
-    "type": "mono"
-  },
+  "repo": { "type": "solo" },
   "build": {
     "from": "github-release",
     "type": "binary"
@@ -30,37 +24,11 @@
     "github": false,
     "versionSource": "package.json"
   },
-  "submoduleRoots": {
-    "grandfathered": [
-      "packages/bin-infra/upstream/zstd",
-      "packages/curl-builder/upstream/curl",
-      "packages/curl-builder/upstream/mbedtls",
-      "packages/dawn-builder/upstream/dawn",
-      "packages/lief-builder/upstream/lief",
-      "packages/node-smol-builder/test/fixtures/wpt/streams",
-      "packages/node-smol-builder/upstream/libqrencode",
-      "packages/node-smol-builder/upstream/liburing",
-      "packages/node-smol-builder/upstream/md4c",
-      "packages/node-smol-builder/upstream/node",
-      "packages/node-smol-builder/upstream/semver",
-      "packages/node-smol-builder/upstream/tree-sitter",
-      "packages/node-smol-builder/upstream/uSockets",
-      "packages/node-smol-builder/upstream/uWebSockets",
-      "packages/onnxruntime-builder/upstream/onnxruntime",
-      "packages/yoga-layout-builder/upstream/yoga"
-    ]
-  },
   "vitest": {
     "lanes": {
       "fast": ["test/fleet/**", "test/repo/unit/**"],
       "mid": [
-        "packages/keychain-addon-builder/test/build-toolchain.test.mts",
-        "packages/build-infra/test/build-pipeline.test.mts",
-        "packages/build-infra/test/checkpoint-manager.test.mts",
-        "packages/build-infra/test/checkpoint-signature-validation.test.mts",
         "test/repo/unit/agent-ci.test.mts",
-        "test/repo/unit/builder-public-helpers.test.mts",
-        "test/repo/unit/check/build-requirements-are-valid.test.mts",
         "test/repo/unit/build-toolchain.test.mts",
         "test/repo/unit/cover-cpp-phases.test.mts",
         "test/repo/unit/fetch-session.test.mts",
@@ -77,15 +45,6 @@
       "slow": [
         "**/test/**/integration/**",
         "**/test/**/e2e/**",
-        "packages/bin-stub-builder/test/c-unit-tests.test.mts",
-        "packages/build-infra/test/build-env.test.mts",
-        "packages/build-infra/test/checkpoint-extraction.test.mts",
-        "packages/build-infra/test/get-tool-version.test.mts",
-        "packages/build-infra/test/validate-checkpoints.test.mts",
-        "packages/keychain-cli-builder/test/keychain-cli.test.mts",
-        "packages/node-smol-builder/test/smol-manifest-native.test.mts",
-        "packages/node-smol-builder/test/unit/smol-markdown-render.test.mts",
-        "packages/sockeye-daemon-builder/test/sockeye-daemon.test.mts",
         "test/repo/unit/build.test.mts",
         "test/repo/unit/fuzz.test.mts",
         "test/repo/unit/notarize.test.mts",

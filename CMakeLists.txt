@@ -139,18 +139,11 @@ if(BUILD_TESTING)
     test/repo/unit/native/keychain-fakes.mm
     test/repo/unit/native/keychain-test.mm
   )
-  add_executable(sockeye-keystore-framework-test
-    packages/keystore-infra/src/socketsecurity/keystore-infra/keystore_macos.mm
-    test/repo/unit/native/keychain-fakes.mm
-    test/repo/unit/native/keystore-test.mm
+  target_include_directories(sockeye-keychain-framework-test PRIVATE src test/repo/unit/native)
+  target_compile_options(sockeye-keychain-framework-test PRIVATE
+    "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
+    "$<$<COMPILE_LANGUAGE:OBJCXX>:SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/test/repo/unit/native/keychain-fakes.h>"
   )
-  foreach(target sockeye-keychain-framework-test sockeye-keystore-framework-test)
-    target_include_directories(${target} PRIVATE src packages/keystore-infra/src test/repo/unit/native)
-    target_compile_options(${target} PRIVATE
-      "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
-      "$<$<COMPILE_LANGUAGE:OBJCXX>:SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/test/repo/unit/native/keychain-fakes.h>"
-    )
-  endforeach()
 
   add_executable(sockeye-readiness-test
     src/sockeye/readiness.cc
@@ -217,17 +210,6 @@ if(BUILD_TESTING)
     setrlimit=SockeyeMainSetrlimit signal=SockeyeMainSignal umask=SockeyeMainUmask
   )
 
-  if(NOT EXISTS "${SOCKEYE_NODE_INCLUDE}/node_api.h")
-    message(FATAL_ERROR "Native addon tests require SOCKEYE_NODE_INCLUDE with node_api.h")
-  endif()
-  add_library(sockeye-addon-test MODULE
-    packages/keychain-addon-builder/src/socketsecurity/keychain-addon-builder/keychain_napi.cc
-    test/repo/integration/native/addon-keystore.cc
-  )
-  target_include_directories(sockeye-addon-test PRIVATE "${SOCKEYE_NODE_INCLUDE}" packages/keystore-infra/src)
-  set_target_properties(sockeye-addon-test PROPERTIES PREFIX "" SUFFIX ".node" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-  target_link_options(sockeye-addon-test PRIVATE -undefined dynamic_lookup)
-
   add_executable(sockeye-keychain-observer
   test/repo/e2e/fixture/keychain/observer.cc
   )
@@ -249,7 +231,6 @@ if(BUILD_TESTING)
     sockeye-terminal-test
     sockeye-stdin-secret-test
     sockeye-keychain-framework-test
-    sockeye-keystore-framework-test
     sockeye-one-password-test
     sockeye-run-request-test
     sockeye-request-record-test
@@ -257,7 +238,6 @@ if(BUILD_TESTING)
     sockeye-preview-isolation-test
     sockeye-doctor-test
     sockeye-main-effects-test
-    sockeye-addon-test
     sockeye-child-process-test
     sockeye-keychain-observer
     sockeye-keychain-policy-fixture
@@ -321,11 +301,9 @@ if(BUILD_TESTING)
 endif()
 
 set(FINGERPRINT_ATLAS "${CMAKE_CURRENT_SOURCE_DIR}/src/sockeye/assets/fingerprint-scan.png")
-set(FINGERPRINT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/assets/repo/fingerprint/scan.json")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${FINGERPRINT_ATLAS}" "${FINGERPRINT_SOURCE}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${FINGERPRINT_ATLAS}")
 file(READ "${FINGERPRINT_ATLAS}" FINGERPRINT_HEX HEX)
-file(READ "${FINGERPRINT_SOURCE}" FINGERPRINT_JSON)
-string(JSON FINGERPRINT_FRAME_COUNT LENGTH "${FINGERPRINT_JSON}" frames)
+set(FINGERPRINT_FRAME_COUNT 57)
 string(REGEX REPLACE "(..)" "0x\\1," FINGERPRINT_BYTES "${FINGERPRINT_HEX}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/fingerprint-atlas.generated.h"
   "static constexpr unsigned char kFingerprintAtlas[] = {${FINGERPRINT_BYTES}};\nstatic constexpr NSUInteger kFingerprintFrameCount = ${FINGERPRINT_FRAME_COUNT};\nstatic constexpr double kFingerprintDuration = ${FINGERPRINT_FRAME_COUNT} / 30.0;\n")
@@ -360,7 +338,7 @@ target_link_libraries(sockeye PRIVATE
   ${SECURITY_FRAMEWORK}
 )
 if(BUILD_TESTING)
-  foreach(target sockeye-keychain-framework-test sockeye-keystore-framework-test)
+  foreach(target sockeye-keychain-framework-test)
     target_link_libraries(${target} PRIVATE ${FOUNDATION_FRAMEWORK} ${LOCAL_AUTHENTICATION_FRAMEWORK} ${SECURITY_FRAMEWORK})
   endforeach()
   target_link_libraries(sockeye-child-process-test PRIVATE ${FOUNDATION_FRAMEWORK})

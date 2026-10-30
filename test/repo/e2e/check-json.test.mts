@@ -3,7 +3,6 @@ import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { expect, test } from 'vitest'
 
 test.each([
-  'build-requirements-are-valid',
   'diagnostics-are-noninteractive',
   'keychain-evidence-is-complete',
   'native-security-tests-are-wired',

@@ -173,7 +173,7 @@ test('preparation snapshots inputs after building and emits every required repor
         expect.stringContaining('sockeye-keychain-framework-test'),
       ]),
       sources: expect.arrayContaining([
-        path.resolve(REPO_ROOT, NATIVE_COVERAGE_ROOTS[2]!),
+        path.resolve(REPO_ROOT, NATIVE_COVERAGE_ROOTS[0]!),
       ]),
     }),
   )

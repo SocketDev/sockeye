@@ -300,8 +300,6 @@ overrides:
   'which@>=4': '7.0.0'
 
 packages:
-  # Native components migrated from the retired socket-btm (2026-08-01).
-  - 'packages/*'
   - .config/fleet/oxlint-plugin
   - .config/fleet/oxlint-plugin/fleet/*
   - '.claude/hooks/fleet/*'

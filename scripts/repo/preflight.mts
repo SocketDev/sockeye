@@ -9,11 +9,9 @@ import { runDiagnosticsCheck } from './check/diagnostics-are-noninteractive.mts'
 import { runRequestPreviewCheck } from './check/request-preview-is-isolated.mts'
 import { runNativeSecurityTestsCheck } from './check/native-security-tests-are-wired.mts'
 import { runKeychainEvidenceCheck } from './check/keychain-evidence-is-complete.mts'
-import { runBuildRequirementsCheck } from './check/build-requirements-are-valid.mts'
 
 export function combinePreflightResults(config: {
   fleetStatus: number
-  requirementStatus: number
   diagnosticsStatus: number
   previewStatus: number
   nativeSecurityStatus: number
@@ -21,7 +19,6 @@ export function combinePreflightResults(config: {
 }): number {
   const {
     fleetStatus,
-    requirementStatus,
     nativeSecurityStatus,
     keychainEvidenceStatus,
     previewStatus,
@@ -32,7 +29,6 @@ export function combinePreflightResults(config: {
   } as typeof config
   return (
     fleetStatus ||
-    requirementStatus ||
     nativeSecurityStatus ||
     keychainEvidenceStatus ||
     previewStatus ||
@@ -47,11 +43,9 @@ async function main(): Promise<number> {
   const keychainEvidenceStatus = await runKeychainEvidenceCheck({
     args: process.argv.includes('--json') ? ['--json'] : [],
   })
-  const requirementStatus = runBuildRequirementsCheck()
   const fleetStatus = await runFleetPreflight(getScriptArgs())
   return combinePreflightResults({
     fleetStatus,
-    requirementStatus,
     nativeSecurityStatus,
     keychainEvidenceStatus,
     previewStatus,
@@ -60,7 +54,7 @@ async function main(): Promise<number> {
 }
 
 const SCRIPT_META: ScriptMeta = {
-  describe: 'Run fleet preflight and validate repository build requirements.',
+  describe: 'Run fleet preflight and validate Sockeye build and security checks.',
   help: 'Usage: pnpm run preflight [--tests|--full]',
   json: 'result',
 }

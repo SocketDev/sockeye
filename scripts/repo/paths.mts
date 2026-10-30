@@ -116,14 +116,6 @@ export function releaseProfilePath(profile: string): string {
   return path.resolve(profile)
 }
 
-export function getNodeHeaderDirectory(): string {
-  return path.join(
-    path.dirname(path.dirname(process.execPath)),
-    'include',
-    'node',
-  )
-}
-
 export const LOCKSTEP_MANIFEST_PATH = segregatedConfigPath(
   REPO_ROOT,
   'lockstep.json',
@@ -154,10 +146,6 @@ export function getBuildMode(): string {
   return args.includes('--dev') || args.includes('--prod')
     ? mode
     : (environmentMode ?? mode)
-}
-
-export function getBuildModeArgs(mode: string): string[] {
-  return ['dev', 'prod'].includes(mode) ? [`--${mode}`] : []
 }
 
 export function getBuildRoot(mode: string, platformArch: string): string {

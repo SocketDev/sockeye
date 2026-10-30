@@ -2,10 +2,8 @@ import { expect, test } from 'vitest'
 import { spawnSync } from '@socketsecurity/lib-stable/process/spawn/child'
 import { getNativeTestBinaryPath } from '../../../scripts/repo/paths.mts'
 
-test.each([
-  'sockeye-keychain-framework-test',
-  'sockeye-keystore-framework-test',
-])('framework doubles isolate real credential APIs in %s', name => {
+test('Sockeye framework doubles isolate real credential APIs', () => {
+  const name = 'sockeye-keychain-framework-test'
   const binary = getNativeTestBinaryPath(name)
   const imports = spawnSync('xcrun', ['nm', '-u', binary], { encoding: 'utf8' })
   expect(imports.status).toBe(0)

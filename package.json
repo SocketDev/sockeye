@@ -21,7 +21,6 @@
     "ai:odai:ci": "node scripts/fleet/ai/odai/ci.mts",
     "ai:odai:diagnose": "node scripts/fleet/ai/odai/run.mts diagnose",
     "ai:read": "node scripts/fleet/ai/bounded-reader.mts",
-    "animation:render": "node scripts/repo/animation/render.mts",
     "audit:consumer-source": "node scripts/fleet/audit/consumer-source.mts",
     "backup": "node scripts/fleet/backup/work/run.mts",
     "browser:advice": "node scripts/fleet/ai/browser/agent/jev/run.mts",
@@ -39,7 +38,6 @@
     "build:test": "node scripts/fleet/commands/run.mts build test",
     "build:update": "node scripts/fleet/commands/run.mts build update",
     "check": "node scripts/fleet/check.mts",
-    "check:build-requirements": "node scripts/repo/check/build-requirements-are-valid.mts",
     "check:deadcode": "node scripts/fleet/analysis/fallow.mts deadcode",
     "check:deps": "node scripts/fleet/check.mts --category=deps",
     "check:diagnostics": "node scripts/repo/check/diagnostics-are-noninteractive.mts",
@@ -343,7 +341,6 @@
     "cpu-features": false,
     "protobufjs": false,
     "puppeteer": false,
-    "ssh2": false,
-    "onnxruntime-node": false
+    "ssh2": false
   }
 }
