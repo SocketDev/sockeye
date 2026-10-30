@@ -73,8 +73,20 @@
     [frames addObject:(__bridge id)tileImage];
     const double progress = static_cast<double>(index - firstFrame) /
         static_cast<double>(kFingerprintFrameCount - firstFrame - 1);
-    const double time = progress < 0.5 ? std::cbrt(progress / 4.0) :
-        1.0 - std::cbrt((1.0 - progress) / 4.0);
+    double time = progress;
+    if (progress > 0 && progress < 1) {
+      double lower = 0;
+      double upper = 1;
+      for (unsigned step = 0; step < 24; ++step) {
+        const double middle = (lower + upper) / 2;
+        const double remaining = 1 - middle;
+        const double eased = middle < 0.5 ? 4 * middle * middle * middle :
+            1 - 4 * remaining * remaining * remaining;
+        if (0.45 * middle + 0.55 * eased < progress) lower = middle;
+        else upper = middle;
+      }
+      time = (lower + upper) / 2;
+    }
     [times addObject:@(time)];
     CGImageRelease(tileImage);
   }
@@ -371,8 +383,8 @@ bool ShowApprovalPrompt(const RunOptions& options,
       context.Invalidate();
     });
     if (authenticated && !cancelled) {
-      fingerprint.accessibilityLabel = @"Touch ID verified";
-      instruction.stringValue = @"Verified.";
+      fingerprint.accessibilityLabel = @"Verifying";
+      instruction.stringValue = @"Verifying…";
       cancel.enabled = NO;
       cancel.keyEquivalent = @"";
       details.enabled = NO;
@@ -389,9 +401,16 @@ bool ShowApprovalPrompt(const RunOptions& options,
         } completionHandler:nil];
       }
       const NSTimeInterval duration =
-          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration + 0.12;
-      NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
+          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration;
+      NSDate* verifiedAt = [NSDate dateWithTimeIntervalSinceNow:duration * 0.85];
+      NSDate* deadline = [verifiedAt dateByAddingTimeInterval:0.4];
+      bool displayedVerified = false;
       while (deadline.timeIntervalSinceNow > 0) {
+        if (!displayedVerified && verifiedAt.timeIntervalSinceNow <= 0) {
+          instruction.stringValue = @"Verified.";
+          fingerprint.accessibilityLabel = @"Touch ID verified";
+          displayedVerified = true;
+        }
         const NSModalResponse response = [NSApp runModalSession:session];
         if (response == NSAlertSecondButtonReturn) {
           [NSApp endModalSession:session];
