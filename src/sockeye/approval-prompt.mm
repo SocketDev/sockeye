@@ -97,7 +97,10 @@
   [CATransaction commit];
   if (!reduceMotion) {
     CAKeyframeAnimation* scan = [CAKeyframeAnimation animationWithKeyPath:@"contents"];
-    scan.values = self.frames;
+    NSMutableArray* activeFrames = [self.frames mutableCopy];
+    [activeFrames removeObjectAtIndex:0];
+    [activeFrames addObject:self.frames.lastObject];
+    scan.values = activeFrames;
     scan.keyTimes = self.times;
     scan.duration = kFingerprintDuration;
     scan.calculationMode = kCAAnimationDiscrete;
@@ -373,18 +376,18 @@ bool ShowApprovalPrompt(const RunOptions& options,
       cancel.enabled = NO;
       cancel.keyEquivalent = @"";
       details.enabled = NO;
+      [fingerprint animateSuccess];
       if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) {
         cancel.alphaValue = 0;
         details.alphaValue = 0;
       } else {
         [NSAnimationContext runAnimationGroup:^(NSAnimationContext* animation) {
-          animation.duration = 0.25;
-          animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+          animation.duration = 0.45;
+          animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
           cancel.animator.alphaValue = 0;
           details.animator.alphaValue = 0;
         } completionHandler:nil];
       }
-      [fingerprint animateSuccess];
       const NSTimeInterval duration =
           NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration + 0.12;
       NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
