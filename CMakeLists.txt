@@ -320,7 +320,16 @@ if(BUILD_TESTING)
 
 endif()
 
-target_include_directories(sockeye PRIVATE src)
+set(FINGERPRINT_ATLAS "${CMAKE_CURRENT_SOURCE_DIR}/src/sockeye/assets/fingerprint-scan.png")
+set(FINGERPRINT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/art/fingerprint/scan.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${FINGERPRINT_ATLAS}" "${FINGERPRINT_SOURCE}")
+file(READ "${FINGERPRINT_ATLAS}" FINGERPRINT_HEX HEX)
+file(READ "${FINGERPRINT_SOURCE}" FINGERPRINT_JSON)
+string(JSON FINGERPRINT_FRAME_COUNT LENGTH "${FINGERPRINT_JSON}" frames)
+string(REGEX REPLACE "(..)" "0x\\1," FINGERPRINT_BYTES "${FINGERPRINT_HEX}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/fingerprint-atlas.generated.h"
+  "static constexpr unsigned char kFingerprintAtlas[] = {${FINGERPRINT_BYTES}};\nstatic constexpr NSUInteger kFingerprintFrameCount = ${FINGERPRINT_FRAME_COUNT};\nstatic constexpr double kFingerprintDuration = ${FINGERPRINT_FRAME_COUNT} / 30.0;\n")
+target_include_directories(sockeye PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(sockeye PRIVATE SOCKEYE_VERSION="${SOCKEYE_VERSION}")
 target_compile_options(sockeye PRIVATE
   -Wall

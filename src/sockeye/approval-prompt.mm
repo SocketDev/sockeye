@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #import <LocalAuthenticationEmbeddedUI/LocalAuthenticationEmbeddedUI.h>
 #import <QuartzCore/QuartzCore.h>
+#include "fingerprint-atlas.generated.h"
 
 #include "sockeye/approval-prompt.h"
 #include "sockeye/input-policy.h"
@@ -12,6 +13,18 @@
 @interface SockeyeDetailCopyButton : NSButton
 @property(copy) NSString* payload;
 - (void)copyDetail:(id)sender;
+@end
+
+@interface SockeyePanelButton : NSButton
+@property NSModalResponse response;
+- (void)finishModal:(id)sender;
+@end
+
+@implementation SockeyePanelButton
+- (void)finishModal:(id)sender {
+  (void)sender;
+  [NSApp stopModalWithCode:self.response];
+}
 @end
 
 @implementation SockeyeDetailCopyButton
@@ -41,55 +54,64 @@
 - (void)animateSuccess {
   self.wantsLayer = YES;
   const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
-  NSColor* color = NSColor.systemRedColor;
-  NSColor* trackColor = [NSColor colorWithWhite:0.55 alpha:0.35];
-  const CFTimeInterval start = CACurrentMediaTime();
-  for (CGFloat index = 0; index < 10; ++index) {
-    const CGFloat inset = 6 + index * 2.5;
-    const CGFloat top = 57 - index * 2.4;
-    const CGFloat shoulder = 31 - index * 0.4;
-    CGMutablePathRef path = CGPathCreateMutable();
-    CGPathMoveToPoint(path, nil, inset, 17 + index);
-    CGPathAddCurveToPoint(path, nil, inset - 1, 22, inset, 25, inset, shoulder);
-    CGPathAddCurveToPoint(path, nil, inset, top + 7, 64 - inset, top + 7, 64 - inset, shoulder);
-    CGPathAddCurveToPoint(path, nil, 64 - inset, 22, 62 - inset, 14, 58 - inset, 9);
-    const CGFloat firstBreak = 0.23 + static_cast<CGFloat>(static_cast<int>(index) % 3) * 0.06;
-    const CGFloat secondBreak = 0.65 - static_cast<CGFloat>(static_cast<int>(index) % 4) * 0.035;
-    const CGFloat boundaries[] = {0, firstBreak, secondBreak, 1};
-    for (NSUInteger segment = 0; segment < 3; ++segment) {
-      const CGFloat begin = boundaries[segment] + (segment == 0 ? 0 : 0.018);
-      const CGFloat end = boundaries[segment + 1] - (segment == 2 ? 0 : 0.018);
-      for (NSUInteger pass = 0; pass < 2; ++pass) {
-        CAShapeLayer* ridge = [CAShapeLayer layer];
-        ridge.frame = self.bounds;
-        ridge.path = path;
-        ridge.fillColor = nil;
-        ridge.strokeColor = pass == 0 ? trackColor.CGColor : color.CGColor;
-        ridge.lineWidth = 1.25;
-        ridge.lineCap = kCALineCapRound;
-        ridge.lineJoin = kCALineJoinRound;
-        ridge.contentsScale = self.window.backingScaleFactor;
-        ridge.strokeStart = begin;
-        ridge.strokeEnd = end;
-        [self.layer addSublayer:ridge];
-        if (pass == 1 && !reduceMotion) {
-          CABasicAnimation* fill = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-          fill.fromValue = @(begin);
-          fill.toValue = @(end);
-          fill.duration = 0.6;
-          fill.beginTime = start;
-          fill.timingFunction = [CAMediaTimingFunction functionWithControlPoints:0.2f :0.0f :0.2f :1.0f];
-          [ridge addAnimation:fill forKey:@"fingerprintFill"];
-        }
-      }
-    }
-    CGPathRelease(path);
+  NSData* data = [NSData dataWithBytes:kFingerprintAtlas length:sizeof(kFingerprintAtlas)];
+  NSImage* image = [[NSImage alloc] initWithData:data];
+  CGImageRef atlas = [image CGImageForProposedRect:nullptr context:nil hints:nil];
+  NSMutableArray* frames = [NSMutableArray arrayWithCapacity:kFingerprintFrameCount];
+  NSMutableArray<NSNumber*>* times = [NSMutableArray arrayWithCapacity:kFingerprintFrameCount];
+  const CGFloat tile = static_cast<CGFloat>(CGImageGetWidth(atlas)) / 8;
+  for (NSUInteger index = 0; index < kFingerprintFrameCount; ++index) {
+    CGRect rect = CGRectMake(static_cast<CGFloat>(index % 8) * tile,
+                             static_cast<CGFloat>(index / 8) * tile, tile, tile);
+    CGImageRef frame = CGImageCreateWithImageInRect(atlas, rect);
+    [frames addObject:(__bridge id)frame];
+    [times addObject:@(static_cast<double>(index) / static_cast<double>(kFingerprintFrameCount))];
+    CGImageRelease(frame);
+  }
+  self.layer.contents = frames.lastObject;
+  self.layer.contentsGravity = kCAGravityResizeAspect;
+  self.layer.minificationFilter = kCAFilterTrilinear;
+  if (!reduceMotion) {
+    CAKeyframeAnimation* scan = [CAKeyframeAnimation animationWithKeyPath:@"contents"];
+    scan.values = frames;
+    scan.keyTimes = times;
+    scan.duration = kFingerprintDuration;
+    scan.calculationMode = kCAAnimationDiscrete;
+    [self.layer addAnimation:scan forKey:@"fingerprintScan"];
   }
 }
 @end
 
 namespace sockeye {
 namespace {
+
+NSPanel* RequestPanel(CGFloat width, CGFloat height, NSString* title) {
+  NSPanel* panel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, width, height)
+      styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
+  panel.titleVisibility = NSWindowTitleHidden;
+  panel.titlebarAppearsTransparent = YES;
+  panel.movableByWindowBackground = YES;
+  panel.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
+  NSTextField* heading = [NSTextField wrappingLabelWithString:title];
+  heading.frame = NSMakeRect(20, height - 60, width - 40, 40);
+  heading.font = [NSFont boldSystemFontOfSize:14];
+  heading.alignment = NSTextAlignmentCenter;
+  heading.toolTip = title;
+  [panel.contentView addSubview:heading];
+  return panel;
+}
+
+SockeyePanelButton* PanelButton(NSPanel* panel, NSString* title, NSRect frame,
+                                NSModalResponse response) {
+  SockeyePanelButton* button = [[SockeyePanelButton alloc] initWithFrame:frame];
+  button.title = title;
+  button.bezelStyle = NSBezelStyleRounded;
+  button.response = response;
+  button.target = button;
+  button.action = @selector(finishModal:);
+  [panel.contentView addSubview:button];
+  return button;
+}
 
 NSString* MakeString(std::string_view value) {
   return [[NSString alloc] initWithBytes:value.data()
@@ -255,13 +277,18 @@ NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
 }
 
 void ShowDetails(const RunOptions& options, std::string_view request_id) {
-  NSAlert* details = [[NSAlert alloc] init];
-  details.messageText = @"Request details";
-  details.accessoryView = DetailRowsView(RequestDetailRows(options, request_id));
-  [details addButtonWithTitle:@"« Back"];
-  [details layout];
-  [details runModal];
-  [details.window orderOut:nil];
+  NSScrollView* rows = DetailRowsView(RequestDetailRows(options, request_id));
+  const CGFloat width = rows.frame.size.width + 40;
+  const CGFloat height = rows.frame.size.height + 120;
+  NSPanel* panel = RequestPanel(width, height, @"Request details");
+  rows.frame = NSMakeRect(20, 64, rows.frame.size.width, rows.frame.size.height);
+  [panel.contentView addSubview:rows];
+  NSButton* back = PanelButton(panel, @"« Back", NSMakeRect((width - 100) / 2, 18, 100, 30),
+                               NSAlertFirstButtonReturn);
+  back.keyEquivalent = @"\r";
+  [panel center];
+  [NSApp runModalForWindow:panel];
+  [panel orderOut:nil];
 }
 
 } // namespace
@@ -274,26 +301,28 @@ bool ShowApprovalPrompt(const RunOptions& options,
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
     [NSApp finishLaunching];
-    NSAlert* alert = [[NSAlert alloc] init];
     NSString* credentials = CredentialSummary(options);
     NSString* executable = MakeString(options.executable.canonical_path);
     NSString* child = executable.lastPathComponent;
-    alert.messageText = [NSString stringWithFormat:@"Allow %@ to use %@?",
-                                                   child, credentials];
-    [alert addButtonWithTitle:@"Cancel"];
-    [alert addButtonWithTitle:@"Details"];
-    alert.buttons[0].keyEquivalent = @"\033";
+    NSString* title = [NSString stringWithFormat:@"Allow %@ to use %@?", child, credentials];
+    NSPanel* panel = RequestPanel(360, 220, title);
+    NSButton* cancel = PanelButton(panel, @"Cancel", NSMakeRect(62, 18, 112, 30),
+                                   NSAlertFirstButtonReturn);
+    cancel.keyEquivalent = @"\033";
+    PanelButton(panel, @"Details", NSMakeRect(186, 18, 112, 30), NSAlertSecondButtonReturn);
+    NSTextField* instruction = [NSTextField labelWithString:@"Touch ID to continue."];
+    instruction.frame = NSMakeRect(20, 140, 320, 20);
+    instruction.alignment = NSTextAlignmentCenter;
+    instruction.textColor = NSColor.secondaryLabelColor;
+    [panel.contentView addSubview:instruction];
     LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
         initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
-    authenticationView.frame = NSMakeRect(0, 0, 64, 64);
-    alert.accessoryView = authenticationView;
-    alert.informativeText = @"Touch ID to continue.";
-    [alert layout];
-    alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
-    [alert.window center];
+    authenticationView.frame = NSMakeRect(148, 68, 64, 64);
+    [panel.contentView addSubview:authenticationView];
+    [panel center];
     [NSApp activateIgnoringOtherApps:YES];
-    [alert.window makeKeyAndOrderFront:nil];
-    NSModalSession session = [NSApp beginModalSessionForWindow:alert.window];
+    [panel makeKeyAndOrderFront:nil];
+    NSModalSession session = [NSApp beginModalSessionForWindow:panel];
     bool cancelled = false;
     const bool authenticated = context.AuthenticateWithEvents(reason, error, [&] {
       if (cancelled) return;
@@ -302,7 +331,8 @@ bool ShowApprovalPrompt(const RunOptions& options,
       if (response == NSAlertSecondButtonReturn) {
         [NSApp endModalSession:session];
         ShowDetails(options, request_id);
-        session = [NSApp beginModalSessionForWindow:alert.window];
+        [panel makeKeyAndOrderFront:nil];
+        session = [NSApp beginModalSessionForWindow:panel];
         return;
       }
       cancelled = true;
@@ -312,19 +342,19 @@ bool ShowApprovalPrompt(const RunOptions& options,
       SockeyeFingerprintSuccessView* success = [[SockeyeFingerprintSuccessView alloc]
           initWithFrame:authenticationView.frame];
       success.accessibilityLabel = @"Touch ID verified";
-      alert.accessoryView = success;
-      alert.informativeText = @"Verified.";
-      [alert layout];
+      [authenticationView.superview replaceSubview:authenticationView with:success];
+      instruction.stringValue = @"Verified.";
       [success animateSuccess];
       const NSTimeInterval duration =
-          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.8;
+          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration + 0.12;
       NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
       while (deadline.timeIntervalSinceNow > 0) {
         const NSModalResponse response = [NSApp runModalSession:session];
         if (response == NSAlertSecondButtonReturn) {
           [NSApp endModalSession:session];
           ShowDetails(options, request_id);
-          session = [NSApp beginModalSessionForWindow:alert.window];
+          [panel makeKeyAndOrderFront:nil];
+          session = [NSApp beginModalSessionForWindow:panel];
           continue;
         }
         if (response != NSModalResponseContinue) {
@@ -336,7 +366,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
       }
     }
     [NSApp endModalSession:session];
-    [alert.window orderOut:nil];
+    [panel orderOut:nil];
     if (cancelled) {
       context.Invalidate();
       error.status = KeychainStatus::kDenied;

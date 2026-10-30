@@ -6,6 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "animation:render": "node scripts/repo/animation/render.mts",
     "admin:update": "node scripts/fleet/update.mts --admin",
     "ai-balancer": "node scripts/fleet/ai/balancer/launch.mts",
     "ai-balancer:auth": "node scripts/fleet/ai/balancer/login.mts",
