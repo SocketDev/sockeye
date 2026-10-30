@@ -9,14 +9,12 @@ import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { getKeychainAddonBinaryPath } from '../scripts/paths.mts'
+import { getBuildMode } from '../../../scripts/repo/paths.mts'
 
-// The build resolves its mode as BUILD_MODE, else prod on CI and dev locally;
-// the binary the test loads must come from the same answer.
-const buildMode =
-  process.env['BUILD_MODE'] ?? (process.env['CI'] ? 'prod' : 'dev')
+const buildMode = getBuildMode()
 const platformArch = `${process.platform}-${process.arch}`
 const binaryPath = getKeychainAddonBinaryPath(buildMode, platformArch)
 const built = existsSync(binaryPath)
@@ -28,11 +26,15 @@ const MISSING_SERVICE = 'socket-keychain-addon-test-missing'
 const MISSING_ACCOUNT = 'NOPE'
 
 describe.skipIf(!built)('keychain.node', () => {
-  const keychain: {
+  let keychain: {
     get: (service: string, account: string) => string | undefined
     set: (service: string, account: string, value: string) => undefined
     del: (service: string, account: string) => undefined
-  } = require(binaryPath)
+  }
+
+  beforeAll(() => {
+    keychain = require(binaryPath)
+  })
 
   afterAll(() => {
     // Belt-and-suspenders: ensure the test item never lingers in the keychain.
