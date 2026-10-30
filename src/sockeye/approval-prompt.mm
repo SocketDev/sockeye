@@ -98,6 +98,8 @@ bool ShowApprovalPrompt(const RunOptions& options,
                         std::string_view request_id) {
   @autoreleasepool {
     [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+    [NSApp finishLaunching];
     NSAlert* alert = [[NSAlert alloc] init];
     NSString* credentials = CredentialSummary(options);
     NSString* executable = MakeString(options.executable.canonical_path);
@@ -109,7 +111,10 @@ bool ShowApprovalPrompt(const RunOptions& options,
     [alert addButtonWithTitle:@"Cancel"];
     [alert addButtonWithTitle:@"Details"];
 
+    alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
+    [alert.window center];
     [NSApp activateIgnoringOtherApps:YES];
+    [alert.window makeKeyAndOrderFront:nil];
     for (;;) {
       const NSModalResponse response = [alert runModal];
       if (response == NSAlertThirdButtonReturn) {
