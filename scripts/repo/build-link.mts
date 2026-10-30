@@ -21,9 +21,6 @@ export async function linkSockeyeBuild(
 ): Promise<string> {
   const destination = options.destination ?? getInstalledSockeyeBinaryPath()
   const absoluteBinaryPath = path.resolve(binaryPath)
-  const directory = path.dirname(destination)
-  await mkdir(directory, { recursive: true })
-
   try {
     const existing = await lstat(destination)
     if (!existing.isSymbolicLink()) {
