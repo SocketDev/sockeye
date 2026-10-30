@@ -245,13 +245,20 @@ bool ShowApprovalPrompt(const RunOptions& options,
       }
       break;
     }
+    NSString* requestTitle = alert.messageText;
+    NSPoint windowTopLeft = NSMakePoint(NSMinX(alert.window.frame), NSMaxY(alert.window.frame));
+    alert = [[NSAlert alloc] init];
+    alert.messageText = requestTitle;
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Details"];
+    alert.buttons[0].keyEquivalent = @"\033";
     LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
         initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
     authenticationView.frame = NSMakeRect(0, 0, 64, 64);
     alert.accessoryView = authenticationView;
     alert.informativeText = @"Touch ID to continue.";
-    alert.buttons[0].enabled = NO;
     [alert layout];
+    [alert.window setFrameTopLeftPoint:windowTopLeft];
     [alert.window makeKeyAndOrderFront:nil];
     NSModalSession session = [NSApp beginModalSessionForWindow:alert.window];
     bool cancelled = false;
@@ -259,7 +266,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
       if (cancelled) return;
       const NSModalResponse response = [NSApp runModalSession:session];
       if (response == NSModalResponseContinue) return;
-      if (response == NSAlertThirdButtonReturn) {
+      if (response == NSAlertSecondButtonReturn) {
         [NSApp endModalSession:session];
         ShowDetails(options, request_id);
         session = [NSApp beginModalSessionForWindow:alert.window];
