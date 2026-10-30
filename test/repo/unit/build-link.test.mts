@@ -2,13 +2,25 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
-import { linkSockeyeBuild } from '../../../scripts/repo/build-link.mts'
+import {
+  linkSockeyeBuild,
+  wireSockeyeBuild,
+} from '../../../scripts/repo/build-link.mts'
+
+const { verifyCodesign } = vi.hoisted(() => ({
+  verifyCodesign: vi.fn(async () => ({ code: 0 })),
+}))
+vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
+  spawn: verifyCodesign,
+}))
 
 const scratchDirectories: string[] = []
 
 afterEach(async () => {
+  verifyCodesign.mockReset()
+  verifyCodesign.mockResolvedValue({ code: 0 })
   await Promise.all(
     scratchDirectories
       .splice(0)
@@ -64,4 +76,52 @@ test('refuses to replace an existing regular file', async () => {
     'existing non-symlink file is present',
   )
   await expect(fs.readFile(destination, 'utf8')).resolves.toBe('user file')
+})
+
+test('keeps the PATH command pointed at the current build across rebuilds', async () => {
+  const root = await makeScratchDirectory()
+  const first = path.join(root, 'first-build')
+  const second = path.join(root, 'second-build')
+  await fs.writeFile(first, 'first build')
+  await fs.writeFile(second, 'second build')
+  const links = await wireSockeyeBuild(first, root)
+  await expect(fs.readlink(links.shellPath)).resolves.toBe(links.installedPath)
+  await expect(fs.realpath(links.shellPath)).resolves.toBe(first)
+  await wireSockeyeBuild(second, root)
+  await expect(fs.realpath(links.shellPath)).resolves.toBe(second)
+  expect(verifyCodesign).not.toHaveBeenCalled()
+})
+
+test('replaces a stale verified Sockeye PATH executable with the managed link', async () => {
+  const root = await makeScratchDirectory()
+  const binary = path.join(root, 'current-build')
+  const shellPath = path.join(root, '.local', 'bin', 'sockeye')
+  await fs.writeFile(binary, 'current build')
+  await fs.mkdir(path.dirname(shellPath), { recursive: true })
+  await fs.writeFile(shellPath, 'old Sockeye fixture')
+  await wireSockeyeBuild(binary, root)
+  await expect(fs.realpath(shellPath)).resolves.toBe(binary)
+  expect(verifyCodesign).toHaveBeenCalledWith(
+    'codesign',
+    [
+      '--verify',
+      '--strict',
+      '-R',
+      'identifier "dev.socket.sockeye"',
+      shellPath,
+    ],
+    { stdio: 'pipe', throws: false },
+  )
+})
+
+test('preserves a foreign regular file at the PATH destination', async () => {
+  const root = await makeScratchDirectory()
+  const binary = path.join(root, 'current-build')
+  const shellPath = path.join(root, '.local', 'bin', 'sockeye')
+  await fs.writeFile(binary, 'current build')
+  await fs.mkdir(path.dirname(shellPath), { recursive: true })
+  await fs.writeFile(shellPath, 'user command')
+  verifyCodesign.mockResolvedValue({ code: 1 })
+  await expect(wireSockeyeBuild(binary, root)).rejects.toThrow()
+  await expect(fs.readFile(shellPath, 'utf8')).resolves.toBe('user command')
 })

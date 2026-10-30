@@ -27,6 +27,12 @@ export function getInstalledSockeyeBinaryPath(
   return path.join(homeDirectory, '.socket', 'bin', BINARY_NAME)
 }
 
+export function getShellSockeyeBinaryPath(
+  homeDirectory = os.homedir(),
+): string {
+  return path.join(homeDirectory, '.local', 'bin', BINARY_NAME)
+}
+
 export const RELEASE_BUNDLE_ENTRIES = [
   RELEASE_BUNDLE_NAME,
   `${RELEASE_BUNDLE_NAME}/Contents`,

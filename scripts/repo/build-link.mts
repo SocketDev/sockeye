@@ -1,10 +1,15 @@
 import { randomUUID } from 'node:crypto'
+import type { Stats } from 'node:fs'
 import { lstat, mkdir, rename, symlink } from 'node:fs/promises'
 import path from 'node:path'
 
 import { safeDelete } from '@socketsecurity/lib-stable/fs/safe'
+import { spawn } from '@socketsecurity/lib-stable/process/spawn/child'
 
-import { getInstalledSockeyeBinaryPath } from './paths.mts'
+import {
+  getInstalledSockeyeBinaryPath,
+  getShellSockeyeBinaryPath,
+} from './paths.mts'
 
 export interface LinkSockeyeBuildOptions {
   readonly destination?: string | undefined
@@ -37,8 +42,17 @@ export async function linkSockeyeBuild(
     }
   }
 
+  return await replaceSockeyeLink(absoluteBinaryPath, destination)
+}
+
+async function replaceSockeyeLink(
+  source: string,
+  destination: string,
+): Promise<string> {
+  const directory = path.dirname(destination)
+  await mkdir(directory, { recursive: true })
   const temporaryLink = path.join(directory, `.sockeye-${randomUUID()}.link`)
-  await symlink(absoluteBinaryPath, temporaryLink)
+  await symlink(source, temporaryLink)
   try {
     await rename(temporaryLink, destination)
   } catch (error) {
@@ -46,4 +60,47 @@ export async function linkSockeyeBuild(
     throw error
   }
   return destination
+}
+
+export async function wireSockeyeBuild(
+  binaryPath: string,
+  homeDirectory?: string,
+): Promise<{ installedPath: string; shellPath: string }> {
+  const installedPath = getInstalledSockeyeBinaryPath(homeDirectory)
+  const shellPath = getShellSockeyeBinaryPath(homeDirectory)
+  await linkSockeyeBuild(binaryPath, { destination: installedPath })
+  let existing: Stats | undefined
+  try {
+    existing = await lstat(shellPath)
+  } catch (error) {
+    if (
+      typeof error !== 'object' ||
+      error === null ||
+      !('code' in error) ||
+      error.code !== 'ENOENT'
+    )
+      throw error
+  }
+  if (existing && !existing.isSymbolicLink()) {
+    const verified = existing.isFile()
+      ? await spawn(
+          'codesign',
+          [
+            '--verify',
+            '--strict',
+            '-R',
+            'identifier "dev.socket.sockeye"',
+            shellPath,
+          ],
+          { stdio: 'pipe', throws: false },
+        )
+      : undefined
+    if (verified?.code !== 0) {
+      throw new Error(
+        `Sockeye PATH link refused at ${shellPath}: the existing file is not a verified Sockeye executable. Move that file and run pnpm build again.`,
+      )
+    }
+  }
+  await replaceSockeyeLink(installedPath, shellPath)
+  return { installedPath, shellPath }
 }
