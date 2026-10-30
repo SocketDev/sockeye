@@ -33,7 +33,7 @@ async function makeScratchDirectory(): Promise<string> {
     path.join(os.tmpdir(), 'sockeye-build-link-'),
   )
   scratchDirectories.push(directory)
-  return directory
+  return await fs.realpath(directory)
 }
 
 test('creates the managed Sockeye path when it is missing', async () => {

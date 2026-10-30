@@ -101,7 +101,7 @@ test.each([production, isolated])(
   },
 )
 
-test('run preparation is fresh and the forbidden authorization detector is active', () => {
+test('run preparation is fresh at the first forbidden effect', () => {
   const fixture = makeExplainFixture()
   const first = runExplain(isolated, 'explain', fixture.args)
   writeFileSync(fixture.bound, 'configuration two\n')
@@ -117,9 +117,8 @@ test('run preparation is fresh and the forbidden authorization detector is activ
   expect(secondDigest).not.toBe(firstDigest)
   const run = runExplain(isolated, 'run', fixture.args)
   expect(run.status).toBe(90)
-  expect(run.stderr).toContain(
-    `requestId: sha256:${secondDigest?.slice(0, 16)}`,
-  )
+  expect(run.stderr.trim()).toBe(`forbidden request record: sha256:${secondDigest}`)
+  expect(run.stdout).toBe('')
   expect(existsSync(fixture.marker)).toBe(false)
 })
 

@@ -27,6 +27,7 @@ import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/main/run.mts'
 import type { ScriptMeta } from '../fleet/process/main/run.mts'
 import { getInstalledSockeyeBinaryPath } from './paths.mts'
+import { withOnePasswordRead } from '../fleet/auth/one-password/request.mts'
 import {
   credentialSourceChoices,
   isCredentialSource,
@@ -162,7 +163,14 @@ export async function authorizeOnePasswordAccount(
   )
   let status: string
   try {
-    status = (await authorizeOnePasswordTerminal({ account })).status
+    status = (
+      await withOnePasswordRead(
+        account,
+        ['whoami', '--account', account],
+        () => authorizeOnePasswordTerminal({ account }),
+        { resultKind: 'authorization' },
+      )
+    ).status
   } catch {
     status = 'authorization-failed'
   }

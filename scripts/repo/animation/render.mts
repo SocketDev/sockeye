@@ -7,7 +7,7 @@ import { isMainModule } from '../../fleet/process/is-main-module.mts'
 import { runMain, type ScriptMeta } from '../../fleet/process/main/run.mts'
 import { scriptStdio } from '../../fleet/process/script-output.mts'
 import {
-  FINGERPRINT_ART_ROOT,
+  FINGERPRINT_RENDER_ROOT,
   FINGERPRINT_ATLAS,
   FINGERPRINT_BUILD_ROOT,
   FINGERPRINT_FRAMES_ROOT,
@@ -21,6 +21,7 @@ export const SCRIPT_META: ScriptMeta = {
   describe:
     'Render the fingerprint animation with FFrames and update the embedded atlas.',
   help: 'Usage: pnpm animation:render',
+  heavyJob: 'build',
   json: 'result',
 }
 
@@ -30,7 +31,7 @@ export async function renderFingerprintAnimation(): Promise<void> {
   )
   async function run(command: string, args: string[]): Promise<void> {
     const result = await spawn(command, args, {
-      cwd: FINGERPRINT_ART_ROOT,
+      cwd: FINGERPRINT_RENDER_ROOT,
       stdio: scriptStdio('inherit'),
     })
     if (result.code !== 0)

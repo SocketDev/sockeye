@@ -446,38 +446,9 @@ export async function runDirect(
  * path, or undefined when this source has nothing (a staged entry with no
  * tarballUrl, a failed download).
  */
-export type TarballProvider = (
-  name: string,
-  version: string,
-) => Promise<string | undefined>
-
 export interface PackTarballOptions {
   env?: NodeJS.ProcessEnv | undefined
   root?: string | undefined
-}
-
-/**
- * Compose an ordered list of tarball providers into one that tries each in
- * turn and returns the first path a source yields, falling THROUGH a source
- * that returns undefined instead of hard-failing. Returns undefined only when
- * EVERY source came up empty. This is the artifact-source fallback chain
- * (browser-read to registry-API to local pack), factored out of the approve
- * loop so the fallthrough is unit-testable without a browser.
- */
-export function composeTarballProviders(
-  sources: readonly TarballProvider[],
-): TarballProvider {
-  return async (name: string, version: string) => {
-    for (let i = 0, { length } = sources; i < length; i += 1) {
-      // Try each source until one yields bytes.
-      // eslint-disable-next-line no-await-in-loop -- serial fallback
-      const packed = await sources[i]!(name, version)
-      if (packed) {
-        return packed
-      }
-    }
-    return undefined
-  }
 }
 
 export async function defaultPackTarball(

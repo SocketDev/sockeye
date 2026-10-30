@@ -47,7 +47,7 @@ jobs:
   # in the test matrix).
   check:
     name: Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Bootstrap checkout
@@ -99,7 +99,7 @@ jobs:
         # macOS-only: Sockeye is a Touch ID secret bridge and build.mts refuses
         # to build on any non-darwin platform, so ubuntu/windows legs can only
         # fail. The build + test run exclusively on macOS.
-        os: [macos-latest]
+        os: [macos-26]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -151,7 +151,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 15
     steps:
       - name: Bootstrap checkout
@@ -212,7 +212,7 @@ jobs:
     name: Full coverage
     needs: [cover-shards]
     if: ${{ !cancelled() && needs.cover-shards.result != 'skipped' }}
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 15
     steps:
       - name: Require successful coverage collection

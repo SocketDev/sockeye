@@ -171,7 +171,7 @@ export async function checkBuildEnvironment(buildDir) {
             'Install Xcode 16.1+ from: https://developer.apple.com/xcode/',
           )
           logger.substep(
-            'After install, run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer',
+            'After install, run: sudo xcode-select --switch <installed-xcode>/Contents/Developer',
           )
           allChecks = false
         }

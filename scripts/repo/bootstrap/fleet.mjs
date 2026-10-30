@@ -1355,6 +1355,56 @@ function configFlagHolds(flag, raw) {
   }
 }
 
+const CARGO_DISCOVERY_ENTRY_LIMIT = 1e5
+const CARGO_DISCOVERY_SKIP_DIRS = /* @__PURE__ */ new Set([
+  '.agents',
+  '.cache',
+  '.claude',
+  '.codex',
+  '.git',
+  '.pnpm',
+  '.venv',
+  'build',
+  'coverage',
+  'deps',
+  'external',
+  'fixtures',
+  'node_modules',
+  'target',
+  'third_party',
+  'upstream',
+  'vendor',
+])
+function hasOwnCargoManifest(dest) {
+  const pending = [dest]
+  let inspected = 0
+  while (pending.length > 0) {
+    const directory = pending.pop()
+    if (!existsSync(directory)) continue
+    const entries = readdirSync(directory, { withFileTypes: true })
+    for (const entry of entries) {
+      if (++inspected > CARGO_DISCOVERY_ENTRY_LIMIT)
+        throw new Error(
+          `Cargo discovery exceeded its limit. Where: ${dest}. Saw more than ${CARGO_DISCOVERY_ENTRY_LIMIT} entries; wanted a bounded source tree. Fix: remove generated output from authored source directories.`,
+        )
+      if (entry.isFile() && entry.name === 'Cargo.toml') return true
+      if (
+        entry.isDirectory() &&
+        !CARGO_DISCOVERY_SKIP_DIRS.has(entry.name) &&
+        !entry.name.endsWith('-bundled') &&
+        !entry.name.endsWith('-vendored')
+      )
+        pending.push(path.join(directory, entry.name))
+    }
+  }
+  return false
+}
+function conditionalConfigFlagHolds(dest, flag, raw) {
+  return (
+    configFlagHolds(flag, raw) ||
+    (flag === 'hasRust' && hasOwnCargoManifest(dest))
+  )
+}
 function readConditionalSettings(dest) {
   const settings = resolveSettingsPath(dest)
   if (settings === void 0) return {}
@@ -1381,7 +1431,8 @@ function conditionalManifestGroupHolds(group, raw, dest) {
   if (group.dependency !== void 0)
     return dependencyGraphRequires(dest, group.dependency)
   if (group.marker !== void 0) return conditionalMarkerHolds(dest, group.marker)
-  if (group.configFlag !== void 0) return configFlagHolds(group.configFlag, raw)
+  if (group.configFlag !== void 0)
+    return conditionalConfigFlagHolds(dest, group.configFlag, raw)
   if (group.capability !== void 0) {
     const capabilities = raw['capabilities']
     return (

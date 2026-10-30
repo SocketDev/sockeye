@@ -1940,39 +1940,86 @@ function cleanupRuntimeTlsTrust(directory, options = {}) {
 
 const TLS_RUNTIME_DIRECTORY_KEY = "FLEET_TLS_TRUST_RUNTIME_DIRECTORY";
 const TLS_RUNTIME_CA_KEY = "FLEET_TLS_TRUST_RUNTIME_CA_SOURCE";
-function certificatesMatch(actualPem, expectedPem) {
-  const actual = filterTlsCertificates(actualPem);
-  if (actual.rejectedFingerprints.length) return false;
-  const actualCertificates = [
-    ...new Set(actual.certificates.map(tlsCertificateIdentity)),
-  ].sort();
-  const expectedCertificates = [
-    ...new Set(
-      filterTlsCertificates(expectedPem).certificates.map(
-        tlsCertificateIdentity,
-      ),
-    ),
-  ].sort();
-  return (
-    actualCertificates.length === expectedCertificates.length &&
-    actualCertificates.every(
-      (certificate, index) => certificate === expectedCertificates[index],
-    )
-  );
-}
 function tlsCertificateIdentity(pem) {
   return new X509Certificate(pem).fingerprint256;
 }
-async function tlsTrustBundleMatches(file, expectedPem) {
+function certificateIdentities(pem) {
+  return [
+    ...new Set(
+      filterTlsCertificates(pem).certificates.map(tlsCertificateIdentity),
+    ),
+  ].sort();
+}
+async function validateSfwTlsInputBundles(
+  env,
+  bundlePaths,
+  caSource,
+  runtimeBundlePaths = {},
+) {
+  const referencePath = env["SSL_CERT_FILE"];
+  if (
+    !referencePath ||
+    referencePath === caSource ||
+    Object.values(bundlePaths).includes(referencePath) ||
+    Object.values(runtimeBundlePaths).includes(referencePath)
+  )
+    throw new Error(
+      "Socket Firewall CA bundle does not match its filtered source; restart the wrapped command.",
+    );
+  const referenceInfo = await lstat(referencePath);
+  if (
+    !referenceInfo.isFile() ||
+    referenceInfo.isSymbolicLink() ||
+    (process$1.platform !== "win32" && (referenceInfo.mode & 18) !== 0)
+  )
+    throw new Error(
+      "Socket Firewall CA bundle has unsafe permissions or type; restart the wrapped command.",
+    );
+  const referencePem = await readTlsTrustFile(referencePath);
+  const reference = filterTlsCertificates(referencePem);
+  const source = filterTlsCertificates(await readTlsTrustFile(caSource));
+  if (
+    source.certificates.length !== 1 ||
+    source.rejectedFingerprints.length ||
+    !reference.certificates.some(
+      (pem) =>
+        tlsCertificateIdentity(pem) ===
+        tlsCertificateIdentity(source.certificates[0]),
+    )
+  )
+    throw new Error(
+      "Socket Firewall CA bundle does not contain its allowed source; restart the wrapped command.",
+    );
+  const expected = certificateIdentities(referencePem);
+  for (const key of TLS_SFW_BUNDLE_KEYS) {
+    if (key === "SSL_CERT_FILE") continue;
+    const value = env[key];
+    if (
+      !value ||
+      value === bundlePaths[key] ||
+      value === runtimeBundlePaths[key]
+    )
+      continue;
+    if (!(await tlsInputBundleMatches(value, expected)))
+      throw new Error(
+        `Socket Firewall ${key} bundle does not match its filtered source; restart the wrapped command.`,
+      );
+  }
+}
+async function tlsInputBundleMatches(file, expected) {
   try {
     const info = await lstat(file);
     if (
       !info.isFile() ||
       info.isSymbolicLink() ||
-      !hasPrivateTlsPermissions(info.mode)
+      (process$1.platform !== "win32" && (info.mode & 18) !== 0)
     )
       return false;
-    return certificatesMatch(await readTlsTrustFile(file), expectedPem);
+    const actual = certificateIdentities(await readTlsTrustFile(file));
+    return (
+      actual.length === expected.length &&
+      actual.every((value, index) => value === expected[index])
+    );
   } catch {
     return false;
   }
@@ -2072,8 +2119,16 @@ async function reuseRuntimeTlsTrust(env, bundlePaths, options = {}) {
       env["NODE_EXTRA_CA_CERTS"] === caSource &&
       sfwBundlePath &&
       sfwBundlePath !== caSource &&
-      !Object.values(bundlePaths).includes(sfwBundlePath),
+      !Object.values(bundlePaths).includes(sfwBundlePath) &&
+      !Object.values(built.bundlePaths).includes(sfwBundlePath),
     );
+    if (sfwOverlayMatches)
+      await validateSfwTlsInputBundles(
+        env,
+        bundlePaths,
+        caSource,
+        built.bundlePaths,
+      );
     for (const [name, file] of Object.entries(built.bundlePaths)) {
       const fileInfo = await lstat(file);
       const value = env[name];
@@ -2081,14 +2136,7 @@ async function reuseRuntimeTlsTrust(env, bundlePaths, options = {}) {
       if (sfwOverlayMatches) {
         if (name === "NODE_EXTRA_CA_CERTS")
           overlayPathMatches = value === caSource;
-        else if (TLS_SFW_BUNDLE_KEYS.includes(name))
-          overlayPathMatches =
-            value === void 0 ||
-            value === bundlePaths[name] ||
-            Boolean(
-              value &&
-              (await tlsTrustBundleMatches(value, built.bundles[name])),
-            );
+        else if (TLS_SFW_BUNDLE_KEYS.includes(name)) overlayPathMatches = true;
         else overlayPathMatches = value === bundlePaths[name];
       }
       if (
@@ -2252,7 +2300,7 @@ async function resolveSfwTlsOverlay(
     if (!bundlePaths[key])
       throw new Error(`TLS state is missing ${key}; rerun the setup action.`);
   }
-  await readTlsTrustFile(sfwBundle);
+  if (!runtimeEnv) await validateSfwTlsInputBundles(env, bundlePaths, source);
   if (
     env["SSL_CERT_DIR"] !== emptyDirectoryPath ||
     env["GIT_SSL_CAPATH"] !== emptyDirectoryPath
@@ -2274,34 +2322,12 @@ async function resolveSfwTlsOverlay(
   });
   if (!inspection.ok)
     throw new Error([...inspection.conflicts, ...inspection.errors].join(" "));
-  const normalizedEnv =
+  return (
     runtimeEnv ??
     (await createRuntimeTlsTrust(env, bundlePaths, source, {
       directoryRoot: runtimeDirectoryRoot,
-    }));
-  try {
-    for (const key of SFW_BUNDLE_KEYS) {
-      const bundle = env[key];
-      if (
-        !bundle ||
-        bundle === bundlePaths[key] ||
-        bundle === normalizedEnv[key]
-      )
-        continue;
-      const expectedBundle = await readTlsTrustFile(normalizedEnv[key]);
-      if (!(await tlsTrustBundleMatches(bundle, expectedBundle)))
-        throw new Error(
-          `Socket Firewall ${key} bundle does not match its filtered source; restart the wrapped command.`,
-        );
-    }
-  } catch (error) {
-    if (!runtimeEnv)
-      cleanupRuntimeTlsTrust(normalizedEnv[TLS_RUNTIME_DIRECTORY_KEY], {
-        allowedDirectoryRoot: runtimeDirectoryRoot,
-      });
-    throw error;
-  }
-  return normalizedEnv;
+    }))
+  );
 }
 
 const README_NAME = "README.md";

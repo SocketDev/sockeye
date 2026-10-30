@@ -41,6 +41,6 @@ test.each([
     )
     expect(result.stdout).not.toContain('example-placeholder')
     if (status === 0 && writes === 1)
-      expect(result.stderr).toContain('metadata=3')
+      expect(result.stderr).toContain('metadata=2')
   },
 )

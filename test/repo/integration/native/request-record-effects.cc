@@ -1,11 +1,15 @@
 #include "sockeye/approval-prompt.h"
 #include "sockeye/request-record.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 namespace sockeye {
 
-bool SaveRequestRecord(const RunOptions&, std::string_view, std::string&) {
+bool SaveRequestRecord(const RunOptions&, std::string_view request_id,
+                       std::string&) {
+  std::fprintf(stderr, "forbidden request record: sha256:%.*s\n",
+               static_cast<int>(request_id.size()), request_id.data());
   std::exit(90);
 }
 

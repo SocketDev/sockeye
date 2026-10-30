@@ -4,16 +4,14 @@ import path from 'node:path'
 import { inspectTlsEnvironment } from '../../../../scripts/fleet/process/tls-policy.mts'
 import {
   CA_SOURCE_KEYS,
-  readTlsTrustFile,
 } from '../../../../scripts/fleet/setup/tls-trust-bundles.mts'
 import {
   createRuntimeTlsTrust,
   reuseRuntimeTlsTrust,
-  tlsTrustBundleMatches,
+  validateSfwTlsInputBundles,
   TLS_RUNTIME_CA_KEY,
   TLS_RUNTIME_DIRECTORY_KEY,
 } from '../../../../scripts/fleet/setup/tls-trust-runtime-bundles.mts'
-import { cleanupRuntimeTlsTrust } from '../../../../scripts/fleet/setup/tls-trust-cleanup.mjs'
 import {
   getTlsTrustRootPath,
   TLS_SFW_BUNDLE_KEYS,
@@ -194,7 +192,9 @@ export async function resolveSfwTlsOverlay(
       throw new Error(`TLS state is missing ${key}; rerun the setup action.`)
     }
   }
-  await readTlsTrustFile(sfwBundle)
+  if (!runtimeEnv) {
+    await validateSfwTlsInputBundles(env, bundlePaths, source)
+  }
   if (
     env['SSL_CERT_DIR'] !== emptyDirectoryPath ||
     env['GIT_SSL_CAPATH'] !== emptyDirectoryPath
@@ -221,30 +221,5 @@ export async function resolveSfwTlsOverlay(
     (await createRuntimeTlsTrust(env, bundlePaths, source, {
       directoryRoot: runtimeDirectoryRoot,
     }))
-  try {
-    for (const key of SFW_BUNDLE_KEYS) {
-      const bundle = env[key]
-      if (
-        !bundle ||
-        bundle === bundlePaths[key] ||
-        bundle === normalizedEnv[key]
-      ) {
-        continue
-      }
-      const expectedBundle = await readTlsTrustFile(normalizedEnv[key]!)
-      if (!(await tlsTrustBundleMatches(bundle, expectedBundle!))) {
-        throw new Error(
-          `Socket Firewall ${key} bundle does not match its filtered source; restart the wrapped command.`,
-        )
-      }
-    }
-  } catch (error) {
-    if (!runtimeEnv) {
-      cleanupRuntimeTlsTrust(normalizedEnv[TLS_RUNTIME_DIRECTORY_KEY], {
-        allowedDirectoryRoot: runtimeDirectoryRoot,
-      })
-    }
-    throw error
-  }
   return normalizedEnv
 }

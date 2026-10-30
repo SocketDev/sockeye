@@ -3,12 +3,20 @@ import path from 'node:path'
 
 import { REPO_ROOT } from '../../fleet/paths.mts'
 
-export const FINGERPRINT_ART_ROOT = path.join(REPO_ROOT, 'art', 'fingerprint')
+export const FINGERPRINT_RENDER_ROOT = path.join(
+  REPO_ROOT,
+  'assets',
+  'repo',
+  'fingerprint',
+)
 export const FINGERPRINT_MANIFEST = path.join(
-  FINGERPRINT_ART_ROOT,
+  FINGERPRINT_RENDER_ROOT,
   'Cargo.toml',
 )
-export const FINGERPRINT_SOURCE = path.join(FINGERPRINT_ART_ROOT, 'scan.json')
+export const FINGERPRINT_SOURCE = path.join(
+  FINGERPRINT_RENDER_ROOT,
+  'scan.json',
+)
 export const FINGERPRINT_ATLAS = path.join(
   REPO_ROOT,
   'src',
