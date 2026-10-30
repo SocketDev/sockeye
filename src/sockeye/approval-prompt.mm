@@ -145,25 +145,17 @@ NSArray<NSArray<NSString*>*>* RequestDetailRows(
 NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
   NSScreen* screen = NSApp.mainWindow.screen != nil ? NSApp.mainWindow.screen : NSScreen.mainScreen;
   const CGFloat width = MIN(720, screen.visibleFrame.size.width - 48);
-  const CGFloat labelWidth = 140;
-  const CGFloat buttonWidth = 54;
-  const CGFloat valueWidth = width - 24 - labelWidth - buttonWidth - 28;
+  const CGFloat buttonWidth = 160;
+  const CGFloat valueWidth = width - 24 - buttonWidth - 12;
   NSFont* font = [NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular];
   NSView* document = [[SockeyeDetailRowsView alloc] initWithFrame:NSMakeRect(0, 0, width - 24, static_cast<CGFloat>(rows.count) * 54 + 8)];
   CGFloat top = 4;
   for (NSArray<NSString*>* row in rows) {
-    NSTextField* label = [NSTextField labelWithString:row[0]];
-    label.frame = NSMakeRect(0, top + 4, labelWidth, 18);
-    label.font = [NSFont systemFontOfSize:11];
-    label.lineBreakMode = NSLineBreakByTruncatingTail;
-    label.toolTip = row[0];
-    [document addSubview:label];
     SockeyeDetailCopyButton* button = [[SockeyeDetailCopyButton alloc]
-        initWithFrame:NSMakeRect(labelWidth + 4, top + 1, buttonWidth, 24)];
-    button.title = @"Copy";
-    button.image = [NSImage imageWithSystemSymbolName:@"doc.on.doc" accessibilityDescription:@"Copy"];
-    button.imagePosition = NSImageLeft;
-    button.font = [NSFont systemFontOfSize:10];
+        initWithFrame:NSMakeRect(0, top + 1, buttonWidth, 24)];
+    button.title = [@"⧉ " stringByAppendingString:row[0]];
+    button.font = [NSFont systemFontOfSize:11];
+    button.alignment = NSTextAlignmentLeft;
     button.bezelStyle = NSBezelStyleRounded;
     button.payload = row[2];
     button.target = button;
@@ -174,7 +166,7 @@ NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
     NSString* shown = row[1];
     CGFloat estimated = MAX(30, ceil(static_cast<CGFloat>(shown.length) * 6.6 / valueWidth) * 15 + 4);
     NSTextField* value = [NSTextField labelWithString:shown];
-    value.frame = NSMakeRect(labelWidth + buttonWidth + 10, top, valueWidth, estimated);
+    value.frame = NSMakeRect(buttonWidth + 12, top, valueWidth, estimated);
     value.font = font;
     value.selectable = YES;
     value.maximumNumberOfLines = 0;
@@ -208,7 +200,7 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
   NSAlert* details = [[NSAlert alloc] init];
   details.messageText = @"Request details";
   details.accessoryView = DetailRowsView(RequestDetailRows(options, request_id));
-  [details addButtonWithTitle:@"Back"];
+  [details addButtonWithTitle:@"« Back"];
   [details layout];
   [details runModal];
   [details.window orderOut:nil];
