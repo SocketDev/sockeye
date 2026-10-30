@@ -8,6 +8,7 @@
 #include "sockeye/input-policy.h"
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 
 @interface SockeyeDetailCopyButton : NSButton
@@ -64,12 +65,17 @@
   NSMutableArray* frames = [NSMutableArray arrayWithCapacity:kFingerprintFrameCount];
   NSMutableArray<NSNumber*>* times = [NSMutableArray arrayWithCapacity:kFingerprintFrameCount];
   const CGFloat tile = static_cast<CGFloat>(CGImageGetWidth(atlas)) / 8;
-  for (NSUInteger index = 0; index < kFingerprintFrameCount; ++index) {
+  const NSUInteger firstFrame = 8;
+  for (NSUInteger index = firstFrame; index < kFingerprintFrameCount; ++index) {
     CGRect rect = CGRectMake(static_cast<CGFloat>(index % 8) * tile,
                              static_cast<CGFloat>(index / 8) * tile, tile, tile);
     CGImageRef tileImage = CGImageCreateWithImageInRect(atlas, rect);
     [frames addObject:(__bridge id)tileImage];
-    [times addObject:@(static_cast<double>(index) / static_cast<double>(kFingerprintFrameCount))];
+    const double progress = static_cast<double>(index - firstFrame) /
+        static_cast<double>(kFingerprintFrameCount - firstFrame - 1);
+    const double time = progress < 0.5 ? std::cbrt(progress / 4.0) :
+        1.0 - std::cbrt((1.0 - progress) / 4.0);
+    [times addObject:@(time)];
     CGImageRelease(tileImage);
   }
   self.frames = frames;
