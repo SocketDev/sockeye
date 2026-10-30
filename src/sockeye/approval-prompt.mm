@@ -323,19 +323,19 @@ bool ShowApprovalPrompt(const RunOptions& options,
     NSString* executable = MakeString(options.executable.canonical_path);
     NSString* child = executable.lastPathComponent;
     NSString* title = [NSString stringWithFormat:@"Allow %@ to use %@?", child, credentials];
-    NSPanel* panel = RequestPanel(360, 220, title);
+    NSPanel* panel = RequestPanel(360, 236, title);
     NSButton* cancel = PanelButton(panel, @"Cancel", NSMakeRect(62, 18, 112, 30),
                                    NSAlertFirstButtonReturn);
     cancel.keyEquivalent = @"\033";
     PanelButton(panel, @"Details", NSMakeRect(186, 18, 112, 30), NSAlertSecondButtonReturn);
     NSTextField* instruction = [NSTextField labelWithString:@"Touch ID to continue."];
-    instruction.frame = NSMakeRect(20, 140, 320, 20);
+    instruction.frame = NSMakeRect(20, 156, 320, 20);
     instruction.alignment = NSTextAlignmentCenter;
     instruction.textColor = NSColor.secondaryLabelColor;
     [panel.contentView addSubview:instruction];
     LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
         initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
-    authenticationView.frame = NSMakeRect(148, 68, 64, 64);
+    authenticationView.frame = NSMakeRect(132, 52, 96, 96);
     [panel.contentView addSubview:authenticationView];
     SockeyeFingerprintView* fingerprint = [[SockeyeFingerprintView alloc]
         initWithFrame:authenticationView.frame];

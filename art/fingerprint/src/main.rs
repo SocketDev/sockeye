@@ -20,6 +20,9 @@ impl Video for FingerprintVideo {
             <svg xmlns="http://www.w3.org/2000/svg" width={ctx.current_video_size.width} height={ctx.current_video_size.height} viewBox="0 0 256 256">
                 <g transform="translate(0 256) scale(0.1 -0.1)">
                     <path d={self.track.as_str()} fill="#b8b8b8" />
+                    <path d={self.track.as_str()} fill="#ff3b30" opacity={frame.animate(fframes::timeline!(
+                        at 1.5 => 1.85, animate 0.0 => 1.0, fframes::animation::Easing::EaseOut,
+                    ))} />
                     <path d={ink} fill="#ff3b30" />
                 </g>
             </svg>
