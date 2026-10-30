@@ -3,7 +3,7 @@ import path from 'node:path'
 import { REPO_ROOT } from './paths.mts'
 import { normalizePath } from '@socketsecurity/lib-stable/paths/normalize'
 
-export const NATIVE_COVERAGE_ROOTS = ['src/sockeye']
+export const NATIVE_COVERAGE_ROOTS = ['src']
 export const NATIVE_COVERAGE_TESTS = [
   'test/repo/integration/cli.test.mts',
   'test/repo/integration/portable-core.test.mts',

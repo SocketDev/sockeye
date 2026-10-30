@@ -2,10 +2,10 @@
   "ai": {
     "localAssist": true
   },
-  "$schema": "../socket-wheelhouse-schema.json",
+  "$schema": "./socket-wheelhouse-schema.json",
   "schemaVersion": 1,
   "capabilities": {
-    "cpp": ["src/sockeye"]
+    "cpp": ["src"]
   },
   "cover": {
     "cumulativeCoverageThreshold": 99.5
@@ -31,14 +31,14 @@
         "test/repo/unit/agent-ci.test.mts",
         "test/repo/unit/build-toolchain.test.mts",
         "test/repo/unit/cover-cpp-phases.test.mts",
-        "test/repo/unit/fetch-session.test.mts",
+        "test/repo/unit/bootstrap/fetch-session.test.mts",
         "test/repo/unit/keychain-evidence-is-complete.test.mts",
         "test/repo/unit/native-coverage.test.mts",
-        "test/repo/unit/native-security-tests-are-wired.test.mts",
+        "test/repo/unit/check/native-security-tests-are-wired.test.mts",
         "test/repo/unit/native-toolchain.test.mts",
         "test/repo/unit/one-password-metadata.test.mts",
         "test/repo/unit/optimize-svg.test.mts",
-        "test/repo/unit/request-preview-is-isolated.test.mts",
+        "test/repo/unit/check/request-preview-is-isolated.test.mts",
         "test/repo/unit/setup-credential-authorization.test.mts",
         "test/repo/unit/setup-credential/references.test.mts"
       ],

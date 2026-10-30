@@ -1,5 +1,5 @@
-#include "sockeye/readiness.h"
-#include "sockeye/terminal.h"
+#include "readiness.h"
+#include "terminal.h"
 
 #include <cassert>
 #include <string>

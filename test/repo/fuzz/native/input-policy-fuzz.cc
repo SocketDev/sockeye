@@ -1,4 +1,4 @@
-#include "sockeye/input-policy.h"
+#include "input-policy.h"
 
 #include <cassert>
 #include <cstddef>

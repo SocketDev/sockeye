@@ -1,4 +1,4 @@
-#include "sockeye/child-process.h"
+#include "child-process.h"
 #include <cassert>
 #include <cerrno>
 #include <csignal>

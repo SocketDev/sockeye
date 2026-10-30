@@ -1,5 +1,5 @@
-#include "sockeye/input-policy.h"
-#include "sockeye/run-request.h"
+#include "input-policy.h"
+#include "run-request.h"
 
 #include <cassert>
 #include <cstdio>

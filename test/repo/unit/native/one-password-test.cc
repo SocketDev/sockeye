@@ -1,4 +1,4 @@
-#include "sockeye/one-password.h"
+#include "one-password.h"
 
 #include <algorithm>
 #include <cassert>

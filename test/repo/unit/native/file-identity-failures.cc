@@ -1,4 +1,4 @@
-#include "sockeye/file-identity.h"
+#include "file-identity.h"
 #include <CommonCrypto/CommonDigest.h>
 #include <cassert>
 #include <cerrno>

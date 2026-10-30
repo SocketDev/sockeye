@@ -1,5 +1,5 @@
-#include "sockeye/approval-prompt.h"
-#include "sockeye/request-record.h"
+#include "approval-prompt.h"
+#include "request-record.h"
 
 #include <cstdio>
 #include <cstdlib>

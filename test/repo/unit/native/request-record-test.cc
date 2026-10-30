@@ -1,4 +1,4 @@
-#include "sockeye/request-record.h"
+#include "request-record.h"
 
 #include <cassert>
 #include <cstdio>

@@ -1,6 +1,6 @@
-#include "sockeye/child-process.h"
-#include "sockeye/file-identity.h"
-#include "sockeye/secret-buffer.h"
+#include "child-process.h"
+#include "file-identity.h"
+#include "secret-buffer.h"
 
 #include <algorithm>
 #include <array>

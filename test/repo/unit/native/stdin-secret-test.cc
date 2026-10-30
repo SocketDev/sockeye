@@ -1,4 +1,4 @@
-#include "sockeye/stdin-secret.h"
+#include "stdin-secret.h"
 
 #include <algorithm>
 #include <cassert>

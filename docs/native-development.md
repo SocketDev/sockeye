@@ -8,8 +8,8 @@ developer commands as the rest of the fleet.
 
 | Path                               | Purpose                                                       |
 | ---------------------------------- | ------------------------------------------------------------- |
-| `src/sockeye/*.cc`                 | Portable C++ policy, process, terminal, and memory code.      |
-| `src/sockeye/keychain-macos.mm`    | macOS Keychain and LocalAuthentication bridge.                |
+| `src/*.cc`                         | Portable C++ policy, process, terminal, and memory code.      |
+| `src/keychain-macos.mm`            | macOS Keychain and LocalAuthentication bridge.                |
 | `CMakeLists.txt`                   | Native compiler, linker, warning, and local signing settings. |
 | `scripts/repo/build.mts`           | Canonical CMake entry point and output-path owner.            |
 | `scripts/repo/test.mts`            | Builds first, then starts the fleet Vitest runner.            |
@@ -62,7 +62,8 @@ Run all enabled coverage collectors with `pnpm run cover`.
 The native collector uses the fleet-pinned LLVM archive for C++ and Objective-C++ coverage.
 Clang, Clang++, `llvm-profdata`, and `llvm-cov` must have matching versions.
 Coverage builds use the macOS SDK and shared CMake instrumentation.
-Vitest runs the instrumented binaries and addon through noninteractive tests.
+Vitest runs the instrumented executable and native test targets through
+noninteractive tests.
 `llvm-profdata` merges execution profiles, and `llvm-cov` exports LCOV reports.
 
 The cumulative report combines JavaScript and native covered and total counts.
@@ -70,7 +71,8 @@ Type coverage remains separate.
 `.cache/fleet/coverage/coverage-aggregate.json` records the cumulative result and each language's measurement unit.
 `cover.cumulativeCoverageThreshold` in `.config/repo/socket-wheelhouse.json` enforces the cumulative minimum.
 
-The native inventory includes `src/sockeye`, the keychain addon, and the macOS keystore implementation.
+Native coverage includes the executable source under `src` and native tests
+under `test/repo`. Framework tests use fakes; attended Touch ID remains manual.
 Reports live under `.cache/fleet/coverage/lanes/`.
 Tests replace protected framework operations with test doubles.
 Native coverage does not establish that attended Touch ID or enrollment checks passed.
@@ -79,9 +81,8 @@ Native coverage does not establish that attended Touch ID or enrollment checks p
 
 GitHub renders repository SVG files more reliably than large inline SVG blocks.
 Keep repository-facing art under `assets/repo/`. The fleet preset owns
-`assets/repo/coverage.svg`; Sockeye owns
-`assets/repo/logomark.svg` and `assets/repo/logomark-inverse.svg`.
-Reference these files from Markdown or HTML. Run the pinned SVGO pass to optimize both glyph variants:
+`assets/repo/coverage.svg`; Sockeye owns `assets/repo/logomark.svg`.
+Reference these files from Markdown or HTML. Run the pinned SVGO pass to optimize the glyph:
 
 ```sh
 pnpm run optimize:svg

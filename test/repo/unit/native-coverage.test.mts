@@ -62,7 +62,7 @@ test('requires all production native roots without duplicate entries', () => {
     validateNativeCoverageRoots(NATIVE_COVERAGE_ROOTS.slice(1)),
   ).toThrow()
   expect(() =>
-    validateNativeCoverageRoots([...NATIVE_COVERAGE_ROOTS, 'src/sockeye']),
+    validateNativeCoverageRoots([...NATIVE_COVERAGE_ROOTS, 'src']),
   ).toThrow()
 })
 test('preserves uncovered production records and omits unrelated test/library records', () => {

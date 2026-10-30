@@ -1,5 +1,5 @@
 #include "keychain-fakes.h"
-#include "sockeye/keychain.h"
+#include "keychain.h"
 #include <cassert>
 #include <cstring>
 #include <string>

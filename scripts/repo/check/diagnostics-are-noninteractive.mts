@@ -69,8 +69,8 @@ export function checkDiagnosticSources(
 
 export function runDiagnosticsCheck(): number {
   const issues = checkDiagnosticSources(
-    readFileSync(path.join(REPO_ROOT, 'src/sockeye/readiness.cc'), 'utf8'),
-    readFileSync(path.join(REPO_ROOT, 'src/sockeye/keychain-macos.mm'), 'utf8'),
+    readFileSync(path.join(REPO_ROOT, 'src/readiness.cc'), 'utf8'),
+    readFileSync(path.join(REPO_ROOT, 'src/keychain-macos.mm'), 'utf8'),
     readFileSync(path.join(REPO_ROOT, 'CMakeLists.txt'), 'utf8'),
   )
   for (const issue of issues) {

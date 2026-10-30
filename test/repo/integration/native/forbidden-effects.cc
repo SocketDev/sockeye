@@ -1,7 +1,7 @@
-#include "sockeye/child-process.h"
-#include "sockeye/keychain.h"
-#include "sockeye/one-password.h"
-#include "sockeye/terminal.h"
+#include "child-process.h"
+#include "keychain.h"
+#include "one-password.h"
+#include "terminal.h"
 
 #include <cstdlib>
 

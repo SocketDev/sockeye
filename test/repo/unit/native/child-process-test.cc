@@ -1,5 +1,5 @@
-#include "sockeye/child-process.h"
-#include "sockeye/secret-buffer.h"
+#include "child-process.h"
+#include "secret-buffer.h"
 
 #include <array>
 #include <cassert>

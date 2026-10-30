@@ -16,7 +16,7 @@ function checkPreviewTargets(cmake: string, issues: string[]): void {
       'body'
     ] ?? ''
   if (
-    !product.includes('src/sockeye/run-request.cc') ||
+    !product.includes('src/run-request.cc') ||
     product.includes('test/')
   ) {
     issues.push(
@@ -29,8 +29,8 @@ function checkPreviewTargets(cmake: string, issues: string[]): void {
     )?.groups?.['body'] ?? ''
   if (
     !testTarget.includes('test/repo/integration/native/forbidden-effects.cc') ||
-    testTarget.includes('src/sockeye/keychain-macos.mm') ||
-    testTarget.includes('src/sockeye/child-process.cc')
+    testTarget.includes('src/keychain-macos.mm') ||
+    testTarget.includes('src/child-process.cc')
   ) {
     issues.push(
       'preview isolation target must use forbidden-effect dependencies',
@@ -40,10 +40,10 @@ function checkPreviewTargets(cmake: string, issues: string[]): void {
 
 export function checkRequestPreview(repoRoot: string): string[] {
   const request = readFileSync(
-    path.join(repoRoot, 'src/sockeye/run-request.cc'),
+    path.join(repoRoot, 'src/run-request.cc'),
     'utf8',
   )
-  const main = readFileSync(path.join(repoRoot, 'src/sockeye/main.cc'), 'utf8')
+  const main = readFileSync(path.join(repoRoot, 'src/main.cc'), 'utf8')
   const cmake = readFileSync(path.join(repoRoot, 'CMakeLists.txt'), 'utf8')
   const issues: string[] = []
   if (

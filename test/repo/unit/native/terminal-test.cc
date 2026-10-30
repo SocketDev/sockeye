@@ -1,4 +1,4 @@
-#include "sockeye/terminal.h"
+#include "terminal.h"
 
 #include <algorithm>
 #include <cassert>

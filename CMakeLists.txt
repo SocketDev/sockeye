@@ -27,49 +27,49 @@ set(CMAKE_OBJCXX_STANDARD 20)
 set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
 
 add_executable(sockeye
-  src/sockeye/approval-prompt.mm
-  src/sockeye/child-process.cc
-  src/sockeye/file-identity.cc
-  src/sockeye/input-policy.cc
-  src/sockeye/keychain-macos.mm
-  src/sockeye/main.cc
-  src/sockeye/readiness.cc
-  src/sockeye/request-record.cc
-  src/sockeye/run-request.cc
-  src/sockeye/one-password.cc
-  src/sockeye/secret-buffer.cc
-  src/sockeye/stdin-secret.cc
-  src/sockeye/terminal.cc
+  src/approval-prompt.mm
+  src/child-process.cc
+  src/file-identity.cc
+  src/input-policy.cc
+  src/keychain-macos.mm
+  src/main.cc
+  src/readiness.cc
+  src/request-record.cc
+  src/run-request.cc
+  src/one-password.cc
+  src/secret-buffer.cc
+  src/stdin-secret.cc
+  src/terminal.cc
 )
 
 if(BUILD_TESTING)
   add_executable(sockeye-input-policy-test
-  src/sockeye/input-policy.cc
+  src/input-policy.cc
   test/repo/unit/native/input-policy-test.cc
   )
 
   target_include_directories(sockeye-input-policy-test PRIVATE src)
 
   add_executable(sockeye-child-process-test
-  src/sockeye/child-process.cc
-  src/sockeye/file-identity.cc
-  src/sockeye/secret-buffer.cc
+  src/child-process.cc
+  src/file-identity.cc
+  src/secret-buffer.cc
   test/repo/unit/native/child-process-test.cc
   )
   target_include_directories(sockeye-child-process-test PRIVATE src)
   target_compile_definitions(sockeye-child-process-test PRIVATE SOCKEYE_TESTING=1)
 
   add_executable(sockeye-portable-core-test
-    src/sockeye/child-process.cc
-    src/sockeye/file-identity.cc
-    src/sockeye/secret-buffer.cc
+    src/child-process.cc
+    src/file-identity.cc
+    src/secret-buffer.cc
     test/repo/unit/native/portable-core-test.cc
   )
   target_include_directories(sockeye-portable-core-test PRIVATE src)
 
   add_executable(sockeye-file-identity-failures-test
-    src/sockeye/file-identity.cc
-    src/sockeye/secret-buffer.cc
+    src/file-identity.cc
+    src/secret-buffer.cc
     test/repo/unit/native/file-identity-failures.cc
   )
   target_include_directories(sockeye-file-identity-failures-test PRIVATE src)
@@ -80,8 +80,8 @@ if(BUILD_TESTING)
     CC_SHA256_Final=SockeyeFileDigestFinal
   )
   add_executable(sockeye-child-process-failures-test
-    src/sockeye/child-process.cc
-    src/sockeye/secret-buffer.cc
+    src/child-process.cc
+    src/secret-buffer.cc
     test/repo/unit/native/child-process-failures.cc
   )
   target_include_directories(sockeye-child-process-failures-test PRIVATE src)
@@ -98,9 +98,9 @@ if(BUILD_TESTING)
   )
 
   add_executable(sockeye-terminal-test
-    src/sockeye/terminal.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/terminal.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/unit/native/terminal-test.cc
   )
   target_include_directories(sockeye-terminal-test PRIVATE src)
@@ -111,8 +111,8 @@ if(BUILD_TESTING)
     mlock=SockeyeTestLock munlock=SockeyeTestUnlock
   )
   add_executable(sockeye-stdin-secret-test
-    src/sockeye/secret-buffer.cc
-    src/sockeye/stdin-secret.cc
+    src/secret-buffer.cc
+    src/stdin-secret.cc
     test/repo/unit/native/stdin-secret-test.cc
   )
   target_include_directories(sockeye-stdin-secret-test PRIVATE src)
@@ -121,9 +121,9 @@ if(BUILD_TESTING)
     mlock=SockeyeStdinLock munlock=SockeyeStdinUnlock
   )
   add_executable(sockeye-one-password-test
-    src/sockeye/one-password.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/one-password.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/unit/native/one-password-test.cc
   )
   target_include_directories(sockeye-one-password-test PRIVATE src)
@@ -133,9 +133,9 @@ if(BUILD_TESTING)
   )
 
   add_executable(sockeye-keychain-framework-test
-    src/sockeye/keychain-macos.mm
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/keychain-macos.mm
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/unit/native/keychain-fakes.mm
     test/repo/unit/native/keychain-test.mm
   )
@@ -146,24 +146,24 @@ if(BUILD_TESTING)
   )
 
   add_executable(sockeye-readiness-test
-    src/sockeye/readiness.cc
-    src/sockeye/input-policy.cc
+    src/readiness.cc
+    src/input-policy.cc
     test/repo/unit/native/readiness-test.cc
   )
   target_include_directories(sockeye-readiness-test PRIVATE src)
 
   add_executable(sockeye-run-request-test
-    src/sockeye/run-request.cc
-    src/sockeye/file-identity.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/run-request.cc
+    src/file-identity.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/unit/native/run-request-test.cc
   )
   target_include_directories(sockeye-run-request-test PRIVATE src)
   add_executable(sockeye-request-record-test
-    src/sockeye/file-identity.cc
-    src/sockeye/request-record.cc
-    src/sockeye/secret-buffer.cc
+    src/file-identity.cc
+    src/request-record.cc
+    src/secret-buffer.cc
     test/repo/unit/native/request-record-test.cc
   )
   target_include_directories(sockeye-request-record-test PRIVATE src)
@@ -172,37 +172,37 @@ if(BUILD_TESTING)
     "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
   )
   add_executable(sockeye-preview-isolation-test
-    src/sockeye/main.cc
-  src/sockeye/readiness.cc
+    src/main.cc
+  src/readiness.cc
     test/repo/integration/native/request-record-effects.cc
-    src/sockeye/run-request.cc
-    src/sockeye/file-identity.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/run-request.cc
+    src/file-identity.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/integration/native/forbidden-effects.cc
   )
   target_include_directories(sockeye-preview-isolation-test PRIVATE src)
 
   add_executable(sockeye-doctor-test
-    src/sockeye/main.cc
-  src/sockeye/readiness.cc
+    src/main.cc
+  src/readiness.cc
     test/repo/integration/native/request-record-effects.cc
-    src/sockeye/run-request.cc
-    src/sockeye/file-identity.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/run-request.cc
+    src/file-identity.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/integration/native/doctor-effects.cc
   )
   target_include_directories(sockeye-doctor-test PRIVATE src)
 
   add_executable(sockeye-main-effects-test
-    src/sockeye/main.cc
-    src/sockeye/readiness.cc
+    src/main.cc
+    src/readiness.cc
     test/repo/integration/native/request-record-main-effects.cc
-    src/sockeye/run-request.cc
-    src/sockeye/file-identity.cc
-    src/sockeye/input-policy.cc
-    src/sockeye/secret-buffer.cc
+    src/run-request.cc
+    src/file-identity.cc
+    src/input-policy.cc
+    src/secret-buffer.cc
     test/repo/integration/native/main-effects.cc
   )
   target_include_directories(sockeye-main-effects-test PRIVATE src)
@@ -280,7 +280,7 @@ if(BUILD_TESTING)
   )
 
   add_executable(sockeye-input-policy-fuzz EXCLUDE_FROM_ALL
-  src/sockeye/input-policy.cc
+  src/input-policy.cc
   test/repo/fuzz/native/input-policy-fuzz.cc
   )
   target_include_directories(sockeye-input-policy-fuzz PRIVATE src)
@@ -300,7 +300,7 @@ if(BUILD_TESTING)
 
 endif()
 
-set(FINGERPRINT_ATLAS "${CMAKE_CURRENT_SOURCE_DIR}/src/sockeye/assets/fingerprint-scan.png")
+set(FINGERPRINT_ATLAS "${CMAKE_CURRENT_SOURCE_DIR}/assets/repo/fingerprint-scan.svg")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${FINGERPRINT_ATLAS}")
 file(READ "${FINGERPRINT_ATLAS}" FINGERPRINT_HEX HEX)
 set(FINGERPRINT_FRAME_COUNT 57)
