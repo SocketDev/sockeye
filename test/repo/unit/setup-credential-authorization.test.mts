@@ -32,7 +32,8 @@ vi.mock('node:fs/promises', async original => ({
 vi.mock('@socketsecurity/lib-stable/process/spawn/child', () => ({
   spawn: mocks.spawn,
 }))
-vi.mock('../../../scripts/repo/setup-sockeye.mts', () => ({
+vi.mock('../../../scripts/repo/paths.mts', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../scripts/repo/paths.mts')>()),
   getInstalledSockeyeBinaryPath: () => '/example/installed/sockeye',
 }))
 vi.mock('@socketsecurity/lib-stable/secrets/one-password', () => ({

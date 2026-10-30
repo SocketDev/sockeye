@@ -18,6 +18,7 @@ import { isMainModule } from '../fleet/process/is-main-module.mts'
 import { runMain } from '../fleet/process/main/run.mts'
 import type { ScriptMeta } from '../fleet/process/main/run.mts'
 import { REPO_ROOT } from '../fleet/paths.mts'
+import { linkSockeyeBuild } from './build-link.mts'
 import { ensureNativeCoverageToolchain } from './native-toolchain.mts'
 import {
   getCmakeSdkConfigureArgs,
@@ -35,8 +36,8 @@ import {
 
 export const SCRIPT_META: ScriptMeta = {
   describe:
-    'Build the Sockeye executable and keychain addon with the macOS toolchain.',
-  help: 'Usage: pnpm run build [--dev | --prod]\nEnvironment: BUILD_MODE selects the default mode; RELEASE_VERSION overrides the embedded version; SOCKEYE_TARGET_ARCH selects arm64 or x64.',
+    'Build Sockeye with the macOS toolchain and link the local CLI executable.',
+  help: 'Usage: pnpm run build [--dev | --prod]\nThe build links ~/.socket/bin/sockeye to the new local executable.\nEnvironment: BUILD_MODE selects the default mode; RELEASE_VERSION overrides the embedded version; SOCKEYE_TARGET_ARCH selects arm64 or x64.',
   json: 'result',
 }
 
@@ -146,6 +147,8 @@ export async function buildSockeye(): Promise<void> {
     'packages/keychain-addon-builder/scripts/build.mts',
     ...getBuildModeArgs(mode),
   ])
+  const installedPath = await linkSockeyeBuild(binaryPath)
+  logger.success(`Linked ${installedPath} to the local build.`)
 }
 
 if (isMainModule(import.meta.url)) {

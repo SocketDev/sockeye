@@ -28,6 +28,7 @@ import { runMain } from '../fleet/process/main/run.mts'
 
 import type { ScriptMeta } from '../fleet/process/main/run.mts'
 import {
+  getInstalledSockeyeBinaryPath,
   releaseAssetName,
   releaseBundleDirectoryPath,
   releaseBundlePaths,
@@ -37,8 +38,7 @@ import { releaseChecksumMatches } from './release/bundle.mts'
 
 const logger = getScriptLogger()
 
-const BIN_DIR = path.join(os.homedir(), '.socket', 'bin')
-const BIN_PATH = path.join(BIN_DIR, 'sockeye')
+const BIN_PATH = getInstalledSockeyeBinaryPath()
 const ARCH = process.arch
 
 export type SetupSockeyeOptions =
@@ -84,10 +84,6 @@ export function parseSetupSockeyeOptions(
     )
   }
   return { releaseTag }
-}
-
-export function getInstalledSockeyeBinaryPath(): string {
-  return BIN_PATH
 }
 
 /**

@@ -20,6 +20,13 @@ import {
 
 export const BINARY_NAME = 'sockeye'
 export const RELEASE_BUNDLE_NAME = `${BINARY_NAME}.app`
+
+export function getInstalledSockeyeBinaryPath(
+  homeDirectory = os.homedir(),
+): string {
+  return path.join(homeDirectory, '.socket', 'bin', BINARY_NAME)
+}
+
 export const RELEASE_BUNDLE_ENTRIES = [
   RELEASE_BUNDLE_NAME,
   `${RELEASE_BUNDLE_NAME}/Contents`,
