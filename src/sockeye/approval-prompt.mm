@@ -31,6 +31,43 @@
 - (BOOL)isFlipped { return YES; }
 @end
 
+@interface SockeyeDetailsOwner : NSView
+@property(nonatomic, strong) NSScrollView* rowsScrollView;
+@property(nonatomic, strong) NSButton* disclosureButton;
+@property(nonatomic, copy) NSArray<NSArray<NSString*>*>* rows;
+@property(nonatomic, assign) BOOL expanded;
+@property(nonatomic, assign) CGFloat initialHeight;
+@property(nonatomic, assign) CGFloat fullHeight;
+@property(nonatomic, assign) NSAlert* alert;
+- (void)toggleDetails:(id)sender;
+- (void)layoutDetails;
+@end
+
+@implementation SockeyeDetailsOwner
+- (BOOL)isFlipped { return YES; }
+- (void)toggleDetails:(id)sender {
+  (void)sender;
+  self.expanded = !self.expanded;
+  self.disclosureButton.title = self.expanded ? @"Fewer details" : @"More details";
+  [self layoutDetails];
+}
+- (void)layoutDetails {
+  const CGFloat padding = 12;
+  const CGFloat available = MAX(220, NSScreen.mainScreen.visibleFrame.size.height - 240);
+  const CGFloat contentHeight = self.expanded ? self.fullHeight : self.initialHeight;
+  const CGFloat scrollHeight = MIN(contentHeight, available);
+  self.rowsScrollView.frame = NSMakeRect(padding, padding, self.bounds.size.width - 2 * padding, scrollHeight);
+  self.rowsScrollView.documentView.frame = NSMakeRect(0, 0, self.rowsScrollView.contentView.bounds.size.width, self.fullHeight);
+  self.rowsScrollView.hidden = NO;
+  self.disclosureButton.frame = NSMakeRect(padding, padding + scrollHeight + 4,
+                                            self.bounds.size.width - 2 * padding, 22);
+  self.frame = NSMakeRect(0, 0, self.frame.size.width, padding * 2 + scrollHeight + 26);
+  self.alert.accessoryView = nil;
+  self.alert.accessoryView = self;
+  [self.alert.window layoutIfNeeded];
+}
+@end
+
 namespace sockeye {
 namespace {
 
@@ -141,72 +178,95 @@ NSArray<NSArray<NSString*>*>* RequestDetailRows(
   return rows;
 }
 
-NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
-  NSFont* font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
-  CGFloat button_width = 150;
-  for (NSArray<NSString*>* row in rows) {
-    button_width = std::max(button_width,
-        [([@"Copy " stringByAppendingString:row[0]]) sizeWithAttributes:@{NSFontAttributeName:[NSFont systemFontOfSize:NSFont.systemFontSize]}].width + 24);
-  }
-  CGFloat value_width = 580;
-  for (NSArray<NSString*>* row in rows) {
-    value_width = std::max(value_width,
-        [row[1] sizeWithAttributes:@{NSFontAttributeName:font}].width + 12);
-  }
-  const CGFloat row_height = 36;
-  const CGFloat height = row_height * static_cast<CGFloat>(rows.count) + 8;
-  NSScreen* screen = NSApp.mainWindow.screen;
-  if (screen == nil) {
-    screen = NSScreen.mainScreen;
-  }
-  CGFloat available_width = screen.visibleFrame.size.width - 120;
-  CGFloat request_width = [@"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-      sizeWithAttributes:@{NSFontAttributeName:font}].width;
-  CGFloat viewport_width = std::min(available_width,
-      std::max(CGFloat(760), button_width + 14 + request_width + 40));
-  CGFloat visible_value_width = std::max(CGFloat(160), viewport_width - button_width - 54);
-  NSView* document = [[SockeyeDetailRowsView alloc]
-      initWithFrame:NSMakeRect(0, 0, button_width + 14 + std::max(value_width, visible_value_width), height)];
+SockeyeDetailsOwner* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
+  NSScreen* screen = NSApp.mainWindow.screen != nil ? NSApp.mainWindow.screen : NSScreen.mainScreen;
+  const CGFloat width = MIN(560, screen.visibleFrame.size.width - 48);
+  const CGFloat labelWidth = 112;
+  const CGFloat buttonWidth = 54;
+  const CGFloat valueWidth = width - 24 - labelWidth - buttonWidth - 34;
+  NSFont* font = [NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular];
+  SockeyeDetailsOwner* owner = [[SockeyeDetailsOwner alloc]
+      initWithFrame:NSMakeRect(0, 0, width, 100)];
+  owner.rows = rows;
+  owner.expanded = NO;
+  NSMutableArray<NSNumber*>* initial = [NSMutableArray array];
   for (NSUInteger index = 0; index < rows.count; ++index) {
-    NSArray<NSString*>* row = rows[index];
-    const CGFloat top = 4 + row_height * static_cast<CGFloat>(index);
+    if ([rows[index][0] isEqualToString:@"executable"] ||
+        [rows[index][0] hasPrefix:@"credential"]) [initial addObject:@(index)];
+  }
+  NSMutableArray<NSNumber*>* order = [initial mutableCopy];
+  for (NSUInteger index = 0; index < rows.count; ++index)
+    if (![initial containsObject:@(index)]) [order addObject:@(index)];
+  NSView* document = [[SockeyeDetailRowsView alloc] initWithFrame:NSMakeRect(0, 0, width - 24, static_cast<CGFloat>(rows.count) * 54 + 8)];
+  CGFloat top = 4;
+  for (NSNumber* item in order) {
+    NSArray<NSString*>* row = rows[item.unsignedIntegerValue];
+    NSTextField* label = [NSTextField labelWithString:row[0]];
+    label.frame = NSMakeRect(0, top + 4, labelWidth, 18);
+    label.font = [NSFont systemFontOfSize:11];
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    label.toolTip = row[0];
+    [document addSubview:label];
     SockeyeDetailCopyButton* button = [[SockeyeDetailCopyButton alloc]
-        initWithFrame:NSMakeRect(0, top, button_width, 28)];
-    button.title = [@"Copy " stringByAppendingString:row[0]];
+        initWithFrame:NSMakeRect(labelWidth + 4, top + 1, buttonWidth, 24)];
+    button.title = @"Copy";
+    button.image = [NSImage imageWithSystemSymbolName:@"doc.on.doc" accessibilityDescription:@"Copy"];
+    button.imagePosition = NSImageLeft;
+    button.font = [NSFont systemFontOfSize:10];
     button.bezelStyle = NSBezelStyleRounded;
     button.payload = row[2];
     button.target = button;
     button.action = @selector(copyDetail:);
+    button.toolTip = [@"Copy " stringByAppendingString:row[0]];
+    button.accessibilityLabel = button.toolTip;
     [document addSubview:button];
-
-    NSTextField* value = [NSTextField labelWithString:row[1]];
-    value.frame = NSMakeRect(button_width + 14, top + 5, value_width, 22);
+    NSString* shown = row[1];
+    CGFloat estimated = MAX(30, ceil(static_cast<CGFloat>(shown.length) * 6.6 / valueWidth) * 14 + 4);
+    NSTextField* value = [NSTextField labelWithString:shown];
+    value.frame = NSMakeRect(labelWidth + buttonWidth + 10, top, valueWidth, estimated);
     value.font = font;
     value.selectable = YES;
-    value.maximumNumberOfLines = 1;
-    value.lineBreakMode = NSLineBreakByClipping;
+    value.maximumNumberOfLines = 0;
+    value.lineBreakMode = NSLineBreakByCharWrapping;
+    value.usesSingleLineMode = NO;
+    NSTextFieldCell* valueCell = (NSTextFieldCell*)value.cell;
+    valueCell.wraps = YES;
+    valueCell.scrollable = NO;
     value.accessibilityLabel = row[0];
-    if (row.count > 3 && row[3].length > 0) {
-      value.toolTip = row[3];
-      value.accessibilityHelp = value.toolTip;
-    }
+    if (row.count > 3 && row[3].length > 0) { value.toolTip = row[3]; value.accessibilityHelp = row[3]; }
     [document addSubview:value];
+    top += MAX(30, estimated) + 4;
   }
-  NSScrollView* scroll =
-      [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, viewport_width,
-                                                   std::min(height, CGFloat(360)))];
+  document.frame = NSMakeRect(0, 0, width - 24, top + 4);
+  owner.fullHeight = top + 4;
+  CGFloat initialHeight = 8;
+  for (NSNumber* item in initial) {
+    NSArray<NSString*>* row = rows[item.unsignedIntegerValue];
+    initialHeight += MAX(30, ceil(static_cast<CGFloat>(row[1].length) * 6.6 / valueWidth) * 14 + 8) + 4;
+  }
+  owner.initialHeight = initialHeight;
+  NSScrollView* scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
   scroll.hasVerticalScroller = YES;
-  scroll.hasHorizontalScroller = YES;
+  scroll.hasHorizontalScroller = NO;
   scroll.autohidesScrollers = YES;
   scroll.drawsBackground = NO;
   scroll.documentView = document;
-  return scroll;
+  owner.rowsScrollView = scroll;
+  [owner addSubview:scroll];
+  NSButton* disclosure = [NSButton buttonWithTitle:@"More details" target:owner action:@selector(toggleDetails:)];
+  disclosure.bezelStyle = NSBezelStyleDisclosure;
+  owner.disclosureButton = disclosure;
+  [owner addSubview:disclosure];
+  return owner;
 }
 
 void ShowDetails(const RunOptions& options, std::string_view request_id) {
   NSAlert* details = [[NSAlert alloc] init];
   details.messageText = @"Request details";
-  details.accessoryView = DetailRowsView(RequestDetailRows(options, request_id));
+  SockeyeDetailsOwner* owner = DetailRowsView(RequestDetailRows(options, request_id));
+  owner.alert = details;
+  details.accessoryView = owner;
+  [owner layoutDetails];
   [details addButtonWithTitle:@"Back"];
   [details runModal];
 }
