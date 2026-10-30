@@ -107,7 +107,7 @@ NSArray<NSArray<NSString*>*>* RequestDetailRows(
   NSString* executable = VisibleString(options.executable.canonical_path, &copy_value);
   NSString* executable_help = MakeString(options.executable.canonical_path) == nil
       ? @"Invalid UTF-8 bytes are shown as escaped bytes." : @"";
-  [rows addObject:@[@"executable", executable, copy_value, executable_help]];
+  [rows addObject:@[@"executable.path", executable, copy_value, executable_help]];
   NSString* executable_digest = MakeString(DigestHex(options.executable));
   [rows addObject:@[@"executable.sha256", executable_digest, executable_digest, @""]];
   for (std::size_t index = 0; index < options.bound_files.size(); ++index) {
@@ -210,6 +210,7 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
   [details addButtonWithTitle:@"Back"];
   [details layout];
   [details runModal];
+  [details.window orderOut:nil];
 }
 
 } // namespace
@@ -237,6 +238,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
     [alert.window makeKeyAndOrderFront:nil];
     for (;;) {
       const NSModalResponse response = [alert runModal];
+      [alert.window orderOut:nil];
       if (response == NSAlertThirdButtonReturn) {
         ShowDetails(options, request_id);
         continue;
