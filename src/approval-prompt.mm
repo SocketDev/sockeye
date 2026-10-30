@@ -530,15 +530,16 @@ bool ShowApprovalPrompt(const RunOptions& options,
           details.toolTip = @"Back to approval";
           details.accessibilityLabel = details.toolTip;
           details.hidden = NO;
-          authenticationView.frame = NSMakeRect(width - 116, 18, 96, 96);
-          authenticationView.hidden = NO;
-          expandedViews = @[heading, detailRows, details, authenticationView];
+          instruction.frame = NSMakeRect(width - 250, 22, 230, 20);
+          instruction.alignment = NSTextAlignmentRight;
+          instruction.hidden = NO;
+          expandedViews = @[heading, detailRows, details, instruction];
           expandedFrames = @[[NSValue valueWithRect:heading.frame],
                              [NSValue valueWithRect:detailRows.frame],
                              [NSValue valueWithRect:details.frame],
-                             [NSValue valueWithRect:authenticationView.frame]];
+                             [NSValue valueWithRect:instruction.frame]];
           expandedContentSize = panel.contentView.bounds.size;
-          AnimateViewAlpha(@[heading, detailRows, details, authenticationView], 1, reduceMotion, ^{
+          AnimateViewAlpha(@[heading, detailRows, details, instruction], 1, reduceMotion, ^{
             showingDetails = YES;
             transitioningDetails = NO;
             details.enabled = YES;
@@ -546,15 +547,16 @@ bool ShowApprovalPrompt(const RunOptions& options,
         });
         return;
       }
-      AnimateViewAlpha(@[heading, detailRows, details, authenticationView], 0, reduceMotion, ^{
+      AnimateViewAlpha(@[heading, detailRows, details, instruction], 0, reduceMotion, ^{
         detailRows.hidden = YES;
         details.hidden = YES;
-        authenticationView.hidden = YES;
+        instruction.hidden = YES;
       });
       AnimatePanelFrame(panel, panel.frame, compactFrame, reduceMotion,
                         expandedViews, expandedFrames, expandedContentSize, ^{
         heading.stringValue = title;
         heading.alignment = NSTextAlignmentCenter;
+        instruction.alignment = NSTextAlignmentCenter;
         details.title = @"Details";
         details.image = [NSImage imageWithSystemSymbolName:@"chevron.right"
                                   accessibilityDescription:@"Expand details"];
