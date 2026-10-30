@@ -61,10 +61,12 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
   NSAlert* details = [[NSAlert alloc] init];
   details.messageText = @"Request details";
   const std::string information = FormatRunRequest(options, request_id, true);
-  NSView* accessory = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 520, 300)];
+  NSView* accessory = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 720, 300)];
   NSScrollView* scroll =
-      [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 36, 520, 264)];
+      [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 36, 720, 264)];
   scroll.hasVerticalScroller = YES;
+  scroll.hasHorizontalScroller = YES;
+  scroll.autohidesScrollers = YES;
   scroll.borderType = NSBezelBorder;
   NSTextView* text = [[NSTextView alloc] initWithFrame:scroll.contentView.bounds];
   text.string = MakeString(information);
@@ -73,10 +75,12 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
   text.richText = NO;
   text.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
   text.textContainerInset = NSMakeSize(8, 8);
+  text.minSize = scroll.contentSize;
+  text.maxSize = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
   text.verticallyResizable = YES;
-  text.horizontallyResizable = NO;
-  text.autoresizingMask = NSViewWidthSizable;
-  text.textContainer.widthTracksTextView = YES;
+  text.horizontallyResizable = YES;
+  text.textContainer.widthTracksTextView = NO;
+  text.textContainer.containerSize = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
   scroll.documentView = text;
   [accessory addSubview:scroll];
 
