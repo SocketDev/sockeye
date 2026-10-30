@@ -41,7 +41,8 @@
 - (void)animateSuccess {
   self.wantsLayer = YES;
   const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
-  NSColor* color = NSColor.systemGreenColor;
+  NSColor* color = NSColor.labelColor;
+  NSColor* trackColor = [NSColor colorWithWhite:0.55 alpha:0.35];
   const CFTimeInterval start = CACurrentMediaTime();
   for (CGFloat index = 0; index < 10; ++index) {
     const CGFloat inset = 6 + index * 2.5;
@@ -63,7 +64,7 @@
         ridge.frame = self.bounds;
         ridge.path = path;
         ridge.fillColor = nil;
-        ridge.strokeColor = pass == 0 ? NSColor.tertiaryLabelColor.CGColor : color.CGColor;
+        ridge.strokeColor = pass == 0 ? trackColor.CGColor : color.CGColor;
         ridge.lineWidth = 1.25;
         ridge.lineCap = kCALineCapRound;
         ridge.lineJoin = kCALineJoinRound;
@@ -75,7 +76,7 @@
           CABasicAnimation* fill = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
           fill.fromValue = @(begin);
           fill.toValue = @(end);
-          fill.duration = 0.48;
+          fill.duration = 0.6;
           fill.beginTime = start;
           fill.timingFunction = [CAMediaTimingFunction functionWithControlPoints:0.2f :0.0f :0.2f :1.0f];
           [ridge addAnimation:fill forKey:@"fingerprintFill"];
@@ -316,7 +317,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
       [alert layout];
       [success animateSuccess];
       const NSTimeInterval duration =
-          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.68;
+          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.8;
       NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
       while (deadline.timeIntervalSinceNow > 0) {
         const NSModalResponse response = [NSApp runModalSession:session];
