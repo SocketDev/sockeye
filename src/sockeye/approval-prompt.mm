@@ -43,35 +43,46 @@
   const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
   NSColor* color = NSColor.systemGreenColor;
   const CFTimeInterval start = CACurrentMediaTime();
-  for (CGFloat index = 0; index < 6; ++index) {
-    const CGFloat inset = 7 + index * 4;
-    const CGFloat top = 57 - index * 4;
-    const CGFloat shoulder = 31 - index;
+  for (CGFloat index = 0; index < 10; ++index) {
+    const CGFloat inset = 6 + index * 2.5;
+    const CGFloat top = 57 - index * 2.4;
+    const CGFloat shoulder = 31 - index * 0.4;
     CGMutablePathRef path = CGPathCreateMutable();
-    CGPathMoveToPoint(path, nil, inset, 16 + index * 1.5);
+    CGPathMoveToPoint(path, nil, inset, 17 + index);
     CGPathAddCurveToPoint(path, nil, inset - 1, 22, inset, 25, inset, shoulder);
     CGPathAddCurveToPoint(path, nil, inset, top + 7, 64 - inset, top + 7, 64 - inset, shoulder);
     CGPathAddCurveToPoint(path, nil, 64 - inset, 22, 62 - inset, 14, 58 - inset, 9);
-    CAShapeLayer* ridge = [CAShapeLayer layer];
-    ridge.frame = self.bounds;
-    ridge.path = path;
-    ridge.fillColor = nil;
-    ridge.strokeColor = color.CGColor;
-    ridge.lineWidth = 2.2;
-    ridge.lineCap = kCALineCapRound;
-    ridge.lineJoin = kCALineJoinRound;
-    ridge.contentsScale = self.window.backingScaleFactor;
-    [self.layer addSublayer:ridge];
-    CGPathRelease(path);
-    if (!reduceMotion) {
-      CABasicAnimation* draw = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-      draw.fromValue = @0;
-      draw.toValue = @1;
-      draw.duration = 0.42;
-      draw.beginTime = start;
-      draw.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
-      [ridge addAnimation:draw forKey:@"fingerprintFill"];
+    const CGFloat firstBreak = 0.23 + static_cast<CGFloat>(static_cast<int>(index) % 3) * 0.06;
+    const CGFloat secondBreak = 0.65 - static_cast<CGFloat>(static_cast<int>(index) % 4) * 0.035;
+    const CGFloat boundaries[] = {0, firstBreak, secondBreak, 1};
+    for (NSUInteger segment = 0; segment < 3; ++segment) {
+      const CGFloat begin = boundaries[segment] + (segment == 0 ? 0 : 0.018);
+      const CGFloat end = boundaries[segment + 1] - (segment == 2 ? 0 : 0.018);
+      for (NSUInteger pass = 0; pass < 2; ++pass) {
+        CAShapeLayer* ridge = [CAShapeLayer layer];
+        ridge.frame = self.bounds;
+        ridge.path = path;
+        ridge.fillColor = nil;
+        ridge.strokeColor = pass == 0 ? NSColor.tertiaryLabelColor.CGColor : color.CGColor;
+        ridge.lineWidth = 1.25;
+        ridge.lineCap = kCALineCapRound;
+        ridge.lineJoin = kCALineJoinRound;
+        ridge.contentsScale = self.window.backingScaleFactor;
+        ridge.strokeStart = begin;
+        ridge.strokeEnd = end;
+        [self.layer addSublayer:ridge];
+        if (pass == 1 && !reduceMotion) {
+          CABasicAnimation* fill = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+          fill.fromValue = @(begin);
+          fill.toValue = @(end);
+          fill.duration = 0.48;
+          fill.beginTime = start;
+          fill.timingFunction = [CAMediaTimingFunction functionWithControlPoints:0.2f :0.0f :0.2f :1.0f];
+          [ridge addAnimation:fill forKey:@"fingerprintFill"];
+        }
+      }
     }
+    CGPathRelease(path);
   }
 }
 @end
@@ -305,7 +316,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
       [alert layout];
       [success animateSuccess];
       const NSTimeInterval duration =
-          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.58;
+          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.68;
       NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
       while (deadline.timeIntervalSinceNow > 0) {
         const NSModalResponse response = [NSApp runModalSession:session];
