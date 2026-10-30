@@ -109,22 +109,13 @@ test('successful startup establishes process restrictions before dispatch', () =
 })
 
 test.each([
-  ['set', `Store Sockeye credential EXAMPLE_TOKEN binding ${binding}`],
+  ['set', 'Store EXAMPLE_TOKEN?'],
   ['stdinImport', 'Allow pnpm to use EXAMPLE_TOKEN?'],
-  [
-    'import',
-    `Import Sockeye credential EXAMPLE_TOKEN binding ${importBinding} from 1Password`,
-  ],
-  [
-    'delete',
-    `Delete Sockeye credential EXAMPLE_TOKEN binding ${deleteBinding}`,
-  ],
-  [
-    'verify',
-    `Verify Sockeye credential EXAMPLE_TOKEN binding ${verifyBinding}`,
-  ],
+  ['import', 'Import EXAMPLE_TOKEN from 1Password?'],
+  ['delete', 'Delete EXAMPLE_TOKEN?'],
+  ['verify', 'Verify EXAMPLE_TOKEN?'],
 ] as const)(
-  '%s identifies its binding in the authorization reason',
+  '%s names the action and credential in the authorization reason',
   (command, reason) => {
     const result = spawnSync(binary, commands[command], {
       encoding: 'utf8',

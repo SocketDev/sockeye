@@ -188,9 +188,7 @@ int RunSet(std::string_view identifier, std::string_view binding_id) {
 
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason = "Store Sockeye credential " +
-                             std::string(identifier) + " binding " +
-                             std::string(binding_id);
+  const std::string reason = "Store " + std::string(identifier) + "?";
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
@@ -261,9 +259,8 @@ int RunOnePasswordImport(std::string_view identifier,
 
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason = "Import Sockeye credential " +
-                             std::string(identifier) + " binding " +
-                             std::string(binding_id) + " from 1Password";
+  const std::string reason =
+      "Import " + std::string(identifier) + " from 1Password?";
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
@@ -295,9 +292,7 @@ int RunDelete(std::string_view identifier, std::string_view binding_id) {
   }
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason = "Delete Sockeye credential " +
-                             std::string(identifier) + " binding " +
-                             std::string(binding_id);
+  const std::string reason = "Delete " + std::string(identifier) + "?";
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
@@ -324,9 +319,7 @@ int RunVerify(std::string_view identifier, std::string_view binding_id) {
   }
   AuthorizationContext context;
   KeychainError error;
-  const std::string reason = "Verify Sockeye credential " +
-                             std::string(identifier) + " binding " +
-                             std::string(binding_id);
+  const std::string reason = "Verify " + std::string(identifier) + "?";
   if (!context.Authenticate(reason, error)) {
     PrintKeychainError(error);
     return ExitForKeychain(error);

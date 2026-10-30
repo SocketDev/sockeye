@@ -61,7 +61,33 @@ void ShowDetails(const RunOptions& options, std::string_view request_id) {
   NSAlert* details = [[NSAlert alloc] init];
   details.messageText = @"Request details";
   const std::string information = FormatRunRequest(options, request_id, true);
-  details.informativeText = MakeString(information);
+  NSView* accessory = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 520, 300)];
+  NSScrollView* scroll =
+      [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 36, 520, 264)];
+  scroll.hasVerticalScroller = YES;
+  scroll.borderType = NSBezelBorder;
+  NSTextView* text = [[NSTextView alloc] initWithFrame:scroll.contentView.bounds];
+  text.string = MakeString(information);
+  text.editable = NO;
+  text.selectable = YES;
+  text.richText = NO;
+  text.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
+  text.textContainerInset = NSMakeSize(8, 8);
+  text.verticallyResizable = YES;
+  text.horizontallyResizable = NO;
+  text.autoresizingMask = NSViewWidthSizable;
+  text.textContainer.widthTracksTextView = YES;
+  scroll.documentView = text;
+  [accessory addSubview:scroll];
+
+  SockeyeRequestIdCopier* copier __attribute__((objc_precise_lifetime)) =
+      [[SockeyeRequestIdCopier alloc] initWithRequestId:request_id];
+  NSButton* copy_button = [NSButton buttonWithTitle:@"Copy requestId"
+                                          target:copier
+                                          action:@selector(copyRequestId:)];
+  [copy_button sizeToFit];
+  [accessory addSubview:copy_button];
+  details.accessoryView = accessory;
   [details addButtonWithTitle:@"Back"];
   [details runModal];
 }
@@ -78,35 +104,10 @@ bool ShowApprovalPrompt(const RunOptions& options,
     NSString* child = executable.lastPathComponent;
     alert.messageText = [NSString stringWithFormat:@"Allow %@ to use %@?",
                                                    child, credentials];
-    alert.informativeText = @"Check the request details.";
+    alert.informativeText = @"For this command only.";
     [alert addButtonWithTitle:@"Approve with Touch ID"];
     [alert addButtonWithTitle:@"Cancel"];
     [alert addButtonWithTitle:@"Details"];
-
-    NSView* accessory = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 620, 52)];
-    NSTextField* request_label = [[NSTextField alloc]
-        initWithFrame:NSMakeRect(0, 27, 620, 22)];
-    request_label.stringValue = [NSString stringWithFormat:@"requestId: sha256:%.*s",
-                                                               static_cast<int>(request_id.size()),
-                                                               request_id.data()];
-    request_label.editable = NO;
-    request_label.selectable = YES;
-    request_label.bezeled = NO;
-    request_label.drawsBackground = NO;
-    request_label.font = [NSFont monospacedSystemFontOfSize:12
-                                                     weight:NSFontWeightRegular];
-    [accessory addSubview:request_label];
-
-    NSButton* copy_button = [NSButton buttonWithTitle:@"Copy requestId"
-                                                target:nil
-                                                action:nil];
-    copy_button.frame = NSMakeRect(0, 0, 130, 24);
-    SockeyeRequestIdCopier* copier =
-        [[SockeyeRequestIdCopier alloc] initWithRequestId:request_id];
-    copy_button.target = copier;
-    copy_button.action = @selector(copyRequestId:);
-    [accessory addSubview:copy_button];
-    [alert setAccessoryView:accessory];
 
     [NSApp activateIgnoringOtherApps:YES];
     for (;;) {
