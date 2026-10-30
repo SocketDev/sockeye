@@ -234,10 +234,6 @@ bool ShowApprovalPrompt(const RunOptions& options,
     [alert addButtonWithTitle:@"Approve with Touch ID"];
     [alert addButtonWithTitle:@"Cancel"];
     [alert addButtonWithTitle:@"Details"];
-    LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
-        initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
-    authenticationView.frame = NSMakeRect(0, 0, 64, 64);
-    alert.accessoryView = authenticationView;
 
     alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
     [alert.window center];
@@ -257,6 +253,10 @@ bool ShowApprovalPrompt(const RunOptions& options,
       }
       break;
     }
+    LAAuthenticationView* authenticationView = [[LAAuthenticationView alloc]
+        initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
+    authenticationView.frame = NSMakeRect(0, 0, 64, 64);
+    alert.accessoryView = authenticationView;
     alert.informativeText = @"Touch ID to continue.";
     alert.buttons[0].enabled = NO;
     [alert layout];
