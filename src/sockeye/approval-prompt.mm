@@ -1,6 +1,7 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #import <LocalAuthenticationEmbeddedUI/LocalAuthenticationEmbeddedUI.h>
+#import <QuartzCore/QuartzCore.h>
 
 #include "sockeye/approval-prompt.h"
 #include "sockeye/input-policy.h"
@@ -30,6 +31,49 @@
 
 @implementation SockeyeDetailRowsView
 - (BOOL)isFlipped { return YES; }
+@end
+
+@interface SockeyeFingerprintSuccessView : NSView
+- (void)animateSuccess;
+@end
+
+@implementation SockeyeFingerprintSuccessView
+- (void)animateSuccess {
+  self.wantsLayer = YES;
+  const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+  NSColor* color = NSColor.systemGreenColor;
+  const CFTimeInterval start = CACurrentMediaTime();
+  for (CGFloat index = 0; index < 6; ++index) {
+    const CGFloat inset = 7 + index * 4;
+    const CGFloat top = 57 - index * 4;
+    const CGFloat shoulder = 31 - index;
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathMoveToPoint(path, nil, inset, 16 + index * 1.5);
+    CGPathAddCurveToPoint(path, nil, inset - 1, 22, inset, 25, inset, shoulder);
+    CGPathAddCurveToPoint(path, nil, inset, top + 7, 64 - inset, top + 7, 64 - inset, shoulder);
+    CGPathAddCurveToPoint(path, nil, 64 - inset, 22, 62 - inset, 14, 58 - inset, 9);
+    CAShapeLayer* ridge = [CAShapeLayer layer];
+    ridge.frame = self.bounds;
+    ridge.path = path;
+    ridge.fillColor = nil;
+    ridge.strokeColor = color.CGColor;
+    ridge.lineWidth = 2.2;
+    ridge.lineCap = kCALineCapRound;
+    ridge.lineJoin = kCALineJoinRound;
+    ridge.contentsScale = self.window.backingScaleFactor;
+    [self.layer addSublayer:ridge];
+    CGPathRelease(path);
+    if (!reduceMotion) {
+      CABasicAnimation* draw = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+      draw.fromValue = @0;
+      draw.toValue = @1;
+      draw.duration = 0.42;
+      draw.beginTime = start;
+      draw.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+      [ridge addAnimation:draw forKey:@"fingerprintFill"];
+    }
+  }
+}
 @end
 
 namespace sockeye {
@@ -153,7 +197,9 @@ NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
   for (NSArray<NSString*>* row in rows) {
     SockeyeDetailCopyButton* button = [[SockeyeDetailCopyButton alloc]
         initWithFrame:NSMakeRect(0, top + 1, buttonWidth, 24)];
-    button.title = [@"⧉ " stringByAppendingString:row[0]];
+    button.title = row[0];
+    button.image = [NSImage imageWithSystemSymbolName:@"doc.on.doc" accessibilityDescription:@"Copy"];
+    button.imagePosition = NSImageLeft;
     button.font = [NSFont systemFontOfSize:11];
     button.alignment = NSTextAlignmentLeft;
     button.bezelStyle = NSBezelStyleRounded;
@@ -250,6 +296,33 @@ bool ShowApprovalPrompt(const RunOptions& options,
       cancelled = true;
       context.Invalidate();
     });
+    if (authenticated && !cancelled) {
+      SockeyeFingerprintSuccessView* success = [[SockeyeFingerprintSuccessView alloc]
+          initWithFrame:authenticationView.frame];
+      success.accessibilityLabel = @"Touch ID verified";
+      alert.accessoryView = success;
+      alert.informativeText = @"Verified.";
+      [alert layout];
+      [success animateSuccess];
+      const NSTimeInterval duration =
+          NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : 0.58;
+      NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];
+      while (deadline.timeIntervalSinceNow > 0) {
+        const NSModalResponse response = [NSApp runModalSession:session];
+        if (response == NSAlertSecondButtonReturn) {
+          [NSApp endModalSession:session];
+          ShowDetails(options, request_id);
+          session = [NSApp beginModalSessionForWindow:alert.window];
+          continue;
+        }
+        if (response != NSModalResponseContinue) {
+          cancelled = true;
+          break;
+        }
+        [NSRunLoop.currentRunLoop runUntilDate:
+            [NSDate dateWithTimeIntervalSinceNow:MIN(0.01, deadline.timeIntervalSinceNow)]];
+      }
+    }
     [NSApp endModalSession:session];
     [alert.window orderOut:nil];
     if (cancelled) {
