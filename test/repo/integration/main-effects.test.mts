@@ -169,7 +169,7 @@ test('request ID lookup has no authorization or launch effects', () => {
 })
 
 test.each([
-  ['set', 'success', 0, 'input approve read store read invalidate policy'],
+  ['set', 'success', 0, 'input approve read store read invalidate'],
   ['set', 'input-failed', 2, 'input'],
   ['set', 'denied', 4, 'input approve'],
   ['set', 'io', 5, 'input approve read store invalidate'],
@@ -177,13 +177,19 @@ test.each([
     'stdinImport',
     'success',
     0,
-    'input terminal approve read store read invalidate policy',
+    'input terminal approve read store read invalidate',
   ],
   [
     'stdinImport',
     'import-replace',
     0,
-    'input terminal approve read store read invalidate policy',
+    'input terminal approve read store read invalidate',
+  ],
+  [
+    'stdinImport',
+    'policy-interaction-denied',
+    0,
+    'input terminal approve read store read invalidate',
   ],
   ['stdinImport', 'no-terminal', 4, 'input terminal'],
   ['stdinImport', 'denied', 4, 'input terminal approve'],
@@ -194,7 +200,7 @@ test.each([
   ['delete', 'denied', 4, 'terminal approve'],
   ['delete', 'missing', 3, 'terminal approve delete invalidate'],
   ['delete', 'operation-denied', 4, 'terminal approve delete invalidate'],
-  ['verify', 'success', 0, 'terminal approve read invalidate policy'],
+  ['verify', 'success', 0, 'terminal approve read invalidate'],
   ['verify', 'no-terminal', 4, 'terminal'],
   ['verify', 'denied', 4, 'terminal approve'],
   ['verify', 'missing', 3, 'terminal approve read invalidate'],
@@ -202,7 +208,7 @@ test.each([
     'import',
     'success',
     0,
-    'terminal approve provider read store read invalidate policy',
+    'terminal approve provider read store read invalidate',
   ],
   ['import', 'no-terminal', 4, 'terminal'],
   ['import', 'denied', 4, 'terminal approve'],

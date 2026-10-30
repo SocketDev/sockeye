@@ -173,15 +173,6 @@ int StoreAndVerifyCredential(AuthorizationContext& context,
   return 0;
 }
 
-int VerifyStoredCredentialPolicy(std::string_view binding_id,
-                                 KeychainError& error) {
-  if (InspectCredentialPolicy(binding_id, error) == KeychainStatus::kSuccess) {
-    return 0;
-  }
-  PrintKeychainError(error);
-  return error.status == KeychainStatus::kDenied ? kDeniedExit : kSystemExit;
-}
-
 int RunSet(std::string_view identifier, std::string_view binding_id) {
   if (!IsEnvironmentName(identifier) || !IsCredentialBindingId(binding_id)) {
     std::fputs("Credential store rejected: name or binding is invalid.\n",
@@ -208,7 +199,7 @@ int RunSet(std::string_view identifier, std::string_view binding_id) {
       StoreAndVerifyCredential(context, binding_id, value, error);
   context.Invalidate();
   value.Clear();
-  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
+  return result;
 }
 
 int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
@@ -245,7 +236,7 @@ int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
       StoreAndVerifyCredential(context, binding_id, value, error, true);
   context.Invalidate();
   value.Clear();
-  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
+  return result;
 }
 
 int RunOnePasswordImport(std::string_view identifier,
@@ -288,7 +279,7 @@ int RunOnePasswordImport(std::string_view identifier,
       StoreAndVerifyCredential(context, binding_id, value, error);
   context.Invalidate();
   value.Clear();
-  return result == 0 ? VerifyStoredCredentialPolicy(binding_id, error) : result;
+  return result;
 }
 
 int RunDelete(std::string_view identifier, std::string_view binding_id) {
@@ -349,7 +340,7 @@ int RunVerify(std::string_view identifier, std::string_view binding_id) {
     PrintKeychainError(error);
     return ExitForKeychain(error);
   }
-  return VerifyStoredCredentialPolicy(binding_id, error);
+  return 0;
 }
 
 int ExplainRunRequest(int argc, char** argv) {

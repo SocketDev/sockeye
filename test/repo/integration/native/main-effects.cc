@@ -101,6 +101,11 @@ void AuthorizationContext::Invalidate() {
 KeychainStatus InspectBiometricReadiness(KeychainError&) { std::abort(); }
 KeychainStatus InspectCredentialPolicy(std::string_view, KeychainError& error) {
   Event("policy");
+  if (Scenario() == "policy-interaction-denied") {
+    error = {KeychainStatus::kIo, -25308,
+             "example non-interactive policy inspection failed"};
+    return error.status;
+  }
   return Result(error);
 }
 KeychainStatus DeleteCredential(AuthorizationContext&, std::string_view name,
