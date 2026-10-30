@@ -46,14 +46,18 @@
 - (BOOL)isFlipped { return YES; }
 @end
 
-@interface SockeyeFingerprintSuccessView : NSView
+@interface SockeyeFingerprintView : NSView
+@property(nonatomic, strong) NSArray* frames;
+@property(nonatomic, strong) NSArray<NSNumber*>* times;
 - (void)animateSuccess;
 @end
 
-@implementation SockeyeFingerprintSuccessView
-- (void)animateSuccess {
+@implementation SockeyeFingerprintView
+- (instancetype)initWithFrame:(NSRect)frame {
+  self = [super initWithFrame:frame];
+  if (self == nil) return nil;
   self.wantsLayer = YES;
-  const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+  self.layer.backgroundColor = NSColor.windowBackgroundColor.CGColor;
   NSData* data = [NSData dataWithBytes:kFingerprintAtlas length:sizeof(kFingerprintAtlas)];
   NSImage* image = [[NSImage alloc] initWithData:data];
   CGImageRef atlas = [image CGImageForProposedRect:nullptr context:nil hints:nil];
@@ -63,18 +67,32 @@
   for (NSUInteger index = 0; index < kFingerprintFrameCount; ++index) {
     CGRect rect = CGRectMake(static_cast<CGFloat>(index % 8) * tile,
                              static_cast<CGFloat>(index / 8) * tile, tile, tile);
-    CGImageRef frame = CGImageCreateWithImageInRect(atlas, rect);
-    [frames addObject:(__bridge id)frame];
+    CGImageRef tileImage = CGImageCreateWithImageInRect(atlas, rect);
+    [frames addObject:(__bridge id)tileImage];
     [times addObject:@(static_cast<double>(index) / static_cast<double>(kFingerprintFrameCount))];
-    CGImageRelease(frame);
+    CGImageRelease(tileImage);
   }
-  self.layer.contents = frames.lastObject;
+  self.frames = frames;
+  self.times = times;
+  self.layer.contents = frames.firstObject;
   self.layer.contentsGravity = kCAGravityResizeAspect;
   self.layer.minificationFilter = kCAFilterTrilinear;
+  return self;
+}
+- (NSView*)hitTest:(NSPoint)point {
+  (void)point;
+  return nil;
+}
+- (void)animateSuccess {
+  const BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  self.layer.contents = self.frames.lastObject;
+  [CATransaction commit];
   if (!reduceMotion) {
     CAKeyframeAnimation* scan = [CAKeyframeAnimation animationWithKeyPath:@"contents"];
-    scan.values = frames;
-    scan.keyTimes = times;
+    scan.values = self.frames;
+    scan.keyTimes = self.times;
     scan.duration = kFingerprintDuration;
     scan.calculationMode = kCAAnimationDiscrete;
     [self.layer addAnimation:scan forKey:@"fingerprintScan"];
@@ -319,6 +337,10 @@ bool ShowApprovalPrompt(const RunOptions& options,
         initWithContext:context.NativeContext() controlSize:NSControlSizeRegular];
     authenticationView.frame = NSMakeRect(148, 68, 64, 64);
     [panel.contentView addSubview:authenticationView];
+    SockeyeFingerprintView* fingerprint = [[SockeyeFingerprintView alloc]
+        initWithFrame:authenticationView.frame];
+    fingerprint.accessibilityLabel = @"Touch ID required";
+    [panel.contentView addSubview:fingerprint positioned:NSWindowAbove relativeTo:authenticationView];
     [panel center];
     [NSApp activateIgnoringOtherApps:YES];
     [panel makeKeyAndOrderFront:nil];
@@ -339,12 +361,9 @@ bool ShowApprovalPrompt(const RunOptions& options,
       context.Invalidate();
     });
     if (authenticated && !cancelled) {
-      SockeyeFingerprintSuccessView* success = [[SockeyeFingerprintSuccessView alloc]
-          initWithFrame:authenticationView.frame];
-      success.accessibilityLabel = @"Touch ID verified";
-      [authenticationView.superview replaceSubview:authenticationView with:success];
+      fingerprint.accessibilityLabel = @"Touch ID verified";
       instruction.stringValue = @"Verified.";
-      [success animateSuccess];
+      [fingerprint animateSuccess];
       const NSTimeInterval duration =
           NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion ? 0.18 : kFingerprintDuration + 0.12;
       NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:duration];

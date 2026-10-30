@@ -69,6 +69,31 @@ export async function renderFingerprintAnimation(): Promise<void> {
     'none',
     FINGERPRINT_ATLAS,
   ])
+  const alpha = await spawn(
+    'magick',
+    [
+      FINGERPRINT_ATLAS,
+      '-crop',
+      '256x256',
+      '+repage',
+      '-format',
+      '%[fx:p{0,0}.a]\n',
+      'info:',
+    ],
+    { stdio: 'pipe' },
+  )
+  const corners = String(alpha.stdout ?? '')
+    .trim()
+    .split(/\s+/u)
+  if (
+    alpha.code !== 0 ||
+    corners.length !== 64 ||
+    corners.some(value => Number(value) !== 0)
+  ) {
+    throw new Error(
+      'Fingerprint atlas has an opaque background. Set FFrames BACKGROUND_COLOR to Color::TRANSPARENT and render again.',
+    )
+  }
   await run(FINGERPRINT_RENDERER, [
     'strip',
     'all',

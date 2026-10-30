@@ -7,6 +7,7 @@ struct FingerprintVideo {
 }
 
 impl Video for FingerprintVideo {
+    const BACKGROUND_COLOR: fframes::Color = fframes::Color::TRANSPARENT;
     const FPS: usize = 30;
     const WIDTH: usize = 256;
     const HEIGHT: usize = 256;
