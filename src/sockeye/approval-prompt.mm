@@ -145,7 +145,7 @@ NSArray<NSArray<NSString*>*>* RequestDetailRows(
 NSScrollView* DetailRowsView(NSArray<NSArray<NSString*>*>* rows) {
   NSScreen* screen = NSApp.mainWindow.screen != nil ? NSApp.mainWindow.screen : NSScreen.mainScreen;
   const CGFloat width = MIN(720, screen.visibleFrame.size.width - 48);
-  const CGFloat buttonWidth = 160;
+  const CGFloat buttonWidth = 140;
   const CGFloat valueWidth = width - 24 - buttonWidth - 12;
   NSFont* font = [NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular];
   NSView* document = [[SockeyeDetailRowsView alloc] initWithFrame:NSMakeRect(0, 0, width - 24, static_cast<CGFloat>(rows.count) * 54 + 8)];
@@ -222,33 +222,6 @@ bool ShowApprovalPrompt(const RunOptions& options,
     NSString* child = executable.lastPathComponent;
     alert.messageText = [NSString stringWithFormat:@"Allow %@ to use %@?",
                                                    child, credentials];
-    alert.informativeText = @"For this command only.";
-    [alert addButtonWithTitle:@"Approve with Touch ID"];
-    [alert addButtonWithTitle:@"Cancel"];
-    [alert addButtonWithTitle:@"Details"];
-
-    alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
-    [alert.window center];
-    [NSApp activateIgnoringOtherApps:YES];
-    [alert.window makeKeyAndOrderFront:nil];
-    for (;;) {
-      const NSModalResponse response = [alert runModal];
-      [alert.window orderOut:nil];
-      if (response == NSAlertThirdButtonReturn) {
-        ShowDetails(options, request_id);
-        continue;
-      }
-      if (response != NSAlertFirstButtonReturn) {
-        error.status = KeychainStatus::kDenied;
-        error.detail = "Approval cancelled.";
-        return false;
-      }
-      break;
-    }
-    NSString* requestTitle = alert.messageText;
-    NSPoint windowTopLeft = NSMakePoint(NSMinX(alert.window.frame), NSMaxY(alert.window.frame));
-    alert = [[NSAlert alloc] init];
-    alert.messageText = requestTitle;
     [alert addButtonWithTitle:@"Cancel"];
     [alert addButtonWithTitle:@"Details"];
     alert.buttons[0].keyEquivalent = @"\033";
@@ -258,7 +231,9 @@ bool ShowApprovalPrompt(const RunOptions& options,
     alert.accessoryView = authenticationView;
     alert.informativeText = @"Touch ID to continue.";
     [alert layout];
-    [alert.window setFrameTopLeftPoint:windowTopLeft];
+    alert.window.collectionBehavior = NSWindowCollectionBehaviorMoveToActiveSpace;
+    [alert.window center];
+    [NSApp activateIgnoringOtherApps:YES];
     [alert.window makeKeyAndOrderFront:nil];
     NSModalSession session = [NSApp beginModalSessionForWindow:alert.window];
     bool cancelled = false;
