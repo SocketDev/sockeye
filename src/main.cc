@@ -214,18 +214,15 @@ int RunStdinImport(std::string_view identifier, std::string_view binding_id) {
     return kUsageExit;
   }
 
-  std::string terminal_error;
-  if (!HasForegroundTerminal(terminal_error)) {
-    value.Clear();
-    std::fprintf(stderr, "%s\n", terminal_error.c_str());
-    return kDeniedExit;
-  }
-
   AuthorizationContext context;
   KeychainError error;
   const std::string reason =
-      "Allow pnpm to use " + std::string(identifier) + "?";
-  if (!context.Authenticate(reason, error)) {
+      "Store or replace " + std::string(identifier) + "?";
+  RunOptions options;
+  options.credentials.push_back(
+      {std::string(binding_id), std::string(identifier)});
+  const std::string request_id = DigestText(CanonicalRunManifest(options));
+  if (!ShowApprovalPrompt(options, request_id, context, reason, error)) {
     value.Clear();
     PrintKeychainError(error);
     return ExitForKeychain(error);
@@ -419,6 +416,20 @@ int RunApprovedChild(int argc, char** argv) {
   return child_status;
 }
 
+#if defined(SOCKEYE_UI_PREVIEW)
+int RunApprovalPreview() {
+  RunOptions options;
+  options.credentials.push_back(
+      {std::string(64, 'a'), "GH_TOKEN"});
+  const std::string request_id = DigestText(CanonicalRunManifest(options));
+  AuthorizationContext context;
+  return ShowApprovalPreview(options, request_id, context,
+                             "Store or replace GH_TOKEN?")
+             ? 0
+             : kDeniedExit;
+}
+#endif
+
 bool InitializeProcessSecurity() {
   const struct rlimit no_core = {0, 0};
   if (setrlimit(RLIMIT_CORE, &no_core) != 0 ||
@@ -452,6 +463,11 @@ int main(int argc, char** argv) {
     sockeye::PrintCapabilities(stdout);
     return 0;
   }
+#if defined(SOCKEYE_UI_PREVIEW)
+  if (argc == 2 && std::strcmp(argv[1], "ui-preview") == 0) {
+    return sockeye::RunApprovalPreview();
+  }
+#endif
   if (argc == 5 && std::strcmp(argv[1], "set") == 0 &&
       std::strcmp(argv[3], "--binding") == 0) {
     return sockeye::RunSet(argv[2], argv[4]);

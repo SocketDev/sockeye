@@ -19,6 +19,8 @@ run-name: 'release: sign macos for ${{ github.ref_name }}'
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -194,6 +196,93 @@ jobs:
         with:
           mode: cleanup
           temporary-directory: ${{ steps.import-signing.outputs.temporary-directory }}
+
+  publish-main-ghcr:
+    name: Publish signed main builds to GHCR
+    needs: build-sign
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Bootstrap checkout
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          TRIGGER_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init -q
+          git config --local advice.detachedHead false
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "${SERVER_URL}/${REPOSITORY}"
+          FETCH_ARGS=(--no-tags --prune --depth 1 origin "${TRIGGER_REF}")
+          if [ -n "${GITHUB_TOKEN}" ]; then
+            AUTH_B64="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+            git -c "http.${SERVER_URL}/.extraheader=AUTHORIZATION: basic ${AUTH_B64}" fetch "${FETCH_ARGS[@]}"
+          else
+            git fetch "${FETCH_ARGS[@]}"
+          fi
+          git checkout -q --detach FETCH_HEAD
+      - name: Set up and install
+        uses: ./.github/actions/fleet/setup-and-install
+        with:
+          checkout: 'false'
+          socket-api-token: ${{ secrets.SOCKET_API_TOKEN_FOR_CLI_AND_SFW }}
+          payload-token-client-id: ${{ secrets.SOCKET_RELEASE_CLIENT_ID || vars.SOCKET_RELEASE_CLIENT_ID }}
+          payload-token-private-key: ${{ secrets.SOCKET_RELEASE_APP_PRIVATE_KEY }}
+      - name: Download signed archives
+        uses: ./.github/actions/fleet/download-artifact
+        with:
+          path: release-assets
+      - name: Verify archive checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arch in arm64 x64; do
+            (
+              cd "release-assets/sockeye-darwin-${arch}"
+              shasum -a 256 -c "sockeye-darwin-${arch}.zip.sha256"
+            )
+          done
+      - name: Publish OCI archive to GHCR
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          printf '%s' "${GITHUB_TOKEN}" | docker login ghcr.io \
+            --username "${GITHUB_ACTOR}" --password-stdin
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.description=Signed and notarized Sockeye macOS archives" \
+            --tag "${image}:main" \
+            --tag "${image}:sha-${GITHUB_SHA}" \
+            --push \
+            --file - release-assets <<'DOCKERFILE'
+          FROM scratch
+          COPY sockeye-darwin-arm64/sockeye-darwin-arm64.zip /sockeye-darwin-arm64.zip
+          COPY sockeye-darwin-arm64/sockeye-darwin-arm64.zip.sha256 /sockeye-darwin-arm64.zip.sha256
+          COPY sockeye-darwin-arm64/sockeye-darwin-arm64.zip.notary-receipt.json /sockeye-darwin-arm64.zip.notary-receipt.json
+          COPY sockeye-darwin-x64/sockeye-darwin-x64.zip /sockeye-darwin-x64.zip
+          COPY sockeye-darwin-x64/sockeye-darwin-x64.zip.sha256 /sockeye-darwin-x64.zip.sha256
+          COPY sockeye-darwin-x64/sockeye-darwin-x64.zip.notary-receipt.json /sockeye-darwin-x64.zip.notary-receipt.json
+          CMD ["/sockeye-darwin-arm64.zip"]
+          DOCKERFILE
+          {
+            echo '### Signed Sockeye preview published to GHCR'
+            echo
+            echo "Source: \`${GITHUB_SHA}\`"
+            echo "Image: \`${image}:sha-${GITHUB_SHA}\`"
+            echo
+            echo 'Extract an archive with `docker create` and `docker cp`.'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
   release-assets:
     name: Verify and publish signed release

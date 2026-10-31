@@ -4,10 +4,10 @@
 #include <cerrno>
 #include <cstring>
 #include <string>
+#include <unistd.h>
 
 #include <fcntl.h>
 #include <termios.h>
-#include <unistd.h>
 
 #include "input-policy.h"
 
@@ -16,14 +16,34 @@ namespace {
 
 constexpr unsigned char kEndOfInput = 0x04;
 
+bool IsForegroundTerminal(int descriptor, std::string& error) {
+  if (!isatty(descriptor)) {
+    error = "tty-is-not-a-terminal";
+    return false;
+  }
+  const pid_t terminal_group = tcgetpgrp(descriptor);
+  if (terminal_group < 0) {
+    error = "tty-process-group-failed errno=" + std::to_string(errno);
+    return false;
+  }
+  const pid_t process_group = getpgrp();
+  if (terminal_group != process_group) {
+    error = "not-foreground process-group=" + std::to_string(process_group) +
+            " terminal-process-group=" + std::to_string(terminal_group);
+    return false;
+  }
+  error.clear();
+  return true;
+}
+
 int OpenForegroundTerminal(std::string& error) {
   const int descriptor = open("/dev/tty", O_RDWR | O_CLOEXEC | O_NOFOLLOW);
-  if (descriptor < 0 || !isatty(descriptor) ||
-      tcgetpgrp(descriptor) != getpgrp()) {
-    if (descriptor >= 0) {
-      close(descriptor);
-    }
-    error = "Operation refused: an attached foreground terminal is required.";
+  if (descriptor < 0) {
+    error = "tty-open-failed errno=" + std::to_string(errno);
+    return -1;
+  }
+  if (!IsForegroundTerminal(descriptor, error)) {
+    close(descriptor);
     return -1;
   }
   return descriptor;
@@ -49,11 +69,20 @@ bool WriteAll(int descriptor, std::string_view value) {
 
 bool HasForegroundTerminal(std::string& error) {
   const int descriptor = OpenForegroundTerminal(error);
-  if (descriptor < 0) {
-    return false;
+  if (descriptor >= 0) {
+    close(descriptor);
+    return true;
   }
-  close(descriptor);
-  return true;
+  const std::string controlling_terminal_error = error;
+  for (int inherited = STDIN_FILENO; inherited <= STDERR_FILENO; ++inherited) {
+    std::string inherited_error;
+    if (IsForegroundTerminal(inherited, inherited_error)) {
+      error.clear();
+      return true;
+    }
+  }
+  error = controlling_terminal_error;
+  return false;
 }
 
 bool ReadSecretFromTerminal(std::string_view identifier, SecretBuffer& output,

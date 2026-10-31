@@ -189,6 +189,6 @@
 
 - Sockeye has no plaintext `get`, reusable lease, background daemon, or silently weaker platform fallback. [`security model`](docs/security-model.md)
 - One Touch ID approval covers one canonical manifest and one child launch; the parent and all subagents are one untrusted principal. [`threat model`](docs/threat-model.md)
-- Credential mutation requires a foreground terminal and fresh Touch ID. Never add argv, environment-file, pipe, or log-based secret input.
+- `set` and `delete` require a foreground terminal and fresh Touch ID. `import-stdin` is the bounded attended application handoff and still requires fresh Touch ID. Never log a secret or pass it in argv or an environment file.
 - Vitest is the only test orchestrator; native process tests live under `test/repo/{unit,integration,e2e}` by behavior, not language. [`native development`](docs/native-development.md)
 - A version, signed release, notarization, or new platform cannot land until its explicit gate is satisfied. [`release checklist`](docs/release-checklist.md)

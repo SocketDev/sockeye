@@ -224,6 +224,7 @@
     "sync-oxlint-rules": "node scripts/fleet/sync-oxlint-rules.mts",
     "sync-package-manager-pins": "node scripts/fleet/sync-package-manager-pins.mts",
     "test": "node scripts/repo/test.mts",
+    "ui-preview": "node scripts/repo/ui-preview.mts",
     "test:allowance": "node scripts/fleet/test/allowance.mts",
     "test:asan": "BUILD_MODE=asan node scripts/repo/test.mts",
     "test:balance": "node scripts/fleet/test/balance.mts",

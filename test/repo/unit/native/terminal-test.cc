@@ -21,6 +21,8 @@ struct Scenario {
   int attributes_error_at = 0;
   bool tty = true;
   bool foreground = true;
+  int inherited_tty_descriptor = -1;
+  bool inherited_foreground = true;
   bool settings_readable = true;
   bool locked = true;
   bool read_interrupted = false;
@@ -71,10 +73,17 @@ extern "C" int SockeyeTestClose(int descriptor) {
   return 0;
 }
 extern "C" int SockeyeTestIsatty(int descriptor) {
+  if (descriptor >= STDIN_FILENO && descriptor <= STDERR_FILENO) {
+    return descriptor == scenario.inherited_tty_descriptor ? 1 : 0;
+  }
   assert(descriptor == 800);
   return scenario.tty ? 1 : 0;
 }
 extern "C" pid_t SockeyeTestForegroundGroup(int descriptor) {
+  if (descriptor >= STDIN_FILENO && descriptor <= STDERR_FILENO) {
+    assert(descriptor == scenario.inherited_tty_descriptor);
+    return scenario.inherited_foreground ? getpgrp() : getpgrp() + 1;
+  }
   assert(descriptor == 800);
   return scenario.foreground ? getpgrp() : getpgrp() + 1;
 }
@@ -159,6 +168,20 @@ int main() {
   scenario = {};
   scenario.open_error = ENXIO;
   assert(!sockeye::HasForegroundTerminal(error));
+  assert(error == "tty-open-failed errno=" + std::to_string(ENXIO));
+  assert(scenario.closes == 0);
+  scenario = {};
+  scenario.open_error = ENXIO;
+  scenario.inherited_tty_descriptor = STDIN_FILENO;
+  assert(sockeye::HasForegroundTerminal(error));
+  assert(error.empty());
+  assert(scenario.closes == 0);
+  scenario = {};
+  scenario.open_error = ENXIO;
+  scenario.inherited_tty_descriptor = STDIN_FILENO;
+  scenario.inherited_foreground = false;
+  assert(!sockeye::HasForegroundTerminal(error));
+  assert(error == "tty-open-failed errno=" + std::to_string(ENXIO));
   assert(scenario.closes == 0);
   scenario = {};
   scenario.tty = false;

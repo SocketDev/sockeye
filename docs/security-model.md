@@ -61,7 +61,11 @@ owns its copy after launch.
 ## Mutating credentials
 
 `set`, `delete`, and the one-time 1Password import require an attached
-foreground terminal and a fresh Touch ID approval. `set` reads hidden input
+foreground terminal and a fresh Touch ID approval. `import-stdin` is the
+attended application handoff: it accepts a bounded pipe and requires fresh
+Touch ID, but does not require a controlling terminal because the approved
+application may be launched through a package manager that detaches its
+script process. `set` reads hidden input
 from the terminal, not from arguments, environment variables, a pipe, or an
 environment file. The import accepts only one explicit printable `op://`
 reference, captures `op read --no-newline` through a private native pipe, and

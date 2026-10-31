@@ -28,9 +28,13 @@ std::string RenderReadinessReport(const ReadinessReport& report,
                                   std::string_view version) {
   std::string output =
       "platform: ready (macOS)\nversion: " + std::string(version) + "\n";
-  output += report.foreground ? "foreground-terminal: ready\n"
-                              : "foreground-terminal: unavailable; run from a "
-                                "foreground terminal with a controlling tty\n";
+  output += report.foreground
+                ? "foreground-terminal: ready\n"
+                : "foreground-terminal: unavailable (" +
+                      (report.foreground_diagnostic.empty()
+                           ? "reason=unknown"
+                           : report.foreground_diagnostic) +
+                      ")\n";
   output += "biometry: " + ReadinessStatus(report.biometry, false) +
             " (os-code=" + std::to_string(report.biometry.os_status) + ")\n";
   if (report.biometry.status != KeychainStatus::kSuccess)
@@ -88,6 +92,7 @@ int RunDoctorCommand(int argc, char** argv, std::string_view version,
   ReadinessReport report;
   std::string terminal_error;
   report.foreground = HasForegroundTerminal(terminal_error);
+  report.foreground_diagnostic = terminal_error;
   InspectBiometricReadiness(report.biometry);
   report.has_credential = !credential.empty();
   if (report.has_credential)

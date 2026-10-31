@@ -43,6 +43,12 @@ release commit.
 Publishing is user-gated. Local development commits and dry runs must not create
 a public release.
 
+## Main build previews
+
+Pushes to `main` publish signed and notarized ARM64 and x64 archives to
+[`ghcr.io/socketdev/sockeye`](ghcr-builds.md). These moving previews do not
+create a versioned release.
+
 ## Recorded evidence
 
 ### 2026-09-14 two-architecture signing validation

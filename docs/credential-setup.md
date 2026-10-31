@@ -49,8 +49,9 @@ an arbitrary environment value into a 1Password read.
 An attended application can hand a credential to Sockeye with
 `sockeye import-stdin NAME --binding ID`. Sockeye accepts a bounded pipe, then
 stores and verifies the value under the protected binding. It rejects terminal
-stdin so the value cannot echo on screen. The command requires a foreground
-terminal for approval and can replace a rotated value in place.
+stdin so the value cannot echo on screen. Fresh Touch ID approves the handoff;
+the command does not require a controlling terminal. It can replace a rotated
+value in place.
 
 ## What to expect
 

@@ -9,6 +9,7 @@ namespace sockeye {
 
 struct ReadinessReport {
   bool foreground = false;
+  std::string foreground_diagnostic;
   KeychainError biometry;
   bool has_credential = false;
   KeychainError credential;
