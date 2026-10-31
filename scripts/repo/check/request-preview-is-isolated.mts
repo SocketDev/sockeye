@@ -15,10 +15,7 @@ function checkPreviewTargets(cmake: string, issues: string[]): void {
     cmake.match(/add_executable\(sockeye\s+(?<body>[^)]*)\)/u)?.groups?.[
       'body'
     ] ?? ''
-  if (
-    !product.includes('src/run-request.cc') ||
-    product.includes('test/')
-  ) {
+  if (!product.includes('src/run-request.cc') || product.includes('test/')) {
     issues.push(
       'production must use request preparation without test dependencies',
     )

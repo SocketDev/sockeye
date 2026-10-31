@@ -307,6 +307,16 @@ set(FINGERPRINT_FRAME_COUNT 57)
 string(REGEX REPLACE "(..)" "0x\\1," FINGERPRINT_BYTES "${FINGERPRINT_HEX}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/fingerprint-atlas.generated.h"
   "static constexpr unsigned char kFingerprintAtlas[] = {${FINGERPRINT_BYTES}};\nstatic constexpr NSUInteger kFingerprintFrameCount = ${FINGERPRINT_FRAME_COUNT};\nstatic constexpr double kFingerprintDuration = ${FINGERPRINT_FRAME_COUNT} / 30.0;\n")
+set(DETAIL_COPY_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/repo/copy.svg")
+set(DETAIL_CHECK_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/repo/check.svg")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${DETAIL_COPY_ICON}" "${DETAIL_CHECK_ICON}")
+file(READ "${DETAIL_COPY_ICON}" DETAIL_COPY_HEX HEX)
+file(READ "${DETAIL_CHECK_ICON}" DETAIL_CHECK_HEX HEX)
+string(REGEX REPLACE "(..)" "0x\\1," DETAIL_COPY_BYTES "${DETAIL_COPY_HEX}")
+string(REGEX REPLACE "(..)" "0x\\1," DETAIL_CHECK_BYTES "${DETAIL_CHECK_HEX}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/detail-copy-icons.generated.h"
+  "static constexpr unsigned char kDetailCopyIconSvg[] = {${DETAIL_COPY_BYTES}};\nstatic constexpr unsigned char kDetailCheckIconSvg[] = {${DETAIL_CHECK_BYTES}};\n")
 target_include_directories(sockeye PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(sockeye PRIVATE SOCKEYE_VERSION="${SOCKEYE_VERSION}")
 target_compile_options(sockeye PRIVATE

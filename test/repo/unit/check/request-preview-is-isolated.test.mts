@@ -18,11 +18,7 @@ const fixtures: string[] = []
 function makePreviewFixture(): string {
   const root = mkdtempSync(path.join(os.tmpdir(), 'sockeye-preview-check-'))
   fixtures.push(root)
-  for (const name of [
-    'CMakeLists.txt',
-    'src/main.cc',
-    'src/run-request.cc',
-  ]) {
+  for (const name of ['CMakeLists.txt', 'src/main.cc', 'src/run-request.cc']) {
     const target = path.join(root, name)
     mkdirSync(path.dirname(target), { recursive: true })
     writeFileSync(target, readFileSync(path.join(REPO_ROOT, name)))
@@ -60,11 +56,7 @@ test.each([
     'PrepareRunRequest(argc, argv, options,',
     'OtherParser(argc, argv, options,',
   ],
-  [
-    'CMakeLists.txt',
-    '  src/run-request.cc',
-    '  test/forbidden-effects.cc',
-  ],
+  ['CMakeLists.txt', '  src/run-request.cc', '  test/forbidden-effects.cc'],
   [
     'CMakeLists.txt',
     'test/repo/integration/native/forbidden-effects.cc',

@@ -126,9 +126,7 @@ export const LOCKSTEP_MANIFEST_PATH = segregatedConfigPath(
  */
 export const ASSETS_REPO_DIR = path.join(REPO_ROOT, 'assets', 'repo')
 
-export const LOGOMARK_SVG_PATHS = [
-  path.join(ASSETS_REPO_DIR, 'logomark.svg'),
-]
+export const LOGOMARK_SVG_PATHS = [path.join(ASSETS_REPO_DIR, 'logomark.svg')]
 
 /**
  * Resolve the active build mode. Explicit mode flags win over `BUILD_MODE`.

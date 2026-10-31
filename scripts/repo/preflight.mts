@@ -54,7 +54,8 @@ async function main(): Promise<number> {
 }
 
 const SCRIPT_META: ScriptMeta = {
-  describe: 'Run fleet preflight and validate Sockeye build and security checks.',
+  describe:
+    'Run fleet preflight and validate Sockeye build and security checks.',
   help: 'Usage: pnpm run preflight [--tests|--full]',
   json: 'result',
 }

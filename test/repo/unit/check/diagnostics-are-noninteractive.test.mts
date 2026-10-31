@@ -4,10 +4,7 @@ import { expect, test } from 'vitest'
 import { checkDiagnosticSources } from '../../../../scripts/repo/check/diagnostics-are-noninteractive.mts'
 import { REPO_ROOT } from '../../../../scripts/fleet/paths.mts'
 
-const readiness = readFileSync(
-  path.join(REPO_ROOT, 'src/readiness.cc'),
-  'utf8',
-)
+const readiness = readFileSync(path.join(REPO_ROOT, 'src/readiness.cc'), 'utf8')
 const keychain = readFileSync(
   path.join(REPO_ROOT, 'src/keychain-macos.mm'),
   'utf8',
