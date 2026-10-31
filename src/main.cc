@@ -416,20 +416,6 @@ int RunApprovedChild(int argc, char** argv) {
   return child_status;
 }
 
-#if defined(SOCKEYE_UI_PREVIEW)
-int RunApprovalPreview() {
-  RunOptions options;
-  options.credentials.push_back(
-      {std::string(64, 'a'), "GH_TOKEN"});
-  const std::string request_id = DigestText(CanonicalRunManifest(options));
-  AuthorizationContext context;
-  return ShowApprovalPreview(options, request_id, context,
-                             "Store or replace GH_TOKEN?")
-             ? 0
-             : kDeniedExit;
-}
-#endif
-
 bool InitializeProcessSecurity() {
   const struct rlimit no_core = {0, 0};
   if (setrlimit(RLIMIT_CORE, &no_core) != 0 ||
@@ -463,11 +449,6 @@ int main(int argc, char** argv) {
     sockeye::PrintCapabilities(stdout);
     return 0;
   }
-#if defined(SOCKEYE_UI_PREVIEW)
-  if (argc == 2 && std::strcmp(argv[1], "ui-preview") == 0) {
-    return sockeye::RunApprovalPreview();
-  }
-#endif
   if (argc == 5 && std::strcmp(argv[1], "set") == 0 &&
       std::strcmp(argv[3], "--binding") == 0) {
     return sockeye::RunSet(argv[2], argv[4]);

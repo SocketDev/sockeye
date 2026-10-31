@@ -12,11 +12,6 @@ bool ShowApprovalPrompt(const RunOptions& options, std::string_view request_id,
                         AuthorizationContext& context, std::string_view reason,
                         KeychainError& error);
 
-bool ShowApprovalPreview(const RunOptions& options,
-                         std::string_view request_id,
-                         AuthorizationContext& context,
-                         std::string_view reason);
-
 } // namespace sockeye
 
 #endif

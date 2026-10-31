@@ -1057,8 +1057,7 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
                                    std::string_view request_id,
                                    AuthorizationContext& context,
                                    std::string_view reason,
-                                   KeychainError& error,
-                                   bool preview_only) {
+                                   KeychainError& error) {
   @autoreleasepool {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
@@ -1212,8 +1211,6 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
           [NSValue valueWithRect:NSOffsetRect(details.frame, kPanelControlTravel, 0)]];
         AnimateViewsAndFingerprint(@[heading, cancel, details, instruction],
             0, fingerprint, hiddenCompactFrame, 0.22, reduceMotion, ^{
-          authenticationHost.hidden = YES;
-          authenticationShield.hidden = YES;
           cancel.hidden = YES;
           details.hidden = YES;
           instruction.hidden = YES;
@@ -1222,6 +1219,8 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
           const NSRect expandedFrame = CenteredPanelFrame(compactFrame, width, height);
           AnimatePanelFrame(panel, panel.frame, expandedFrame, reduceMotion,
                             compactViews, compactFrames, compactContentSize, ^{
+            authenticationHost.frame = expandedFingerprintFrame;
+            authenticationShield.frame = expandedFingerprintFrame;
             heading.stringValue = @"Touch ID request details";
             heading.frame = NSMakeRect(20, height - kExpandedTopInset -
                 kExpandedHeadingHeight, width - 40, kExpandedHeadingHeight);
@@ -1290,7 +1289,11 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
                 [NSValue valueWithRect:expandedInstructionFrame]],
                 kPanelControlDuration);
           });
-        }, @[cancel, details], exitingButtonFrames, kPanelControlDuration);
+        }, @[cancel, details, authenticationHost, authenticationShield], @[
+            exitingButtonFrames[0], exitingButtonFrames[1],
+            [NSValue valueWithRect:hiddenCompactFrame],
+            [NSValue valueWithRect:hiddenCompactFrame]],
+            kPanelControlDuration);
         return;
       }
       const NSRect offscreenExpandedFrame =
@@ -1308,8 +1311,8 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
         fingerprint.hidden = YES;
         AnimatePanelFrame(panel, panel.frame, compactFrame, reduceMotion,
                           expandedViews, expandedFrames, expandedContentSize, ^{
-          authenticationHost.hidden = NO;
-          authenticationShield.hidden = NO;
+          authenticationHost.frame = compactFingerprintFrame;
+          authenticationShield.frame = compactFingerprintFrame;
           StyleApprovalHeading(heading, title, credentials);
           heading.alignment = NSTextAlignmentCenter;
           instruction.font = compactInstructionFont;
@@ -1383,9 +1386,11 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
               [NSValue valueWithRect:compactFrames[2].rectValue]],
               kPanelControlDuration);
         });
-      }, @[details, instruction], @[
+      }, @[details, instruction, authenticationHost, authenticationShield], @[
           [NSValue valueWithRect:backOffscreenFrame],
-          [NSValue valueWithRect:instructionOffscreenFrame]],
+          [NSValue valueWithRect:instructionOffscreenFrame],
+          [NSValue valueWithRect:offscreenExpandedFrame],
+          [NSValue valueWithRect:offscreenExpandedFrame]],
           kPanelControlDuration);
     };
     [NSApp activateIgnoringOtherApps:YES];
@@ -1443,22 +1448,6 @@ static bool ShowApprovalPromptImpl(const RunOptions& options,
           }
           return event;
         }];
-    if (preview_only) {
-      while (!cancelled) {
-        const NSModalResponse response = [NSApp runModalSession:session];
-        if (response != NSModalResponseContinue) {
-          cancelled = true;
-          break;
-        }
-        [NSRunLoop.currentRunLoop runUntilDate:
-            [NSDate dateWithTimeIntervalSinceNow:1.0 / 60.0]];
-      }
-      [NSApp endModalSession:session];
-      [panel orderOut:nil];
-      [NSEvent removeMonitor:fingerprintClickMonitor];
-      [NSEvent removeMonitor:keyboardMonitor];
-      return true;
-    }
     const bool authenticated = context.AuthenticateWithEvents(reason, error, [&cancelled, &session, &context] {
       if (cancelled) return;
       const NSModalResponse response = [NSApp runModalSession:session];
@@ -1559,17 +1548,7 @@ bool ShowApprovalPrompt(const RunOptions& options,
                         std::string_view request_id,
                         AuthorizationContext& context, std::string_view reason,
                         KeychainError& error) {
-  return ShowApprovalPromptImpl(options, request_id, context, reason, error,
-                                false);
-}
-
-bool ShowApprovalPreview(const RunOptions& options,
-                         std::string_view request_id,
-                         AuthorizationContext& context,
-                         std::string_view reason) {
-  KeychainError error;
-  return ShowApprovalPromptImpl(options, request_id, context, reason, error,
-                                true);
+  return ShowApprovalPromptImpl(options, request_id, context, reason, error);
 }
 
 } // namespace sockeye

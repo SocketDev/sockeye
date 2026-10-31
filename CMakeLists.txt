@@ -319,9 +319,6 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/detail-copy-icons.generated.h"
   "static constexpr unsigned char kDetailCopyIconSvg[] = {${DETAIL_COPY_BYTES}};\nstatic constexpr unsigned char kDetailCheckIconSvg[] = {${DETAIL_CHECK_BYTES}};\n")
 target_include_directories(sockeye PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(sockeye PRIVATE SOCKEYE_VERSION="${SOCKEYE_VERSION}")
-target_compile_definitions(sockeye PRIVATE
-  $<$<CONFIG:Debug>:SOCKEYE_UI_PREVIEW=1>
-)
 target_compile_options(sockeye PRIVATE
   -Wall
   -Wconversion
